@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         FRONTEND_IMAGE = "webcup-frontend"
-        FRONTEND_PORT  = "8690"
+        FRONTEND_PORT = "8690"
         FRONTEND_REMOTE_DIR = "/public_html"
         FRONTEND_DEPLOY_DIR = "${WORKSPACE}/deploy-frontend"
 
@@ -11,25 +11,27 @@ pipeline {
         BACKEND_REMOTE_DIR = "/webcupbackend"
         BACKEND_DEPLOY_DIR = "${WORKSPACE}/deploy-backend"
 
-        DOCKER_TAG = "latest"
+        MYSQL_IMAGE = "mysql:8.4"
+        MYSQL_NAME = "webcup-mysql-test"
+        MYSQL_NETWORK = "webcup-ci-network"
+        MYSQL_DB = "webcup_test"
+        MYSQL_USER = "webcup"
+        MYSQL_PASSWORD = "webcup-ci-password"
+        MYSQL_ROOT_PASSWORD = "webcup-root-password"
+
         FTP_HOST = "tnr1.hodi.host"
+        DOCKER_TAG = "latest"
 
         FRONTEND_URL = "https://ikomholala.madagascar.webcup.hodi.cloud/"
-        BACKEND_HEALTH_URL = "https://ikomholala.madagascar.webcup.hodi.cloud/webcup-backend/health/"
+        BACKEND_URL = "https://ikomholala.madagascar.webcup.hodi.cloud/webcup-backend/health/"
     }
 
     options {
         timestamps()
         disableConcurrentBuilds()
-        buildDiscarder(
-            logRotator(numToKeepStr: '10')
-        )
-        timeout(
-            time: 20,
-            unit: 'MINUTES'
-        )
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 20, unit: 'MINUTES')
     }
-
 
     stages {
         stage('Checkout') {
@@ -39,104 +41,70 @@ pipeline {
         }
 
         stage('Build Frontend') {
-            when {
-                branch 'frontend'
-            }
-
+            when { branch 'frontend' }
             steps {
                 sh '''
                     set -eu
-
-                    echo "=== Build Frontend ==="
-
-                    docker build \
-                        --pull \
+                    docker build --pull \
                         -t "$FRONTEND_IMAGE:$DOCKER_TAG" \
                         -f frontend/Dockerfile .
                 '''
             }
         }
 
-
         stage('Test Frontend') {
-            when {
-                branch 'frontend'
-            }
-
+            when { branch 'frontend' }
             steps {
                 sh '''
                     set -eu
-                    echo "=== Test Frontend ==="
-                    docker rm -f webcup-frontend-test \
-                        >/dev/null 2>&1 || true
+                    docker rm -f webcup-frontend-test >/dev/null 2>&1 || true
+
                     docker run -d \
                         --name webcup-frontend-test \
                         -p "127.0.0.1:$FRONTEND_PORT:80" \
                         "$FRONTEND_IMAGE:$DOCKER_TAG"
 
-                    for i in 1 2 3 4 5
-                    do
-                        if curl -fsS \
-                            "http://127.0.0.1:$FRONTEND_PORT/" \
-                            >/dev/null
-                        then
-                            echo "✅ Frontend OK"
-                            exit 0
-                        fi
+                    for i in 1 2 3 4 5; do
+                        curl -fsS "http://127.0.0.1:$FRONTEND_PORT/" >/dev/null && exit 0
                         sleep 2
                     done
 
-                    echo "❌ Frontend indisponible"
                     docker logs webcup-frontend-test || true
                     exit 1
                 '''
             }
-
             post {
                 always {
-                    sh '''
-                        docker rm -f webcup-frontend-test \
-                            >/dev/null 2>&1 || true
-                    '''
+                    sh 'docker rm -f webcup-frontend-test >/dev/null 2>&1 || true'
                 }
             }
         }
 
-
         stage('Extract Frontend') {
-            when {
-                branch 'frontend'
-            }
-
+            when { branch 'frontend' }
             steps {
                 sh '''
                     set -eu
-                    echo "=== Extraction Frontend ==="
                     rm -rf "$FRONTEND_DEPLOY_DIR"
                     mkdir -p "$FRONTEND_DEPLOY_DIR"
-                    docker rm -f webcup-frontend-extract \
-                        >/dev/null 2>&1 || true
+
+                    docker rm -f webcup-frontend-extract >/dev/null 2>&1 || true
+
                     docker create \
                         --name webcup-frontend-extract \
                         "$FRONTEND_IMAGE:$DOCKER_TAG"
+
                     docker cp \
                         webcup-frontend-extract:/usr/share/nginx/html/. \
                         "$FRONTEND_DEPLOY_DIR/"
+
                     docker rm webcup-frontend-extract
-                    echo "=== Fichiers Frontend ==="
-                    find "$FRONTEND_DEPLOY_DIR" \
-                        -maxdepth 3 \
-                        -type f
                 '''
             }
         }
 
-
-        stage('Deploy Frontend FTP') {
-            when {
-                branch 'frontend'
-            }
-
+        stage('Deploy Frontend') {
+            when { branch 'frontend' }
             steps {
                 withCredentials([
                     usernamePassword(
@@ -147,13 +115,10 @@ pipeline {
                 ]) {
                     sh '''
                         set -eu
-                        echo "=== Déploiement Frontend vers Hodi ==="
-                        find "$FRONTEND_DEPLOY_DIR" -type f |
-                        while IFS= read -r FILE
-                        do
-                            RELATIVE_PATH="${FILE#$FRONTEND_DEPLOY_DIR/}"
 
-                            echo "Upload frontend : $RELATIVE_PATH"
+                        find "$FRONTEND_DEPLOY_DIR" -type f |
+                        while IFS= read -r FILE; do
+                            REL="${FILE#$FRONTEND_DEPLOY_DIR/}"
 
                             curl \
                                 --fail \
@@ -165,146 +130,130 @@ pipeline {
                                 --max-time 120 \
                                 --retry 2 \
                                 --user "$FTP_USER:$FTP_PASSWORD" \
-                                --upload-file "$FILE" \
-                                "ftp://$FTP_HOST$FRONTEND_REMOTE_DIR/$RELATIVE_PATH"
+                                -T "$FILE" \
+                                "ftp://$FTP_HOST$FRONTEND_REMOTE_DIR/$REL"
                         done
-
-                        echo "✅ Frontend envoyé"
                     '''
                 }
             }
         }
 
-
         stage('Verify Frontend') {
-            when {
-                branch 'frontend'
-            }
-
+            when { branch 'frontend' }
             steps {
-                sh '''
-                    set -eu
-
-                    echo "=== Vérification Frontend ==="
-
-                    curl \
-                        --fail \
-                        --silent \
-                        --show-error \
-                        "$FRONTEND_URL" \
-                        >/dev/null
-
-                    echo "✅ Frontend disponible en production"
-                '''
+                sh 'curl -fsS "$FRONTEND_URL" >/dev/null'
             }
         }
-        
-        stage('Build Backend') {
-            when {
-                branch 'backend'
-            }
 
+        stage('Build Backend') {
+            when { branch 'backend' }
             steps {
                 sh '''
                     set -eu
-
-                    echo "=== Build Backend ==="
-
-                    docker build \
-                        --pull \
+                    docker build --pull \
                         -t "$BACKEND_IMAGE:$DOCKER_TAG" \
                         -f backend/Dockerfile .
                 '''
             }
         }
 
-
         stage('Test Backend') {
-            when {
-                branch 'backend'
-            }
-
+            when { branch 'backend' }
             steps {
                 sh '''
                     set -eu
 
-                    echo "=== Django Check ==="
+                    docker rm -f "$MYSQL_NAME" >/dev/null 2>&1 || true
+                    docker network rm "$MYSQL_NETWORK" >/dev/null 2>&1 || true
+                    docker network create "$MYSQL_NETWORK"
 
-                    docker run --rm \
-                        -e SECRET_KEY="jenkins-ci-secret-not-production" \
-                        -e DEBUG="False" \
-                        -e CORS_ALLOW_ALL_ORIGINS="False" \
-                        "$BACKEND_IMAGE:$DOCKER_TAG" \
-                        python manage.py check
+                    docker run -d \
+                        --name "$MYSQL_NAME" \
+                        --network "$MYSQL_NETWORK" \
+                        -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
+                        -e MYSQL_DATABASE="$MYSQL_DB" \
+                        -e MYSQL_USER="$MYSQL_USER" \
+                        -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+                        "$MYSQL_IMAGE"
 
-                    echo "=== Vérification migrations ==="
+                    for i in $(seq 1 20); do
+                        if docker exec "$MYSQL_NAME" \
+                            mysqladmin ping \
+                            -uroot \
+                            -p"$MYSQL_ROOT_PASSWORD" \
+                            --silent
+                        then
+                            break
+                        fi
 
-                    docker run --rm \
-                        -e SECRET_KEY="jenkins-ci-secret-not-production" \
-                        -e DEBUG="False" \
-                        -e CORS_ALLOW_ALL_ORIGINS="False" \
-                        "$BACKEND_IMAGE:$DOCKER_TAG" \
-                        python manage.py makemigrations \
-                            --check \
-                            --dry-run
+                        [ "$i" = "20" ] && {
+                            docker logs "$MYSQL_NAME"
+                            exit 1
+                        }
 
-                    echo "✅ Backend Django valide"
+                        sleep 2
+                    done
+
+                    run_django() {
+                        docker run --rm \
+                            --network "$MYSQL_NETWORK" \
+                            -e SECRET_KEY="jenkins-ci-secret" \
+                            -e DEBUG="False" \
+                            -e CORS_ALLOW_ALL_ORIGINS="False" \
+                            -e DB_HOST="$MYSQL_NAME" \
+                            -e DB_PORT="3306" \
+                            -e DB_NAME="$MYSQL_DB" \
+                            -e DB_USER="$MYSQL_USER" \
+                            -e DB_PASSWORD="$MYSQL_PASSWORD" \
+                            "$BACKEND_IMAGE:$DOCKER_TAG" "$@"
+                    }
+
+                    run_django python manage.py check
+                    run_django python manage.py makemigrations --check --dry-run
+                    run_django python manage.py migrate --noinput
                 '''
+            }
+            post {
+                always {
+                    sh '''
+                        docker rm -f "$MYSQL_NAME" >/dev/null 2>&1 || true
+                        docker network rm "$MYSQL_NETWORK" >/dev/null 2>&1 || true
+                    '''
+                }
             }
         }
 
-
         stage('Prepare Backend') {
-            when {
-                branch 'backend'
-            }
-
+            when { branch 'backend' }
             steps {
                 sh '''
                     set -eu
 
-                    echo "=== Préparation Backend ==="
-
                     rm -rf "$BACKEND_DEPLOY_DIR"
-
                     mkdir -p "$BACKEND_DEPLOY_DIR"
 
                     cp -a backend/. "$BACKEND_DEPLOY_DIR/"
 
-                    # Les secrets locaux ne doivent jamais être déployés.
                     rm -f \
                         "$BACKEND_DEPLOY_DIR/.env" \
                         "$BACKEND_DEPLOY_DIR/Dockerfile" \
                         "$BACKEND_DEPLOY_DIR/.gitignore" \
                         "$BACKEND_DEPLOY_DIR/db.sqlite3"
 
-                    # Suppression des caches Python.
                     find "$BACKEND_DEPLOY_DIR" \
-                        -type d \
-                        -name "__pycache__" \
-                        -prune \
-                        -exec rm -rf {} + || true
+                        -type d -name "__pycache__" \
+                        -prune -exec rm -rf {} + || true
 
                     find "$BACKEND_DEPLOY_DIR" \
                         -type f \
                         \\( -name "*.pyc" -o -name "*.pyo" \\) \
                         -delete || true
-
-                    echo "=== Fichiers Backend ==="
-
-                    find "$BACKEND_DEPLOY_DIR" \
-                        -maxdepth 3 \
-                        -type f
                 '''
             }
         }
 
-
-        stage('Deploy Backend FTP') {
-            when {
-                branch 'backend'
-            }
-
+        stage('Deploy Backend') {
+            when { branch 'backend' }
             steps {
                 withCredentials([
                     usernamePassword(
@@ -316,14 +265,9 @@ pipeline {
                     sh '''
                         set -eu
 
-                        echo "=== Déploiement Backend vers Hodi ==="
-
                         find "$BACKEND_DEPLOY_DIR" -type f |
-                        while IFS= read -r FILE
-                        do
-                            RELATIVE_PATH="${FILE#$BACKEND_DEPLOY_DIR/}"
-
-                            echo "Upload backend : $RELATIVE_PATH"
+                        while IFS= read -r FILE; do
+                            REL="${FILE#$BACKEND_DEPLOY_DIR/}"
 
                             curl \
                                 --fail \
@@ -335,22 +279,16 @@ pipeline {
                                 --max-time 120 \
                                 --retry 2 \
                                 --user "$FTP_USER:$FTP_PASSWORD" \
-                                --upload-file "$FILE" \
-                                "ftp://$FTP_HOST$BACKEND_REMOTE_DIR/$RELATIVE_PATH"
+                                -T "$FILE" \
+                                "ftp://$FTP_HOST$BACKEND_REMOTE_DIR/$REL"
                         done
-
-                        echo "✅ Backend envoyé"
                     '''
                 }
             }
         }
 
-
         stage('Restart Backend') {
-            when {
-                branch 'backend'
-            }
-
+            when { branch 'backend' }
             steps {
                 withCredentials([
                     usernamePassword(
@@ -362,11 +300,7 @@ pipeline {
                     sh '''
                         set -eu
 
-                        echo "=== Redémarrage Passenger ==="
-
-                        RESTART_FILE="$WORKSPACE/restart.txt"
-
-                        : > "$RESTART_FILE"
+                        touch "$WORKSPACE/restart.txt"
 
                         curl \
                             --fail \
@@ -374,51 +308,24 @@ pipeline {
                             --show-error \
                             --ftp-pasv \
                             --ftp-create-dirs \
-                            --connect-timeout 10 \
-                            --max-time 30 \
-                            --retry 2 \
                             --user "$FTP_USER:$FTP_PASSWORD" \
-                            --upload-file "$RESTART_FILE" \
+                            -T "$WORKSPACE/restart.txt" \
                             "ftp://$FTP_HOST$BACKEND_REMOTE_DIR/tmp/restart.txt"
-
-                        rm -f "$RESTART_FILE"
-
-                        echo "✅ Redémarrage Passenger demandé"
                     '''
                 }
             }
         }
 
-
         stage('Verify Backend') {
-            when {
-                branch 'backend'
-            }
-
+            when { branch 'backend' }
             steps {
                 sh '''
                     set -eu
 
-                    echo "=== Vérification Backend Hodi ==="
-
-                    for i in 1 2 3 4 5 6
-                    do
-                        if curl \
-                            --fail \
-                            --silent \
-                            --show-error \
-                            "$BACKEND_HEALTH_URL"
-                        then
-                            echo
-                            echo "✅ Backend Django disponible"
-                            exit 0
-                        fi
-
-                        echo "Attente du démarrage Passenger..."
+                    for i in 1 2 3 4 5 6 7 8 9 10; do
+                        curl -fsS "$BACKEND_URL" && exit 0
                         sleep 3
                     done
-
-                    echo "❌ Backend inaccessible"
 
                     exit 1
                 '''
@@ -426,15 +333,13 @@ pipeline {
         }
     }
 
-
     post {
-
         success {
-            echo "✅ [${env.BRANCH_NAME}] Pipeline terminé avec succès."
+            echo "✅ [${env.BRANCH_NAME}] terminé."
         }
 
         failure {
-            echo "❌ [${env.BRANCH_NAME}] Pipeline échoué."
+            echo "❌ [${env.BRANCH_NAME}] échoué."
         }
 
         always {
@@ -442,16 +347,17 @@ pipeline {
                 docker rm -f \
                     webcup-frontend-test \
                     webcup-frontend-extract \
+                    "$MYSQL_NAME" \
+                    >/dev/null 2>&1 || true
+
+                docker network rm "$MYSQL_NETWORK" \
                     >/dev/null 2>&1 || true
 
                 rm -rf \
                     "$FRONTEND_DEPLOY_DIR" \
-                    "$BACKEND_DEPLOY_DIR" \
-                    || true
+                    "$BACKEND_DEPLOY_DIR"
 
-                rm -f \
-                    "$WORKSPACE/restart.txt" \
-                    || true
+                rm -f "$WORKSPACE/restart.txt"
             '''
         }
     }
