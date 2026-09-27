@@ -15,8 +15,6 @@ ALLOWED_HOSTS = [
     "localhost",
 ]
 
-FORCE_SCRIPT_NAME = "/webcup-backend"
-
 LOCAL_APPS = []
 
 THIRD_APPS = [
