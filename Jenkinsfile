@@ -132,20 +132,29 @@ pipeline {
                     sh '''
                         set -eu
 
-                        lftp <<EOF
-open ftp://$FTP_HOST
-user "$FTP_USER" "$FTP_PASSWORD"
+                        echo "=== Déploiement FTP vers Hodi ==="
 
-set ftp:passive-mode true
+                        find "$DEPLOY_DIR" -type f | while IFS= read -r FILE
+                        do
+                            RELATIVE_PATH="${FILE#$DEPLOY_DIR/}"
 
-mirror \
-    --reverse \
-    --verbose \
-    "$DEPLOY_DIR/" \
-    "$FTP_REMOTE_DIR/"
+                            echo "Upload : $RELATIVE_PATH"
 
-bye
-EOF
+                            curl \
+                                --fail \
+                                --silent \
+                                --show-error \
+                                --ftp-pasv \
+                                --ftp-create-dirs \
+                                --connect-timeout 10 \
+                                --max-time 120 \
+                                --retry 2 \
+                                --user "$FTP_USER:$FTP_PASSWORD" \
+                                --upload-file "$FILE" \
+                                "ftp://$FTP_HOST$FTP_REMOTE_DIR/$RELATIVE_PATH"
+                        done
+
+                        echo "✅ Upload FTP terminé"
                     '''
                 }
             }
