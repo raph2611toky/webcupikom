@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = [
-    "ikomholala.madagascar.webcup.hodi.cloud",
+    "api.ikomholala.madagascar.webcup.hodi.cloud",
     "127.0.0.1",
     "localhost",
 ]
@@ -109,6 +109,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 CORS_ALLOWED_ORIGINS = [
     "https://ikomholala.madagascar.webcup.hodi.cloud",
+    "https://api.ikomholala.madagascar.webcup.hodi.cloud",
     "http://localhost:5173",
 ]
 
@@ -122,5 +123,6 @@ CORS_ALLOW_PRIVATE_NETWORK = True
 
 CSRF_TRUSTED_ORIGINS = [
     "https://ikomholala.madagascar.webcup.hodi.cloud",
+    "https://api.ikomholala.madagascar.webcup.hodi.cloud",
     "http://localhost:5173",
 ]
