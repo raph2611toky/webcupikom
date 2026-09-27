@@ -102,7 +102,7 @@ TIME_ZONE = "Indian/Antananarivo"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "/webcup-backend/static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 CORS_ALLOWED_ORIGINS = [
