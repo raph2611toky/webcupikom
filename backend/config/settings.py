@@ -20,6 +20,7 @@ LOCAL_APPS = []
 THIRD_APPS = [
     "corsheaders",
     "rest_framework",
+    "whitenoise",
 ]
 
 INSTALLED_APPS = [
