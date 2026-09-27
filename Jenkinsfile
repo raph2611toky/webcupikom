@@ -23,7 +23,7 @@ pipeline {
         DOCKER_TAG = "latest"
 
         FRONTEND_URL = "https://ikomholala.madagascar.webcup.hodi.cloud/"
-        BACKEND_URL = "https://ikomholala.madagascar.webcup.hodi.cloud/webcup-backend/health/"
+        BACKEND_URL = "https://api.ikomholala.madagascar.webcup.hodi.cloud/health/"
     }
 
     options {
