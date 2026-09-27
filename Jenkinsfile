@@ -159,48 +159,47 @@ pipeline {
 
         stage('Test Backend') {
             when { branch 'backend' }
+
             steps {
                 sh '''
                     set -eu
 
                     docker rm -f "$MYSQL_NAME" >/dev/null 2>&1 || true
-                    docker network rm "$MYSQL_NETWORK" >/dev/null 2>&1 || true
-                    docker network create "$MYSQL_NETWORK"
 
                     docker run -d \
                         --name "$MYSQL_NAME" \
-                        --network "$MYSQL_NETWORK" \
                         -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
                         -e MYSQL_DATABASE="$MYSQL_DB" \
                         -e MYSQL_USER="$MYSQL_USER" \
                         -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+                        --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD --protocol=tcp --silent" \
+                        --health-interval=2s \
+                        --health-timeout=5s \
+                        --health-retries=30 \
                         "$MYSQL_IMAGE"
 
-                    for i in $(seq 1 20); do
-                        if docker exec "$MYSQL_NAME" \
-                            mysqladmin ping \
-                            -uroot \
-                            -p"$MYSQL_ROOT_PASSWORD" \
-                            --silent
-                        then
-                            break
-                        fi
+                    for i in $(seq 1 30); do
+                        STATUS=$(docker inspect \
+                            --format='{{.State.Health.Status}}' \
+                            "$MYSQL_NAME")
 
-                        [ "$i" = "20" ] && {
+                        [ "$STATUS" = "healthy" ] && break
+
+                        if [ "$STATUS" = "unhealthy" ] || [ "$i" = "30" ]; then
                             docker logs "$MYSQL_NAME"
                             exit 1
-                        }
+                        fi
 
                         sleep 2
                     done
 
                     run_django() {
                         docker run --rm \
-                            --network "$MYSQL_NETWORK" \
+                            --network "container:$MYSQL_NAME" \
                             -e SECRET_KEY="jenkins-ci-secret" \
                             -e DEBUG="False" \
                             -e CORS_ALLOW_ALL_ORIGINS="False" \
-                            -e DB_HOST="$MYSQL_NAME" \
+                            -e DB_HOST="127.0.0.1" \
                             -e DB_PORT="3306" \
                             -e DB_NAME="$MYSQL_DB" \
                             -e DB_USER="$MYSQL_USER" \
@@ -211,13 +210,15 @@ pipeline {
                     run_django python manage.py check
                     run_django python manage.py makemigrations --check --dry-run
                     run_django python manage.py migrate --noinput
+
+                    echo "✅ Backend + MySQL OK"
                 '''
             }
+
             post {
                 always {
                     sh '''
                         docker rm -f "$MYSQL_NAME" >/dev/null 2>&1 || true
-                        docker network rm "$MYSQL_NETWORK" >/dev/null 2>&1 || true
                     '''
                 }
             }
@@ -348,9 +349,6 @@ pipeline {
                     webcup-frontend-test \
                     webcup-frontend-extract \
                     "$MYSQL_NAME" \
-                    >/dev/null 2>&1 || true
-
-                docker network rm "$MYSQL_NETWORK" \
                     >/dev/null 2>&1 || true
 
                 rm -rf \
