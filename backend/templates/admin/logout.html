@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div class="dashboard">
+  <div style="display:flex;justify-content:center;align-items:center;min-height:70vh;">
+    <div class="data-card" style="max-width:460px;width:100%;">
+      <div class="data-card-content" style="text-align:center;padding:2rem;">
+        <img src="{% static 'images/logo.svg' %}" alt="Logo" style="width:68px;height:68px;object-fit:contain;margin-bottom:1rem;">
+        <h1 class="page-title" style="font-size:1.8rem;">Déconnexion</h1>
+        <p class="page-subtitle" style="margin-bottom:1.5rem;">{% translate 'Are you sure you want to log out?' %}</p>
+        <form action="{% url 'admin:logout' %}" method="post" style="margin-bottom:.85rem;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary w-full">
+            <i class="fas fa-arrow-right-from-bracket"></i>
+            <span>{% translate 'Log out' %}</span>
+          </button>
+        </form>
+        <a href="{% url 'admin:index' %}" class="btn btn-outline w-full">
+          <i class="fas fa-arrow-left"></i>
+          <span>{% translate 'Return to administration' %}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

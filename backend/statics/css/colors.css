@@ -1,0 +1,147 @@
+:root {
+  color-scheme: light;
+
+  --accent-50: #f0f4ff;
+  --accent-100: #e0e9ff;
+  --accent-200: #c7d8ff;
+  --accent-300: #a4bfff;
+  --accent-400: #7b9eff;
+  --accent-500: #5b7eff;
+  --accent-600: #3b5bff;
+  --accent-700: #2a3fff;
+  --accent-800: #1f2bcc;
+  --accent-900: #0f1a99;
+
+  --slate-0: #ffffff;
+  --slate-50: #f9fafb;
+  --slate-100: #f3f4f6;
+  --slate-200: #e5e7eb;
+  --slate-300: #d1d5db;
+  --slate-400: #9ca3af;
+  --slate-500: #6b7280;
+  --slate-600: #4b5563;
+  --slate-700: #374151;
+  --slate-800: #1f2937;
+  --slate-900: #111827;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.07);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(59, 91, 255, 0.08);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.1);
+
+  --accent: #3b5bff;
+  --accent-hover: #2a3fff;
+  --accent-soft: rgba(59, 91, 255, 0.08);
+  --accent-gradient: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(59, 91, 255, 0.06) 0%, rgba(91, 126, 255, 0.04) 100%);
+  --accent-glow: 0 0 32px rgba(59, 91, 255, 0.15);
+
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-inverse: #ffffff;
+
+  --bg-main: #f9fafb;
+  --bg-elevated: #ffffff;
+  --card-bg: #ffffff;
+  --card-bg-soft: #f8fafc;
+  --input-bg: #ffffff;
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --sidebar-bg: #f3f4f6;
+  --table-head-bg: #f9fafb;
+  --table-row-alt: #f8fafc;
+  --hover-bg: rgba(59, 91, 255, 0.04);
+
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --border-sidebar: rgba(59, 91, 255, 0.08);
+  --ring: rgba(59, 91, 255, 0.15);
+
+  --link-color: #1f2937;
+  --link-hover: #111827;
+  --icon-color: #9ca3af;
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  --button-gradient: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
+  --button-shadow: 0 4px 16px rgba(59, 91, 255, 0.2);
+  --card-shadow: var(--shadow-sm);
+
+  --shape-color-1: rgba(59, 91, 255, 0.05);
+  --shape-color-2: rgba(91, 126, 255, 0.04);
+  --shape-color-3: rgba(123, 158, 255, 0.03);
+  --shape-color-4: rgba(59, 91, 255, 0.02);
+
+  --sidebar-text: #4b5563;
+  --sidebar-text-active: #ffffff;
+  --sidebar-icon: #9ca3af;
+  --sidebar-hover-bg: rgba(59, 91, 255, 0.06);
+  --sidebar-active-bg: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --accent: #7b9eff;
+  --accent-hover: #a4bfff;
+  --accent-soft: rgba(123, 158, 255, 0.12);
+  --accent-gradient: linear-gradient(135deg, #5b7eff 0%, #7b9eff 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(91, 126, 255, 0.15) 0%, rgba(123, 158, 255, 0.08) 100%);
+  --accent-glow: 0 0 40px rgba(123, 158, 255, 0.2);
+
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --text-inverse: #111827;
+
+  --bg-main: #0f1419;
+  --bg-elevated: #1a1f2e;
+  --card-bg: #111820;
+  --card-bg-soft: #0f1419;
+  --input-bg: #0a0e16;
+  --header-bg: rgba(15, 20, 25, 0.92);
+  --sidebar-bg: #0a0e16;
+  --table-head-bg: #1a1f2e;
+  --table-row-alt: #111820;
+  --hover-bg: rgba(91, 126, 255, 0.06);
+
+  --border: #1f2937;
+  --border-strong: #374151;
+  --border-sidebar: rgba(91, 126, 255, 0.1);
+  --ring: rgba(91, 126, 255, 0.2);
+
+  --link-color: #9ab0ff;
+  --link-hover: #c3d0ff;
+  --icon-color: #9ca3af;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --info: #60a5fa;
+
+  --button-gradient: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
+  --button-shadow: 0 4px 16px rgba(91, 126, 255, 0.28);
+  --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+
+  --shape-color-1: rgba(91, 126, 255, 0.09);
+  --shape-color-2: rgba(123, 158, 255, 0.07);
+  --shape-color-3: rgba(59, 130, 246, 0.06);
+  --shape-color-4: rgba(37, 99, 235, 0.05);
+
+  --sidebar-text: rgba(243, 244, 246, 0.75);
+  --sidebar-text-active: #ffffff;
+  --sidebar-icon: rgba(209, 213, 219, 0.7);
+  --sidebar-hover-bg: rgba(91, 126, 255, 0.08);
+  --sidebar-active-bg: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
+}

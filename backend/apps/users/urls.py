@@ -1,0 +1,41 @@
+from django.urls import path
+
+from .views import (
+    ChangeEmailConfirmView,
+    ChangeEmailRequestView,
+    ChangePasswordView,
+    DeleteAccountView,
+    GoogleLoginView,
+    GoogleRedirectView,
+    LoginView,
+    LogoutView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
+    ProfileView,
+    RefreshView,
+    RegisterView,
+    ResendVerificationView,
+    SetPasswordView,
+    VerifyEmailView,
+)
+
+app_name = "users"
+
+urlpatterns = [
+    path("auth/register/", RegisterView.as_view(), name="register"),
+    path("auth/login/", LoginView.as_view(), name="login"),
+    path("auth/google/redirect/", GoogleRedirectView.as_view(), name="google-redirect"),
+    path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
+    path("auth/refresh/", RefreshView.as_view(), name="refresh"),
+    path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/verify-email/", VerifyEmailView.as_view(), name="verify-email"),
+    path("auth/resend-verification/", ResendVerificationView.as_view(), name="resend-verification"),
+    path("auth/password-reset/", PasswordResetRequestView.as_view(), name="password-reset"),
+    path("auth/password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
+    path("account/profile/", ProfileView.as_view(), name="profile"),
+    path("account/change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path("account/set-password/", SetPasswordView.as_view(), name="set-password"),
+    path("account/change-email/", ChangeEmailRequestView.as_view(), name="change-email"),
+    path("account/change-email/confirm/", ChangeEmailConfirmView.as_view(), name="change-email-confirm"),
+    path("account/", DeleteAccountView.as_view(), name="delete-account"),
+]

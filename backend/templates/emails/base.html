@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}{{ site_name }}{% endblock %}</title>
+</head>
+<body style="margin:0;background:#f4f6fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6fb;padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(15,23,42,.08);">
+        <tr><td style="height:5px;background:linear-gradient(90deg,#5b7eff,#7c3aed);"></td></tr>
+        <tr><td style="padding:28px 34px 18px;text-align:center;border-bottom:1px solid #eef2f7;">
+          <div style="display:inline-block;width:48px;height:48px;line-height:48px;border-radius:14px;background:#eef2ff;color:#4f46e5;font-size:24px;font-weight:800;">A</div>
+          <div style="margin-top:12px;font-size:21px;font-weight:800;color:#111827;">{{ site_name }}</div>
+          <div style="margin-top:5px;font-size:13px;color:#94a3b8;">Administration</div>
+        </td></tr>
+        <tr><td style="padding:32px 34px;">
+          {% block content %}{% endblock %}
+        </td></tr>
+        <tr><td style="padding:20px 34px;background:#f8fafc;border-top:1px solid #eef2f7;text-align:center;color:#94a3b8;font-size:12px;line-height:1.6;">
+          Besoin d'aide ? <a href="mailto:{{ support_email }}" style="color:#5b7eff;text-decoration:none;">{{ support_email }}</a><br>
+          © {{ current_year }} {{ site_name }}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

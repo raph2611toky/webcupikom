@@ -1,0 +1,107 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrajs %}
+<script src="{% static 'js/admin_filters.js' %}" defer></script>
+<script src="{% static 'js/admin_action.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="dashboard">
+  <div class="page-header">
+    <h1 class="page-title">{{ cl.opts.verbose_name_plural|capfirst }}</h1>
+    <p class="page-subtitle">Liste moderne, lisible et bien organisée.</p>
+  </div>
+
+  {% block object-tools %}
+  <div class="change-list-toolbar">
+    <div class="search-filters-container">
+      {% block search %}{% search_form cl %}{% endblock %}
+    </div>
+
+    <ul class="object-tools flex flex-wrap gap-2">
+      {% block object-tools-items %}{% change_list_object_tools %}{% endblock %}
+    </ul>
+  </div>
+  {% endblock %}
+
+  {% if cl.formset and cl.formset.errors %}
+    <ul class="messagelist">
+      <li class="error">{% translate "Please correct the errors below." %}</li>
+    </ul>
+    {{ cl.formset.non_form_errors }}
+  {% endif %}
+
+  <section class="data-card">
+    <div class="data-card-header">
+      <div>
+        <h2 class="data-card-title">Liste des {{ cl.opts.verbose_name_plural }}</h2>
+        <p class="data-card-subtitle">{{ cl.result_count }} élément{{ cl.result_count|pluralize }}</p>
+      </div>
+
+      <div class="data-card-actions flex flex-wrap gap-2">
+        {% if cl.has_filters %}
+        <button class="btn btn-outline" type="button" id="toggle-filters">
+          <i class="fas fa-filter"></i>
+          <span>Filtres</span>
+        </button>
+        {% endif %}
+
+        {% if cl.date_hierarchy %}
+        <button class="btn btn-outline" type="button" id="toggle-date-hierarchy">
+          <i class="fas fa-calendar-days"></i>
+          <span>Date</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if cl.has_filters %}
+    <div id="filters-container" class="p-3" style="display:none; border-bottom:1px solid var(--border);">
+      <div class="form-row-modern">
+        {% for spec in cl.filter_specs %}
+        <div class="fieldset-card">
+          <h3 class="fieldset-title">{{ spec.title }}</h3>
+          {% admin_list_filter cl spec %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if cl.date_hierarchy %}
+    <div id="date-hierarchy-container" class="p-3" style="display:none; border-bottom:1px solid var(--border);">
+      <div class="fieldset-card">
+        {% date_hierarchy cl %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="data-card-content">
+      {% if action_form and actions_on_top and cl.show_admin_actions %}
+      <div class="actions-container mb-4 p-3">
+        {% admin_actions %}
+      </div>
+      {% endif %}
+
+      {% block result_list %}
+      <div class="table-container">
+        {% result_list cl %}
+      </div>
+      {% endblock %}
+
+      {% if action_form and actions_on_bottom and cl.show_admin_actions %}
+      <div class="actions-container mt-4 p-3">
+        {% admin_actions %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% block pagination %}
+    <div class="p-3" style="border-top:1px solid var(--border);">
+      {% pagination cl %}
+    </div>
+    {% endblock %}
+  </section>
+</div>
+{% endblock %}

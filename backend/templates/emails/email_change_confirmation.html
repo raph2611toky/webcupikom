@@ -1,0 +1,9 @@
+{% extends "emails/base.html" %}
+{% block title %}Confirmer la nouvelle adresse email{% endblock %}
+{% block content %}
+  <p style="margin:0 0 12px;color:#64748b;font-size:15px;">Bonjour {{ display_name }},</p>
+  <h1 style="margin:0 0 14px;font-size:26px;color:#111827;">Confirmez votre nouvelle adresse</h1>
+  <p style="margin:0 0 24px;color:#64748b;line-height:1.7;">Cette adresse a été demandée comme nouvel email du compte. Confirmez-la pour terminer le changement.</p>
+  <p style="margin:26px 0;text-align:center;"><a href="{{ confirmation_url }}" style="display:inline-block;padding:14px 22px;background:#5b7eff;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Confirmer {{ new_email }}</a></p>
+  <p style="margin:24px 0 0;color:#94a3b8;font-size:12px;">Ce lien expire après 24 heures.</p>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main" class="dashboard">
+  <div class="page-header">
+    <h1 class="page-title">{{ title|default:'Tableau de bord' }}</h1>
+    <p class="page-subtitle">Une vue moderne, lisible et cohérente en light comme en dark mode.</p>
+  </div>
+
+  {% for app in app_list %}
+  <section class="data-card">
+    <div class="data-card-header">
+      <div>
+        <h2 class="data-card-title">{{ app.verbose_name|default:app.name }}</h2>
+        <p class="data-card-subtitle">Accès rapide aux listes et formulaires d'ajout.</p>
+      </div>
+    </div>
+    <div class="data-card-content">
+      <div class="models-grid">
+        {% for model in app.models %}
+        <article class="model-card">
+          <div class="model-card-top">
+            <div class="model-card-icon">
+              <i class="fas fa-database"></i>
+            </div>
+            <div>
+              <h3 class="model-card-title">{{ model.name }}</h3>
+              <p class="model-card-desc">Liste, ajout et gestion avancée</p>
+            </div>
+          </div>
+          <div class="model-card-actions">
+            {% if model.admin_url %}
+            <a href="{{ model.admin_url }}" class="action-pill action-pill-view">
+              <i class="fas fa-table"></i><span>Ouvrir</span>
+            </a>
+            {% endif %}
+            {% if model.add_url %}
+            <a href="{{ model.add_url }}" class="action-pill action-pill-add">
+              <i class="fas fa-plus"></i><span>Ajouter</span>
+            </a>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}
