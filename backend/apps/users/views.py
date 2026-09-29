@@ -3,8 +3,6 @@ import logging
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.parsers import MultiPartParser
@@ -17,28 +15,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .serializers import (
-    AuthResponseSerializer,
-    ChangeEmailConfirmResponseSerializer,
     ChangeEmailConfirmSerializer,
     ChangeEmailRequestSerializer,
     ChangePasswordSerializer,
     DeleteAccountSerializer,
     EmailOnlySerializer,
-    GoogleAuthResponseSerializer,
     GoogleAuthSerializer,
-    GoogleRedirectResponseSerializer,
     LoginSerializer,
-    MessageResponseSerializer,
     PasswordResetConfirmSerializer,
     ProfileUpdateSerializer,
     RefreshRequestSerializer,
-    RefreshResponseSerializer,
-    RegisterResponseSerializer,
     RegisterSerializer,
     SetPasswordSerializer,
     UserSerializer,
-    ValidationErrorResponseSerializer,
-    VerifyEmailResponseSerializer,
     VerifyEmailSerializer,
 )
 from .services.account_emails import (
@@ -59,49 +48,6 @@ from .services.google_identity import (
 )
 
 logger = logging.getLogger(__name__)
-
-PUBLIC_SECURITY = []
-JWT_SECURITY = [{"Bearer": []}]
-ERROR_RESPONSE = ValidationErrorResponseSerializer()
-
-PROFILE_MULTIPART_PARAMETERS = [
-    openapi.Parameter(
-        "first_name",
-        openapi.IN_FORM,
-        description="Prénom",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
-    openapi.Parameter(
-        "last_name",
-        openapi.IN_FORM,
-        description="Nom",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
-    openapi.Parameter(
-        "phone_number",
-        openapi.IN_FORM,
-        description="Numéro de téléphone",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
-    openapi.Parameter(
-        "avatar",
-        openapi.IN_FORM,
-        description="Photo de profil",
-        type=openapi.TYPE_FILE,
-        required=False,
-    ),
-    openapi.Parameter(
-        "locale",
-        openapi.IN_FORM,
-        description="Locale utilisateur, par exemple fr ou fr-FR",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
-]
-
 
 def token_pair(user):
     refresh = RefreshToken.for_user(user)
@@ -124,19 +70,6 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_register",
-        operation_summary="Créer un compte",
-        operation_description="Crée un compte local et envoie un email de vérification.",
-        security=PUBLIC_SECURITY,
-        request_body=RegisterSerializer,
-        responses={
-            201: openapi.Response("Compte créé", RegisterResponseSerializer()),
-            400: openapi.Response("Données invalides", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             with transaction.atomic():
@@ -161,18 +94,6 @@ class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_verify_email",
-        operation_summary="Vérifier une adresse email",
-        security=PUBLIC_SECURITY,
-        request_body=VerifyEmailSerializer,
-        responses={
-            200: openapi.Response("Email vérifié", VerifyEmailResponseSerializer()),
-            400: openapi.Response("Lien invalide ou expiré", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             with transaction.atomic():
@@ -200,18 +121,6 @@ class ResendVerificationView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_resend_verification",
-        operation_summary="Renvoyer l'email de vérification",
-        security=PUBLIC_SECURITY,
-        request_body=EmailOnlySerializer,
-        responses={
-            200: openapi.Response("Réponse neutre", MessageResponseSerializer()),
-            400: openapi.Response("Email invalide", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = EmailOnlySerializer(data=request.data)
@@ -238,18 +147,6 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_login",
-        operation_summary="Connexion email / mot de passe",
-        security=PUBLIC_SECURITY,
-        request_body=LoginSerializer,
-        responses={
-            200: openapi.Response("Connexion réussie", AuthResponseSerializer()),
-            400: openapi.Response("Identifiants invalides ou email non vérifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = LoginSerializer(data=request.data, context={"request": request})
@@ -267,22 +164,6 @@ class GoogleRedirectView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification Google"],
-        operation_id="auth_google_redirect",
-        operation_summary="Obtenir l'URL de connexion Google",
-        operation_description=(
-            "Construit l'URL OAuth Google à ouvrir côté frontend. Google redirige ensuite vers "
-            "GOOGLE_REDIRECT_URI avec les paramètres code et state. Le frontend renvoie ces deux "
-            "valeurs à POST /api/auth/google/."
-        ),
-        security=PUBLIC_SECURITY,
-        responses={
-            200: openapi.Response("URL OAuth Google", GoogleRedirectResponseSerializer()),
-            400: openapi.Response("Configuration Google incomplète", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def get(self, request):
         try:
             authorization_url, state_value = build_google_authorization_url()
@@ -305,23 +186,6 @@ class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification Google"],
-        operation_id="auth_google_login",
-        operation_summary="Connexion Google",
-        operation_description=(
-            "Deux modes compatibles : (1) envoyer credential depuis Google Identity Services ; "
-            "ou (2) envoyer code + state obtenus après redirection OAuth."
-        ),
-        security=PUBLIC_SECURITY,
-        request_body=GoogleAuthSerializer,
-        responses={
-            200: openapi.Response("Connexion Google réussie", GoogleAuthResponseSerializer()),
-            400: openapi.Response("Jeton/code/state invalide", ERROR_RESPONSE),
-            409: openapi.Response("Conflit d'identité Google", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = GoogleAuthSerializer(data=request.data)
@@ -411,19 +275,6 @@ class GoogleLoginView(APIView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_logout",
-        operation_summary="Déconnexion et révocation du refresh token",
-        security=JWT_SECURITY,
-        request_body=RefreshRequestSerializer,
-        responses={
-            204: openapi.Response("Déconnexion réussie, aucune réponse JSON"),
-            400: openapi.Response("Refresh token manquant ou invalide", ERROR_RESPONSE),
-            401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = RefreshRequestSerializer(data=request.data)
@@ -446,19 +297,6 @@ class RefreshView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_refresh",
-        operation_summary="Rafraîchir le JWT",
-        security=PUBLIC_SECURITY,
-        request_body=RefreshRequestSerializer,
-        responses={
-            200: openapi.Response("Nouveau token d'accès", RefreshResponseSerializer()),
-            400: openapi.Response("Refresh token requis", ERROR_RESPONSE),
-            401: openapi.Response("Refresh token invalide ou expiré", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = TokenRefreshSerializer(data=request.data)
@@ -477,18 +315,6 @@ class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_password_reset_request",
-        operation_summary="Demander une réinitialisation du mot de passe",
-        security=PUBLIC_SECURITY,
-        request_body=EmailOnlySerializer,
-        responses={
-            200: openapi.Response("Réponse neutre", MessageResponseSerializer()),
-            400: openapi.Response("Email invalide", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = EmailOnlySerializer(data=request.data)
@@ -515,18 +341,6 @@ class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Authentification"],
-        operation_id="auth_password_reset_confirm",
-        operation_summary="Confirmer la réinitialisation du mot de passe",
-        security=PUBLIC_SECURITY,
-        request_body=PasswordResetConfirmSerializer,
-        responses={
-            200: openapi.Response("Mot de passe réinitialisé", MessageResponseSerializer()),
-            400: openapi.Response("Lien ou mot de passe invalide", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             with transaction.atomic():
@@ -553,17 +367,6 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
-    @swagger_auto_schema(
-        tags=["Compte"],
-        operation_id="account_profile_get",
-        operation_summary="Récupérer le profil connecté",
-        security=JWT_SECURITY,
-        responses={
-            200: openapi.Response("Profil utilisateur", UserSerializer()),
-            401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def get(self, request):
         try:
             return Response(user_payload(request.user, request))
@@ -572,23 +375,6 @@ class ProfileView(APIView):
         except Exception as exc:
             return server_error(exc, self.__class__.__name__)
 
-    @swagger_auto_schema(
-        tags=["Compte"],
-        operation_id="account_profile_update",
-        operation_summary="Modifier le profil connecté",
-        operation_description=(
-            "Requête exclusivement multipart/form-data afin de supporter l'avatar. "
-            "Aucun body JSON n'est déclaré dans Swagger."
-        ),
-        security=JWT_SECURITY,
-        manual_parameters=PROFILE_MULTIPART_PARAMETERS,
-        responses={
-            200: openapi.Response("Profil mis à jour", UserSerializer()),
-            400: openapi.Response("Données invalides", ERROR_RESPONSE),
-            401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def patch(self, request):
         try:
             serializer = ProfileUpdateSerializer(
@@ -609,19 +395,6 @@ class ProfileView(APIView):
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        tags=["Compte"],
-        operation_id="account_change_password",
-        operation_summary="Changer le mot de passe",
-        security=JWT_SECURITY,
-        request_body=ChangePasswordSerializer,
-        responses={
-            200: openapi.Response("Mot de passe modifié", MessageResponseSerializer()),
-            400: openapi.Response("Mot de passe invalide", ERROR_RESPONSE),
-            401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
@@ -646,19 +419,6 @@ class ChangePasswordView(APIView):
 class SetPasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        tags=["Compte"],
-        operation_id="account_set_password",
-        operation_summary="Définir un mot de passe local",
-        security=JWT_SECURITY,
-        request_body=SetPasswordSerializer,
-        responses={
-            200: openapi.Response("Mot de passe configuré", MessageResponseSerializer()),
-            400: openapi.Response("Mot de passe invalide", ERROR_RESPONSE),
-            401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = SetPasswordSerializer(data=request.data, context={"request": request})
@@ -681,19 +441,6 @@ class SetPasswordView(APIView):
 class ChangeEmailRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        tags=["Compte"],
-        operation_id="account_change_email_request",
-        operation_summary="Demander un changement d'adresse email",
-        security=JWT_SECURITY,
-        request_body=ChangeEmailRequestSerializer,
-        responses={
-            200: openapi.Response("Email de confirmation envoyé", MessageResponseSerializer()),
-            400: openapi.Response("Adresse ou mot de passe invalide", ERROR_RESPONSE),
-            401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             serializer = ChangeEmailRequestSerializer(data=request.data, context={"request": request})
@@ -715,18 +462,6 @@ class ChangeEmailConfirmView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(
-        tags=["Compte"],
-        operation_id="account_change_email_confirm",
-        operation_summary="Confirmer le changement d'adresse email",
-        security=PUBLIC_SECURITY,
-        request_body=ChangeEmailConfirmSerializer,
-        responses={
-            200: openapi.Response("Adresse email modifiée", ChangeEmailConfirmResponseSerializer()),
-            400: openapi.Response("Token invalide ou expiré", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def post(self, request):
         try:
             with transaction.atomic():
@@ -751,19 +486,6 @@ class ChangeEmailConfirmView(APIView):
 class DeleteAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        tags=["Compte"],
-        operation_id="account_delete",
-        operation_summary="Supprimer définitivement le compte",
-        security=JWT_SECURITY,
-        request_body=DeleteAccountSerializer,
-        responses={
-            204: openapi.Response("Compte supprimé, aucune réponse JSON"),
-            400: openapi.Response("Confirmation ou mot de passe invalide", ERROR_RESPONSE),
-            401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-            500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-        },
-    )
     def delete(self, request):
         try:
             with transaction.atomic():

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import (
+from .swagger import (
     ChangeEmailConfirmView,
     ChangeEmailRequestView,
     ChangePasswordView,
