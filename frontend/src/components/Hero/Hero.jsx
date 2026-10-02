@@ -226,11 +226,11 @@ export default function Hero() {
           <a href="#contact">Contact</a>
         </nav>
 
-        <a className="kamo-logo" href="#home" aria-label="Kamo, accueil">
+        <a className="kamo-logo" href="/" aria-label="Kamo, accueil">
           Kam<span>o</span>
         </a>
 
-        <a className="kamo-login" href="#login">
+        <a className="kamo-login" href="/login">
           Se connecter
         </a>
       </motion.header>
@@ -367,7 +367,7 @@ export default function Hero() {
 
       <motion.a
         className="start-button"
-        href="#start"
+        href="/inscription"
         initial={reduceMotion ? false : { opacity: 0, y: 18, rotate: -2.55 }}
         animate={{ opacity: 1, y: 0, rotate: -2.55 }}
         transition={{ duration: 0.7, delay: reduceMotion ? 0 : 3.75, ease: EASE }}

@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import "./Features.css";
 
-import heroTravel from "../../assets/hero/hero-travel.png";
+import parisTemplateThumb from "../../assets/hero/paris-template-thumb.png";
 import avatarOne from "../../assets/hero/hero-1.png";
 import avatarTwo from "../../assets/hero/hero-2.png";
 import avatarThree from "../../assets/hero/hero-3.png";
@@ -11,11 +11,14 @@ const EASE = [0.16, 1, 0.3, 1];
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true">
-      <rect x="8" y="11" width="32" height="29" rx="5" fill="none" stroke="currentColor" strokeWidth="4" />
-      <path d="M15 7v9M33 7v9M8 20h32" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-      <circle cx="17" cy="28" r="2.3" fill="currentColor" />
-      <circle cx="25" cy="28" r="2.3" fill="currentColor" />
-      <circle cx="33" cy="28" r="2.3" fill="currentColor" />
+      <path d="M12 10h24a5 5 0 0 1 5 5v21a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5V15a5 5 0 0 1 5-5Z" fill="currentColor" />
+      <path d="M7 19h34v4H7z" fill="#fff" opacity=".96" />
+      <path d="M16 7v8M32 7v8" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" />
+      <rect x="13" y="26" width="6" height="5" rx="1.4" fill="#fff" />
+      <rect x="21" y="26" width="6" height="5" rx="1.4" fill="#fff" />
+      <rect x="29" y="26" width="6" height="5" rx="1.4" fill="#fff" />
+      <rect x="13" y="33" width="6" height="4" rx="1.3" fill="#fff" />
+      <rect x="21" y="33" width="6" height="4" rx="1.3" fill="#fff" />
     </svg>
   );
 }
@@ -34,9 +37,20 @@ function PlaneIcon() {
 function MailIcon() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true">
-      <rect x="6" y="10" width="36" height="28" rx="5" fill="currentColor" opacity=".12" />
-      <path d="M8 14l16 13 16-13" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round" />
-      <rect x="8" y="12" width="32" height="24" rx="4" fill="none" stroke="currentColor" strokeWidth="3.5" />
+      <rect x="5" y="10" width="38" height="28" rx="6" fill="currentColor" />
+      <path d="M9 15.5 24 27l15-11.5" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" opacity=".96" />
+    </svg>
+  );
+}
+
+function GmailIcon() {
+  return (
+    <svg viewBox="0 0 48 36" aria-hidden="true">
+      <path d="M5 31V9.5L10.5 5 24 15.2 37.5 5 43 9.5V31a3 3 0 0 1-3 3h-5V14.8L24 23.1 13 14.8V34H8a3 3 0 0 1-3-3Z" fill="#4285F4" />
+      <path d="M5 9.5 10.5 5 24 15.2v7.9L5 9.5Z" fill="#EA4335" />
+      <path d="m43 9.5-5.5-4.5L24 15.2v7.9L43 9.5Z" fill="#FBBC04" />
+      <path d="M5 31V9.5l8 5.7V34H8a3 3 0 0 1-3-3Z" fill="#34A853" />
+      <path d="M43 31V9.5l-8 5.7V34h5a3 3 0 0 0 3-3Z" fill="#C5221F" />
     </svg>
   );
 }
@@ -75,24 +89,14 @@ function FeatureCard({ type, icon, title, description, children, delay = 0 }) {
   return (
     <motion.article
       className={`feature-card feature-card--${type}`}
-      initial={reduceMotion ? false : { opacity: 0, y: 90, scale: 0.9, rotate: type === "calendar" ? -18 : type === "mail" ? 15 : 0 }}
+      initial={reduceMotion ? false : { opacity: 0, rotate: type === "calendar" ? -10.5 : type === "mail" ? 9.2 : 0 }}
       whileInView={{
         opacity: 1,
-        y: 0,
-        scale: 1,
         rotate: type === "calendar" ? -10.5 : type === "mail" ? 9.2 : 0,
       }}
       viewport={{ once: true, amount: 0.26 }}
-      transition={{ duration: 0.95, delay, ease: EASE }}
-      whileHover={
-        reduceMotion
-          ? undefined
-          : {
-              y: -12,
-              rotate: type === "calendar" ? -8.5 : type === "mail" ? 7.2 : -1,
-              transition: { duration: 0.35, ease: EASE },
-            }
-      }
+      transition={{ duration: 0.55, delay, ease: EASE }}
+      whileHover={undefined}
     >
       <div className="feature-card__icon">{icon}</div>
       <h3>{title}</h3>
@@ -150,7 +154,12 @@ export default function Features() {
       >
         <div className="features-stage__intro">
           <span>VOTRE QUOTIDIEN, EN PILOTE AUTOMATIQUE</span>
-          <h3>Des agents IA<br />pour chaque<br />tâche<br />importante</h3>
+          <h3 className="features-stage__title">
+            <span>Des agents IA</span>
+            <span>pour chaque</span>
+            <span>tâche</span>
+            <span>importante</span>
+          </h3>
           <i aria-hidden="true" />
         </div>
 
@@ -169,13 +178,12 @@ export default function Features() {
             type="calendar"
             icon={<CalendarIcon />}
             title="Planifier ma semaine"
-            description="Organise vos rendez-vous, réunions et tâches automatiquement."
+            description={<>Organise vos rendez-vous,<br />réunions et tâches<br />automatiquement.</>}
             delay={0.18}
           >
             <div className="calendar-preview">
               <div><strong>09:00</strong><span className="calendar-preview__dot" />Réunion équipe</div>
               <div><strong>11:00</strong><span className="calendar-preview__dot" />Focus travail</div>
-              <div><strong>15:30</strong><span className="calendar-preview__dot" />Rappel important</div>
             </div>
           </FeatureCard>
 
@@ -183,11 +191,11 @@ export default function Features() {
             type="travel"
             icon={<PlaneIcon />}
             title="Réserver mes voyages"
-            description="Trouvez et réservez vos vols, hôtels et déplacements en quelques secondes."
+            description={<>Trouvez et réservez vos vols,<br />hôtels et déplacements en<br />quelques secondes.</>}
             delay={0.31}
           >
             <div className="travel-preview">
-              <img src={heroTravel} alt="Paris, France" />
+              <img src={parisTemplateThumb} alt="Paris, France" />
               <div>
                 <strong>Paris, France</strong>
                 <span>12 – 15 Oct.</span>
@@ -201,11 +209,11 @@ export default function Features() {
             type="mail"
             icon={<MailIcon />}
             title="Répondre à mes e-mails"
-            description="Analyse, rédige et répond à vos e-mails dans votre ton."
+            description={<>Analyse, rédige et répond<br />à vos e-mails dans votre ton.</>}
             delay={0.44}
           >
             <div className="mail-preview">
-              <span className="gmail-mark" aria-hidden="true">M</span>
+              <span className="gmail-mark" aria-hidden="true"><GmailIcon /></span>
               <div>
                 <strong>Re: Proposition de partenariat</strong>
                 <span />
@@ -215,6 +223,8 @@ export default function Features() {
             </div>
           </FeatureCard>
         </div>
+
+        <div className="features-stage__floor" aria-hidden="true" />
 
         <motion.div
           className="features-stats"
