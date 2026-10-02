@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>404 · IKOM</title>
+  <link rel="stylesheet" href="{% static 'css/404.css' %}">
+</head>
+<body>
+  <main class="error-page">
+    <section class="error-card" aria-labelledby="error-title">
+      <div class="terminal-mark" aria-hidden="true">&gt;_</div>
+      <h1 id="error-title" class="glitch" data-text="404">404</h1>
+      <p>Page introuvable</p>
+      <button type="button" onclick="history.back()">Retour</button>
+    </section>
+  </main>
+</body>
+</html>

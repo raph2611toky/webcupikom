@@ -24,6 +24,8 @@ ALLOWED_HOSTS = env_list(
     "api.ikomholala.madagascar.webcup.hodi.cloud,127.0.0.1,localhost",
 )
 
+handler404 = "config.views.custom_404"
+
 LOCAL_APPS = ["apps.users.apps.UsersConfig"]
 THIRD_APPS = [
     "corsheaders",

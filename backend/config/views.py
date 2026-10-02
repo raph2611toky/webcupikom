@@ -76,3 +76,8 @@ def swagger_password_protect(view_func):
         return render(request, "swagger_login.html")
 
     return wrapper
+
+
+@never_cache
+def custom_404(request, exception):
+    return render(request, "404.html", status=404)
