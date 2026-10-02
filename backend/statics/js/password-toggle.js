@@ -1,29 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Script password-toggle.js chargé")
+  const toggle = document.getElementById("toggle-password");
+  const input = document.getElementById("id_password");
+  if (!toggle || !input) return;
 
-  const togglePassword = document.getElementById("toggle-password")
-  const passwordInput = document.getElementById("id_password")
+  const eye = toggle.querySelector(".eye-icon");
+  const eyeOff = toggle.querySelector(".eye-off-icon");
 
-  if (togglePassword && passwordInput) {
-    const eyeIcon = togglePassword.querySelector(".eye-icon")
-    const eyeOffIcon = togglePassword.querySelector(".eye-off-icon")
-
-    togglePassword.addEventListener("click", (e) => {
-      e.preventDefault()
-      console.log("Toggle password clicked")
-
-      const type = passwordInput.getAttribute("type") === "password" ? "text" : "password"
-      passwordInput.setAttribute("type", type)
-
-      if (type === "text") {
-        eyeIcon.style.display = "none"
-        eyeOffIcon.style.display = "block"
-      } else {
-        eyeIcon.style.display = "block"
-        eyeOffIcon.style.display = "none"
-      }
-    })
-  } else {
-    console.error("Éléments de toggle mot de passe non trouvés")
-  }
-})
+  toggle.addEventListener("click", (event) => {
+    event.preventDefault();
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    if (eye) eye.style.display = show ? "none" : "block";
+    if (eyeOff) eyeOff.style.display = show ? "block" : "none";
+    toggle.setAttribute("aria-label", show ? "Masquer le mot de passe" : "Afficher le mot de passe");
+  });
+});

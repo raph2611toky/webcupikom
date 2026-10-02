@@ -2,106 +2,137 @@
 <!DOCTYPE html>
 {% get_current_language as LANGUAGE_CODE %}
 {% get_current_language_bidi as LANGUAGE_BIDI %}
-<html lang="{{ LANGUAGE_CODE|default:'en-us' }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr,auto' }}">
+<html lang="{{ LANGUAGE_CODE|default:'fr-fr' }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr,auto' }}">
 <head>
   <title>{% block title %}{% endblock %}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="NONE,NOARCHIVE">
+  <meta name="theme-color" content="#6d28ff">
+
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('admin-theme');
+        var theme = saved === 'dark' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 
   <link rel="stylesheet" href="{% static 'admin/css/base.css' %}">
-  {% if LANGUAGE_BIDI %}
-  <link rel="stylesheet" href="{% static 'admin/css/rtl.css' %}">
-  {% endif %}
+  {% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% static 'admin/css/rtl.css' %}">{% endif %}
   <link rel="stylesheet" href="{% static 'admin/css/responsive.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/django-admin-theme.css' %}">
-  <script src="{% static 'js/theme-toggle.js' %}" defer></script>
 
+  <style>
+    /* Critical fallback: keeps the admin shell usable even if a static stylesheet is stale/missing. */
+    #container.admin-shell{min-height:100vh;display:flex;width:100%}
+    .admin-sidebar{width:282px;flex:0 0 282px}
+    .admin-main{min-width:0;flex:1}
+    .sidebar-brand{display:flex;align-items:center;gap:12px}
+    .sidebar-brand__logo{width:43px!important;height:43px!important;flex:0 0 43px!important;overflow:hidden;border-radius:13px}
+    .sidebar-brand__logo>img{display:block!important;width:43px!important;height:43px!important;max-width:43px!important;max-height:43px!important}
+    .topbar-brand__logo{width:34px!important;height:34px!important;flex:0 0 34px!important;overflow:hidden;border-radius:11px}
+    .topbar-brand__logo>img{display:block!important;width:34px!important;height:34px!important;max-width:34px!important;max-height:34px!important}
+    @media(max-width:992px){.admin-sidebar{position:fixed}.admin-main{width:100%;margin-left:0}}
+  </style>
+
+  {# Django page-specific styles must load first; our theme wins last. #}
   {% block extrastyle %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'css/admin-kamo-v2-colors.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin-kamo-v2.css' %}">
+
   {% block extrahead %}{% endblock %}
+  <script src="{% static 'js/admin-kamo-v2-theme.js' %}" defer></script>
 </head>
 <body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}" data-admin-utc-offset="{% now 'Z' %}">
 <a href="#content-start" class="skip-to-content-link">{% translate 'Skip to main content' %}</a>
 
-<div id="container">
+<div id="container" class="admin-shell">
   {% if not is_popup %}
-  <aside class="sidebar" id="admin-sidebar">
-    <div class="sidebar-header">
-      <div class="logo-pulse">
-        <img src="{% static 'images/logo.svg' %}" alt="Logo" class="site-logo">
-        <h1 class="gradient-text">Administration</h1>
+  <aside class="admin-sidebar" id="admin-sidebar" aria-label="Navigation d'administration">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand__logo">
+        <img src="{% static 'images/logo.svg' %}" alt="" width="43" height="43">
+      </div>
+      <div class="sidebar-brand__copy">
+        <span class="sidebar-brand__eyebrow">Espace privé</span>
+        <p class="sidebar-brand__title">Admin<span>istration</span></p>
       </div>
     </div>
 
-    <div class="sidebar-content">
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Navigation</div>
-
-        <a href="{% url 'admin:index' %}" class="menu-item {% if request.path == '/admin/' %}active{% endif %}">
-          <i class="fas fa-chart-pie"></i>
+    <div class="sidebar-scroll">
+      <div class="sidebar-section-label">Navigation</div>
+      <nav class="admin-nav" id="admin-nav">
+        <a href="{% url 'admin:index' %}" class="admin-nav__item {% if request.path == '/admin/' %}is-active{% endif %}">
+          <i class="fa-solid fa-table-cells-large"></i>
           <span>Tableau de bord</span>
         </a>
 
         {% for app in available_apps %}
-        <a href="{% url 'admin:app_list' app_label=app.app_label %}" class="menu-item {% if app.app_label in request.path %}active{% endif %}">
-          <i class="fas fa-layer-group"></i>
+        <a href="{% url 'admin:app_list' app_label=app.app_label %}" class="admin-nav__item {% if '/'|add:app.app_label|add:'/' in request.path %}is-active{% endif %}" data-nav-search="{{ app.verbose_name|default:app.name|lower }}">
+          <i class="fa-solid fa-layer-group"></i>
           <span>{{ app.verbose_name|default:app.name }}</span>
         </a>
         {% endfor %}
 
-        <a href="{% url 'admin:password_change' %}" class="menu-item {% if 'password_change' in request.path %}active{% endif %}">
-          <i class="fas fa-key"></i>
-          <span>Modifier mot de passe</span>
+        <div class="admin-nav__separator"></div>
+
+        <a href="{% url 'admin:password_change' %}" class="admin-nav__item {% if 'password_change' in request.path %}is-active{% endif %}">
+          <i class="fa-solid fa-key"></i>
+          <span>Modifier le mot de passe</span>
         </a>
 
         <form action="{% url 'admin:logout' %}" method="post">
           {% csrf_token %}
-          <button type="submit" class="menu-item-button">
-            <i class="fas fa-arrow-right-from-bracket"></i>
+          <button type="submit" class="admin-nav__logout">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
             <span>Déconnexion</span>
           </button>
         </form>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer__pill">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Administration sécurisée</span>
       </div>
     </div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
   {% endif %}
 
-  <div class="main-content">
+  <div class="admin-main">
     {% if not is_popup %}
-    <header class="header glassmorphism">
-      <div class="flex items-center gap-3">
-        <button class="mobile-menu-btn" type="button" id="mobile-menu-btn" aria-label="Menu">
-          <i class="fas fa-bars"></i>
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" type="button" id="mobile-menu-btn" aria-label="Ouvrir le menu" aria-controls="admin-sidebar" aria-expanded="false">
+          <i class="fa-solid fa-bars"></i>
         </button>
         {% block branding %}{% endblock %}
       </div>
 
-      <div class="flex items-center gap-4">
-        <div class="search-container">
-          <i class="fas fa-search search-icon"></i>
-          <input class="search-input" type="text" placeholder="Rechercher...">
-        </div>
+      <div class="topbar-right">
+        <label class="admin-global-search" for="admin-global-search" title="Filtrer la navigation ou rechercher dans la liste courante">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="admin-global-search" type="search" autocomplete="off" placeholder="Rechercher dans l’administration…">
+        </label>
 
-        <div class="flex items-center gap-2">
-          <span class="text-sm" style="color:var(--text-muted); font-size:.8rem;">Thème</span>
-          <label class="switch">
-            <input type="checkbox" id="theme-toggle">
-            <span class="slider">
-              <i class="fas fa-moon moon"></i>
-              <i class="fas fa-sun sun"></i>
-            </span>
-          </label>
-        </div>
+        <button class="theme-toggle-btn" id="theme-toggle" type="button" aria-label="Changer de thème" title="Changer de thème">
+          <i class="fa-regular fa-moon"></i>
+          <i class="fa-regular fa-sun"></i>
+        </button>
 
         {% if user.is_authenticated %}
-        <div class="flex items-center gap-2">
-          <div class="tooltip">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                 style="background:var(--accent-gradient); color:#fff; font-weight:800; font-family:'Outfit',sans-serif; font-size:.95rem;">
-              {{ user.email.0|upper }}
-            </div>
-            <span class="tooltip-text">{{ user.get_username }}</span>
+        <div class="user-chip" title="{{ user.get_username }}">
+          <div class="user-chip__avatar">{{ user.email.0|upper }}</div>
+          <div class="user-chip__meta">
+            <span class="user-chip__name">{{ user.get_full_name|default:user.get_username }}</span>
+            <span class="user-chip__role">Administrateur</span>
           </div>
         </div>
         {% endif %}
@@ -109,13 +140,11 @@
     </header>
     {% endif %}
 
-    <main id="content-start" class="content" tabindex="-1">
+    <main id="content-start" class="admin-content" tabindex="-1">
       {% block messages %}
       {% if messages %}
       <ul class="messagelist">
-        {% for message in messages %}
-        <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
+        {% for message in messages %}<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>{% endfor %}
       </ul>
       {% endif %}
       {% endblock %}

@@ -4,8 +4,8 @@
 {% block title %}{{ title }} | Administration{% endblock %}
 
 {% block branding %}
-<a href="{% url 'admin:index' %}" class="flex items-center gap-3">
-  <img src="{% static 'images/logo.svg' %}" alt="Logo" style="width:34px;height:34px;object-fit:contain;">
-  <span class="text-lg font-semibold" style="color: var(--text-primary);">Panneau d'administration</span>
+<a href="{% url 'admin:index' %}" class="topbar-brand">
+  <span class="topbar-brand__logo"><img src="{% static 'images/logo.svg' %}" alt="" width="34" height="34"></span>
+  <span class="topbar-brand__text">Panneau d'administration</span>
 </a>
 {% endblock %}

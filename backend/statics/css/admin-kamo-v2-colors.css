@@ -1,0 +1,183 @@
+:root {
+  color-scheme: light;
+
+  /* Palette inspired by the Kamo landing page: ink, white and electric violet. */
+  --ui-accent: #6d28ff;
+  --ui-accent-strong: #5413dc;
+  --ui-accent-2: #8b5cff;
+  --ui-accent-soft: rgba(109, 40, 255, .09);
+  --ui-accent-softer: rgba(109, 40, 255, .045);
+  --ui-accent-line: rgba(109, 40, 255, .20);
+  --ui-accent-gradient: linear-gradient(135deg, #5a13f2 0%, #7a32ff 55%, #9a67ff 100%);
+  --ui-accent-gradient-soft: linear-gradient(135deg, rgba(109, 40, 255, .12), rgba(177, 145, 255, .05));
+
+  --ui-ink: #0d0d12;
+  --ui-text: #191820;
+  --ui-text-2: #55525f;
+  --ui-muted: #7b7787;
+  --ui-placeholder: #9c98a8;
+  --ui-inverse: #ffffff;
+
+  --ui-bg: #f6f5f8;
+  --ui-bg-2: #f0edf6;
+  --ui-surface: #ffffff;
+  --ui-surface-2: #fbfaff;
+  --ui-surface-3: #f4f1fa;
+  --ui-input: #ffffff;
+  --ui-sidebar: rgba(250, 249, 252, .94);
+  --ui-header: rgba(255, 255, 255, .82);
+  --ui-table-head: #f7f5fb;
+  --ui-table-alt: #fcfbfe;
+  --ui-hover: rgba(109, 40, 255, .055);
+
+  --ui-border: #e6e2ec;
+  --ui-border-strong: #d6d0df;
+  --ui-ring: rgba(109, 40, 255, .16);
+  --ui-divider: rgba(18, 14, 30, .08);
+
+  --ui-success: #0e9f6e;
+  --ui-warning: #d88700;
+  --ui-danger: #dc3545;
+  --ui-info: #3976e8;
+
+  --ui-radius-sm: 10px;
+  --ui-radius-md: 14px;
+  --ui-radius-lg: 18px;
+  --ui-radius-xl: 24px;
+  --ui-radius-2xl: 30px;
+
+  --ui-shadow-xs: 0 1px 2px rgba(19, 14, 31, .035);
+  --ui-shadow-sm: 0 8px 24px rgba(35, 23, 55, .055);
+  --ui-shadow-md: 0 16px 42px rgba(35, 23, 55, .085);
+  --ui-shadow-violet: 0 14px 34px rgba(109, 40, 255, .18);
+
+  /* Explicitly map Django admin variables so any native widget stays on-theme. */
+  --primary: var(--ui-accent);
+  --secondary: var(--ui-ink);
+  --accent: #ffffff;
+  --primary-fg: #ffffff;
+  --body-fg: var(--ui-text);
+  --body-bg: var(--ui-bg);
+  --body-quiet-color: var(--ui-muted);
+  --body-medium-color: var(--ui-text-2);
+  --body-loud-color: var(--ui-ink);
+  --header-color: var(--ui-text);
+  --header-branding-color: var(--ui-ink);
+  --header-bg: var(--ui-header);
+  --header-link-color: var(--ui-text);
+  --breadcrumbs-fg: var(--ui-text-2);
+  --breadcrumbs-link-fg: var(--ui-text-2);
+  --breadcrumbs-bg: transparent;
+  --link-fg: var(--ui-accent-strong);
+  --link-hover-color: var(--ui-accent);
+  --link-selected-fg: var(--ui-accent);
+  --hairline-color: var(--ui-border);
+  --border-color: var(--ui-border);
+  --error-fg: var(--ui-danger);
+  --message-success-bg: rgba(14, 159, 110, .10);
+  --message-warning-bg: rgba(216, 135, 0, .10);
+  --message-error-bg: rgba(220, 53, 69, .10);
+  --darkened-bg: var(--ui-surface-3);
+  --selected-bg: var(--ui-accent-soft);
+  --selected-row: rgba(109, 40, 255, .07);
+  --button-fg: #ffffff;
+  --button-bg: var(--ui-accent);
+  --button-hover-bg: var(--ui-accent-strong);
+  --default-button-bg: var(--ui-accent);
+  --default-button-hover-bg: var(--ui-accent-strong);
+  --close-button-bg: #5f5a68;
+  --close-button-hover-bg: #47434f;
+  --delete-button-bg: var(--ui-danger);
+  --delete-button-hover-bg: #b82232;
+  --object-tools-fg: var(--ui-text);
+  --object-tools-bg: var(--ui-surface);
+  --object-tools-hover-bg: var(--ui-surface-3);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ui-accent: #8c5cff;
+  --ui-accent-strong: #a77cff;
+  --ui-accent-2: #b99cff;
+  --ui-accent-soft: rgba(140, 92, 255, .14);
+  --ui-accent-softer: rgba(140, 92, 255, .075);
+  --ui-accent-line: rgba(154, 109, 255, .27);
+  --ui-accent-gradient: linear-gradient(135deg, #6f2cff 0%, #8c5cff 58%, #b18bff 100%);
+  --ui-accent-gradient-soft: linear-gradient(135deg, rgba(140, 92, 255, .18), rgba(177, 139, 255, .07));
+
+  --ui-ink: #ffffff;
+  --ui-text: #f4f2f8;
+  --ui-text-2: #c8c3d0;
+  --ui-muted: #948fa0;
+  --ui-placeholder: #777180;
+  --ui-inverse: #0d0d12;
+
+  --ui-bg: #0d0f14;
+  --ui-bg-2: #11131a;
+  --ui-surface: #15171e;
+  --ui-surface-2: #181a22;
+  --ui-surface-3: #1d2029;
+  --ui-input: #101218;
+  --ui-sidebar: rgba(10, 11, 15, .96);
+  --ui-header: rgba(15, 16, 22, .84);
+  --ui-table-head: #1a1c24;
+  --ui-table-alt: #171920;
+  --ui-hover: rgba(140, 92, 255, .095);
+
+  --ui-border: #2a2d38;
+  --ui-border-strong: #3a3e4b;
+  --ui-ring: rgba(140, 92, 255, .22);
+  --ui-divider: rgba(255, 255, 255, .075);
+
+  --ui-success: #36d49a;
+  --ui-warning: #f2b34a;
+  --ui-danger: #ff6b7a;
+  --ui-info: #7da8ff;
+
+  --ui-shadow-xs: 0 1px 2px rgba(0, 0, 0, .22);
+  --ui-shadow-sm: 0 12px 30px rgba(0, 0, 0, .24);
+  --ui-shadow-md: 0 18px 48px rgba(0, 0, 0, .34);
+  --ui-shadow-violet: 0 16px 38px rgba(90, 19, 242, .25);
+
+  --primary: var(--ui-accent);
+  --secondary: #24212c;
+  --accent: #ffffff;
+  --primary-fg: #ffffff;
+  --body-fg: var(--ui-text);
+  --body-bg: var(--ui-bg);
+  --body-quiet-color: var(--ui-muted);
+  --body-medium-color: var(--ui-text-2);
+  --body-loud-color: var(--ui-ink);
+  --header-color: var(--ui-text);
+  --header-branding-color: var(--ui-text);
+  --header-bg: var(--ui-header);
+  --header-link-color: var(--ui-text);
+  --breadcrumbs-fg: var(--ui-text-2);
+  --breadcrumbs-link-fg: var(--ui-text-2);
+  --breadcrumbs-bg: transparent;
+  --link-fg: #b69aff;
+  --link-hover-color: #d2c1ff;
+  --link-selected-fg: #c5adff;
+  --hairline-color: var(--ui-border);
+  --border-color: var(--ui-border);
+  --error-fg: var(--ui-danger);
+  --message-success-bg: rgba(54, 212, 154, .12);
+  --message-warning-bg: rgba(242, 179, 74, .12);
+  --message-error-bg: rgba(255, 107, 122, .12);
+  --darkened-bg: var(--ui-surface-3);
+  --selected-bg: var(--ui-accent-soft);
+  --selected-row: rgba(140, 92, 255, .10);
+  --button-fg: #ffffff;
+  --button-bg: #7134f5;
+  --button-hover-bg: #8c5cff;
+  --default-button-bg: #7134f5;
+  --default-button-hover-bg: #8c5cff;
+  --close-button-bg: #444754;
+  --close-button-hover-bg: #555968;
+  --delete-button-bg: #d94c5b;
+  --delete-button-hover-bg: #f05f6e;
+  --object-tools-fg: var(--ui-text);
+  --object-tools-bg: var(--ui-surface-2);
+  --object-tools-hover-bg: var(--ui-surface-3);
+}

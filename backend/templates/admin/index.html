@@ -3,47 +3,70 @@
 
 {% block content %}
 <div id="content-main" class="dashboard">
-  <div class="page-header">
-    <h1 class="page-title">{{ title|default:'Tableau de bord' }}</h1>
-    <p class="page-subtitle">Une vue moderne, lisible et cohérente en light comme en dark mode.</p>
+  <section class="dashboard-hero">
+    <div class="dashboard-hero__copy">
+      <span class="dashboard-hero__eyebrow"><i class="fa-solid fa-wand-magic-sparkles"></i> Centre de contrôle</span>
+      <h1>Gérez votre espace <span class="accent-word">simplement.</span></h1>
+      <p>Utilisateurs, autorisations, jetons et paramètres : tout est regroupé dans une interface claire, rapide et cohérente.</p>
+    </div>
+    <div class="dashboard-hero__art" aria-hidden="true">
+      <i class="fa-solid fa-star hero-spark hero-spark--a"></i>
+      <div class="hero-orbit"><div class="hero-orbit__core"><i class="fa-solid fa-bolt"></i></div></div>
+      <i class="fa-solid fa-diamond hero-spark hero-spark--b"></i>
+    </div>
+  </section>
+
+  <div class="page-head">
+    <div class="page-head__copy">
+      <span class="page-kicker"><i class="fa-solid fa-table-cells-large"></i> Modules</span>
+      <h2 class="page-title">Tableau de bord</h2>
+      <p class="page-subtitle">Accédez rapidement aux différentes zones de l'administration.</p>
+    </div>
   </div>
 
   {% for app in app_list %}
   <section class="data-card">
     <div class="data-card-header">
       <div>
-        <h2 class="data-card-title">{{ app.verbose_name|default:app.name }}</h2>
-        <p class="data-card-subtitle">Accès rapide aux listes et formulaires d'ajout.</p>
+        <h3 class="data-card-title">{{ app.verbose_name|default:app.name }}</h3>
+        <p class="data-card-subtitle">Consulter, ajouter et gérer les éléments de ce module.</p>
       </div>
+      <i class="fa-solid fa-arrow-trend-up" style="color:var(--ui-accent);opacity:.75"></i>
     </div>
     <div class="data-card-content">
       <div class="models-grid">
         {% for model in app.models %}
         <article class="model-card">
           <div class="model-card-top">
-            <div class="model-card-icon">
-              <i class="fas fa-database"></i>
-            </div>
+            <div class="model-card-icon"><i class="fa-solid fa-cube"></i></div>
             <div>
-              <h3 class="model-card-title">{{ model.name }}</h3>
-              <p class="model-card-desc">Liste, ajout et gestion avancée</p>
+              <h4 class="model-card-title">{{ model.name }}</h4>
+              <p class="model-card-desc">Gestion et actions rapides</p>
             </div>
           </div>
           <div class="model-card-actions">
             {% if model.admin_url %}
             <a href="{{ model.admin_url }}" class="action-pill action-pill-view">
-              <i class="fas fa-table"></i><span>Ouvrir</span>
+              <i class="fa-solid fa-table-list"></i><span>Ouvrir</span>
             </a>
             {% endif %}
             {% if model.add_url %}
             <a href="{{ model.add_url }}" class="action-pill action-pill-add">
-              <i class="fas fa-plus"></i><span>Ajouter</span>
+              <i class="fa-solid fa-plus"></i><span>Ajouter</span>
             </a>
             {% endif %}
           </div>
         </article>
         {% endfor %}
       </div>
+    </div>
+  </section>
+  {% empty %}
+  <section class="data-card center-card">
+    <div class="data-card-content">
+      <div class="center-card__icon"><i class="fa-solid fa-box-open"></i></div>
+      <h2 class="page-title" style="font-size:1.25rem!important;">Aucun module disponible</h2>
+      <p class="page-subtitle">Votre compte ne dispose actuellement d'aucun accès administrateur.</p>
     </div>
   </section>
   {% endfor %}

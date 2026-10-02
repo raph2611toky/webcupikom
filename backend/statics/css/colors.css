@@ -1,147 +1,183 @@
 :root {
   color-scheme: light;
 
-  --accent-50: #f0f4ff;
-  --accent-100: #e0e9ff;
-  --accent-200: #c7d8ff;
-  --accent-300: #a4bfff;
-  --accent-400: #7b9eff;
-  --accent-500: #5b7eff;
-  --accent-600: #3b5bff;
-  --accent-700: #2a3fff;
-  --accent-800: #1f2bcc;
-  --accent-900: #0f1a99;
+  /* Palette inspired by the Kamo landing page: ink, white and electric violet. */
+  --ui-accent: #6d28ff;
+  --ui-accent-strong: #5413dc;
+  --ui-accent-2: #8b5cff;
+  --ui-accent-soft: rgba(109, 40, 255, .09);
+  --ui-accent-softer: rgba(109, 40, 255, .045);
+  --ui-accent-line: rgba(109, 40, 255, .20);
+  --ui-accent-gradient: linear-gradient(135deg, #5a13f2 0%, #7a32ff 55%, #9a67ff 100%);
+  --ui-accent-gradient-soft: linear-gradient(135deg, rgba(109, 40, 255, .12), rgba(177, 145, 255, .05));
 
-  --slate-0: #ffffff;
-  --slate-50: #f9fafb;
-  --slate-100: #f3f4f6;
-  --slate-200: #e5e7eb;
-  --slate-300: #d1d5db;
-  --slate-400: #9ca3af;
-  --slate-500: #6b7280;
-  --slate-600: #4b5563;
-  --slate-700: #374151;
-  --slate-800: #1f2937;
-  --slate-900: #111827;
+  --ui-ink: #0d0d12;
+  --ui-text: #191820;
+  --ui-text-2: #55525f;
+  --ui-muted: #7b7787;
+  --ui-placeholder: #9c98a8;
+  --ui-inverse: #ffffff;
 
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 28px;
+  --ui-bg: #f6f5f8;
+  --ui-bg-2: #f0edf6;
+  --ui-surface: #ffffff;
+  --ui-surface-2: #fbfaff;
+  --ui-surface-3: #f4f1fa;
+  --ui-input: #ffffff;
+  --ui-sidebar: rgba(250, 249, 252, .94);
+  --ui-header: rgba(255, 255, 255, .82);
+  --ui-table-head: #f7f5fb;
+  --ui-table-alt: #fcfbfe;
+  --ui-hover: rgba(109, 40, 255, .055);
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.07);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(59, 91, 255, 0.08);
-  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --ui-border: #e6e2ec;
+  --ui-border-strong: #d6d0df;
+  --ui-ring: rgba(109, 40, 255, .16);
+  --ui-divider: rgba(18, 14, 30, .08);
 
-  --accent: #3b5bff;
-  --accent-hover: #2a3fff;
-  --accent-soft: rgba(59, 91, 255, 0.08);
-  --accent-gradient: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
-  --accent-gradient-subtle: linear-gradient(135deg, rgba(59, 91, 255, 0.06) 0%, rgba(91, 126, 255, 0.04) 100%);
-  --accent-glow: 0 0 32px rgba(59, 91, 255, 0.15);
+  --ui-success: #0e9f6e;
+  --ui-warning: #d88700;
+  --ui-danger: #dc3545;
+  --ui-info: #3976e8;
 
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
-  --text-inverse: #ffffff;
+  --ui-radius-sm: 10px;
+  --ui-radius-md: 14px;
+  --ui-radius-lg: 18px;
+  --ui-radius-xl: 24px;
+  --ui-radius-2xl: 30px;
 
-  --bg-main: #f9fafb;
-  --bg-elevated: #ffffff;
-  --card-bg: #ffffff;
-  --card-bg-soft: #f8fafc;
-  --input-bg: #ffffff;
-  --header-bg: rgba(255, 255, 255, 0.95);
-  --sidebar-bg: #f3f4f6;
-  --table-head-bg: #f9fafb;
-  --table-row-alt: #f8fafc;
-  --hover-bg: rgba(59, 91, 255, 0.04);
+  --ui-shadow-xs: 0 1px 2px rgba(19, 14, 31, .035);
+  --ui-shadow-sm: 0 8px 24px rgba(35, 23, 55, .055);
+  --ui-shadow-md: 0 16px 42px rgba(35, 23, 55, .085);
+  --ui-shadow-violet: 0 14px 34px rgba(109, 40, 255, .18);
 
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-  --border-sidebar: rgba(59, 91, 255, 0.08);
-  --ring: rgba(59, 91, 255, 0.15);
-
-  --link-color: #1f2937;
-  --link-hover: #111827;
-  --icon-color: #9ca3af;
-
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --info: #3b82f6;
-
-  --button-gradient: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
-  --button-shadow: 0 4px 16px rgba(59, 91, 255, 0.2);
-  --card-shadow: var(--shadow-sm);
-
-  --shape-color-1: rgba(59, 91, 255, 0.05);
-  --shape-color-2: rgba(91, 126, 255, 0.04);
-  --shape-color-3: rgba(123, 158, 255, 0.03);
-  --shape-color-4: rgba(59, 91, 255, 0.02);
-
-  --sidebar-text: #4b5563;
-  --sidebar-text-active: #ffffff;
-  --sidebar-icon: #9ca3af;
-  --sidebar-hover-bg: rgba(59, 91, 255, 0.06);
-  --sidebar-active-bg: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
+  /* Explicitly map Django admin variables so any native widget stays on-theme. */
+  --primary: var(--ui-accent);
+  --secondary: var(--ui-ink);
+  --accent: #ffffff;
+  --primary-fg: #ffffff;
+  --body-fg: var(--ui-text);
+  --body-bg: var(--ui-bg);
+  --body-quiet-color: var(--ui-muted);
+  --body-medium-color: var(--ui-text-2);
+  --body-loud-color: var(--ui-ink);
+  --header-color: var(--ui-text);
+  --header-branding-color: var(--ui-ink);
+  --header-bg: var(--ui-header);
+  --header-link-color: var(--ui-text);
+  --breadcrumbs-fg: var(--ui-text-2);
+  --breadcrumbs-link-fg: var(--ui-text-2);
+  --breadcrumbs-bg: transparent;
+  --link-fg: var(--ui-accent-strong);
+  --link-hover-color: var(--ui-accent);
+  --link-selected-fg: var(--ui-accent);
+  --hairline-color: var(--ui-border);
+  --border-color: var(--ui-border);
+  --error-fg: var(--ui-danger);
+  --message-success-bg: rgba(14, 159, 110, .10);
+  --message-warning-bg: rgba(216, 135, 0, .10);
+  --message-error-bg: rgba(220, 53, 69, .10);
+  --darkened-bg: var(--ui-surface-3);
+  --selected-bg: var(--ui-accent-soft);
+  --selected-row: rgba(109, 40, 255, .07);
+  --button-fg: #ffffff;
+  --button-bg: var(--ui-accent);
+  --button-hover-bg: var(--ui-accent-strong);
+  --default-button-bg: var(--ui-accent);
+  --default-button-hover-bg: var(--ui-accent-strong);
+  --close-button-bg: #5f5a68;
+  --close-button-hover-bg: #47434f;
+  --delete-button-bg: var(--ui-danger);
+  --delete-button-hover-bg: #b82232;
+  --object-tools-fg: var(--ui-text);
+  --object-tools-bg: var(--ui-surface);
+  --object-tools-hover-bg: var(--ui-surface-3);
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --accent: #7b9eff;
-  --accent-hover: #a4bfff;
-  --accent-soft: rgba(123, 158, 255, 0.12);
-  --accent-gradient: linear-gradient(135deg, #5b7eff 0%, #7b9eff 100%);
-  --accent-gradient-subtle: linear-gradient(135deg, rgba(91, 126, 255, 0.15) 0%, rgba(123, 158, 255, 0.08) 100%);
-  --accent-glow: 0 0 40px rgba(123, 158, 255, 0.2);
+  --ui-accent: #8c5cff;
+  --ui-accent-strong: #a77cff;
+  --ui-accent-2: #b99cff;
+  --ui-accent-soft: rgba(140, 92, 255, .14);
+  --ui-accent-softer: rgba(140, 92, 255, .075);
+  --ui-accent-line: rgba(154, 109, 255, .27);
+  --ui-accent-gradient: linear-gradient(135deg, #6f2cff 0%, #8c5cff 58%, #b18bff 100%);
+  --ui-accent-gradient-soft: linear-gradient(135deg, rgba(140, 92, 255, .18), rgba(177, 139, 255, .07));
 
-  --text-primary: #f3f4f6;
-  --text-secondary: #d1d5db;
-  --text-muted: #9ca3af;
-  --text-inverse: #111827;
+  --ui-ink: #ffffff;
+  --ui-text: #f4f2f8;
+  --ui-text-2: #c8c3d0;
+  --ui-muted: #948fa0;
+  --ui-placeholder: #777180;
+  --ui-inverse: #0d0d12;
 
-  --bg-main: #0f1419;
-  --bg-elevated: #1a1f2e;
-  --card-bg: #111820;
-  --card-bg-soft: #0f1419;
-  --input-bg: #0a0e16;
-  --header-bg: rgba(15, 20, 25, 0.92);
-  --sidebar-bg: #0a0e16;
-  --table-head-bg: #1a1f2e;
-  --table-row-alt: #111820;
-  --hover-bg: rgba(91, 126, 255, 0.06);
+  --ui-bg: #0d0f14;
+  --ui-bg-2: #11131a;
+  --ui-surface: #15171e;
+  --ui-surface-2: #181a22;
+  --ui-surface-3: #1d2029;
+  --ui-input: #101218;
+  --ui-sidebar: rgba(10, 11, 15, .96);
+  --ui-header: rgba(15, 16, 22, .84);
+  --ui-table-head: #1a1c24;
+  --ui-table-alt: #171920;
+  --ui-hover: rgba(140, 92, 255, .095);
 
-  --border: #1f2937;
-  --border-strong: #374151;
-  --border-sidebar: rgba(91, 126, 255, 0.1);
-  --ring: rgba(91, 126, 255, 0.2);
+  --ui-border: #2a2d38;
+  --ui-border-strong: #3a3e4b;
+  --ui-ring: rgba(140, 92, 255, .22);
+  --ui-divider: rgba(255, 255, 255, .075);
 
-  --link-color: #9ab0ff;
-  --link-hover: #c3d0ff;
-  --icon-color: #9ca3af;
+  --ui-success: #36d49a;
+  --ui-warning: #f2b34a;
+  --ui-danger: #ff6b7a;
+  --ui-info: #7da8ff;
 
-  --success: #34d399;
-  --warning: #fbbf24;
-  --error: #f87171;
-  --info: #60a5fa;
+  --ui-shadow-xs: 0 1px 2px rgba(0, 0, 0, .22);
+  --ui-shadow-sm: 0 12px 30px rgba(0, 0, 0, .24);
+  --ui-shadow-md: 0 18px 48px rgba(0, 0, 0, .34);
+  --ui-shadow-violet: 0 16px 38px rgba(90, 19, 242, .25);
 
-  --button-gradient: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
-  --button-shadow: 0 4px 16px rgba(91, 126, 255, 0.28);
-  --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-
-  --shape-color-1: rgba(91, 126, 255, 0.09);
-  --shape-color-2: rgba(123, 158, 255, 0.07);
-  --shape-color-3: rgba(59, 130, 246, 0.06);
-  --shape-color-4: rgba(37, 99, 235, 0.05);
-
-  --sidebar-text: rgba(243, 244, 246, 0.75);
-  --sidebar-text-active: #ffffff;
-  --sidebar-icon: rgba(209, 213, 219, 0.7);
-  --sidebar-hover-bg: rgba(91, 126, 255, 0.08);
-  --sidebar-active-bg: linear-gradient(135deg, #3b5bff 0%, #5b7eff 100%);
+  --primary: var(--ui-accent);
+  --secondary: #24212c;
+  --accent: #ffffff;
+  --primary-fg: #ffffff;
+  --body-fg: var(--ui-text);
+  --body-bg: var(--ui-bg);
+  --body-quiet-color: var(--ui-muted);
+  --body-medium-color: var(--ui-text-2);
+  --body-loud-color: var(--ui-ink);
+  --header-color: var(--ui-text);
+  --header-branding-color: var(--ui-text);
+  --header-bg: var(--ui-header);
+  --header-link-color: var(--ui-text);
+  --breadcrumbs-fg: var(--ui-text-2);
+  --breadcrumbs-link-fg: var(--ui-text-2);
+  --breadcrumbs-bg: transparent;
+  --link-fg: #b69aff;
+  --link-hover-color: #d2c1ff;
+  --link-selected-fg: #c5adff;
+  --hairline-color: var(--ui-border);
+  --border-color: var(--ui-border);
+  --error-fg: var(--ui-danger);
+  --message-success-bg: rgba(54, 212, 154, .12);
+  --message-warning-bg: rgba(242, 179, 74, .12);
+  --message-error-bg: rgba(255, 107, 122, .12);
+  --darkened-bg: var(--ui-surface-3);
+  --selected-bg: var(--ui-accent-soft);
+  --selected-row: rgba(140, 92, 255, .10);
+  --button-fg: #ffffff;
+  --button-bg: #7134f5;
+  --button-hover-bg: #8c5cff;
+  --default-button-bg: #7134f5;
+  --default-button-hover-bg: #8c5cff;
+  --close-button-bg: #444754;
+  --close-button-hover-bg: #555968;
+  --delete-button-bg: #d94c5b;
+  --delete-button-hover-bg: #f05f6e;
+  --object-tools-fg: var(--ui-text);
+  --object-tools-bg: var(--ui-surface-2);
+  --object-tools-hover-bg: var(--ui-surface-3);
 }

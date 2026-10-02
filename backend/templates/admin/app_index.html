@@ -4,17 +4,20 @@
 {% block bodyclass %}{{ block.super }} app-{{ app_label }}{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
-  &rsaquo; <span>{{ title }}</span>
-</nav>
+<ol class="breadcrumbs">
+  <li><a href="{% url 'admin:index' %}">Accueil</a></li>
+  <li aria-current="page">{{ title }}</li>
+</ol>
 {% endblock %}
 
 {% block content %}
 <div id="content-main" class="dashboard">
-  <div class="page-header">
-    <h1 class="page-title">{{ title }}</h1>
-    <p class="page-subtitle">Gestion détaillée de l'application et accès rapide aux modules.</p>
+  <div class="page-head">
+    <div class="page-head__copy">
+      <span class="page-kicker"><i class="fa-solid fa-layer-group"></i> Application</span>
+      <h1 class="page-title">{{ title }}</h1>
+      <p class="page-subtitle">Sélectionnez un module pour consulter ou modifier ses données.</p>
+    </div>
   </div>
 
   {% for app in app_list %}
@@ -22,7 +25,7 @@
     <div class="data-card-header">
       <div>
         <h2 class="data-card-title">{{ app.verbose_name|default:app.name }}</h2>
-        <p class="data-card-subtitle">Choisis une action pour administrer les données.</p>
+        <p class="data-card-subtitle">Actions disponibles pour cette application.</p>
       </div>
     </div>
     <div class="data-card-content">
@@ -30,25 +33,15 @@
         {% for model in app.models %}
         <article class="model-card">
           <div class="model-card-top">
-            <div class="model-card-icon">
-              <i class="fas fa-layer-group"></i>
-            </div>
+            <div class="model-card-icon"><i class="fa-solid fa-cube"></i></div>
             <div>
               <h3 class="model-card-title">{{ model.name }}</h3>
-              <p class="model-card-desc">Actions rapides et navigation moderne</p>
+              <p class="model-card-desc">Consulter et administrer</p>
             </div>
           </div>
           <div class="model-card-actions">
-            {% if model.admin_url %}
-            <a href="{{ model.admin_url }}" class="action-pill action-pill-view">
-              <i class="fas fa-list"></i><span>Liste</span>
-            </a>
-            {% endif %}
-            {% if model.add_url %}
-            <a href="{{ model.add_url }}" class="action-pill action-pill-add">
-              <i class="fas fa-plus"></i><span>Nouveau</span>
-            </a>
-            {% endif %}
+            {% if model.admin_url %}<a href="{{ model.admin_url }}" class="action-pill action-pill-view"><i class="fa-solid fa-list"></i>Liste</a>{% endif %}
+            {% if model.add_url %}<a href="{{ model.add_url }}" class="action-pill action-pill-add"><i class="fa-solid fa-plus"></i>Nouveau</a>{% endif %}
           </div>
         </article>
         {% endfor %}
