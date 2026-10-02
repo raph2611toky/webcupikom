@@ -45,11 +45,11 @@ health = swagger_auto_schema(
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="WebCup Ikom API",
+        title="IKOM API",
         default_version="v1",
         description=(
-            "API backend : authentification locale/Google, gestion de compte et profil. "
-            "Les endpoints protégés utilisent un JWT Bearer."
+            "Documentation sécurisée de l’API IKOM : authentification locale/Google, "
+            "gestion de compte et profil. Les endpoints protégés utilisent un JWT Bearer."
         ),
         contact=openapi.Contact(email=settings.SUPPORT_EMAIL),
     ),
