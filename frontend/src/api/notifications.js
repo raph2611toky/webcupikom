@@ -81,6 +81,18 @@ export async function getCitizenNotifications(params = {}) {
   return unwrapList(data).map(normalizeNotification);
 }
 
+export async function getAllCitizenNotifications(params = {}) {
+  const rows = [];
+  let page = 1;
+  for (let guard = 0; guard < 100; guard += 1) {
+    const { data } = await api.get("/citizen/notifications/", { params: { ...params, page, page_size: params.page_size || 100 } });
+    rows.push(...unwrapList(data).map(normalizeNotification));
+    if (!data?.next || !Array.isArray(data?.results)) break;
+    page += 1;
+  }
+  return rows;
+}
+
 export async function getCitizenNotification(id) {
   const { data } = await api.get(`/citizen/notifications/${encodeURIComponent(id)}/`);
   return normalizeNotification(data);

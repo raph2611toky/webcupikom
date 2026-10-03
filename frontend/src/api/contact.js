@@ -37,6 +37,18 @@ export async function getCitizenContactMessages(params = {}) {
   return unwrapList(data).map(normalizeContact);
 }
 
+export async function getAllCitizenContactMessages(params = {}) {
+  const rows = [];
+  let page = 1;
+  for (let guard = 0; guard < 100; guard += 1) {
+    const { data } = await api.get("/citizen/contact-messages/", { params: { ...params, page, page_size: params.page_size || 100 } });
+    rows.push(...unwrapList(data).map(normalizeContact));
+    if (!data?.next || !Array.isArray(data?.results)) break;
+    page += 1;
+  }
+  return rows;
+}
+
 export async function getCitizenContactMessage(reference) {
   const { data } = await api.get(`/citizen/contact-messages/${encodeURIComponent(reference)}/`);
   return normalizeContact(data);

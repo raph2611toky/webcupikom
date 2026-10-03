@@ -7559,3 +7559,15 @@ html[data-contrast="high"] .metric-grid .metric-action,html[data-contrast="high"
 
 /* V53 — F40 : rappel rendez-vous réellement optionnel */
 .appointment-reminder-toggle{cursor:pointer;grid-template-columns:auto minmax(0,1fr) auto!important}.appointment-reminder-toggle input{position:absolute;opacity:0;pointer-events:none}.appointment-reminder-toggle>i{position:relative;width:34px;height:20px;border-radius:999px;background:#d9d4de;border:1px solid #cbc4d0;transition:.18s ease}.appointment-reminder-toggle>i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18);transition:.18s ease}.appointment-reminder-toggle input:checked+i{background:var(--tn-purple);border-color:var(--tn-purple)}.appointment-reminder-toggle input:checked+i::after{transform:translateX(14px)}.appointment-reminder-toggle:focus-within{outline:3px solid #6b13fc;outline-offset:3px;border-radius:12px}
+
+/* F55 / F56 — citizen data exports */
+.data-export-card{grid-column:1/-1}
+.data-export-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}
+.data-export-summary>div{border:1px solid var(--border,#dfe3ea);border-radius:12px;padding:14px;background:var(--surface-soft,#f7f8fa);display:flex;flex-direction:column;gap:3px}
+.data-export-summary strong{font-size:1.4rem;line-height:1}
+.data-export-summary span{font-size:.82rem;opacity:.72}
+.data-export-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:14px}
+.data-export-warning{border:1px solid #d5a54a;border-radius:10px;padding:10px 12px;background:rgba(213,165,74,.08);font-size:.88rem}
+@media(max-width:720px){.data-export-summary{grid-template-columns:1fr 1fr}.data-export-actions>*{flex:1 1 46%;justify-content:center}}
+.topbar-action-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+@media(max-width:720px){.topbar-action-group{width:100%}.topbar-action-group>*{flex:1 1 auto;justify-content:center}}

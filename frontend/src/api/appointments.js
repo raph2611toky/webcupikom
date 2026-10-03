@@ -48,9 +48,34 @@ function resolveAppointment(data) {
   return data || {};
 }
 
+function textValue(value, fallback = "") {
+  if (value === undefined || value === null) return fallback;
+  if (["string", "number", "boolean"].includes(typeof value)) return String(value);
+  return fallback;
+}
+
+function normalizeSlotText(slot, start, end) {
+  if (typeof slot === "string" || typeof slot === "number") return String(slot);
+  if (slot && typeof slot === "object") {
+    const slotStart = parseDateTime(slot.starts_at || slot.start_at || slot.start);
+    const slotEnd = parseDateTime(slot.ends_at || slot.end_at || slot.end);
+    const resolvedStart = slotStart || start;
+    const resolvedEnd = slotEnd || end;
+    if (resolvedStart && resolvedEnd) return `${localTimeKey(resolvedStart)} - ${localTimeKey(resolvedEnd)}`;
+    if (resolvedStart) return localTimeKey(resolvedStart);
+    if (slot.label || slot.display || slot.text) return String(slot.label || slot.display || slot.text);
+  }
+  if (start && end) return `${localTimeKey(start)} - ${localTimeKey(end)}`;
+  return "";
+}
+
 export function normalizeCitizenAppointment(item = {}) {
-  const start = parseDateTime(item.starts_at || item.start_at || item.start);
-  const end = parseDateTime(item.ends_at || item.end_at || item.end);
+  const slotObject = item.slot && typeof item.slot === "object" ? item.slot : null;
+  const start = parseDateTime(item.starts_at || item.start_at || item.start || slotObject?.starts_at || slotObject?.start_at || slotObject?.start);
+  const end = parseDateTime(item.ends_at || item.end_at || item.end || slotObject?.ends_at || slotObject?.end_at || slotObject?.end);
+  const preparationValue = item.preparation && typeof item.preparation === "object"
+    ? (item.preparation.instructions || item.preparation.text || item.preparation.label || "")
+    : item.preparation;
   return {
     ...item,
     id: item.id,
@@ -60,8 +85,8 @@ export function normalizeCitizenAppointment(item = {}) {
     serviceAddress: item.location || item.service_address || "",
     agentId: item.agent?.id ?? item.agent ?? null,
     agentName: item.agent_name || item.agent?.display_name || item.agent?.name || "Agent municipal",
-    startsAt: item.starts_at || "",
-    endsAt: item.ends_at || "",
+    startsAt: item.starts_at || item.start_at || item.start || slotObject?.starts_at || slotObject?.start_at || slotObject?.start || "",
+    endsAt: item.ends_at || item.end_at || item.end || slotObject?.ends_at || slotObject?.end_at || slotObject?.end || "",
     date: start ? localDateKey(start) : "",
     startTime: start ? localTimeKey(start) : "",
     endTime: end ? localTimeKey(end) : "",
@@ -69,15 +94,15 @@ export function normalizeCitizenAppointment(item = {}) {
     reason: item.reason || "",
     notes: item.details || item.notes || "",
     details: item.details || "",
-    location: item.location || "",
+    location: textValue(item.location, textValue(item.location?.label || item.location?.name, "")),
     preparationInstructions: item.preparation_instructions || "",
     preparationDocuments: item.preparation_documents || "",
     reminderEnabled: item.reminder_enabled !== false,
     reminderMinutesBefore: Number(item.reminder_minutes_before ?? 60),
     status: item.status || "requested",
     statusLabel: item.status_label || "",
-    slot: item.slot || "",
-    preparation: item.preparation || item.preparation_instructions || "",
+    slot: normalizeSlotText(item.slot, start, end),
+    preparation: textValue(preparationValue, textValue(item.preparation_instructions, "")),
     canCancel: typeof item.can_cancel === "boolean" ? item.can_cancel : String(item.can_cancel || "").toLowerCase() === "true" ? true : ["requested", "confirmed"].includes(item.status || "requested"),
     canReschedule: false,
     createdAt: item.created_at || "",

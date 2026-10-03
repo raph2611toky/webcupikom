@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { createCitizenRequest, getCitizenRequests } from "../../api/requests.js";
+import { createCitizenRequest, getAllCitizenRequests, getCitizenRequests } from "../../api/requests.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { CATEGORY_SERVICE, REQUEST_CATEGORIES, REQUEST_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import { buildRequestsHtml, downloadRequestsCsv, openPrintWindow } from "../../utils/dataExport.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -104,6 +105,7 @@ export default function CitizenRequests() {
   const [sending, setSending] = useState(false);
   const [created, setCreated] = useState(null);
   const [error,setError]=useState("");
+  const [exporting,setExporting]=useState(false);
   const fileRef = useRef(null);
 
   async function refresh() {
@@ -167,6 +169,16 @@ export default function CitizenRequests() {
 
   const service = CATEGORY_SERVICE[draft.category] || "Administration";
 
+
+  async function exportRequests(format="csv") {
+    setExporting(true);setError("");
+    try{
+      const all=await getAllCitizenRequests({type:"procedure",ordering:"-updated_at"});
+      if(format==="print") openPrintWindow(buildRequestsHtml(all));
+      else downloadRequestsCsv(all,"nova-terra-mes-demandes.csv");
+    }catch(err){setError(getApiErrorMessage(err,"Impossible d’exporter vos demandes."))}finally{setExporting(false)}
+  }
+
   function patch(key, value) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
@@ -210,7 +222,7 @@ export default function CitizenRequests() {
     <div className="portal-layout">
       <CitizenSidebar />
       <div className="portal-main">
-        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button>} />
+        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<div className="topbar-action-group"><button type="button" className="secondary-action" disabled={exporting} onClick={() => exportRequests("csv")}>{exporting?"Export…":"CSV"}</button><button type="button" className="secondary-action" disabled={exporting} onClick={() => exportRequests("print")}>Imprimer</button><button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button></div>} />
         <main className="portal-content">
           {error && !showForm ? <div className="error-card" role="alert">{error}</div> : null}
           <section className="toolbar-card">

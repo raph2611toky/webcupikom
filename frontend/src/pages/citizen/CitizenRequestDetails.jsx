@@ -12,6 +12,7 @@ import {
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import { buildSingleRequestHtml, downloadJson, openPrintWindow } from "../../utils/dataExport.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -81,6 +82,14 @@ export default function CitizenRequestDetails({params}){
   async function download(file){
     setError("");try{await downloadCitizenReportAttachment(file)}catch(e){setError(getApiErrorMessage(e,"Téléchargement impossible."))}
   }
+  function printRequest(){
+    setError("");
+    try{openPrintWindow(buildSingleRequestHtml(request))}catch(e){setError(e?.message||"Export impossible.")}
+  }
+  function exportRequestJson(){
+    const reference=request.reference||request.ref||"demande";
+    downloadJson(`nova-terra-${String(reference).toLowerCase()}.json`,request);
+  }
 
   if(!request)return <div className="portal-layout"><CitizenSidebar/><div className="portal-main"><PortalTopbar eyebrow={copy.eyebrow} title={params.id}/><main className="portal-content">{error?<div className="error-card" role="alert">{error}</div>:<section className="portal-card">{copy.loading}</section>}</main></div></div>;
 
@@ -119,7 +128,7 @@ export default function CitizenRequestDetails({params}){
 
         <article className="action-bar portal-card--wide">
           <div><b>{copy.need}</b><span>{copy.needText}</span></div>
-          <div>{canMessage?<button className="secondary-action" onClick={()=>setShowNote(true)}>{copy.addInfo}</button>:null}{canEdit?<button className="secondary-action" onClick={()=>setShowEdit(true)}>{copy.edit}</button>:null}{canCancel?<button className="text-danger" disabled={busy} onClick={cancelReport}>{copy.cancel}</button>:null}{isReport&&request.isClosed?<button className="secondary-action" disabled={busy} onClick={reopenReport}>{copy.reopen}</button>:null}<button className="primary-action" onClick={()=>navigate("/citizen/notifications")}>{copy.notifications}</button></div>
+          <div>{canMessage?<button className="secondary-action" onClick={()=>setShowNote(true)}>{copy.addInfo}</button>:null}{canEdit?<button className="secondary-action" onClick={()=>setShowEdit(true)}>{copy.edit}</button>:null}{canCancel?<button className="text-danger" disabled={busy} onClick={cancelReport}>{copy.cancel}</button>:null}{isReport&&request.isClosed?<button className="secondary-action" disabled={busy} onClick={reopenReport}>{copy.reopen}</button>:null}<button className="secondary-action" type="button" onClick={printRequest}>Imprimer / PDF</button><button className="secondary-action" type="button" onClick={exportRequestJson}>Exporter JSON</button><button className="primary-action" onClick={()=>navigate("/citizen/notifications")}>{copy.notifications}</button></div>
         </article>
       </section>
 

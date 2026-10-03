@@ -284,6 +284,20 @@ export async function getCitizenRequests(params = {}) {
   return unwrapList(data).map(normalizeCitizen);
 }
 
+export async function getAllCitizenRequests(params = {}) {
+  const rows = [];
+  let page = 1;
+  for (let guard = 0; guard < 100; guard += 1) {
+    const { data } = await api.get("/citizen/requests/", {
+      params: cleanParams({ ...params, page, page_size: params.page_size || 100 }),
+    });
+    rows.push(...unwrapList(data).map(normalizeCitizen));
+    if (!data?.next || !Array.isArray(data?.results)) break;
+    page += 1;
+  }
+  return rows;
+}
+
 export async function getAgentRequestsPage(params = {}) {
   const { data } = await api.get("/agent/requests/", { params: cleanParams(params) });
   return {
