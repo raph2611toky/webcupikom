@@ -7,7 +7,7 @@ paramètres multipart et décorateurs drf-yasg. La logique métier reste dans
 
 from django.utils.decorators import method_decorator
 from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import serializers
 
 from .serializers import (
@@ -19,7 +19,6 @@ from .serializers import (
     GoogleAuthSerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
-    RefreshRequestSerializer,
     RegisterSerializer,
     SetPasswordSerializer,
     UserSerializer,
@@ -52,11 +51,6 @@ JWT_SECURITY = [{"Bearer": []}]
 # Schémas de réponses contractuels
 # -----------------------------------------------------------------------------
 
-class TokenPairResponseSerializer(serializers.Serializer):
-    refresh = serializers.CharField(help_text="Refresh token JWT.")
-    access = serializers.CharField(help_text="Access token JWT.")
-
-
 class MessageResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
 
@@ -75,13 +69,13 @@ class RegisterResponseSerializer(serializers.Serializer):
 
 
 class AuthResponseSerializer(serializers.Serializer):
-    tokens = TokenPairResponseSerializer()
+    access = serializers.CharField(help_text="Access token JWT. Le refresh token est dans un cookie HttpOnly.")
     user = UserSerializer()
 
 
 class VerifyEmailResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
-    tokens = TokenPairResponseSerializer()
+    access = serializers.CharField(help_text="Access token JWT. Le refresh token est dans un cookie HttpOnly.")
     user = UserSerializer()
 
 
@@ -89,7 +83,7 @@ class GoogleAuthResponseSerializer(serializers.Serializer):
     created = serializers.BooleanField(
         help_text="true si le compte a été créé pendant cette connexion Google."
     )
-    tokens = TokenPairResponseSerializer()
+    access = serializers.CharField(help_text="Access token JWT. Le refresh token est dans un cookie HttpOnly.")
     user = UserSerializer()
 
 
@@ -106,10 +100,7 @@ class GoogleRedirectResponseSerializer(serializers.Serializer):
 
 
 class RefreshResponseSerializer(serializers.Serializer):
-    access = serializers.CharField(help_text="Nouveau access token JWT.")
-    refresh = serializers.CharField(
-        help_text="Nouveau refresh token JWT car la rotation est activée."
-    )
+    access = serializers.CharField(help_text="Nouveau access token JWT. Le refresh rotatif reste en cookie HttpOnly.")
 
 
 class ChangeEmailConfirmResponseSerializer(serializers.Serializer):
@@ -278,12 +269,11 @@ LogoutView = _document(
     tags=["Authentification"],
     operation_id="auth_logout",
     operation_summary="Déconnexion et révocation du refresh token",
-    security=JWT_SECURITY,
-    request_body=RefreshRequestSerializer,
+    operation_description="Le refresh token est lu puis supprimé depuis le cookie HttpOnly.",
+    security=PUBLIC_SECURITY,
+    request_body=no_body,
     responses={
-        204: openapi.Response("Déconnexion réussie ; aucune réponse JSON"),
-        400: openapi.Response("Refresh token manquant, invalide ou déjà révoqué", ERROR_RESPONSE),
-        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
+        204: openapi.Response("Déconnexion réussie ; cookie supprimé"),
         500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
     },
 )
@@ -294,13 +284,15 @@ RefreshView = _document(
     tags=["Authentification"],
     operation_id="auth_refresh",
     operation_summary="Rafraîchir le JWT",
-    operation_description="La rotation des refresh tokens est activée : access et refresh sont renvoyés.",
+    operation_description=(
+        "Le refresh token est lu dans le cookie HttpOnly. Sa rotation reste côté serveur/navigateur ; "
+        "seul le nouvel access token est retourné au frontend."
+    ),
     security=PUBLIC_SECURITY,
-    request_body=RefreshRequestSerializer,
+    request_body=no_body,
     responses={
-        200: openapi.Response("Nouveaux tokens JWT", RefreshResponseSerializer()),
-        400: openapi.Response("Refresh token requis", ERROR_RESPONSE),
-        401: openapi.Response("Refresh token invalide ou expiré", ERROR_RESPONSE),
+        200: openapi.Response("Nouveau access token", RefreshResponseSerializer()),
+        401: openapi.Response("Session absente, invalide ou expirée", ERROR_RESPONSE),
         500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
     },
 )

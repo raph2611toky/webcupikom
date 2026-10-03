@@ -22,6 +22,7 @@ protected_schema = swagger_password_protect(
 urlpatterns = [
     path("health/", health, name="health"),
     path("api/", include("apps.users.urls")),
+    path("api/", include("apps.city.urls")),
     path("admin/", admin.site.urls),
 
     # Documentation API protégée

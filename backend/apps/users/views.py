@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
@@ -13,6 +14,14 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .auth_cookies import (
+    build_refresh_token,
+    clear_refresh_cookie,
+    get_refresh_cookie,
+    no_store,
+    remember_from_refresh,
+    set_refresh_cookie,
+)
 from .models import User
 from .serializers import (
     ChangeEmailConfirmSerializer,
@@ -24,7 +33,6 @@ from .serializers import (
     LoginSerializer,
     PasswordResetConfirmSerializer,
     ProfileUpdateSerializer,
-    RefreshRequestSerializer,
     RegisterSerializer,
     SetPasswordSerializer,
     UserSerializer,
@@ -49,13 +57,23 @@ from .services.google_identity import (
 
 logger = logging.getLogger(__name__)
 
-def token_pair(user):
-    refresh = RefreshToken.for_user(user)
-    return {"refresh": str(refresh), "access": str(refresh.access_token)}
-
 
 def user_payload(user, request):
     return UserSerializer(user, context={"request": request}).data
+
+
+def auth_response(user, request, *, remember=None, extra=None, status_code=status.HTTP_200_OK):
+    if remember is None:
+        remember = settings.AUTH_COOKIE_REMEMBER_DEFAULT
+
+    refresh = build_refresh_token(user, remember=remember)
+    payload = {"access": str(refresh.access_token), "user": user_payload(user, request)}
+    if extra:
+        payload = {**extra, **payload}
+
+    response = Response(payload, status=status_code)
+    set_refresh_cookie(response, str(refresh), remember=remember)
+    return no_store(response)
 
 
 def server_error(exc, view_name):
@@ -106,11 +124,11 @@ class VerifyEmailView(APIView):
                     user.save(update_fields=["email_verified", "is_active", "updated_at"])
                     transaction.on_commit(lambda: send_welcome_email(user), robust=True)
                 update_last_login(None, user)
-            return Response({
-                "message": "Adresse email vérifiée.",
-                "tokens": token_pair(user),
-                "user": user_payload(user, request),
-            })
+            return auth_response(
+                user,
+                request,
+                extra={"message": "Adresse email vérifiée."},
+            )
         except APIException:
             raise
         except Exception as exc:
@@ -152,8 +170,11 @@ class LoginView(APIView):
             serializer = LoginSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
             user = serializer.validated_data["user"]
+            remember = serializer.validated_data.get(
+                "remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT
+            )
             update_last_login(None, user)
-            return Response({"tokens": token_pair(user), "user": user_payload(user, request)})
+            return auth_response(user, request, remember=remember)
         except APIException:
             raise
         except Exception as exc:
@@ -261,11 +282,15 @@ class GoogleLoginView(APIView):
                 if created:
                     transaction.on_commit(lambda: send_welcome_email(user), robust=True)
 
-            return Response({
-                "created": created,
-                "tokens": token_pair(user),
-                "user": user_payload(user, request),
-            })
+            remember = serializer.validated_data.get(
+                "remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT
+            )
+            return auth_response(
+                user,
+                request,
+                remember=remember,
+                extra={"created": created},
+            )
         except APIException:
             raise
         except Exception as exc:
@@ -273,20 +298,23 @@ class GoogleLoginView(APIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         try:
-            serializer = RefreshRequestSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            try:
-                RefreshToken(serializer.validated_data["refresh"]).blacklist()
-            except TokenError:
-                return Response(
-                    {"detail": "Refresh token invalide ou déjà révoqué."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            refresh_value = get_refresh_cookie(request)
+            if refresh_value:
+                try:
+                    RefreshToken(refresh_value).blacklist()
+                except TokenError:
+                    # Même si le token est expiré/invalide, la déconnexion locale
+                    # doit toujours supprimer le cookie navigateur.
+                    pass
+
+            response = Response(status=status.HTTP_204_NO_CONTENT)
+            clear_refresh_cookie(response)
+            return no_store(response)
         except APIException:
             raise
         except Exception as exc:
@@ -299,12 +327,32 @@ class RefreshView(APIView):
 
     def post(self, request):
         try:
-            serializer = TokenRefreshSerializer(data=request.data)
+            refresh_value = get_refresh_cookie(request)
+            if not refresh_value:
+                return no_store(Response(
+                    {"detail": "Session expirée. Reconnectez-vous."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                ))
+
             try:
+                remember = remember_from_refresh(refresh_value)
+                serializer = TokenRefreshSerializer(data={"refresh": refresh_value})
                 serializer.is_valid(raise_exception=True)
-            except TokenError as exc:
-                return Response({"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
-            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+            except TokenError:
+                response = Response(
+                    {"detail": "Session expirée. Reconnectez-vous."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+                clear_refresh_cookie(response)
+                return no_store(response)
+
+            rotated_refresh = serializer.validated_data.get("refresh", refresh_value)
+            response = Response(
+                {"access": serializer.validated_data["access"]},
+                status=status.HTTP_200_OK,
+            )
+            set_refresh_cookie(response, rotated_refresh, remember=remember)
+            return no_store(response)
         except APIException:
             raise
         except Exception as exc:

@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.conf import settings
 from django.core import mail
 from django.test import override_settings
 from django.urls import reverse
@@ -44,7 +45,10 @@ class AccountApiTests(APITestCase):
 
         response = self.client.post(reverse("users:login"), {"email": user.email, "password": "StrongPass!2026"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("access", response.data["tokens"])
+        self.assertIn("access", response.data)
+        self.assertNotIn("refresh", response.data)
+        self.assertIn(settings.AUTH_REFRESH_COOKIE_NAME, response.cookies)
+        self.assertTrue(response.cookies[settings.AUTH_REFRESH_COOKIE_NAME]["httponly"])
 
     @override_settings(GOOGLE_CLIENT_ID="test-client.apps.googleusercontent.com")
     @patch("apps.users.views.verify_google_credential")
@@ -79,9 +83,31 @@ class AccountApiTests(APITestCase):
         user.refresh_from_db()
         self.assertEqual(user.email, "next@example.com")
 
-    def test_logout_blacklists_refresh_token(self):
+    def test_refresh_uses_http_only_cookie(self):
         user = self.create_verified_user()
-        refresh = RefreshToken.for_user(user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
-        response = self.client.post(reverse("users:logout"), {"refresh": str(refresh)}, format="json")
+        login = self.client.post(
+            reverse("users:login"),
+            {"email": user.email, "password": "StrongPass!2026", "remember": True},
+            format="json",
+        )
+        self.assertEqual(login.status_code, status.HTTP_200_OK)
+
+        response = self.client.post(reverse("users:refresh"), {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertNotIn("refresh", response.data)
+        self.assertIn(settings.AUTH_REFRESH_COOKIE_NAME, response.cookies)
+
+    def test_logout_blacklists_refresh_cookie_and_clears_it(self):
+        user = self.create_verified_user()
+        login = self.client.post(
+            reverse("users:login"),
+            {"email": user.email, "password": "StrongPass!2026"},
+            format="json",
+        )
+        self.assertEqual(login.status_code, status.HTTP_200_OK)
+
+        response = self.client.post(reverse("users:logout"), {}, format="json")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIn(settings.AUTH_REFRESH_COOKIE_NAME, response.cookies)
+        self.assertEqual(response.cookies[settings.AUTH_REFRESH_COOKIE_NAME].value, "")

@@ -18,13 +18,13 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            "id", "email", "first_name", "last_name", "display_name",
+            "id", "email", "first_name", "last_name", "display_name", "role",
             "phone_number", "avatar", "avatar_url", "avatar_display_url",
             "auth_provider", "email_verified", "locale", "has_password",
             "date_joined", "updated_at",
         )
         read_only_fields = (
-            "id", "email", "display_name", "avatar_display_url", "auth_provider",
+            "id", "email", "display_name", "role", "avatar_display_url", "auth_provider",
             "email_verified", "avatar_url", "has_password", "date_joined", "updated_at",
         )
 
@@ -84,6 +84,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
+    remember = serializers.BooleanField(required=False)
 
     def validate(self, attrs):
         email = attrs["email"].strip().lower()
@@ -99,6 +100,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 class GoogleAuthSerializer(serializers.Serializer):
+    remember = serializers.BooleanField(required=False)
     credential = serializers.CharField(
         required=False,
         allow_blank=False,

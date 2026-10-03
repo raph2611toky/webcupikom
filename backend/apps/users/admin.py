@@ -14,27 +14,28 @@ class UserAdmin(DjangoUserAdmin):
     list_display = (
         "email",
         "display_name",
+        "role",
         "auth_provider",
         "email_verified",
         "is_active",
         "is_staff",
         "date_joined",
     )
-    list_filter = ("auth_provider", "email_verified", "is_active", "is_staff", "is_superuser")
+    list_filter = ("role", "auth_provider", "email_verified", "is_active", "is_staff", "is_superuser")
     search_fields = ("email", "first_name", "last_name", "phone_number")
     ordering = ("-date_joined",)
     readonly_fields = ("last_login", "date_joined", "updated_at")
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profil", {"fields": ("first_name", "last_name", "phone_number", "avatar", "avatar_url", "locale")}),
+        ("Profil", {"fields": ("first_name", "last_name", "role", "phone_number", "avatar", "avatar_url", "locale")}),
         ("Authentification", {"fields": ("auth_provider", "google_sub", "email_verified")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login", "date_joined", "updated_at")}),
     )
     add_fieldsets = (
         (None, {
-            "fields": ("email", "first_name", "last_name", "password1", "password2", "is_staff", "is_active"),
+            "fields": ("email", "first_name", "last_name", "role", "password1", "password2", "is_staff", "is_active"),
         }),
     )
 

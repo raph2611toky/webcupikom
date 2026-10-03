@@ -48,8 +48,9 @@ schema_view = get_schema_view(
         title="IKOM API",
         default_version="v1",
         description=(
-            "Documentation sécurisée de l’API IKOM : authentification locale/Google, "
-            "gestion de compte et profil. Les endpoints protégés utilisent un JWT Bearer."
+            "Documentation sécurisée de l’API IKOM / Terra Nova : authentification, rôles, "
+            "services municipaux, actualités, contact, demandes citoyennes et flux WebCup. "
+            "Les endpoints protégés utilisent un JWT Bearer."
         ),
         contact=openapi.Contact(email=settings.SUPPORT_EMAIL),
     ),

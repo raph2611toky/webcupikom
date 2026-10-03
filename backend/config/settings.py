@@ -21,10 +21,13 @@ DEBUG = env_bool("MODE_DEV", env_bool("DEBUG", True))
 
 ALLOWED_HOSTS = env_list(
     "ALLOWED_HOSTS",
-    "api.ikomholala.madagascar.webcup.hodi.cloud,127.0.0.1,localhost",
+    "api.ikomholala.madagascar.webcup.hodi.cloud,127.0.0.1,localhost,192.168.8.150",
 )
 
-LOCAL_APPS = ["apps.users.apps.UsersConfig"]
+LOCAL_APPS = [
+    "apps.users.apps.UsersConfig",
+    "apps.city.apps.CityConfig",
+]
 THIRD_APPS = [
     "corsheaders",
     "rest_framework",
@@ -113,14 +116,36 @@ REST_FRAMEWORK = {
     ],
 }
 
+JWT_ACCESS_MINUTES = int(os.getenv("JWT_ACCESS_MINUTES", "15"))
+JWT_REFRESH_DAYS = int(os.getenv("JWT_REFRESH_DAYS", "30"))
+JWT_SIGNING_KEY = os.getenv("JWT_SIGNING_KEY", SECRET_KEY)
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "30"))),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=JWT_ACCESS_MINUTES),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=JWT_REFRESH_DAYS),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "CHECK_REVOKE_TOKEN": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "SIGNING_KEY": JWT_SIGNING_KEY,
 }
+
+# Le refresh token reste uniquement dans un cookie HttpOnly. La clé de signature
+# JWT_SIGNING_KEY est un secret backend et ne doit jamais être exposée via VITE_*.
+AUTH_REFRESH_COOKIE_NAME = os.getenv("AUTH_REFRESH_COOKIE_NAME", "kamo_refresh")
+AUTH_REFRESH_COOKIE_SECURE = env_bool("AUTH_REFRESH_COOKIE_SECURE", not DEBUG)
+AUTH_REFRESH_COOKIE_SAMESITE = os.getenv("AUTH_REFRESH_COOKIE_SAMESITE", "Lax").strip() or "Lax"
+AUTH_REFRESH_COOKIE_DOMAIN = os.getenv("AUTH_REFRESH_COOKIE_DOMAIN", "").strip() or None
+AUTH_REFRESH_COOKIE_PATH = os.getenv("AUTH_REFRESH_COOKIE_PATH", "/api/auth/").strip() or "/api/auth/"
+AUTH_REFRESH_COOKIE_MAX_AGE = int(
+    os.getenv("AUTH_REFRESH_COOKIE_MAX_AGE", str(JWT_REFRESH_DAYS * 24 * 60 * 60))
+)
+AUTH_COOKIE_REMEMBER_DEFAULT = env_bool("AUTH_COOKIE_REMEMBER_DEFAULT", True)
+
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
 
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = "Indian/Antananarivo"
@@ -172,6 +197,16 @@ EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or f"no-reply@localhost")
+
+
+# Flux officiel WebCup / Terra Nova. La clé reste exclusivement côté backend.
+WEBCUP_REQUESTS_URL = os.getenv(
+    "WEBCUP_REQUESTS_URL",
+    "https://24h.webcup.fr/wp-json/webcup/v1/requests",
+).strip()
+WEBCUP_API_KEY = os.getenv("WEBCUP_API_KEY", "").strip()
+WEBCUP_REQUEST_TIMEOUT = float(os.getenv("WEBCUP_REQUEST_TIMEOUT", "8"))
+WEBCUP_CACHE_SECONDS = int(os.getenv("WEBCUP_CACHE_SECONDS", "15"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

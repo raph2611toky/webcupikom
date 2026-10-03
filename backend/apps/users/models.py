@@ -5,6 +5,11 @@ from .managers import UserManager
 
 
 class User(AbstractUser):
+    class Role(models.TextChoices):
+        CITIZEN = "citizen", "Citoyen"
+        AGENT = "agent", "Agent municipal"
+        ADMIN = "admin", "Administrateur"
+
     class AuthProvider(models.TextChoices):
         LOCAL = "local", "Email / mot de passe"
         GOOGLE = "google", "Google"
@@ -12,6 +17,7 @@ class User(AbstractUser):
 
     username = None
     email = models.EmailField("adresse email", unique=True)
+    role = models.CharField("rôle", max_length=16, choices=Role.choices, default=Role.CITIZEN)
     phone_number = models.CharField("téléphone", max_length=32, blank=True)
     avatar = models.ImageField("photo de profil", upload_to="users/avatars/%Y/%m/", blank=True, null=True)
     avatar_url = models.URLField("photo distante", blank=True)
@@ -43,4 +49,7 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if self.email:
             self.email = self.email.strip().lower()
+        if self.is_superuser:
+            self.role = self.Role.ADMIN
+        self.is_staff = self.role == self.Role.ADMIN
         super().save(*args, **kwargs)

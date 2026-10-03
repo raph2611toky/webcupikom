@@ -1,23 +1,20 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "./auth/AuthContext.jsx";
+import { env } from "./config/env.js";
 import LandingPage from "./pages/Landing/LandingPage.jsx";
 import LoginPage from "./pages/Login/LoginPage.jsx";
 import InscriptionPage from "./pages/Inscription/InscriptionPage.jsx";
-
-const ACCESS_TOKEN_KEY = "kamo_access_token";
-
-function normalizePath(pathname) {
-  if (!pathname || pathname === "/") return "/";
-  return pathname.replace(/\/+$/, "") || "/";
-}
+import ForgotPasswordPage from "./pages/ForgotPassword/ForgotPasswordPage.jsx";
+import ResetPasswordPage from "./pages/ResetPassword/ResetPasswordPage.jsx";
+import VerifyEmailPage from "./pages/VerifyEmail/VerifyEmailPage.jsx";
+import GoogleCallbackPage from "./pages/GoogleCallback/GoogleCallbackPage.jsx";
+import { navigate, normalizePath } from "./router/navigation.js";
 
 function usePathname() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname));
 
   useEffect(() => {
-    const handleLocationChange = () => {
-      setPathname(normalizePath(window.location.pathname));
-    };
-
+    const handleLocationChange = () => setPathname(normalizePath(window.location.pathname));
     window.addEventListener("popstate", handleLocationChange);
     return () => window.removeEventListener("popstate", handleLocationChange);
   }, []);
@@ -25,28 +22,37 @@ function usePathname() {
   return pathname;
 }
 
-function redirect(to) {
-  window.history.replaceState({}, "", to);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0 });
-}
-
 function Redirect({ to }) {
   useEffect(() => {
-    redirect(to);
+    navigate(to, { replace: true });
   }, [to]);
-
   return null;
 }
 
-function ProtectedRoute({ children }) {
-  const isAuthenticated = Boolean(window.localStorage.getItem(ACCESS_TOKEN_KEY));
+function AuthLoading() {
+  return (
+    <main className="app-auth-loading" aria-label="Chargement de la session">
+      <span />
+    </main>
+  );
+}
 
+function ProtectedRoute({ children }) {
+  const { ready, isAuthenticated } = useAuth();
+
+  if (!ready) return <AuthLoading />;
   if (!isAuthenticated) {
     const next = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
     return <Redirect to={`/login?next=${next}`} />;
   }
 
+  return children;
+}
+
+function GuestRoute({ children }) {
+  const { ready, isAuthenticated } = useAuth();
+  if (!ready) return <AuthLoading />;
+  if (isAuthenticated) return <Redirect to={env.authAfterLogin} />;
   return children;
 }
 
@@ -59,13 +65,23 @@ export default function App() {
       return <LandingPage />;
 
     case "/login":
-      return <LoginPage />;
+      return <GuestRoute><LoginPage /></GuestRoute>;
 
     case "/inscription":
-      return <InscriptionPage />;
+      return <GuestRoute><InscriptionPage /></GuestRoute>;
 
-    // Première route privée. Le contenu pourra être remplacé par le dashboard
-    // quand celui-ci sera créé. Le garde redirige vers /login sans token.
+    case "/mot-de-passe-oublie":
+      return <GuestRoute><ForgotPasswordPage /></GuestRoute>;
+
+    case "/reset-password":
+      return <GuestRoute><ResetPasswordPage /></GuestRoute>;
+
+    case "/verify-email":
+      return <VerifyEmailPage />;
+
+    case "/auth/google/callback":
+      return <GoogleCallbackPage />;
+
     case "/app":
       return (
         <ProtectedRoute>
