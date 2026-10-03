@@ -19,7 +19,7 @@ export default function CitizenSettings(){
 
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
     <PortalTopbar eyebrow={copy.eyebrow} title={copy.title}/>
-    <main className="portal-content">
+    <main className="portal-content settings-page">
       <div className="settings-grid">
         <section className="portal-card">
           <span className="section-label">{copy.notifications}</span><h3>{copy.choose}</h3>

@@ -73,7 +73,7 @@ export default function CitizenProfile(){
 
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
     <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button className="topbar-cta" onClick={saveProfile} disabled={saving}>{saving?copy.saving:copy.save}</button>}/>
-    <main className="portal-content profile-page">
+    <main className="portal-content profile-page profile-page--one-screen">
       {status?<div className={status.type==="error"?"error-card":"success-inline"} role={status.type==="error"?"alert":"status"}>{status.message}</div>:null}
       <section className="profile-hero">
         <div className="profile-avatar">{initials}</div>

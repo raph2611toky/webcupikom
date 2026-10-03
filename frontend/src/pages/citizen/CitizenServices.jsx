@@ -12,8 +12,6 @@ const COPY={
   fr:{
     eyebrow:"Ville",
     title:"Services municipaux",
-    introTitle:"Tous vos services municipaux",
-    intro:"Retrouvez rapidement les services de Nova Terra et accédez aux informations utiles avant de commencer une démarche.",
     open:"Ouvrir le service",
     search:"Rechercher un service",
     all:"Tous",
@@ -26,8 +24,6 @@ const COPY={
   en:{
     eyebrow:"City",
     title:"City services",
-    introTitle:"All city services",
-    intro:"Quickly find Nova Terra services and the useful information you need before starting a procedure.",
     open:"Open service",
     search:"Search for a service",
     all:"All",
@@ -40,8 +36,6 @@ const COPY={
   mg:{
     eyebrow:"Tanàna",
     title:"Sampan-draharahan'ny tanàna",
-    introTitle:"Ireo sampan-draharaha rehetra",
-    intro:"Tadiavo haingana ireo sampan-draharaha ao Nova Terra sy ny vaovao ilaina alohan'ny hanombohana dingana iray.",
     open:"Hijery ny sampan-draharaha",
     search:"Hitady sampan-draharaha",
     all:"Rehetra",
@@ -105,14 +99,6 @@ export default function CitizenServices(){
     <div className="portal-main">
       <PortalTopbar eyebrow={copy.eyebrow} title={copy.title}/>
       <main className="portal-content citizen-services-page">
-        <section className="citizen-services-intro">
-          <div>
-            <span className="section-label">Services</span>
-            <h2>{copy.introTitle}</h2>
-            <p>{copy.intro}</p>
-          </div>
-        </section>
-
         <section className="services-view-toolbar" aria-label="Affichage et filtres des services">
           <label className="services-search-field">
             <span aria-hidden="true">⌕</span>

@@ -26,7 +26,7 @@ const COPY = {
     sending:"Envoi…",success:"Signalement envoyé",successText:"Votre signalement est enregistré. Vous pouvez suivre son traitement dans votre historique.",
     track:"Suivre le signalement →",history:"Mes signalements",empty:"Vous n’avez encore envoyé aucun signalement.",
     status:"Statut",place:"Lieu",open:"Ouvrir",error:"Impossible d’envoyer le signalement.",
-    locationRequired:"Indiquez où se trouve le problème avant l’envoi."
+    locationRequired:"Indiquez où se trouve le problème avant l’envoi.",back:"Retour",next:"Continuer",step:"Étape",of:"sur",reviewHint:"Vérifiez les informations avant l’envoi."
   },
   en:{
     eyebrow:"City intervention",title:"Report a problem",introTitle:"What would you like to report?",
@@ -43,7 +43,7 @@ const COPY = {
     sending:"Sending…",success:"Report sent",successText:"Your report has been recorded. You can track it in your history.",
     track:"Track report →",history:"My reports",empty:"You have not sent any reports yet.",
     status:"Status",place:"Location",open:"Open",error:"Unable to send the report.",
-    locationRequired:"Enter where the problem is before sending."
+    locationRequired:"Enter where the problem is before sending.",back:"Back",next:"Continue",step:"Step",of:"of",reviewHint:"Check the information before sending."
   },
   mg:{
     eyebrow:"Fidirana an-tsehatry ny tanàna",title:"Hitatitra olana",introTitle:"Inona no olana tianao hotaterina?",
@@ -60,7 +60,7 @@ const COPY = {
     sending:"Mandefa…",success:"Nalefa ny tatitra",successText:"Voaray ny tatitrao. Azonao arahana ao amin'ny tantaranao ny fikarakarana azy.",
     track:"Hanaraka ny tatitra →",history:"Ny tatitra nataoko",empty:"Tsy mbola nandefa tatitra ianao.",
     status:"Sata",place:"Toerana",open:"Hanokatra",error:"Tsy afaka mandefa ny tatitra.",
-    locationRequired:"Lazao ny toerana misy ny olana alohan'ny handefasana."
+    locationRequired:"Lazao ny toerana misy ny olana alohan'ny handefasana.",back:"Hiverina",next:"Hanohy",step:"Dingana",of:"amin'ny",reviewHint:"Hamarino ny vaovao alohan'ny handefasana."
   }
 };
 
@@ -135,6 +135,7 @@ export default function CitizenReports(){
   const [created,setCreated]=useState(null);
   const [error,setError]=useState("");
   const [items,setItems]=useState([]);
+  const [step,setStep]=useState(1);
   const fileRef=useRef(null);
 
   const selected=useMemo(
@@ -221,24 +222,34 @@ export default function CitizenReports(){
     setPriority("normal");
     setFile(null);
     setError("");
+    setStep(1);
+  }
+
+  function goNext(){
+    setError("");
+    if(step===2 && !location.trim() && !coordinates){
+      setError(copy.locationRequired);
+      return;
+    }
+    if(step===3 && !message.trim()){
+      setError(locale==="en"?"Describe the problem before continuing.":locale==="mg"?"Hazavao aloha ny olana.":"Décrivez le problème avant de continuer.");
+      return;
+    }
+    setStep(current=>Math.min(4,current+1));
+  }
+
+  function goBack(){
+    setError("");
+    setStep(current=>Math.max(1,current-1));
   }
 
   return <div className="portal-layout">
     <CitizenSidebar/>
     <div className="portal-main">
       <PortalTopbar eyebrow={copy.eyebrow} title={copy.title}/>
-      <main className="portal-content report-page">
-        <section className="report-intro">
-          <div>
-            <span className="section-label">F25 · F26</span>
-            <h2>{copy.introTitle}</h2>
-            <p>{copy.intro}</p>
-          </div>
-          <i aria-hidden="true">!</i>
-        </section>
-
-        <section className="report-layout">
-          <form className="portal-card report-form" onSubmit={submit}>
+      <main className="portal-content report-page report-page--wizard">
+        <section className="report-layout report-layout--wizard">
+          <form className="portal-card report-form report-form--wizard" onSubmit={submit}>
             {created ? <div className="report-success" role="status" aria-live="polite">
               <i aria-hidden="true">✓</i>
               <span className="section-label">{copy.success}</span>
@@ -254,9 +265,19 @@ export default function CitizenReports(){
                 <button className="primary-action" type="button" onClick={()=>navigate(`/citizen/requests/${encodeURIComponent(created.reference)}`)}>{copy.track}</button>
               </div>
             </div> : <>
-              <section className="report-step">
-                <div className="report-step__head"><i>1</i><div><b>{copy.type}</b><span>{helperReport(selected,locale)}</span></div></div>
-                <div className="report-type-grid">
+              <div className="report-wizard-head">
+                <div>
+                  <span className="section-label">{copy.step} {step} {copy.of} 4</span>
+                  <h2>{step===1?copy.type:step===2?copy.where:step===3?copy.describe:copy.summary}</h2>
+                  <p>{step===1?helperReport(selected,locale):step===2?copy.locationRequired:step===3?selected.label:copy.reviewHint}</p>
+                </div>
+                <div className="report-wizard-progress" aria-label={`${copy.step} ${step} ${copy.of} 4`}>
+                  {[1,2,3,4].map(item=><span key={item} className={item<=step?"is-done":""}><i>{item}</i></span>)}
+                </div>
+              </div>
+
+              {step===1 ? <section className="report-step report-step--active">
+                <div className="report-type-grid report-type-grid--wizard">
                   {REPORT_TYPES.map(item=><button
                     type="button"
                     key={item.value}
@@ -268,10 +289,9 @@ export default function CitizenReports(){
                     <div><b>{labelReport(item,locale)}</b><span>{helperReport(item,locale)}</span></div>
                   </button>)}
                 </div>
-              </section>
+              </section> : null}
 
-              <section className="report-step">
-                <div className="report-step__head"><i>2</i><div><b>{copy.where}</b><span>{copy.locationRequired}</span></div></div>
+              {step===2 ? <section className="report-step report-step--active">
                 <div className="report-location-grid">
                   <label><span>{copy.sector}</span><input value={sector} onChange={e=>setSector(e.target.value)} placeholder={copy.sectorPh}/></label>
                   <label><span>{copy.location}</span><input value={location} onChange={e=>setLocation(e.target.value)} placeholder={copy.locationPh}/></label>
@@ -282,13 +302,12 @@ export default function CitizenReports(){
                   </button>
                   {coordinates?<div className="report-coordinate-chip"><i>✓</i><div><b>{copy.positionReady}</b><span>{coordinates.latitude}, {coordinates.longitude} · ±{coordinates.accuracy} m</span></div></div>:null}
                 </div>
-              </section>
+              </section> : null}
 
-              <section className="report-step">
-                <div className="report-step__head"><i>3</i><div><b>{copy.describe}</b><span>{selected.label}</span></div></div>
+              {step===3 ? <section className="report-step report-step--active">
                 <div className="report-description-grid">
                   <label><span>{copy.subject}</span><input value={subject} onChange={e=>setSubject(e.target.value)} placeholder={copy.subjectPh}/></label>
-                  <label><span>{copy.details}</span><textarea rows="5" required value={message} onChange={e=>setMessage(e.target.value)} placeholder={copy.detailsPh}/></label>
+                  <label><span>{copy.details}</span><textarea rows="4" required value={message} onChange={e=>setMessage(e.target.value)} placeholder={copy.detailsPh}/></label>
                 </div>
 
                 <div className="report-priority">
@@ -303,26 +322,33 @@ export default function CitizenReports(){
                   <input ref={fileRef} hidden type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)}/>
                   <button type="button" className="secondary-action" onClick={()=>fileRef.current?.click()}>{file?`✓ ${file.name}`:"+ Ajouter"}</button>
                 </div>
-              </section>
+              </section> : null}
 
-              <section className="report-step report-review">
-                <div className="report-step__head"><i>4</i><div><b>{copy.summary}</b><span>{copy.service}: {selected.service}</span></div></div>
+              {step===4 ? <section className="report-step report-step--active report-review">
                 <div className="report-review-grid">
                   <div><span>{copy.type}</span><b>{labelReport(selected,locale)}</b></div>
                   <div><span>{copy.place}</span><b>{[sector,location].filter(Boolean).join(" · ")||copy.positionReady}</b></div>
                   <div><span>{copy.service}</span><b>{selected.service}</b></div>
                   <div><span>{copy.priority}</span><b>{priority==="danger"?copy.danger:priority==="important"?copy.important:copy.normal}</b></div>
+                  <div className="span-2"><span>{copy.details}</span><b>{message}</b></div>
                 </div>
-                {error?<div className="error-card" role="alert">{error}</div>:null}
-                <button className="primary-action report-submit" type="submit" disabled={sending}>{sending?copy.sending:`${copy.send} →`}</button>
-              </section>
+              </section> : null}
+
+              {error?<div className="error-card report-wizard-error" role="alert">{error}</div>:null}
+
+              <div className="report-wizard-actions">
+                {step>1?<button className="secondary-action" type="button" onClick={goBack}>{copy.back}</button>:<span/>}
+                {step<4
+                  ? <button className="primary-action" type="button" onClick={goNext}>{copy.next} →</button>
+                  : <button className="primary-action report-submit" type="submit" disabled={sending}>{sending?copy.sending:`${copy.send} →`}</button>}
+              </div>
             </>}
           </form>
 
-          <aside className="portal-card report-history">
+          <aside className="portal-card report-history report-history--wizard">
             <div className="portal-card__head"><div><span className="section-label">{copy.history}</span><h3>{copy.history}</h3></div></div>
             <div className="report-history-list">
-              {items.length?items.map(item=><button key={item.ref} type="button" onClick={()=>navigate(`/citizen/requests/${encodeURIComponent(item.ref)}`)}>
+              {items.length?items.slice(0,5).map(item=><button key={item.ref} type="button" onClick={()=>navigate(`/citizen/requests/${encodeURIComponent(item.ref)}`)}>
                 <i aria-hidden="true">!</i>
                 <div>
                   <strong>{item.reportType||item.title}</strong>
@@ -332,6 +358,7 @@ export default function CitizenReports(){
                 <em className={`status-pill status-${String(item.status).replaceAll(" ","-").toLowerCase()}`}>{item.status}</em>
               </button>):<div className="dashboard-empty">{copy.empty}</div>}
             </div>
+            {items.length>5?<button className="report-history-more" type="button" onClick={()=>navigate("/citizen/requests")}>Voir tout l’historique →</button>:null}
           </aside>
         </section>
       </main>

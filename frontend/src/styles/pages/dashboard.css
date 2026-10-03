@@ -6615,3 +6615,848 @@ html[data-contrast="high"] .delete-account-mfa > div span,
 html[data-contrast="high"] .delete-account-mfa label > span {
   color:#fff!important;
 }
+
+
+/* ==========================================================================
+   V47 — Services: remove duplicate in-page title; scroll only when necessary
+   ========================================================================== */
+body[data-route-group="portal"] .citizen-services-page {
+  gap: 10px;
+}
+
+/* The portal topbar already names the page, so the old decorative intro block
+   is intentionally no longer rendered. These rules protect against stale DOM
+   during hot reload and keep it out of layout if present temporarily. */
+body[data-route-group="portal"] .citizen-services-page > .citizen-services-intro {
+  display: none !important;
+}
+
+/* Vertical scrollbars are conditional: they appear only when content exceeds
+   the available viewport. Horizontal subregions keep their own local scroll. */
+@media (min-width: 901px) {
+  body[data-route-group="portal"] .portal-content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  body[data-route-group="portal"] .portal-sidebar {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+}
+
+
+/* ==========================================================================
+   V48 — Pages citoyennes compactes : une vue desktop, scroll seulement si besoin
+   Paramètres / Profil / Services / Rendez-vous / Signalements
+   ========================================================================== */
+
+/* -------------------- Paramètres -------------------- */
+.settings-page {
+  padding-top: 10px !important;
+  padding-bottom: 12px !important;
+}
+
+.settings-page .settings-grid {
+  display:grid;
+  grid-template-columns:minmax(300px,.82fr) minmax(0,1.28fr);
+  grid-template-rows:auto auto;
+  gap:10px;
+  margin-top:0;
+  align-items:stretch;
+}
+
+.settings-page .settings-grid > :nth-child(1) {
+  grid-column:1;
+  grid-row:1;
+}
+
+.settings-page .settings-grid > :nth-child(2) {
+  grid-column:2;
+  grid-row:1 / span 2;
+}
+
+.settings-page .settings-grid > :nth-child(3) {
+  grid-column:1;
+  grid-row:2;
+}
+
+.settings-page .portal-card {
+  padding:14px 16px;
+}
+
+.settings-page .portal-card > h3 {
+  margin:.24rem 0 .45rem;
+  font-size:.9rem;
+}
+
+.settings-page .setting-line,
+.settings-page .toggle-line {
+  min-height:43px;
+  padding:5px 0;
+}
+
+.settings-page .setting-line b,
+.settings-page .toggle-line > span {
+  font-size:.64rem;
+}
+
+.settings-page .setting-line span {
+  margin-top:2px;
+  font-size:.54rem;
+}
+
+.settings-page .detail-copy {
+  margin:.45rem 0 0;
+  font-size:.62rem;
+  line-height:1.45;
+}
+
+.settings-page .setting-actions {
+  gap:5px;
+}
+
+.settings-page .setting-actions button,
+.settings-page .setting-line > button {
+  min-height:30px;
+  padding:0 8px;
+  font-size:.59rem;
+}
+
+/* -------------------- Profil -------------------- */
+.profile-page--one-screen {
+  padding-top:10px !important;
+  padding-bottom:12px !important;
+}
+
+.profile-page--one-screen .profile-hero {
+  min-height:72px;
+  gap:12px;
+  padding:11px 15px;
+  border-radius:15px;
+}
+
+.profile-page--one-screen .profile-avatar {
+  width:50px;
+  height:50px;
+  border-radius:14px;
+  font-size:1rem;
+}
+
+.profile-page--one-screen .profile-hero h2 {
+  margin:.15rem 0 .1rem;
+  font-size:1.12rem;
+}
+
+.profile-page--one-screen .profile-hero p,
+.profile-page--one-screen .profile-hero > div:nth-child(2) > span {
+  font-size:.56rem;
+}
+
+.profile-page--one-screen .profile-progress b {
+  font-size:1.35rem;
+}
+
+.profile-page--one-screen .profile-progress span {
+  font-size:.55rem;
+}
+
+.profile-page--one-screen .profile-sections {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-rows:auto auto;
+  gap:9px;
+  margin-top:9px;
+  align-items:start;
+}
+
+.profile-page--one-screen .profile-sections > section:nth-child(1) {
+  grid-column:1;
+  grid-row:1;
+}
+
+.profile-page--one-screen .profile-sections > section:nth-child(2) {
+  grid-column:2;
+  grid-row:1;
+}
+
+.profile-page--one-screen .profile-sections > section:nth-child(3) {
+  grid-column:3;
+  grid-row:1 / span 2;
+}
+
+.profile-page--one-screen .profile-sections > section:nth-child(4) {
+  grid-column:1;
+  grid-row:2;
+}
+
+.profile-page--one-screen .profile-sections > section:nth-child(5) {
+  grid-column:2;
+  grid-row:2;
+}
+
+.profile-page--one-screen .profile-sections .portal-card {
+  padding:12px 13px;
+  border-radius:14px;
+}
+
+.profile-page--one-screen .portal-card__head h3 {
+  margin:.18rem 0 0;
+  font-size:.82rem;
+}
+
+.profile-page--one-screen .profile-form-grid {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  margin-top:8px;
+}
+
+.profile-page--one-screen .profile-form-grid label {
+  gap:4px;
+}
+
+.profile-page--one-screen .profile-form-grid label > span {
+  font-size:.55rem;
+}
+
+.profile-page--one-screen .profile-form-grid input,
+.profile-page--one-screen .profile-form-grid select {
+  width:100%;
+  min-width:0;
+  height:32px;
+  min-height:32px;
+  padding:0 9px;
+  border:1px solid var(--tn-line);
+  border-radius:8px;
+  background:var(--tn-card);
+  color:var(--tn-text);
+  font:inherit;
+  font-size:.64rem;
+}
+
+.profile-page--one-screen .account-facts {
+  margin-top:7px;
+}
+
+.profile-page--one-screen .account-facts > div {
+  min-height:28px;
+  padding:5px 0;
+}
+
+.profile-page--one-screen .account-facts span {
+  font-size:.54rem;
+}
+
+.profile-page--one-screen .account-facts b {
+  font-size:.6rem;
+}
+
+/* -------------------- Services -------------------- */
+.citizen-services-page {
+  padding-top:10px !important;
+  padding-bottom:12px !important;
+}
+
+.citizen-services-page .services-view-toolbar {
+  min-height:48px;
+  padding:7px 9px;
+  gap:7px;
+}
+
+.citizen-services-page .services-search-field {
+  min-height:34px;
+}
+
+.citizen-services-page .services-category-filters button,
+.citizen-services-page .services-view-switch button {
+  min-height:30px;
+  padding:0 8px;
+  font-size:.57rem;
+}
+
+.citizen-services-page .services-filter-summary {
+  min-height:19px;
+  font-size:.54rem;
+}
+
+body[data-route-group="portal"] .citizen-services-page .citizen-service-grid--v39 {
+  gap:9px;
+}
+
+body[data-route-group="portal"] .citizen-services-page .citizen-service-grid--v39 .citizen-service-card {
+  min-height:166px;
+  padding:13px 14px 12px;
+  border-radius:15px;
+}
+
+.citizen-services-page .citizen-service-card__decor {
+  width:118px;
+  height:92px;
+  top:-42px;
+  right:-38px;
+}
+
+.citizen-services-page .citizen-service-card__icon {
+  width:35px;
+  height:35px;
+  border-radius:10px;
+  font-size:.86rem;
+}
+
+body[data-route-group="portal"] .citizen-services-page .citizen-service-grid--v39 .citizen-service-card__category {
+  margin-top:7px;
+  font-size:.52rem;
+}
+
+body[data-route-group="portal"] .citizen-services-page .citizen-service-grid--v39 h2 {
+  margin:3px 0 4px;
+  font-size:.96rem;
+}
+
+body[data-route-group="portal"] .citizen-services-page .citizen-service-grid--v39 p {
+  max-width:82%;
+  font-size:.6rem;
+  line-height:1.38;
+}
+
+.citizen-services-page .citizen-service-card__watermark {
+  right:13px;
+  bottom:38px;
+  font-size:2.15rem;
+}
+
+body[data-route-group="portal"] .citizen-services-page .citizen-service-grid--v39 .citizen-service-card__cta {
+  min-height:25px;
+  padding-top:6px;
+  font-size:.58rem;
+}
+
+.citizen-services-page .citizen-service-card__cta > i {
+  width:20px;
+  height:20px;
+  font-size:.56rem;
+}
+
+/* -------------------- Rendez-vous -------------------- */
+.appointment-redesign-page {
+  padding-top:8px !important;
+  padding-bottom:10px !important;
+  gap:7px !important;
+}
+
+.appointment-redesign-page .appointment-redesign-header {
+  min-height:58px;
+  padding:8px 13px;
+  border-radius:13px;
+}
+
+.appointment-redesign-page .appointment-redesign-header h2 {
+  margin:.12rem 0 .18rem;
+  font-size:1.05rem;
+}
+
+.appointment-redesign-page .appointment-redesign-header p {
+  font-size:.59rem;
+  line-height:1.35;
+}
+
+.appointment-redesign-page .appointment-header-mark {
+  width:34px;
+  height:34px;
+  flex-basis:34px;
+}
+
+.appointment-redesign-page .appointment-redesign-grid {
+  grid-template-columns:minmax(0,1.55fr) minmax(300px,.58fr);
+  gap:8px;
+}
+
+.appointment-redesign-page .appointment-service-row {
+  padding:8px 12px;
+  gap:8px;
+}
+
+.appointment-redesign-page .appointment-modern-field > span {
+  font-size:.58rem;
+}
+
+.appointment-redesign-page .appointment-modern-field input,
+.appointment-redesign-page .appointment-modern-field select {
+  min-height:32px;
+  height:32px;
+  font-size:.64rem;
+}
+
+.appointment-redesign-page .appointment-calendar-section,
+.appointment-redesign-page .appointment-time-section {
+  gap:6px;
+  padding:8px 12px;
+}
+
+.appointment-redesign-page .appointment-section-heading h3 {
+  font-size:.78rem !important;
+}
+
+.appointment-redesign-page .appointment-date-picker-layout {
+  grid-template-columns:minmax(130px,.42fr) minmax(0,1fr);
+  gap:8px;
+}
+
+.appointment-redesign-page .appointment-date-guide {
+  min-height:0;
+  padding:10px;
+  border-radius:11px;
+}
+
+.appointment-redesign-page .appointment-date-guide__visual {
+  width:38px;
+  height:38px;
+  border-radius:10px;
+}
+
+.appointment-redesign-page .appointment-date-guide strong {
+  font-size:.66rem;
+}
+
+.appointment-redesign-page .appointment-date-guide p,
+.appointment-redesign-page .appointment-date-guide__count {
+  font-size:.54rem;
+  line-height:1.35;
+}
+
+.appointment-redesign-page .appointment-mini-calendar {
+  width:min(100%,390px);
+  padding:6px 8px;
+}
+
+.appointment-redesign-page .appointment-calendar-toolbar {
+  grid-template-columns:25px 1fr 25px;
+  margin-bottom:3px;
+}
+
+.appointment-redesign-page .appointment-calendar-toolbar button {
+  width:25px;
+  height:25px;
+}
+
+.appointment-redesign-page .appointment-calendar-toolbar strong {
+  font-size:.67rem;
+}
+
+.appointment-redesign-page .appointment-calendar-weekdays span {
+  min-height:15px;
+  font-size:.46rem;
+}
+
+.appointment-redesign-page .appointment-calendar-grid {
+  gap:3px;
+}
+
+.appointment-redesign-page .appointment-calendar-day {
+  min-height:27px;
+  height:27px;
+  border-radius:7px;
+  font-size:.57rem;
+}
+
+.appointment-redesign-page .appointment-calendar-legend {
+  margin-top:4px;
+  padding-top:4px;
+  gap:5px 8px;
+}
+
+.appointment-redesign-page .appointment-calendar-legend span {
+  font-size:.46rem;
+}
+
+.appointment-redesign-page .appointment-time-grid {
+  gap:5px;
+}
+
+.appointment-redesign-page .appointment-time-grid button {
+  min-height:35px;
+  border-radius:8px;
+}
+
+.appointment-redesign-page .appointment-time-grid button b {
+  font-size:.64rem;
+}
+
+.appointment-redesign-page .appointment-time-grid button span {
+  font-size:.47rem;
+}
+
+.appointment-redesign-page .appointment-side-column {
+  gap:7px;
+  top:78px;
+}
+
+.appointment-redesign-page .appointment-summary-card,
+.appointment-redesign-page .appointment-upcoming-card {
+  padding:11px !important;
+}
+
+.appointment-redesign-page .appointment-summary-card {
+  gap:7px;
+}
+
+.appointment-redesign-page .appointment-summary-card__head h3 {
+  font-size:.82rem !important;
+}
+
+.appointment-redesign-page .appointment-summary-empty {
+  min-height:56px;
+  padding:8px;
+}
+
+.appointment-redesign-page .appointment-reminder-modern,
+.appointment-redesign-page .appointment-prepare-modern {
+  padding:6px 7px;
+}
+
+.appointment-redesign-page .appointment-reminder-modern b,
+.appointment-redesign-page .appointment-prepare-modern b {
+  font-size:.58rem;
+}
+
+.appointment-redesign-page .appointment-reminder-modern span,
+.appointment-redesign-page .appointment-prepare-modern p,
+.appointment-redesign-page .appointment-prepare-modern li {
+  font-size:.49rem;
+}
+
+.appointment-redesign-page .appointment-upcoming-list article {
+  padding:5px 0;
+}
+
+.appointment-redesign-page .appointment-upcoming-date {
+  width:31px;
+  height:31px;
+}
+
+.appointment-redesign-page .appointment-upcoming-list strong {
+  font-size:.57rem;
+}
+
+.appointment-redesign-page .appointment-upcoming-list article > div:nth-child(2) > span,
+.appointment-redesign-page .appointment-upcoming-list small {
+  font-size:.48rem;
+}
+
+/* -------------------- Signalements wizard -------------------- */
+.report-page--wizard {
+  padding-top:9px !important;
+  padding-bottom:11px !important;
+  gap:0;
+}
+
+.report-layout--wizard {
+  grid-template-columns:minmax(0,1.5fr) minmax(280px,.5fr);
+  gap:9px;
+}
+
+.report-form--wizard {
+  min-height:0;
+  overflow:hidden;
+}
+
+.report-wizard-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  min-height:72px;
+  padding:12px 16px;
+  border-bottom:1px solid var(--tn-line);
+  background:color-mix(in srgb,var(--tn-purple) 4%,var(--tn-card));
+}
+
+.report-wizard-head h2 {
+  margin:.2rem 0 .15rem;
+  color:var(--tn-text);
+  font-size:1rem;
+  letter-spacing:-.03em;
+}
+
+.report-wizard-head p {
+  max-width:620px;
+  margin:0;
+  color:var(--tn-muted);
+  font-size:.6rem;
+  line-height:1.4;
+}
+
+.report-wizard-progress {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex:0 0 auto;
+}
+
+.report-wizard-progress span {
+  position:relative;
+  display:flex;
+  align-items:center;
+}
+
+.report-wizard-progress span:not(:last-child)::after {
+  content:"";
+  width:18px;
+  height:2px;
+  margin-left:5px;
+  background:var(--tn-line);
+}
+
+.report-wizard-progress span.is-done:not(:last-child)::after {
+  background:var(--tn-purple);
+}
+
+.report-wizard-progress i {
+  width:26px;
+  height:26px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--tn-line);
+  border-radius:50%;
+  background:var(--tn-card);
+  color:var(--tn-muted);
+  font-size:.57rem;
+  font-style:normal;
+  font-weight:900;
+}
+
+.report-wizard-progress span.is-done i {
+  border-color:var(--tn-purple);
+  background:var(--tn-purple);
+  color:var(--tn-card);
+}
+
+.report-step--active {
+  min-height:310px;
+  align-content:start;
+  padding:13px 16px;
+  border-top:0;
+}
+
+.report-type-grid--wizard {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+
+.report-type-grid--wizard > button {
+  min-height:61px;
+  grid-template-columns:32px 1fr;
+  gap:8px;
+  padding:8px 10px;
+}
+
+.report-type-grid--wizard > button > i {
+  width:31px;
+  height:31px;
+  border-radius:9px;
+  font-size:.76rem;
+}
+
+.report-type-grid--wizard b {
+  font-size:.66rem;
+}
+
+.report-type-grid--wizard span {
+  font-size:.54rem;
+}
+
+.report-page--wizard .report-location-grid,
+.report-page--wizard .report-description-grid {
+  gap:8px;
+}
+
+.report-page--wizard .report-location-grid input,
+.report-page--wizard .report-description-grid input,
+.report-page--wizard .report-description-grid textarea {
+  padding:9px 10px;
+  font-size:.68rem;
+}
+
+.report-page--wizard .report-description-grid textarea {
+  min-height:86px;
+}
+
+.report-page--wizard .report-priority {
+  gap:6px;
+}
+
+.report-page--wizard .report-file {
+  padding:9px 10px;
+}
+
+.report-page--wizard .report-review-grid {
+  gap:0 14px;
+  padding:3px 11px;
+}
+
+.report-page--wizard .report-review-grid > div {
+  min-height:38px;
+}
+
+.report-page--wizard .report-review-grid .span-2 {
+  grid-column:1/-1;
+}
+
+.report-wizard-error {
+  margin:0 16px 8px;
+  padding:8px 10px;
+  border-radius:9px;
+  font-size:.62rem;
+}
+
+.report-wizard-actions {
+  min-height:50px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  gap:8px;
+  padding:8px 16px 11px;
+  border-top:1px solid var(--tn-line);
+}
+
+.report-wizard-actions button {
+  min-height:34px;
+}
+
+.report-history--wizard {
+  position:static;
+  max-height:none;
+  padding:12px !important;
+}
+
+.report-history--wizard .report-history-list {
+  margin-top:5px;
+}
+
+.report-history--wizard .report-history-list > button {
+  grid-template-columns:29px 1fr auto;
+  gap:7px;
+  padding:8px 0;
+}
+
+.report-history--wizard .report-history-list > button > i {
+  width:28px;
+  height:28px;
+  border-radius:8px;
+}
+
+.report-history--wizard .report-history-list strong {
+  font-size:.62rem;
+}
+
+.report-history--wizard .report-history-list span,
+.report-history--wizard .report-history-list small {
+  font-size:.52rem;
+}
+
+.report-history-more {
+  width:100%;
+  margin-top:6px;
+  border:0;
+  background:transparent;
+  color:var(--tn-purple);
+  padding:7px 0 2px;
+  font:inherit;
+  font-size:.56rem;
+  font-weight:850;
+}
+
+/* High contrast keeps semantic colors readable. */
+html[data-contrast="high"] .report-wizard-head,
+html[data-contrast="high"] .report-form--wizard,
+html[data-contrast="high"] .report-history--wizard {
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+}
+
+html[data-contrast="high"] .report-wizard-progress span.is-done i {
+  background:var(--tn-purple)!important;
+  color:#000!important;
+  border-color:var(--tn-purple)!important;
+}
+
+/* Smaller desktop / enlarged text: preserve content and allow the V47 auto-scroll. */
+@media (max-width:1199px) {
+  .profile-page--one-screen .profile-sections {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:auto;
+  }
+
+  .profile-page--one-screen .profile-sections > section:nth-child(n) {
+    grid-column:auto;
+    grid-row:auto;
+  }
+
+  .profile-page--one-screen .profile-sections > section:nth-child(3) {
+    grid-column:1/-1;
+  }
+}
+
+@media (max-width:1000px) {
+  .settings-page .settings-grid,
+  .report-layout--wizard {
+    grid-template-columns:1fr;
+  }
+
+  .settings-page .settings-grid > :nth-child(n) {
+    grid-column:auto;
+    grid-row:auto;
+  }
+
+  .report-history--wizard {
+    max-height:none;
+  }
+}
+
+@media (max-width:700px) {
+  .profile-page--one-screen .profile-sections {
+    grid-template-columns:1fr;
+  }
+
+  .profile-page--one-screen .profile-sections > section:nth-child(3) {
+    grid-column:auto;
+  }
+
+  .report-wizard-head {
+    align-items:flex-start;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .report-step--active {
+    min-height:auto;
+  }
+
+  .report-type-grid--wizard {
+    grid-template-columns:1fr;
+  }
+
+  .report-wizard-progress {
+    width:100%;
+  }
+
+  .report-wizard-progress span {
+    flex:1;
+  }
+
+  .report-wizard-progress span:not(:last-child)::after {
+    flex:1;
+    width:auto;
+  }
+}
+
+/* Accessibility A+ / A++ or extra character spacing may need more height.
+   Do not clip; V47's conditional auto-scroll handles the overflow. */
+html[data-font-size="large"] .settings-page .settings-grid,
+html[data-font-size="xlarge"] .settings-page .settings-grid,
+html[data-font-size="large"] .profile-page--one-screen .profile-sections,
+html[data-font-size="xlarge"] .profile-page--one-screen .profile-sections {
+  align-items:start;
+}
+
