@@ -1,0 +1,17 @@
+daphne==4.2.3
+redis==8.1.0
+channels-redis==4.3.0
+channels==4.3.2
+Django==6.1.1
+django-cors-headers==4.9.0
+djangorestframework==3.18.1
+djangorestframework_simplejwt==5.5.1
+drf-yasg==1.21.15
+google-auth>=2.29,<3
+PyMySQL==1.2.3
+python-dotenv==1.0.1
+requests==2.34.2
+whitenoise==6.12.0
+Pillow>=10.4
+cryptography>=43,<47
+qrcode[pil]>=8,<9

@@ -158,69 +158,31 @@ pipeline {
         }
 
         stage('Test Backend') {
-            when { branch 'backend' }
-
+            when {
+                branch 'backend'
+            }
             steps {
                 sh '''
                     set -eu
 
-                    docker rm -f "$MYSQL_NAME" >/dev/null 2>&1 || true
-
-                    docker run -d \
-                        --name "$MYSQL_NAME" \
-                        -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
-                        -e MYSQL_DATABASE="$MYSQL_DB" \
-                        -e MYSQL_USER="$MYSQL_USER" \
-                        -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
-                        --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD --protocol=tcp --silent" \
-                        --health-interval=2s \
-                        --health-timeout=5s \
-                        --health-retries=30 \
-                        "$MYSQL_IMAGE"
-
-                    for i in $(seq 1 30); do
-                        STATUS=$(docker inspect \
-                            --format='{{.State.Health.Status}}' \
-                            "$MYSQL_NAME")
-
-                        [ "$STATUS" = "healthy" ] && break
-
-                        if [ "$STATUS" = "unhealthy" ] || [ "$i" = "30" ]; then
-                            docker logs "$MYSQL_NAME"
-                            exit 1
-                        fi
-
-                        sleep 2
-                    done
-
+                    # CI uniquement : aucune connexion à la base MySQL/MariaDB finale du cPanel.
+                    # Sans DB_NAME, Django utilise SQLite pour `check`; pendant `test`,
+                    # settings.py bascule déjà explicitement sur SQLite en mémoire.
                     run_django() {
                         docker run --rm \
-                            --network "container:$MYSQL_NAME" \
-                            -e SECRET_KEY="jenkins-ci-secret" \
-                            -e DEBUG="False" \
-                            -e CORS_ALLOW_ALL_ORIGINS="False" \
-                            -e DB_HOST="127.0.0.1" \
-                            -e DB_PORT="3306" \
-                            -e DB_NAME="$MYSQL_DB" \
-                            -e DB_USER="$MYSQL_USER" \
-                            -e DB_PASSWORD="$MYSQL_PASSWORD" \
-                            "$BACKEND_IMAGE:$DOCKER_TAG" "$@"
+                          -e SECRET_KEY=jenkins-ci-secret \
+                          -e MODE_DEV=False \
+                          -e DEBUG=False \
+                          -e CORS_ALLOW_ALL_ORIGINS=False \
+                          -e TEST_USE_SQLITE=True \
+                          -e REALTIME_ENABLED=False \
+                          webcup-backend:latest "$@"
                     }
 
                     run_django python manage.py check
                     run_django python manage.py makemigrations --check --dry-run
-                    run_django python manage.py migrate --noinput
-
-                    echo "✅ Backend + MySQL OK"
+                    run_django python manage.py test --noinput
                 '''
-            }
-
-            post {
-                always {
-                    sh '''
-                        docker rm -f "$MYSQL_NAME" >/dev/null 2>&1 || true
-                    '''
-                }
             }
         }
 
