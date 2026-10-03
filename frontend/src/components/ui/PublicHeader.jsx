@@ -11,7 +11,7 @@ export default function PublicHeader() {
   return (
     <header className="public-header">
       <a className="public-header__brand" href="/" onClick={(e) => go(e, "/")}>
-        Terra<span>Nova</span>
+        Nova<span>Terra</span>
       </a>
       <nav className="public-header__nav" aria-label="Navigation principale">
         <a href="/services" onClick={(e) => go(e, "/services")}>Services</a>

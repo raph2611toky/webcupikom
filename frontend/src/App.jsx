@@ -20,6 +20,8 @@ import AgentRequestDetails from "./pages/agent/AgentRequestDetails.jsx";
 import AgentCitizens from "./pages/agent/AgentCitizens.jsx";
 import AgentCitizenDetails from "./pages/agent/AgentCitizenDetails.jsx";
 import AgentApi from "./pages/agent/AgentApi.jsx";
+import AgentNews from "./pages/agent/AgentNews.jsx";
+import AgentServices from "./pages/agent/AgentServices.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminServices from "./pages/admin/AdminServices.jsx";
@@ -71,6 +73,29 @@ function Protected({ roles, children }) {
 
 export default function App() {
   const pathname = useLocationPath();
+
+  useEffect(() => {
+    const updateViewport = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      document.documentElement.style.setProperty("--screen-width", `${width}px`);
+      document.documentElement.style.setProperty("--screen-height", `${height}px`);
+      document.documentElement.style.setProperty("--screen-ratio", String(width / Math.max(height, 1)));
+    };
+
+    const isPortal = pathname.startsWith("/citizen") || pathname.startsWith("/agent") || pathname.startsWith("/admin");
+    const isPublicSubpage = pathname.startsWith("/services") || pathname.startsWith("/news") || pathname === "/contact";
+    const isAuth = pathname === "/login" || pathname === "/inscription" || pathname === "/register";
+    document.body.dataset.routeGroup = isPortal ? "portal" : isPublicSubpage ? "public" : isAuth ? "auth" : "landing";
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+    };
+  }, [pathname]);
   const route = useMemo(() => {
     const staticRoutes = {
       "/": <LandingPage />,
@@ -92,6 +117,8 @@ export default function App() {
       "/agent/dashboard": <Protected roles={["agent"]}><AgentDashboard /></Protected>,
       "/agent/requests": <Protected roles={["agent"]}><AgentRequests /></Protected>,
       "/agent/citizens": <Protected roles={["agent"]}><AgentCitizens /></Protected>,
+      "/agent/news": <Protected roles={["agent"]}><AgentNews /></Protected>,
+      "/agent/services": <Protected roles={["agent"]}><AgentServices /></Protected>,
       "/agent/api": <Protected roles={["agent"]}><AgentApi /></Protected>,
       "/admin": <Protected roles={["admin"]}><AdminDashboard /></Protected>,
       "/admin/dashboard": <Protected roles={["admin"]}><AdminDashboard /></Protected>,

@@ -5,7 +5,7 @@ export const news = [
     date: "03 octobre 2026",
     title: "Maintenance programmée du secteur énergétique Helios",
     excerpt: "Une opération préventive est prévue sur le réseau secondaire. Quelques micro-coupures peuvent survenir.",
-    body: "Les équipes techniques de Terra Nova procèdent à une maintenance préventive du réseau Helios afin de renforcer la stabilité de l’alimentation. Les secteurs concernés seront informés par notification. Les services essentiels restent prioritaires pendant l’intervention.",
+    body: "Les équipes techniques de Nova Terra procèdent à une maintenance préventive du réseau Helios afin de renforcer la stabilité de l’alimentation. Les secteurs concernés seront informés par notification. Les services essentiels restent prioritaires pendant l’intervention.",
   },
   {
     slug: "nouvelle-ligne-navette-astra",

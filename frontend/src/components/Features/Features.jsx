@@ -71,7 +71,7 @@ function AutomationSeal() {
           <path id="seal-bottom" d="M85,85 m-66,0 a66,66 0 1,0 132,0 a66,66 0 1,0 -132,0" />
         </defs>
         <text>
-          <textPath href="#seal-top" startOffset="25%" textAnchor="middle">TERRA NOVA</textPath>
+          <textPath href="#seal-top" startOffset="25%" textAnchor="middle">NOVA TERRA</textPath>
         </text>
         <text>
           <textPath href="#seal-bottom" startOffset="25%" textAnchor="middle">VILLE · CITOYENS</textPath>
@@ -138,7 +138,7 @@ export default function Features() {
         <h2 id="features-title">
           Une ville <span>qui évolue</span>
         </h2>
-        <p className="features-lead">Terra Nova centralise les services, l’information et les besoins de ses habitants.</p>
+        <p className="features-lead">Nova Terra centralise les services, l’information et les besoins de ses habitants.</p>
         <p className="features-lead features-lead--soft">Un espace numérique qui accompagne la ville à mesure qu’elle grandit.</p>
       </motion.div>
 
@@ -152,7 +152,7 @@ export default function Features() {
         transition={{ duration: 0.85, delay: 0.12, ease: EASE }}
       >
         <div className="features-stage__intro">
-          <span>TERRA NOVA, AU PLUS PRÈS DU QUOTIDIEN</span>
+          <span>NOVA TERRA, AU PLUS PRÈS DU QUOTIDIEN</span>
           <h3 className="features-stage__title">
             <span>Des services</span>
             <span>pour chaque</span>
@@ -180,7 +180,7 @@ export default function Features() {
           />
         </svg>
 
-        <div className="features-cards" aria-label="Exemples de services de Terra Nova">
+        <div className="features-cards" aria-label="Exemples de services de Nova Terra">
           <FeatureCard
             type="calendar"
             icon={<CalendarIcon />}
@@ -216,7 +216,7 @@ export default function Features() {
             type="mail"
             icon={<CouncilIcon />}
             title="Rester informé"
-            description={<>Suivez les informations<br />et les nouveaux services<br />de Terra Nova.</>}
+            description={<>Suivez les informations<br />et les nouveaux services<br />de Nova Terra.</>}
             delay={0.44}
           >
             <div className="mail-preview">
@@ -246,7 +246,7 @@ export default function Features() {
               <img src={avatarTwo} alt="" />
               <img src={avatarThree} alt="" />
             </div>
-            <p><strong>Terra Nova</strong><span>ville en évolution</span></p>
+            <p><strong>Nova Terra</strong><span>ville en évolution</span></p>
           </div>
           <p className="features-stats__tasks"><i /> Flux vivant de besoins</p>
         </motion.div>

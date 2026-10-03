@@ -110,3 +110,80 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 @media(max-width:680px){
   .portal-layout{display:block;padding-bottom:70px}.portal-sidebar{position:fixed;z-index:100;top:auto;bottom:0;left:0;right:0;height:68px;width:100%;padding:8px 10px;display:block;border-top:1px solid rgba(255,255,255,.1)}.portal-sidebar__brand,.portal-sidebar__role,.portal-sidebar__bottom{display:none}.portal-sidebar nav{display:flex;justify-content:space-around;gap:4px}.portal-sidebar nav button{width:auto;flex:1;height:50px}.portal-sidebar nav button:nth-child(n+5){display:none}.portal-topbar{min-height:76px;padding:14px 16px}.portal-topbar__right .topbar-cta,.portal-topbar__right .topbar-ghost{display:none}.portal-content{padding:18px 14px 26px}.public-header{padding:0 16px}.public-header__brand{font-size:25px}.public-header__login{display:none}.public-header__cta{padding:10px 12px;font-size:11px}.portal-card{padding:18px;border-radius:18px}.toolbar-line{flex-direction:column;align-items:stretch}.toolbar-line select{width:100%}.toolbar-card{align-items:stretch;flex-direction:column}.filter-row--portal{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}.filter-row--portal button{white-space:nowrap}}
+
+
+/* ==========================================================================\n   V20 — VIEWPORT-FIRST PORTAL\n   Desktop: each protected route fits inside the current screen.\n   Tablet/mobile: natural vertical flow is restored for usability.\n   ========================================================================== */
+@media (min-width: 901px) {
+  body[data-route-group="portal"] { height: var(--screen-height, 100dvh); overflow: hidden; }
+  body[data-route-group="portal"] #root { height: 100%; overflow: hidden; }
+  .portal-layout { height: var(--screen-height, 100dvh); min-height: 0; overflow: hidden; grid-template-columns: 218px minmax(0,1fr); }
+  .portal-sidebar { height: var(--screen-height, 100dvh); padding: 18px 14px 14px; overflow: hidden; }
+  .portal-sidebar__brand { font-size: 25px; padding: 0 7px 2px; }
+  .portal-sidebar__role { margin: 7px 7px 18px; font-size: 9px; }
+  .portal-sidebar nav { gap: 4px; }
+  .portal-sidebar nav button,.portal-sidebar__bottom button { height: 40px; border-radius: 10px; font-size: 11px; gap: 9px; padding: 0 10px; }
+  .portal-sidebar nav button i,.portal-sidebar__bottom button i { width: 22px; height: 22px; font-size: 12px; }
+  .portal-sidebar__bottom { padding-top: 10px; gap: 3px; }
+  .portal-main { height: var(--screen-height, 100dvh); min-height: 0; display: grid; grid-template-rows: 68px minmax(0,1fr); overflow: hidden; }
+  .portal-topbar { position: relative; top: auto; min-height: 68px; height: 68px; padding: 10px 24px; gap: 18px; }
+  .portal-topbar__eyebrow { font-size: 8px; margin-bottom: 2px; }
+  .portal-topbar h1 { font-size: clamp(19px,1.65vw,26px); }
+  .portal-topbar__right { gap: 9px; }
+  .portal-topbar__icon { width: 36px; height: 36px; border-radius: 10px; }
+  .portal-user__avatar { width: 34px; height: 34px; }
+  .portal-user strong { font-size: 11px; }.portal-user span:last-child { font-size: 9px; margin-top: 2px; }
+  .topbar-cta,.topbar-ghost { padding: 9px 13px; font-size: 10px; border-radius: 10px; }
+  .portal-content { width: 100%; height: 100%; min-height: 0; max-width: none; margin: 0; padding: 12px 18px 14px; overflow: hidden; }
+  .portal-card,.toolbar-card { border-radius: 16px; }
+  .portal-card { padding: 14px; }
+  .toolbar-card { padding: 10px 12px; margin-bottom: 10px; gap: 9px; }
+  .portal-card__head { margin-bottom: 10px; gap: 12px; }
+  .portal-card h3 { font-size: 16px; }.section-label,.panel-kicker { font-size: 8px; }
+  .portal-search,.toolbar-line select,.toolbar-card select { height: 36px; border-radius: 9px; font-size: 11px; }
+  .filter-row { gap: 5px; }.filter-row button,.filter-row--portal button { padding: 6px 10px; font-size: 9px; }
+  .primary-action,.secondary-action { min-height: 34px; padding: 0 12px; font-size: 10px; border-radius: 9px; }
+  .back-link { margin-bottom: 9px; font-size: 10px; }
+  .portal-table__head { min-height: 32px; font-size: 8px; }.portal-table__row { min-height: 44px; font-size: 10px; }
+  .portal-table__row strong { font-size: 10px; }.portal-table__row small { font-size: 8px; margin-top: 2px; }
+}
+
+/* in-portal assistant: never sends an authenticated citizen back to the public landing */
+.portal-help-backdrop{position:fixed;inset:0;z-index:500;background:rgba(9,7,13,.48);display:grid;place-items:center;padding:20px;backdrop-filter:blur(8px)}
+.portal-help{position:relative;width:min(520px,100%);padding:26px;border-radius:22px;background:#fff;box-shadow:0 32px 90px rgba(16,7,28,.25)}
+.portal-help__close{position:absolute;right:14px;top:12px;width:32px;height:32px;border:0;border-radius:50%;background:#f3eff7;font-size:20px;color:#514858}
+.portal-help h2{margin:8px 0 8px;font-size:27px;letter-spacing:-.045em}.portal-help>p{margin:0;color:#7c7383;font-size:12px;line-height:1.55}
+.portal-help__choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}.portal-help__choices button{min-height:84px;border:1px solid #ebe5ef;border-radius:14px;background:#fbf9fe;padding:12px;text-align:left;font-size:10px;font-weight:800;color:#241c2b}.portal-help__choices b{display:block;margin-top:12px;color:var(--tn-purple);font-size:16px}
+.portal-help__ask{display:grid;grid-template-columns:1fr auto;gap:8px}.portal-help__ask input{min-width:0;height:42px;border:1px solid #e6e0e9;border-radius:11px;padding:0 12px;outline:0}.portal-help__ask input:focus{border-color:var(--tn-purple)}.portal-help__ask button{border:0;border-radius:11px;padding:0 16px;background:var(--tn-purple);color:#fff;font-weight:800;font-size:10px}.portal-help small{display:block;margin-top:10px;color:#a097a7;font-size:9px}
+
+@media (max-width: 900px) {
+  body[data-route-group="portal"] { height: auto; overflow-y: auto; }
+  body[data-route-group="portal"] #root { height: auto; overflow: visible; }
+  .portal-layout { height: auto; min-height: 100dvh; overflow: visible; }
+  .portal-main { height: auto; min-height: 100dvh; display: block; overflow: visible; }
+  .portal-content { height: auto; overflow: visible; }
+  .portal-help__choices { grid-template-columns:1fr; }
+  .portal-help__choices button { min-height:54px; }
+}
+
+
+/* V22 readable portal typography: fit by removing content, not by shrinking text */
+@media (min-width:901px){
+  .portal-sidebar nav button,.portal-sidebar__bottom button{font-size:12px}
+  .portal-sidebar__role{font-size:10px}
+  .portal-topbar__eyebrow{font-size:10px}
+  .portal-topbar h1{font-size:clamp(22px,1.8vw,28px)}
+  .portal-user strong{font-size:12px}.portal-user span:last-child{font-size:10px}
+  .topbar-cta,.topbar-ghost{font-size:11px}
+  .portal-content{padding:12px 18px 14px}
+  .portal-card{padding:16px}
+  .portal-card h3{font-size:18px}
+  .section-label,.panel-kicker{font-size:10px}
+  .portal-card__head button{font-size:11px}
+  .portal-search input{font-size:12px}
+  .filter-row button,.filter-row--portal button{font-size:10px}
+  .primary-action,.secondary-action{font-size:11px}
+  .portal-table__head{font-size:10px}
+  .portal-table__row,.portal-table__row strong{font-size:12px}
+  .portal-table__row small{font-size:10px}
+  .status-pill{font-size:10px}
+}

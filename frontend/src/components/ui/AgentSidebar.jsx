@@ -5,13 +5,15 @@ const items = [
   ["/agent", "◫", "Tableau de bord"],
   ["/agent/requests", "◎", "Demandes"],
   ["/agent/citizens", "◉", "Citoyens"],
+  ["/agent/news", "▤", "Publications"],
+  ["/agent/services", "◇", "Services"],
   ["/agent/api", "⌘", "Flux WebCup"],
 ];
 
 export default function AgentSidebar() {
   const path = window.location.pathname;
   return <aside className="portal-sidebar portal-sidebar--agent">
-    <button className="portal-sidebar__brand" onClick={() => navigate("/")}>Terra<span>Nova</span></button>
+    <button className="portal-sidebar__brand" onClick={() => navigate("/agent")}>Nova<span>Terra</span></button>
     <div className="portal-sidebar__role">Espace agent</div>
     <nav>{items.map(([to, icon, label]) => {
       const active = to === "/agent" ? path === to : path.startsWith(to);

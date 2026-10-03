@@ -5,8 +5,8 @@ export default function Footer() {
     <footer className="terra-footer" id="contact">
       <div className="terra-footer__top">
         <div className="terra-footer__brand">
-          <a href="/" className="terra-footer__logo" aria-label="Terra Nova, retour en haut">
-            Terra<span>Nova</span>
+          <a href="/" className="terra-footer__logo" aria-label="Nova Terra, retour en haut">
+            Nova<span>Terra</span>
           </a>
           <p>Le point d’accès numérique aux services, informations et besoins de la première ville humaine sur une autre planète.</p>
         </div>
@@ -25,7 +25,7 @@ export default function Footer() {
             <a href="/inscription">Créer un compte</a>
           </div>
           <div>
-            <strong>Terra Nova</strong>
+            <strong>Nova Terra</strong>
             <span>Habitants</span>
             <span>Services de la ville</span>
             <span>Haut Conseil</span>
@@ -34,7 +34,7 @@ export default function Footer() {
       </div>
 
       <div className="terra-footer__bottom">
-        <span>Terra Nova · 24H By Webcup</span>
+        <span>Nova Terra · 24H By Webcup</span>
         <span>Une ville qui évolue au rythme de ses besoins.</span>
       </div>
     </footer>

@@ -1,8 +1,71 @@
+import { useEffect, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { agentRequests } from "../../data/mockData.js";
+import { getAgentRequests } from "../../api/requests.js";
+import { getNews } from "../../api/news.js";
+import { getServices } from "../../api/services.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
-export default function AgentDashboard(){return <div className="portal-layout"><AgentSidebar/><div className="portal-main"><PortalTopbar eyebrow="Centre opérationnel" title="Tableau de bord agent" actions={<button className="topbar-cta" onClick={()=>navigate('/agent/requests')}>Voir les demandes</button>}/><main className="portal-content"><section className="metric-grid"><article><span>Demandes reçues</span><strong>124</strong><small>Aujourd’hui</small></article><article><span>À traiter</span><strong>31</strong><small>Priorité active</small></article><article><span>En traitement</span><strong>46</strong><small>Par les services</small></article><article><span>Terminées</span><strong>47</strong><small>Clôturées</small></article></section><section className="portal-grid portal-grid--2"><article className="portal-card"><div className="portal-card__head"><div><span className="section-label">Demandes à traiter</span><h3>File prioritaire</h3></div><button onClick={()=>navigate('/agent/requests')}>Tout voir →</button></div><div className="agent-queue">{agentRequests.slice(0,4).map(r=><button key={r.ref} onClick={()=>navigate(`/agent/requests/${r.ref}`)}><span className="mono">{r.ref}</span><div><strong>{r.citizen}</strong><small>{r.service} · {r.created}</small></div><em className={`status-pill status-${r.status.replaceAll(' ','-').toLowerCase()}`}>{r.status}</em></button>)}</div></article><article className="portal-card"><span className="section-label">Flux WebCup</span><h3>Session active</h3><div className="webcup-snapshot"><div><span>Vague actuelle</span><strong>0</strong></div><div><span>Demandes visibles</span><strong>10</strong></div><div><span>Prochaine vague</span><strong>1</strong></div><div><span>Temps restant</span><strong>99 min</strong></div></div><button className="primary-action" onClick={()=>navigate('/agent/api')}>Ouvrir le flux →</button></article></section><section className="portal-card"><div className="portal-card__head"><div><span className="section-label">Activité récente</span><h3>Ce qui vient de changer</h3></div></div><div className="activity-feed"><div><i>●</i><div><b>NT-002 assignée au service Habitat</b><span>Il y a 4 min</span></div></div><div><i>●</i><div><b>NT-003 marquée terminée</b><span>Il y a 11 min</span></div></div><div><i>●</i><div><b>Nouvelle demande citoyenne reçue</b><span>Il y a 17 min</span></div></div></div></section></main></div></div>}
+export default function AgentDashboard(){
+  const [agentRequests,setAgentRequests]=useState([]);
+  const [newsCount,setNewsCount]=useState(0);
+  const [serviceCount,setServiceCount]=useState(0);
+
+  useEffect(()=>{
+    Promise.all([getAgentRequests(),getNews({publishedOnly:false}),getServices({publishedOnly:false})])
+      .then(([requests,publications,services])=>{
+        setAgentRequests(requests);
+        setNewsCount(publications.length);
+        setServiceCount(services.length);
+      });
+  },[]);
+
+  const toProcess=agentRequests.filter(r=>r.status==="À traiter").length;
+  const processing=agentRequests.filter(r=>r.status==="En traitement").length;
+
+  return <div className="portal-layout"><AgentSidebar/><div className="portal-main">
+    <PortalTopbar eyebrow="Centre opérationnel" title="Tableau de bord agent" actions={<button className="topbar-cta" onClick={()=>navigate('/agent/requests')}>Voir les demandes</button>}/>
+    <main className="portal-content agent-dashboard">
+      <section className="metric-grid metric-grid--3">
+        <article><span>Demandes reçues</span><strong>{agentRequests.length}</strong><small>File citoyenne</small></article>
+        <article><span>À traiter</span><strong>{toProcess}</strong><small>À prendre en charge</small></article>
+        <article><span>En traitement</span><strong>{processing}</strong><small>Dossiers actifs</small></article>
+      </section>
+
+      <section className="portal-grid portal-grid--2 agent-dashboard__main">
+        <article className="portal-card">
+          <div className="portal-card__head">
+            <div><span className="section-label">Demandes prioritaires</span><h3>À traiter maintenant</h3></div>
+            <button onClick={()=>navigate('/agent/requests')}>Tout voir →</button>
+          </div>
+          <div className="agent-queue">
+            {agentRequests.slice(0,5).map(r=><button key={r.ref} onClick={()=>navigate(`/agent/requests/${r.ref}`)}>
+              <span className="mono">{r.ref}</span>
+              <div><strong>{r.citizen}</strong><small>{r.service} · {r.created}</small></div>
+              <em className={`status-pill status-${r.status.replaceAll(' ','-').toLowerCase()}`}>{r.status}</em>
+            </button>)}
+          </div>
+        </article>
+
+        <article className="portal-card">
+          <div className="portal-card__head">
+            <div><span className="section-label">Gestion de la ville</span><h3>Contenus utiles aux habitants</h3></div>
+          </div>
+          <div className="agent-management">
+            <button onClick={()=>navigate('/agent/news')}>
+              <i>▤</i><div><b>Publications municipales</b><span>{newsCount} publications · annonces et informations pratiques</span></div><em>→</em>
+            </button>
+            <button onClick={()=>navigate('/agent/services')}>
+              <i>◇</i><div><b>Services municipaux</b><span>{serviceCount} services · horaires, contacts et démarches</span></div><em>→</em>
+            </button>
+            <button onClick={()=>navigate('/agent/api')}>
+              <i>⌘</i><div><b>Flux WebCup</b><span>Suivre les nouvelles demandes du concours</span></div><em>→</em>
+            </button>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div></div>;
+}

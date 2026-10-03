@@ -513,7 +513,7 @@ body {
 }
 
 
-/* Terra Nova wordmark/content adjustments — hero geometry preserved */
+/* Nova Terra wordmark/content adjustments — hero geometry preserved */
 .kamo-logo {
   font-size: clamp(32px, min(2.55vw, 4.55svh), 46px);
   letter-spacing: -0.065em;

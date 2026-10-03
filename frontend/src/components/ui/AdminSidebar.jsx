@@ -12,7 +12,7 @@ const items = [
 export default function AdminSidebar() {
   const path = window.location.pathname;
   return <aside className="portal-sidebar portal-sidebar--admin">
-    <button className="portal-sidebar__brand" onClick={() => navigate("/")}>Terra<span>Nova</span></button>
+    <button className="portal-sidebar__brand" onClick={() => navigate("/admin")}>Nova<span>Terra</span></button>
     <div className="portal-sidebar__role">Administration</div>
     <nav>{items.map(([to, icon, label]) => {
       const active = to === "/admin" ? path === to : path.startsWith(to);

@@ -32,5 +32,5 @@ export function roleHome(role) {
 
 export function logout() {
   clearSession();
-  navigate("/login", { replace: true });
+  navigate("/", { replace: true });
 }

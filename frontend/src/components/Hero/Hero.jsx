@@ -88,7 +88,7 @@ function OrbitText({ active = true }) {
       </defs>
       <text>
         <textPath href={`#${id}`} startOffset="1%">
-          TERRA NOVA · SERVICES · CITOYENS · VILLE · TERRA NOVA ·
+          NOVA TERRA · SERVICES · CITOYENS · VILLE · NOVA TERRA ·
         </textPath>
       </text>
       <circle className="dot d1" cx="49" cy="114" r="4.1" />
@@ -201,8 +201,8 @@ export default function Hero() {
           <a href="/contact">Contact</a>
         </nav>
 
-        <a className="kamo-logo" href="/" aria-label="Terra Nova, accueil">
-          Terra<span>Nova</span>
+        <a className="kamo-logo" href="/" aria-label="Nova Terra, accueil">
+          Nova<span>Terra</span>
         </a>
 
         <a className="kamo-login" href="/login">
@@ -220,7 +220,7 @@ export default function Hero() {
           className="hero-photo hero-photo--left"
           images={LEFT_IMAGES}
           start={0}
-          alt="Habitante utilisant les services numériques de Terra Nova"
+          alt="Habitante utilisant les services numériques de Nova Terra"
           intervalMs={IMAGE_INTERVAL_LEFT}
           active={heroInView}
         />
@@ -238,7 +238,7 @@ export default function Hero() {
             className="hero-photo hero-photo--right"
             images={RIGHT_IMAGES}
             start={0}
-            alt="Habitante connectée aux services de Terra Nova"
+            alt="Habitante connectée aux services de Nova Terra"
             intervalMs={IMAGE_INTERVAL_RIGHT}
             active={heroInView}
           />
@@ -283,7 +283,7 @@ export default function Hero() {
             transition={{ duration: 0.72, delay: reduceMotion ? 0 : 2.94, ease: EASE }}
           >
             <span className="hero-title__band-text">
-              <AnimatedWords words={["TERRA", "NOVA"]} delay={reduceMotion ? 0 : 3.10} />
+              <AnimatedWords words={["NOVA", "TERRA"]} delay={reduceMotion ? 0 : 3.10} />
             </span>
           </motion.span>
 
