@@ -1,0 +1,398 @@
+"""Documentation Swagger/OpenAPI du domaine Terra Nova.
+
+Ce module ne dépend jamais de ``views``. Les vues importent les décorateurs
+ci-dessous. Les opérations d'écriture sont documentées avec des paramètres
+manuels champ par champ et sans body Swagger automatique.
+"""
+
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+
+from helpers.swagger import ManualFormAutoSchema, NoBodyAutoSchema
+
+from .serializers import (
+    AdminMunicipalServiceSerializer,
+    AdminNewsArticleSerializer,
+    AdminUserSerializer,
+    AgentCitizenRequestDetailSerializer,
+    AgentRequestEventCreateSerializer,
+    CitizenNotificationSerializer,
+    CitizenPreferenceSerializer,
+    CitizenRequestSerializer,
+    ContactMessageSerializer,
+)
+
+PUBLIC_SECURITY = []
+JWT_SECURITY = [{"Bearer": []}]
+
+
+def form_string(name, description, *, required=False, fmt=None):
+    return openapi.Parameter(
+        name,
+        openapi.IN_FORM,
+        description=description,
+        type=openapi.TYPE_STRING,
+        format=fmt,
+        required=required,
+    )
+
+
+def form_bool(name, description, *, required=False):
+    return openapi.Parameter(
+        name,
+        openapi.IN_FORM,
+        description=description,
+        type=openapi.TYPE_BOOLEAN,
+        required=required,
+    )
+
+
+def form_int(name, description, *, required=False):
+    return openapi.Parameter(
+        name,
+        openapi.IN_FORM,
+        description=description,
+        type=openapi.TYPE_INTEGER,
+        required=required,
+    )
+
+
+def form_number(name, description, *, required=False):
+    return openapi.Parameter(
+        name,
+        openapi.IN_FORM,
+        description=description,
+        type=openapi.TYPE_NUMBER,
+        required=required,
+    )
+
+
+def query_string(name, description):
+    return openapi.Parameter(name, openapi.IN_QUERY, description=description, type=openapi.TYPE_STRING, required=False)
+
+
+CONTACT_CREATE_PARAMETERS = [
+    form_string("name", "Nom de l'expéditeur", required=True),
+    form_string("email", "Adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
+    form_int("service", "ID du service municipal concerné"),
+    form_string("subject", "Sujet du message", required=True),
+    form_string("message", "Message", required=True),
+]
+
+PREFERENCES_PARAMETERS = [
+    form_string("language", "Langue préférée : fr ou en"),
+    form_bool("screen_reader_mode", "Mode lecteur d'écran"),
+    form_bool("high_contrast", "Contraste renforcé"),
+    form_int("font_scale", "Échelle des textes entre 80 et 180"),
+    form_string("onboarding_step", "Étape d'onboarding"),
+]
+
+ONBOARDING_PARAMETERS = [
+    form_string("step", "Étape d'onboarding"),
+    form_bool("completed", "Marquer l'onboarding terminé"),
+]
+
+CITIZEN_REQUEST_PARAMETERS = [
+    form_int("service", "ID du service municipal"),
+    form_string("request_type", "Type : procedure ou report"),
+    form_string("incident_category", "Catégorie d'incident"),
+    form_string("title", "Titre", required=True),
+    form_string("description", "Description", required=True),
+    form_string("location_text", "Lieu en texte libre"),
+    form_number("latitude", "Latitude"),
+    form_number("longitude", "Longitude"),
+]
+
+ISSUE_REPORT_PARAMETERS = [
+    form_int("service", "ID du service municipal"),
+    form_string("incident_category", "Catégorie d'incident"),
+    form_string("title", "Titre", required=True),
+    form_string("description", "Description", required=True),
+    form_string("location_text", "Lieu en texte libre"),
+    form_number("latitude", "Latitude"),
+    form_number("longitude", "Longitude"),
+]
+
+NOTIFICATION_UPDATE_PARAMETERS = [
+    form_bool("is_read", "État de lecture", required=True),
+]
+
+REQUEST_AGENT_UPDATE_PARAMETERS = [
+    form_string("status", "Statut de la demande"),
+    form_string("priority", "Priorité de la demande"),
+    form_int("assigned_to", "ID de l'agent ou administrateur responsable"),
+]
+
+REQUEST_EVENT_PARAMETERS = [
+    form_string("title", "Titre de l'étape", required=True),
+    form_string("message", "Message"),
+    form_bool("is_public", "Visible par le citoyen"),
+]
+
+CONTACT_UPDATE_PARAMETERS = [
+    form_string("status", "Statut du message : received, read ou closed"),
+    form_int("assigned_to", "ID de l'agent ou administrateur responsable"),
+]
+
+ADMIN_USER_CREATE_PARAMETERS = [
+    form_string("email", "Adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
+    form_string("password", "Mot de passe", required=True),
+    form_string("first_name", "Prénom"),
+    form_string("last_name", "Nom"),
+    form_string("phone_number", "Téléphone"),
+    form_string("role", "Rôle : citizen, agent ou admin"),
+    form_bool("email_verified", "Adresse email déjà vérifiée"),
+    form_bool("is_active", "Compte actif"),
+    form_string("locale", "Langue/locale"),
+]
+
+ADMIN_USER_UPDATE_PARAMETERS = [
+    form_string("first_name", "Prénom"),
+    form_string("last_name", "Nom"),
+    form_string("phone_number", "Téléphone"),
+    form_string("role", "Rôle : citizen, agent ou admin"),
+    form_bool("email_verified", "Adresse email vérifiée"),
+    form_bool("is_active", "Compte actif"),
+    form_string("locale", "Langue/locale"),
+]
+
+ADMIN_SERVICE_PARAMETERS = [
+    form_string("name", "Nom du service", required=True),
+    form_string("slug", "Slug, généré automatiquement si vide"),
+    form_string("category", "Catégorie"),
+    form_string("short_description", "Description courte", required=True),
+    form_string("description", "Description complète"),
+    form_string("opening_hours", "Horaires"),
+    form_string("phone", "Téléphone"),
+    form_string("email", "Email", fmt=openapi.FORMAT_EMAIL),
+    form_string("address", "Adresse"),
+    form_string("actions", "Tableau JSON des actions proposées"),
+    form_string("required_documents", "Tableau JSON des documents nécessaires"),
+    form_string("faq", "Tableau JSON de FAQ"),
+    form_string("translations", "Objet JSON de traductions"),
+    form_bool("is_featured", "Mettre en avant le service"),
+    form_int("priority_order", "Ordre de priorité"),
+    form_bool("is_active", "Service actif"),
+    form_int("sort_order", "Ordre d'affichage"),
+]
+
+ADMIN_NEWS_PARAMETERS = [
+    form_string("title", "Titre", required=True),
+    form_string("slug", "Slug, généré automatiquement si vide"),
+    form_string("category", "Catégorie"),
+    form_string("excerpt", "Résumé"),
+    form_string("content", "Contenu complet", required=True),
+    form_bool("is_published", "Publication visible"),
+    form_string("published_at", "Date/heure ISO 8601"),
+]
+
+
+contact_create_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Ville - Contact"],
+    operation_id="city_contact_create",
+    operation_summary="Envoyer un message à la mairie",
+    security=PUBLIC_SECURITY,
+    manual_parameters=CONTACT_CREATE_PARAMETERS,
+    responses={201: "Message enregistré"},
+)
+
+citizen_preferences_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Citoyen"],
+    operation_id="citizen_preferences_update",
+    operation_summary="Modifier les préférences citoyennes",
+    security=JWT_SECURITY,
+    manual_parameters=PREFERENCES_PARAMETERS,
+    responses={200: CitizenPreferenceSerializer()},
+)
+
+citizen_onboarding_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Citoyen"],
+    operation_id="citizen_onboarding_update",
+    operation_summary="Mettre à jour l'onboarding",
+    security=JWT_SECURITY,
+    manual_parameters=ONBOARDING_PARAMETERS,
+    responses={200: "État d'onboarding"},
+)
+
+citizen_request_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Citoyen - Demandes"],
+    operation_id="citizen_request_create",
+    operation_summary="Créer une demande citoyenne",
+    security=JWT_SECURITY,
+    manual_parameters=CITIZEN_REQUEST_PARAMETERS,
+    responses={201: CitizenRequestSerializer()},
+)
+
+citizen_report_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Citoyen - Demandes"],
+    operation_id="citizen_report_create",
+    operation_summary="Créer un signalement",
+    security=JWT_SECURITY,
+    manual_parameters=ISSUE_REPORT_PARAMETERS,
+    responses={201: CitizenRequestSerializer()},
+)
+
+citizen_notification_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Citoyen - Notifications"],
+    operation_id="citizen_notification_update",
+    operation_summary="Modifier l'état de lecture d'une notification",
+    security=JWT_SECURITY,
+    manual_parameters=NOTIFICATION_UPDATE_PARAMETERS,
+    responses={200: CitizenNotificationSerializer()},
+)
+
+citizen_notification_read_all_schema = swagger_auto_schema(
+    auto_schema=NoBodyAutoSchema,
+    tags=["Citoyen - Notifications"],
+    operation_id="citizen_notification_read_all",
+    operation_summary="Marquer toutes les notifications comme lues",
+    security=JWT_SECURITY,
+    manual_parameters=[],
+    responses={200: "Nombre de notifications mises à jour"},
+)
+
+agent_request_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Agent - Demandes"],
+    operation_id="agent_request_update",
+    operation_summary="Traiter une demande citoyenne",
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_AGENT_UPDATE_PARAMETERS,
+    responses={200: AgentCitizenRequestDetailSerializer()},
+)
+
+agent_request_event_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Agent - Demandes"],
+    operation_id="agent_request_timeline_create",
+    operation_summary="Ajouter une étape à l'historique d'une demande",
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_EVENT_PARAMETERS,
+    responses={201: AgentRequestEventCreateSerializer()},
+)
+
+agent_contact_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Agent - Contact"],
+    operation_id="agent_contact_update",
+    operation_summary="Traiter un message de contact",
+    security=JWT_SECURITY,
+    manual_parameters=CONTACT_UPDATE_PARAMETERS,
+    responses={200: ContactMessageSerializer()},
+)
+
+admin_user_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Utilisateurs"],
+    operation_id="admin_user_create",
+    operation_summary="Créer un utilisateur",
+    security=JWT_SECURITY,
+    manual_parameters=ADMIN_USER_CREATE_PARAMETERS,
+    responses={201: AdminUserSerializer()},
+)
+
+admin_user_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Utilisateurs"],
+    operation_id="admin_user_update",
+    operation_summary="Modifier un utilisateur",
+    security=JWT_SECURITY,
+    manual_parameters=ADMIN_USER_UPDATE_PARAMETERS,
+    responses={200: AdminUserSerializer()},
+)
+
+admin_service_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Services"],
+    operation_id="admin_service_create",
+    operation_summary="Créer un service municipal",
+    security=JWT_SECURITY,
+    manual_parameters=ADMIN_SERVICE_PARAMETERS,
+    responses={201: AdminMunicipalServiceSerializer()},
+)
+
+admin_service_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Services"],
+    operation_id="admin_service_update",
+    operation_summary="Modifier un service municipal",
+    security=JWT_SECURITY,
+    manual_parameters=ADMIN_SERVICE_PARAMETERS,
+    responses={200: AdminMunicipalServiceSerializer()},
+)
+
+admin_service_delete_schema = swagger_auto_schema(
+    auto_schema=NoBodyAutoSchema,
+    tags=["Administration - Services"],
+    operation_id="admin_service_disable",
+    operation_summary="Désactiver un service municipal",
+    security=JWT_SECURITY,
+    manual_parameters=[],
+    responses={204: "Service désactivé"},
+)
+
+admin_news_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Actualités"],
+    operation_id="admin_news_create",
+    operation_summary="Créer une actualité",
+    security=JWT_SECURITY,
+    manual_parameters=ADMIN_NEWS_PARAMETERS,
+    responses={201: AdminNewsArticleSerializer()},
+)
+
+admin_news_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Actualités"],
+    operation_id="admin_news_update",
+    operation_summary="Modifier une actualité",
+    security=JWT_SECURITY,
+    manual_parameters=ADMIN_NEWS_PARAMETERS,
+    responses={200: AdminNewsArticleSerializer()},
+)
+
+admin_news_delete_schema = swagger_auto_schema(
+    auto_schema=NoBodyAutoSchema,
+    tags=["Administration - Actualités"],
+    operation_id="admin_news_unpublish",
+    operation_summary="Dépublier une actualité",
+    security=JWT_SECURITY,
+    manual_parameters=[],
+    responses={204: "Actualité dépubliée"},
+)
+
+admin_contact_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Contact"],
+    operation_id="admin_contact_update",
+    operation_summary="Traiter un message de contact",
+    security=JWT_SECURITY,
+    manual_parameters=CONTACT_UPDATE_PARAMETERS,
+    responses={200: ContactMessageSerializer()},
+)
+
+admin_request_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Demandes"],
+    operation_id="admin_request_update",
+    operation_summary="Traiter une demande citoyenne",
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_AGENT_UPDATE_PARAMETERS,
+    responses={200: AgentCitizenRequestDetailSerializer()},
+)
+
+admin_request_event_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Demandes"],
+    operation_id="admin_request_timeline_create",
+    operation_summary="Ajouter une étape à l'historique d'une demande",
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_EVENT_PARAMETERS,
+    responses={201: AgentRequestEventCreateSerializer()},
+)

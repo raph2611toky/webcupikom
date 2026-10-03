@@ -3,19 +3,11 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
 
-from config.swagger import health, schema_view
-from config.views import swagger_password_protect
-
-
-# La même protection couvre l'interface Swagger, ReDoc et le schéma brut.
-protected_swagger = swagger_password_protect(
-    schema_view.with_ui("swagger", cache_timeout=0)
-)
-protected_redoc = swagger_password_protect(
-    schema_view.with_ui("redoc", cache_timeout=0)
-)
-protected_schema = swagger_password_protect(
-    schema_view.without_ui(cache_timeout=0)
+from config.views import (
+    health,
+    protected_redoc,
+    protected_schema,
+    protected_swagger,
 )
 
 

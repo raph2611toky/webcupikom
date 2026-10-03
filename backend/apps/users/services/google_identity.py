@@ -104,3 +104,12 @@ def exchange_google_authorization_code(code: str, state: str) -> dict:
     if not credential:
         raise GoogleIdentityError("Google n'a pas retourné d'ID token.")
     return verify_google_credential(credential)
+
+
+__all__ = [
+    "GoogleIdentityError",
+    "verify_google_credential",
+    "build_google_authorization_url",
+    "verify_google_state",
+    "exchange_google_authorization_code",
+]

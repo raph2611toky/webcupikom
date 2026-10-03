@@ -1,57 +1,25 @@
 """Documentation Swagger/OpenAPI des endpoints utilisateurs.
 
-Ce module contient exclusivement la documentation HTTP : schémas de réponses,
-paramètres multipart et décorateurs drf-yasg. La logique métier reste dans
-``apps.users.views``.
+Règle d'architecture : ce module ne dépend jamais de ``views``.
+Il expose uniquement des décorateurs ``swagger_auto_schema`` que ``views.py``
+importe et applique directement sur ses méthodes HTTP.
+
+Toutes les entrées sont décrites avec ``manual_parameters``. Aucun endpoint
+n'utilise ``request_body`` dans Swagger afin de conserver un affichage champ
+par champ dans l'interface de documentation.
 """
 
-from django.utils.decorators import method_decorator
 from drf_yasg import openapi
-from drf_yasg.utils import no_body, swagger_auto_schema
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import serializers
 
-from .serializers import (
-    AgentRegisterSerializer,
-    ChangeEmailConfirmSerializer,
-    ChangeEmailRequestSerializer,
-    ChangePasswordSerializer,
-    DeleteAccountSerializer,
-    EmailOnlySerializer,
-    GoogleAuthSerializer,
-    LoginSerializer,
-    PasswordResetConfirmSerializer,
-    RegisterSerializer,
-    SetPasswordSerializer,
-    UserSerializer,
-    VerifyEmailSerializer,
-)
-from .views import (
-    AgentRegisterView,
-    ChangeEmailConfirmView,
-    ChangeEmailRequestView,
-    ChangePasswordView,
-    DeleteAccountView,
-    GoogleLoginView,
-    GoogleRedirectView,
-    LoginView,
-    LogoutView,
-    PasswordResetConfirmView,
-    PasswordResetRequestView,
-    ProfileView,
-    RefreshView,
-    RegisterView,
-    ResendVerificationView,
-    SetPasswordView,
-    VerifyEmailView,
-)
+from helpers.swagger import ManualFormAutoSchema, NoBodyAutoSchema
+
+from .serializers import UserSerializer
 
 PUBLIC_SECURITY = []
 JWT_SECURITY = [{"Bearer": []}]
 
-
-# -----------------------------------------------------------------------------
-# Schémas de réponses contractuels
-# -----------------------------------------------------------------------------
 
 class MessageResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
@@ -59,10 +27,7 @@ class MessageResponseSerializer(serializers.Serializer):
 
 class ApiErrorResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
-    errors = serializers.JSONField(
-        required=False,
-        help_text="Détail champ par champ présent pour les erreurs de validation.",
-    )
+    errors = serializers.JSONField(required=False)
 
 
 class RegisterResponseSerializer(serializers.Serializer):
@@ -71,38 +36,30 @@ class RegisterResponseSerializer(serializers.Serializer):
 
 
 class AuthResponseSerializer(serializers.Serializer):
-    access = serializers.CharField(help_text="Access token JWT. Le refresh token est dans un cookie HttpOnly.")
+    access = serializers.CharField()
     user = UserSerializer()
 
 
 class VerifyEmailResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
-    access = serializers.CharField(help_text="Access token JWT. Le refresh token est dans un cookie HttpOnly.")
+    access = serializers.CharField()
     user = UserSerializer()
 
 
 class GoogleAuthResponseSerializer(serializers.Serializer):
-    created = serializers.BooleanField(
-        help_text="true si le compte a été créé pendant cette connexion Google."
-    )
-    access = serializers.CharField(help_text="Access token JWT. Le refresh token est dans un cookie HttpOnly.")
+    created = serializers.BooleanField()
+    access = serializers.CharField()
     user = UserSerializer()
 
 
 class GoogleRedirectResponseSerializer(serializers.Serializer):
-    authorization_url = serializers.URLField(
-        help_text="URL Google OAuth complète vers laquelle rediriger le navigateur."
-    )
-    redirect_uri = serializers.URLField(
-        help_text="URI de callback configurée côté Google et backend."
-    )
-    state = serializers.CharField(
-        help_text="State signé à renvoyer avec le code OAuth à POST /api/auth/google/."
-    )
+    authorization_url = serializers.URLField()
+    redirect_uri = serializers.URLField()
+    state = serializers.CharField()
 
 
 class RefreshResponseSerializer(serializers.Serializer):
-    access = serializers.CharField(help_text="Nouveau access token JWT. Le refresh rotatif reste en cookie HttpOnly.")
+    access = serializers.CharField()
 
 
 class ChangeEmailConfirmResponseSerializer(serializers.Serializer):
@@ -113,32 +70,68 @@ class ChangeEmailConfirmResponseSerializer(serializers.Serializer):
 ERROR_RESPONSE = ApiErrorResponseSerializer()
 
 
-# -----------------------------------------------------------------------------
-# Paramètres multipart : aucun request_body Swagger pour un endpoint fichier.
-# -----------------------------------------------------------------------------
+def form_string(name, description, *, required=False, fmt=None):
+    return openapi.Parameter(
+        name,
+        openapi.IN_FORM,
+        description=description,
+        type=openapi.TYPE_STRING,
+        format=fmt,
+        required=required,
+    )
 
-PROFILE_MULTIPART_PARAMETERS = [
-    openapi.Parameter(
-        "first_name",
+
+def form_bool(name, description, *, required=False):
+    return openapi.Parameter(
+        name,
         openapi.IN_FORM,
-        description="Prénom",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
-    openapi.Parameter(
-        "last_name",
-        openapi.IN_FORM,
-        description="Nom",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
-    openapi.Parameter(
-        "phone_number",
-        openapi.IN_FORM,
-        description="Numéro de téléphone",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
+        description=description,
+        type=openapi.TYPE_BOOLEAN,
+        required=required,
+    )
+
+
+REGISTER_PARAMETERS = [
+    form_string("email", "Adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
+    form_string("password", "Mot de passe (8 caractères minimum)", required=True),
+    form_string("password_confirm", "Confirmation du mot de passe", required=True),
+    form_string("first_name", "Prénom"),
+    form_string("last_name", "Nom"),
+]
+
+VERIFY_EMAIL_PARAMETERS = [
+    form_string("uid", "Identifiant encodé de l'utilisateur", required=True),
+    form_string("token", "Token de vérification email", required=True),
+]
+
+EMAIL_PARAMETER = [
+    form_string("email", "Adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
+]
+
+LOGIN_PARAMETERS = [
+    form_string("email", "Adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
+    form_string("password", "Mot de passe", required=True),
+    form_bool("remember", "Conserver la session via le cookie refresh", required=False),
+]
+
+GOOGLE_LOGIN_PARAMETERS = [
+    form_string("credential", "ID token Google Identity Services", required=False),
+    form_string("code", "Code OAuth Google", required=False),
+    form_string("state", "State signé retourné par Google", required=False),
+    form_bool("remember", "Conserver la session via le cookie refresh", required=False),
+]
+
+PASSWORD_RESET_CONFIRM_PARAMETERS = [
+    form_string("uid", "Identifiant encodé de l'utilisateur", required=True),
+    form_string("token", "Token de réinitialisation", required=True),
+    form_string("new_password", "Nouveau mot de passe", required=True),
+    form_string("new_password_confirm", "Confirmation du nouveau mot de passe", required=True),
+]
+
+PROFILE_PARAMETERS = [
+    form_string("first_name", "Prénom"),
+    form_string("last_name", "Nom"),
+    form_string("phone_number", "Numéro de téléphone"),
     openapi.Parameter(
         "avatar",
         openapi.IN_FORM,
@@ -146,33 +139,43 @@ PROFILE_MULTIPART_PARAMETERS = [
         type=openapi.TYPE_FILE,
         required=False,
     ),
-    openapi.Parameter(
-        "locale",
-        openapi.IN_FORM,
-        description="Locale utilisateur, par exemple fr ou fr-FR",
-        type=openapi.TYPE_STRING,
-        required=False,
-    ),
+    form_string("locale", "Locale utilisateur, par exemple fr ou en"),
+]
+
+CHANGE_PASSWORD_PARAMETERS = [
+    form_string("current_password", "Mot de passe actuel", required=True),
+    form_string("new_password", "Nouveau mot de passe", required=True),
+    form_string("new_password_confirm", "Confirmation du nouveau mot de passe", required=True),
+]
+
+SET_PASSWORD_PARAMETERS = [
+    form_string("new_password", "Nouveau mot de passe", required=True),
+    form_string("new_password_confirm", "Confirmation du nouveau mot de passe", required=True),
+]
+
+CHANGE_EMAIL_PARAMETERS = [
+    form_string("new_email", "Nouvelle adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
+    form_string("current_password", "Mot de passe actuel si le compte en possède un", required=False),
+]
+
+CHANGE_EMAIL_CONFIRM_PARAMETERS = [
+    form_string("token", "Token signé de confirmation du changement d'email", required=True),
+]
+
+DELETE_ACCOUNT_PARAMETERS = [
+    form_string("current_password", "Mot de passe actuel si le compte en possède un", required=False),
+    form_string("confirmation", 'Saisir exactement "DELETE"', required=True),
 ]
 
 
-def _document(view_class, method_name, **schema_kwargs):
-    """Applique un swagger_auto_schema à une méthode sans toucher au fichier views.py."""
-    return method_decorator(
-        name=method_name,
-        decorator=swagger_auto_schema(**schema_kwargs),
-    )(view_class)
-
-
-RegisterView = _document(
-    RegisterView,
-    "post",
+register_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification"],
     operation_id="auth_register",
-    operation_summary="Créer un compte",
+    operation_summary="Créer un compte citoyen",
     operation_description="Crée un compte local et envoie un email de vérification.",
     security=PUBLIC_SECURITY,
-    request_body=RegisterSerializer,
+    manual_parameters=REGISTER_PARAMETERS,
     responses={
         201: openapi.Response("Compte créé", RegisterResponseSerializer()),
         400: openapi.Response("Données invalides", ERROR_RESPONSE),
@@ -180,19 +183,17 @@ RegisterView = _document(
     },
 )
 
-AgentRegisterView = _document(
-    AgentRegisterView,
-    "post",
+agent_register_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification"],
     operation_id="auth_register_agent",
     operation_summary="Créer un compte agent",
     operation_description=(
-        "Crée un compte avec le rôle agent. Endpoint réservé aux administrateurs. "
-        "L'agent reçoit ensuite le même email de vérification qu'un citoyen, puis "
-        "utilise les endpoints standards de vérification et de connexion."
+        "Endpoint réservé aux administrateurs. Le rôle agent est imposé côté serveur, "
+        "puis l'agent suit le même parcours de vérification email et de connexion."
     ),
     security=JWT_SECURITY,
-    request_body=AgentRegisterSerializer,
+    manual_parameters=REGISTER_PARAMETERS,
     responses={
         201: openapi.Response("Compte agent créé", RegisterResponseSerializer()),
         400: openapi.Response("Données invalides", ERROR_RESPONSE),
@@ -202,14 +203,13 @@ AgentRegisterView = _document(
     },
 )
 
-VerifyEmailView = _document(
-    VerifyEmailView,
-    "post",
+verify_email_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification"],
     operation_id="auth_verify_email",
     operation_summary="Vérifier une adresse email",
     security=PUBLIC_SECURITY,
-    request_body=VerifyEmailSerializer,
+    manual_parameters=VERIFY_EMAIL_PARAMETERS,
     responses={
         200: openapi.Response("Email vérifié", VerifyEmailResponseSerializer()),
         400: openapi.Response("Lien invalide ou expiré", ERROR_RESPONSE),
@@ -217,270 +217,150 @@ VerifyEmailView = _document(
     },
 )
 
-ResendVerificationView = _document(
-    ResendVerificationView,
-    "post",
+resend_verification_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification"],
     operation_id="auth_resend_verification",
     operation_summary="Renvoyer l'email de vérification",
     security=PUBLIC_SECURITY,
-    request_body=EmailOnlySerializer,
-    responses={
-        200: openapi.Response("Réponse neutre", MessageResponseSerializer()),
-        400: openapi.Response("Email invalide", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=EMAIL_PARAMETER,
+    responses={200: openapi.Response("Réponse neutre", MessageResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-LoginView = _document(
-    LoginView,
-    "post",
+login_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification"],
     operation_id="auth_login",
     operation_summary="Connexion email / mot de passe",
     security=PUBLIC_SECURITY,
-    request_body=LoginSerializer,
-    responses={
-        200: openapi.Response("Connexion réussie", AuthResponseSerializer()),
-        400: openapi.Response("Identifiants invalides ou email non vérifié", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=LOGIN_PARAMETERS,
+    responses={200: openapi.Response("Connexion réussie", AuthResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-GoogleRedirectView = _document(
-    GoogleRedirectView,
-    "get",
+google_redirect_get_schema = swagger_auto_schema(
     tags=["Authentification Google"],
     operation_id="auth_google_redirect",
     operation_summary="Obtenir l'URL de connexion Google",
-    operation_description=(
-        "Construit l'URL OAuth Google à ouvrir côté frontend. Google redirige ensuite vers "
-        "GOOGLE_REDIRECT_URI avec les paramètres code et state. Le frontend renvoie ensuite "
-        "code et state à POST /api/auth/google/."
-    ),
     security=PUBLIC_SECURITY,
-    responses={
-        200: openapi.Response("URL OAuth Google", GoogleRedirectResponseSerializer()),
-        400: openapi.Response("Configuration Google incomplète", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    responses={200: openapi.Response("URL OAuth Google", GoogleRedirectResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-GoogleLoginView = _document(
-    GoogleLoginView,
-    "post",
+google_login_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification Google"],
     operation_id="auth_google_login",
     operation_summary="Connexion Google",
-    operation_description=(
-        "Deux formats de requête sont acceptés : soit {credential}, provenant de Google "
-        "Identity Services, soit {code, state}, obtenus après le flux de redirection OAuth. "
-        "Les deux modes ne doivent jamais être envoyés simultanément."
-    ),
+    operation_description="Utiliser soit credential, soit le couple code + state.",
     security=PUBLIC_SECURITY,
-    request_body=GoogleAuthSerializer,
-    responses={
-        200: openapi.Response("Connexion Google réussie", GoogleAuthResponseSerializer()),
-        400: openapi.Response("Credential, code ou state invalide", ERROR_RESPONSE),
-        409: openapi.Response("Conflit d'identité Google", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=GOOGLE_LOGIN_PARAMETERS,
+    responses={200: openapi.Response("Connexion réussie", GoogleAuthResponseSerializer()), 400: ERROR_RESPONSE, 409: ERROR_RESPONSE},
 )
 
-LogoutView = _document(
-    LogoutView,
-    "post",
+logout_post_schema = swagger_auto_schema(
+    auto_schema=NoBodyAutoSchema,
     tags=["Authentification"],
     operation_id="auth_logout",
-    operation_summary="Déconnexion et révocation du refresh token",
-    operation_description="Le refresh token est lu puis supprimé depuis le cookie HttpOnly.",
+    operation_summary="Déconnexion",
     security=PUBLIC_SECURITY,
-    request_body=no_body,
-    responses={
-        204: openapi.Response("Déconnexion réussie ; cookie supprimé"),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=[],
+    responses={204: openapi.Response("Déconnexion réussie")},
 )
 
-RefreshView = _document(
-    RefreshView,
-    "post",
+refresh_post_schema = swagger_auto_schema(
+    auto_schema=NoBodyAutoSchema,
     tags=["Authentification"],
     operation_id="auth_refresh",
-    operation_summary="Rafraîchir le JWT",
-    operation_description=(
-        "Le refresh token est lu dans le cookie HttpOnly. Sa rotation reste côté serveur/navigateur ; "
-        "seul le nouvel access token est retourné au frontend."
-    ),
+    operation_summary="Rafraîchir le JWT depuis le cookie HttpOnly",
     security=PUBLIC_SECURITY,
-    request_body=no_body,
-    responses={
-        200: openapi.Response("Nouveau access token", RefreshResponseSerializer()),
-        401: openapi.Response("Session absente, invalide ou expirée", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=[],
+    responses={200: openapi.Response("Nouveau token", RefreshResponseSerializer()), 401: ERROR_RESPONSE},
 )
 
-PasswordResetRequestView = _document(
-    PasswordResetRequestView,
-    "post",
+password_reset_request_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification"],
     operation_id="auth_password_reset_request",
     operation_summary="Demander une réinitialisation du mot de passe",
     security=PUBLIC_SECURITY,
-    request_body=EmailOnlySerializer,
-    responses={
-        200: openapi.Response("Réponse neutre", MessageResponseSerializer()),
-        400: openapi.Response("Email invalide", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=EMAIL_PARAMETER,
+    responses={200: openapi.Response("Réponse neutre", MessageResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-PasswordResetConfirmView = _document(
-    PasswordResetConfirmView,
-    "post",
+password_reset_confirm_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Authentification"],
     operation_id="auth_password_reset_confirm",
     operation_summary="Confirmer la réinitialisation du mot de passe",
     security=PUBLIC_SECURITY,
-    request_body=PasswordResetConfirmSerializer,
-    responses={
-        200: openapi.Response("Mot de passe réinitialisé", MessageResponseSerializer()),
-        400: openapi.Response("Lien ou mot de passe invalide", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=PASSWORD_RESET_CONFIRM_PARAMETERS,
+    responses={200: openapi.Response("Mot de passe réinitialisé", MessageResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-ProfileView = _document(
-    ProfileView,
-    "get",
+profile_get_schema = swagger_auto_schema(
     tags=["Compte"],
     operation_id="account_profile_get",
     operation_summary="Récupérer le profil connecté",
     security=JWT_SECURITY,
-    responses={
-        200: openapi.Response("Profil utilisateur", UserSerializer()),
-        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    responses={200: openapi.Response("Profil", UserSerializer()), 401: ERROR_RESPONSE},
 )
 
-ProfileView = _document(
-    ProfileView,
-    "patch",
+profile_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Compte"],
     operation_id="account_profile_update",
     operation_summary="Modifier le profil connecté",
-    operation_description=(
-        "Requête exclusivement multipart/form-data afin de supporter avatar. "
-        "Cet endpoint ne déclare volontairement aucun request_body Swagger."
-    ),
+    operation_description="Accepte multipart/form-data, notamment pour le champ avatar.",
     security=JWT_SECURITY,
-    manual_parameters=PROFILE_MULTIPART_PARAMETERS,
-    responses={
-        200: openapi.Response("Profil mis à jour", UserSerializer()),
-        400: openapi.Response("Données invalides", ERROR_RESPONSE),
-        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=PROFILE_PARAMETERS,
+    responses={200: openapi.Response("Profil mis à jour", UserSerializer()), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},
 )
 
-ChangePasswordView = _document(
-    ChangePasswordView,
-    "post",
+change_password_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Compte"],
     operation_id="account_change_password",
     operation_summary="Changer le mot de passe",
     security=JWT_SECURITY,
-    request_body=ChangePasswordSerializer,
-    responses={
-        200: openapi.Response("Mot de passe modifié", MessageResponseSerializer()),
-        400: openapi.Response("Mot de passe invalide", ERROR_RESPONSE),
-        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=CHANGE_PASSWORD_PARAMETERS,
+    responses={200: openapi.Response("Mot de passe modifié", MessageResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-SetPasswordView = _document(
-    SetPasswordView,
-    "post",
+set_password_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Compte"],
     operation_id="account_set_password",
     operation_summary="Définir un mot de passe local",
     security=JWT_SECURITY,
-    request_body=SetPasswordSerializer,
-    responses={
-        200: openapi.Response("Mot de passe configuré", MessageResponseSerializer()),
-        400: openapi.Response("Mot de passe invalide", ERROR_RESPONSE),
-        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=SET_PASSWORD_PARAMETERS,
+    responses={200: openapi.Response("Mot de passe configuré", MessageResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-ChangeEmailRequestView = _document(
-    ChangeEmailRequestView,
-    "post",
+change_email_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Compte"],
     operation_id="account_change_email_request",
     operation_summary="Demander un changement d'adresse email",
     security=JWT_SECURITY,
-    request_body=ChangeEmailRequestSerializer,
-    responses={
-        200: openapi.Response("Email de confirmation envoyé", MessageResponseSerializer()),
-        400: openapi.Response("Adresse ou mot de passe invalide", ERROR_RESPONSE),
-        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=CHANGE_EMAIL_PARAMETERS,
+    responses={200: openapi.Response("Email de confirmation envoyé", MessageResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-ChangeEmailConfirmView = _document(
-    ChangeEmailConfirmView,
-    "post",
+change_email_confirm_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Compte"],
     operation_id="account_change_email_confirm",
     operation_summary="Confirmer le changement d'adresse email",
     security=PUBLIC_SECURITY,
-    request_body=ChangeEmailConfirmSerializer,
-    responses={
-        200: openapi.Response("Adresse email modifiée", ChangeEmailConfirmResponseSerializer()),
-        400: openapi.Response("Token invalide ou expiré", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=CHANGE_EMAIL_CONFIRM_PARAMETERS,
+    responses={200: openapi.Response("Adresse email modifiée", ChangeEmailConfirmResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
-DeleteAccountView = _document(
-    DeleteAccountView,
-    "delete",
+delete_account_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
     tags=["Compte"],
     operation_id="account_delete",
     operation_summary="Supprimer définitivement le compte",
     security=JWT_SECURITY,
-    request_body=DeleteAccountSerializer,
-    responses={
-        204: openapi.Response("Compte supprimé ; aucune réponse JSON"),
-        400: openapi.Response("Confirmation ou mot de passe invalide", ERROR_RESPONSE),
-        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
-        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
-    },
+    manual_parameters=DELETE_ACCOUNT_PARAMETERS,
+    responses={204: openapi.Response("Compte supprimé"), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},
 )
-
-
-__all__ = [
-    "RegisterView",
-    "AgentRegisterView",
-    "VerifyEmailView",
-    "ResendVerificationView",
-    "LoginView",
-    "GoogleRedirectView",
-    "GoogleLoginView",
-    "LogoutView",
-    "RefreshView",
-    "PasswordResetRequestView",
-    "PasswordResetConfirmView",
-    "ProfileView",
-    "ChangePasswordView",
-    "SetPasswordView",
-    "ChangeEmailRequestView",
-    "ChangeEmailConfirmView",
-    "DeleteAccountView",
-]

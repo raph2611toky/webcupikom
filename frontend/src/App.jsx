@@ -3,6 +3,7 @@ import { useAuth } from "./auth/AuthContext.jsx";
 import LandingPage from "./pages/Landing/LandingPage.jsx";
 import LoginPage from "./pages/Login/LoginPage.jsx";
 import InscriptionPage from "./pages/Inscription/InscriptionPage.jsx";
+import AgentRegistrationPage from "./pages/AgentRegistration/AgentRegistrationPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPassword/ForgotPasswordPage.jsx";
 import ResetPasswordPage from "./pages/ResetPassword/ResetPasswordPage.jsx";
 import VerifyEmailPage from "./pages/VerifyEmail/VerifyEmailPage.jsx";
@@ -152,6 +153,8 @@ export default function App() {
 
     "/admin": <Protected role="admin"><AdminDashboard /></Protected>,
     "/admin/dashboard": <Protected role="admin"><AdminDashboard /></Protected>,
+    "/admin/agents/register": <Protected role="admin"><AgentRegistrationPage /></Protected>,
+    "/inscription-agent": <Protected role="admin"><AgentRegistrationPage /></Protected>,
     "/admin/users": <Protected role="admin"><AdminUsers /></Protected>,
     "/admin/requests": <Protected role="admin"><AdminRequests /></Protected>,
     "/admin/messages": <Protected role="admin"><AdminMessages /></Protected>,

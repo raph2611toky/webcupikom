@@ -64,6 +64,11 @@ export async function register(payload) {
   return data;
 }
 
+export async function registerAgent(payload) {
+  const { data } = await api.post("/auth/register/agent/", payload);
+  return data;
+}
+
 export async function startGoogleAuth({ remember = true } = {}) {
   window.sessionStorage.setItem(GOOGLE_REMEMBER_KEY, String(Boolean(remember)));
   const { data } = await api.get("/auth/google/redirect/", {

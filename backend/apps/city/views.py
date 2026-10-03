@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, F, Q
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -51,6 +52,29 @@ from .serializers import (
     MunicipalServiceSerializer,
     NewsArticleSerializer,
     WebCupRequestSnapshotSerializer,
+)
+from .swagger import (
+    admin_contact_patch_schema,
+    admin_news_delete_schema,
+    admin_news_patch_schema,
+    admin_news_post_schema,
+    admin_request_event_post_schema,
+    admin_request_patch_schema,
+    admin_service_delete_schema,
+    admin_service_patch_schema,
+    admin_service_post_schema,
+    admin_user_patch_schema,
+    admin_user_post_schema,
+    agent_contact_patch_schema,
+    agent_request_event_post_schema,
+    agent_request_patch_schema,
+    citizen_notification_patch_schema,
+    citizen_notification_read_all_schema,
+    citizen_onboarding_patch_schema,
+    citizen_preferences_patch_schema,
+    citizen_report_post_schema,
+    citizen_request_post_schema,
+    contact_create_schema,
 )
 from .services.webcup import WebCupUpstreamError, get_webcup_requests
 
@@ -208,6 +232,7 @@ class NewsDetailView(generics.RetrieveAPIView):
     queryset = NewsArticle.objects.filter(is_published=True)
 
 
+@method_decorator(name="post", decorator=contact_create_schema)
 class ContactMessageCreateView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = ContactMessageCreateSerializer
@@ -283,6 +308,7 @@ class CitizenPreferencesView(APIView):
         data["supported_languages"] = list(SUPPORTED_LANGUAGES)
         return Response(data)
 
+    @citizen_preferences_patch_schema
     def patch(self, request):
         preference = self.get_object(request.user)
         serializer = CitizenPreferenceSerializer(
@@ -316,6 +342,7 @@ class CitizenOnboardingView(APIView):
             },
         })
 
+    @citizen_onboarding_patch_schema
     def patch(self, request):
         preference = self.get_object(request.user)
         step = request.data.get("step")
@@ -341,6 +368,7 @@ class CitizenOnboardingView(APIView):
         return self.get(request)
 
 
+@method_decorator(name="post", decorator=citizen_request_post_schema)
 class CitizenRequestListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenRequestSerializer
@@ -401,6 +429,7 @@ class CitizenRequestHistoryView(CitizenRequestListCreateView):
     http_method_names = ["get", "head", "options"]
 
 
+@method_decorator(name="post", decorator=citizen_report_post_schema)
 class CitizenIssueReportCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenIssueReportSerializer
@@ -508,7 +537,9 @@ class CitizenNotificationListView(generics.ListAPIView):
         return queryset
 
 
+@method_decorator(name="patch", decorator=citizen_notification_patch_schema)
 class CitizenNotificationDetailView(generics.RetrieveUpdateAPIView):
+    http_method_names = ["get", "patch", "head", "options"]
     permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenNotificationSerializer
 
@@ -532,6 +563,7 @@ class CitizenNotificationDetailView(generics.RetrieveUpdateAPIView):
 class CitizenNotificationReadAllView(APIView):
     permission_classes = [IsAuthenticatedCitizen]
 
+    @citizen_notification_read_all_schema
     def post(self, request):
         now = timezone.now()
         updated = CitizenNotification.objects.filter(
@@ -639,7 +671,9 @@ class AgentRequestSummaryView(APIView):
         })
 
 
+@method_decorator(name="patch", decorator=agent_request_patch_schema)
 class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
+    http_method_names = ["get", "patch", "head", "options"]
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = AgentCitizenRequestDetailSerializer
     lookup_field = "reference"
@@ -679,6 +713,7 @@ class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
             )
 
 
+@method_decorator(name="post", decorator=agent_request_event_post_schema)
 class AgentRequestTimelineView(generics.ListCreateAPIView):
     permission_classes = [AGENT_OR_ADMIN]
 
@@ -780,7 +815,9 @@ class AgentContactMessageListView(generics.ListAPIView):
         return queryset
 
 
+@method_decorator(name="patch", decorator=agent_contact_patch_schema)
 class AgentContactMessageDetailView(generics.RetrieveUpdateAPIView):
+    http_method_names = ["get", "patch", "head", "options"]
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = ContactMessageSerializer
     lookup_field = "reference"
@@ -904,6 +941,7 @@ class AdminDashboardView(APIView):
         )
 
 
+@method_decorator(name="post", decorator=admin_user_post_schema)
 class AdminUserListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedAdmin]
 
@@ -937,7 +975,9 @@ class AdminUserListCreateView(generics.ListCreateAPIView):
         return queryset.order_by("-date_joined")
 
 
+@method_decorator(name="patch", decorator=admin_user_patch_schema)
 class AdminUserDetailView(generics.RetrieveUpdateAPIView):
+    http_method_names = ["get", "patch", "head", "options"]
     permission_classes = [IsAuthenticatedAdmin]
     queryset = User.objects.all()
 
@@ -963,6 +1003,7 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
         return Response(AdminUserSerializer(instance, context={"request": request}).data)
 
 
+@method_decorator(name="post", decorator=admin_service_post_schema)
 class AdminServiceListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedAdmin]
     serializer_class = AdminMunicipalServiceSerializer
@@ -989,7 +1030,10 @@ class AdminServiceListCreateView(generics.ListCreateAPIView):
         return queryset
 
 
+@method_decorator(name="patch", decorator=admin_service_patch_schema)
+@method_decorator(name="delete", decorator=admin_service_delete_schema)
 class AdminServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticatedAdmin]
     serializer_class = AdminMunicipalServiceSerializer
     lookup_field = "slug"
@@ -1000,6 +1044,7 @@ class AdminServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.save(update_fields=["is_active", "updated_at"])
 
 
+@method_decorator(name="post", decorator=admin_news_post_schema)
 class AdminNewsListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedAdmin]
     serializer_class = AdminNewsArticleSerializer
@@ -1039,7 +1084,10 @@ class AdminNewsListCreateView(generics.ListCreateAPIView):
                 CitizenNotification.objects.bulk_create(notifications, batch_size=500)
 
 
+@method_decorator(name="patch", decorator=admin_news_patch_schema)
+@method_decorator(name="delete", decorator=admin_news_delete_schema)
 class AdminNewsDetailView(generics.RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticatedAdmin]
     serializer_class = AdminNewsArticleSerializer
     lookup_field = "slug"
@@ -1057,6 +1105,10 @@ class AdminContactMessageListView(AgentContactMessageListView):
 class AdminContactMessageDetailView(AgentContactMessageDetailView):
     permission_classes = [IsAuthenticatedAdmin]
 
+    @admin_contact_patch_schema
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
 
 class AdminRequestListView(AgentRequestListView):
     permission_classes = [IsAuthenticatedAdmin]
@@ -1069,9 +1121,17 @@ class AdminRequestSummaryView(AgentRequestSummaryView):
 class AdminRequestTimelineView(AgentRequestTimelineView):
     permission_classes = [IsAuthenticatedAdmin]
 
+    @admin_request_event_post_schema
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
 
 class AdminRequestDetailView(AgentRequestDetailView):
     permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_request_patch_schema
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
 
 
 class AdminSystemView(APIView):

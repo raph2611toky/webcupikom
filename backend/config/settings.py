@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -98,6 +99,18 @@ if os.getenv("DB_NAME"):
     }
 else:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+
+# Sur les hébergements mutualisés, l'utilisateur MariaDB n'a souvent pas le
+# droit CREATE DATABASE. Les tests Django utilisent donc SQLite par défaut et
+# ne touchent jamais à la base de production. Mettre TEST_USE_SQLITE=False
+# uniquement si un serveur de test MariaDB dédié est configuré.
+if "test" in sys.argv and env_bool("TEST_USE_SQLITE", True):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

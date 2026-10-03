@@ -10,9 +10,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from .swagger import health_get_schema, schema_view
+
 logger = logging.getLogger(__name__)
 
 
+@health_get_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def health(request):
@@ -76,6 +79,13 @@ def swagger_password_protect(view_func):
         return render(request, "swagger_login.html")
 
     return wrapper
+
+
+# Les URL importent uniquement depuis config.views. La construction du schéma
+# reste isolée dans config.swagger et est injectée ici.
+protected_swagger = swagger_password_protect(schema_view.with_ui("swagger", cache_timeout=0))
+protected_redoc = swagger_password_protect(schema_view.with_ui("redoc", cache_timeout=0))
+protected_schema = swagger_password_protect(schema_view.without_ui(cache_timeout=0))
 
 
 @never_cache

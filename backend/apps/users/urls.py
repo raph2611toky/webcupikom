@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .swagger import (
+from .views import (
     AgentRegisterView,
     ChangeEmailConfirmView,
     ChangeEmailRequestView,

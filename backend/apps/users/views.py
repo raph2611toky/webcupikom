@@ -6,7 +6,7 @@ from django.contrib.auth.models import update_last_login
 from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import APIException
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -40,6 +40,26 @@ from .serializers import (
     SetPasswordSerializer,
     UserSerializer,
     VerifyEmailSerializer,
+)
+from .swagger import (
+    agent_register_post_schema,
+    change_email_confirm_post_schema,
+    change_email_post_schema,
+    change_password_post_schema,
+    delete_account_schema,
+    google_login_post_schema,
+    google_redirect_get_schema,
+    login_post_schema,
+    logout_post_schema,
+    password_reset_confirm_post_schema,
+    password_reset_request_post_schema,
+    profile_get_schema,
+    profile_patch_schema,
+    refresh_post_schema,
+    register_post_schema,
+    resend_verification_post_schema,
+    set_password_post_schema,
+    verify_email_post_schema,
 )
 from .services.account_emails import (
     send_account_deleted_email,
@@ -88,10 +108,12 @@ def server_error(exc, view_name):
 
 
 class RegisterView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
     throttle_scope = "auth"
 
+    @register_post_schema
     def post(self, request):
         try:
             with transaction.atomic():
@@ -119,9 +141,11 @@ class AgentRegisterView(APIView):
     qu'un visiteur public ne puisse jamais s'auto-attribuer le rôle agent.
     """
 
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAdmin]
     throttle_scope = "auth"
 
+    @agent_register_post_schema
     def post(self, request):
         try:
             with transaction.atomic():
@@ -143,9 +167,11 @@ class AgentRegisterView(APIView):
 
 
 class VerifyEmailView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
 
+    @verify_email_post_schema
     def post(self, request):
         try:
             with transaction.atomic():
@@ -170,10 +196,12 @@ class VerifyEmailView(APIView):
 
 
 class ResendVerificationView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
     throttle_scope = "auth_email"
 
+    @resend_verification_post_schema
     def post(self, request):
         try:
             serializer = EmailOnlySerializer(data=request.data)
@@ -197,10 +225,12 @@ class ResendVerificationView(APIView):
 
 
 class LoginView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
     throttle_scope = "auth"
 
+    @login_post_schema
     def post(self, request):
         try:
             serializer = LoginSerializer(data=request.data, context={"request": request})
@@ -221,6 +251,7 @@ class GoogleRedirectView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
+    @google_redirect_get_schema
     def get(self, request):
         try:
             authorization_url, state_value = build_google_authorization_url()
@@ -240,10 +271,12 @@ class GoogleRedirectView(APIView):
 
 
 class GoogleLoginView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
     throttle_scope = "auth"
 
+    @google_login_post_schema
     def post(self, request):
         try:
             serializer = GoogleAuthSerializer(data=request.data)
@@ -335,9 +368,11 @@ class GoogleLoginView(APIView):
 
 
 class LogoutView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
 
+    @logout_post_schema
     def post(self, request):
         try:
             refresh_value = get_refresh_cookie(request)
@@ -359,9 +394,11 @@ class LogoutView(APIView):
 
 
 class RefreshView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
 
+    @refresh_post_schema
     def post(self, request):
         try:
             refresh_value = get_refresh_cookie(request)
@@ -397,10 +434,12 @@ class RefreshView(APIView):
 
 
 class PasswordResetRequestView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
     throttle_scope = "password_reset"
 
+    @password_reset_request_post_schema
     def post(self, request):
         try:
             serializer = EmailOnlySerializer(data=request.data)
@@ -424,9 +463,11 @@ class PasswordResetRequestView(APIView):
 
 
 class PasswordResetConfirmView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
 
+    @password_reset_confirm_post_schema
     def post(self, request):
         try:
             with transaction.atomic():
@@ -450,9 +491,10 @@ class PasswordResetConfirmView(APIView):
 
 
 class ProfileView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
-    parser_classes = [MultiPartParser]
 
+    @profile_get_schema
     def get(self, request):
         try:
             return Response(user_payload(request.user, request))
@@ -461,6 +503,7 @@ class ProfileView(APIView):
         except Exception as exc:
             return server_error(exc, self.__class__.__name__)
 
+    @profile_patch_schema
     def patch(self, request):
         try:
             serializer = ProfileUpdateSerializer(
@@ -479,8 +522,10 @@ class ProfileView(APIView):
 
 
 class ChangePasswordView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
+    @change_password_post_schema
     def post(self, request):
         try:
             serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
@@ -503,8 +548,10 @@ class ChangePasswordView(APIView):
 
 
 class SetPasswordView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
+    @set_password_post_schema
     def post(self, request):
         try:
             serializer = SetPasswordSerializer(data=request.data, context={"request": request})
@@ -525,8 +572,10 @@ class SetPasswordView(APIView):
 
 
 class ChangeEmailRequestView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
+    @change_email_post_schema
     def post(self, request):
         try:
             serializer = ChangeEmailRequestSerializer(data=request.data, context={"request": request})
@@ -545,9 +594,11 @@ class ChangeEmailRequestView(APIView):
 
 
 class ChangeEmailConfirmView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
 
+    @change_email_confirm_post_schema
     def post(self, request):
         try:
             with transaction.atomic():
@@ -570,8 +621,10 @@ class ChangeEmailConfirmView(APIView):
 
 
 class DeleteAccountView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
+    @delete_account_schema
     def delete(self, request):
         try:
             with transaction.atomic():

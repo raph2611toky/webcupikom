@@ -156,3 +156,22 @@ class AccountApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIn(settings.AUTH_REFRESH_COOKIE_NAME, response.cookies)
         self.assertEqual(response.cookies[settings.AUTH_REFRESH_COOKIE_NAME].value, "")
+
+
+class BackendStructureTests(APITestCase):
+    def test_user_urls_reference_views_module_not_swagger_module(self):
+        from . import urls as user_urls
+
+        for pattern in user_urls.urlpatterns:
+            callback = pattern.callback
+            view_class = getattr(callback, "view_class", None)
+            if view_class is not None:
+                self.assertEqual(view_class.__module__, "apps.users.views")
+
+    def test_profile_supports_json_form_and_multipart_parsers(self):
+        from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+        from .views import ProfileView
+
+        self.assertIn(JSONParser, ProfileView.parser_classes)
+        self.assertIn(FormParser, ProfileView.parser_classes)
+        self.assertIn(MultiPartParser, ProfileView.parser_classes)
