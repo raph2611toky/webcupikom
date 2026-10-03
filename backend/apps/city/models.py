@@ -28,7 +28,15 @@ class MunicipalService(models.Model):
     is_featured = models.BooleanField(default=False)
     priority_order = models.PositiveIntegerField(default=0)
     usage_count = models.PositiveIntegerField(default=0)
+    # ``is_active`` reste la source de vérité historique pour la disponibilité
+    # afin de ne casser aucun endpoint existant. Les champs ci-dessous donnent
+    # désormais au citoyen une explication et une prochaine action (F63/F64).
     is_active = models.BooleanField(default=True)
+    unavailability_reason = models.CharField(max_length=300, blank=True)
+    alternative_action = models.CharField(max_length=500, blank=True)
+    unavailable_since = models.DateTimeField(null=True, blank=True)
+    expected_restore_at = models.DateTimeField(null=True, blank=True)
+    availability_updated_at = models.DateTimeField(null=True, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -37,6 +45,53 @@ class MunicipalService(models.Model):
         ordering = ("sort_order", "name")
         verbose_name = "service municipal"
         verbose_name_plural = "services municipaux"
+
+    @property
+    def availability_status(self):
+        return "available" if self.is_active else "unavailable"
+
+    def set_availability(
+        self,
+        *,
+        is_available,
+        reason="",
+        alternative_action="",
+        expected_restore_at=None,
+    ):
+        """Met à jour l'état opérationnel sans supprimer le service.
+
+        L'ancien booléen ``is_active`` est conservé pour compatibilité avec
+        les validations déjà robustes des demandes, contacts et rendez-vous.
+        """
+        now = timezone.now()
+        is_available = bool(is_available)
+        self.is_active = is_available
+        self.availability_updated_at = now
+
+        if is_available:
+            self.unavailability_reason = ""
+            self.alternative_action = ""
+            self.unavailable_since = None
+            self.expected_restore_at = None
+        else:
+            if self.unavailable_since is None:
+                self.unavailable_since = now
+            self.unavailability_reason = (reason or "").strip() or "Service temporairement indisponible."
+            self.alternative_action = (alternative_action or "").strip() or (
+                "Réessayez ultérieurement ou contactez la mairie si votre demande est urgente."
+            )
+            self.expected_restore_at = expected_restore_at
+
+        self.save(update_fields=[
+            "is_active",
+            "unavailability_reason",
+            "alternative_action",
+            "unavailable_since",
+            "expected_restore_at",
+            "availability_updated_at",
+            "updated_at",
+        ])
+        return self
 
     def __str__(self):
         return self.name

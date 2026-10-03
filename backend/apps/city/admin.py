@@ -25,11 +25,60 @@ from .models import (
 
 @admin.register(MunicipalService)
 class MunicipalServiceAdmin(admin.ModelAdmin):
-    list_display = ("name", "category", "is_featured", "usage_count", "is_active", "sort_order", "updated_at")
+    list_display = (
+        "name", "category", "is_featured", "usage_count", "is_active",
+        "unavailable_since", "expected_restore_at", "sort_order", "updated_at",
+    )
     list_filter = ("category", "is_featured", "is_active")
     search_fields = ("name", "short_description", "description")
     prepopulated_fields = {"slug": ("name",)}
     ordering = ("sort_order", "name")
+
+    def save_model(self, request, obj, form, change):
+        previous = None
+        if change and obj.pk:
+            previous = MunicipalService.objects.filter(pk=obj.pk).values(
+                "is_active", "unavailable_since"
+            ).first()
+
+        if previous and previous["is_active"] != obj.is_active:
+            obj.availability_updated_at = timezone.now()
+            if obj.is_active:
+                obj.unavailability_reason = ""
+                obj.alternative_action = ""
+                obj.unavailable_since = None
+                obj.expected_restore_at = None
+            else:
+                obj.unavailability_reason = (
+                    obj.unavailability_reason or "Service temporairement indisponible."
+                )
+                obj.alternative_action = obj.alternative_action or (
+                    "Réessayez ultérieurement ou contactez la mairie si votre demande est urgente."
+                )
+                obj.unavailable_since = previous["unavailable_since"] or timezone.now()
+
+        super().save_model(request, obj, form, change)
+
+        if previous and previous["is_active"] != obj.is_active:
+            record_staff_audit(
+                actor=request.user,
+                action=("service.restore" if obj.is_active else "service.unavailable"),
+                resource_type="service",
+                resource_id=obj.pk,
+                resource_reference=obj.slug,
+                summary=(
+                    "Service municipal remis en service"
+                    if obj.is_active
+                    else "Service municipal marqué indisponible"
+                ),
+                changes={
+                    "is_available": {
+                        "from": previous["is_active"],
+                        "to": obj.is_active,
+                    }
+                },
+                request=request,
+            )
 
 
 class PublicationAdminForm(forms.ModelForm):

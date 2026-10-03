@@ -18,6 +18,7 @@ from .views import (
     AdminRequestTimelineView,
     AdminServiceDetailView,
     AdminServiceListCreateView,
+    ServiceAvailabilityView,
     AdminSystemView,
     AdminUserDetailView,
     AdminUserListCreateView,
@@ -112,6 +113,11 @@ urlpatterns = [
     path("agent/assignees/", AgentAssigneeListView.as_view(), name="agent-assignee-list"),
     path("agent/contact-messages/", AgentContactMessageListView.as_view(), name="agent-contact-list"),
     path("agent/contact-messages/<str:reference>/", AgentContactMessageDetailView.as_view(), name="agent-contact-detail"),
+    path(
+        "agent/services/<slug:slug>/availability/",
+        ServiceAvailabilityView.as_view(),
+        name="agent-service-availability",
+    ),
 
     # Admin API. Deliberately separate from Django /admin/.
     path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
@@ -120,6 +126,7 @@ urlpatterns = [
     path("admin/users/", AdminUserListCreateView.as_view(), name="admin-user-list"),
     path("admin/users/<int:pk>/", AdminUserDetailView.as_view(), name="admin-user-detail"),
     path("admin/services/", AdminServiceListCreateView.as_view(), name="admin-service-list"),
+    path("admin/services/<slug:slug>/availability/", ServiceAvailabilityView.as_view(), name="admin-service-availability"),
     path("admin/services/<slug:slug>/", AdminServiceDetailView.as_view(), name="admin-service-detail"),
     path("admin/news/", AdminNewsListCreateView.as_view(), name="admin-news-list"),
     path("admin/news/<slug:slug>/", AdminNewsDetailView.as_view(), name="admin-news-detail"),

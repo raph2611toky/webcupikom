@@ -61,6 +61,7 @@ from .serializers import (
     ContactMessageReceiptSerializer,
     ContactMessageSerializer,
     MunicipalServiceSerializer,
+    ServiceAvailabilityUpdateSerializer,
     NewsArticleSerializer,
     NotificationCreateSerializer,
     StaffAuditEventSerializer,
@@ -80,6 +81,7 @@ from .swagger import (
     admin_service_delete_schema,
     admin_service_patch_schema,
     admin_service_post_schema,
+    service_availability_patch_schema,
     admin_user_patch_schema,
     admin_user_post_schema,
     agent_contact_patch_schema,
@@ -396,7 +398,12 @@ class MunicipalServiceListView(generics.ListAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return MunicipalService.objects.none()
-        queryset = MunicipalService.objects.filter(is_active=True)
+        # F64 : un service connu comme indisponible ne doit plus disparaître.
+        # Il reste consultable avec son état et les consignes associées.
+        queryset = MunicipalService.objects.all()
+        available = _query_bool(self.request.query_params, "available")
+        if available is not None:
+            queryset = queryset.filter(is_active=available)
         category = self.request.query_params.get("category")
         search = self.request.query_params.get("search")
         if category:
@@ -450,7 +457,7 @@ class MunicipalServiceDetailView(generics.RetrieveAPIView):
     authentication_classes = []
     serializer_class = MunicipalServiceSerializer
     lookup_field = "slug"
-    queryset = MunicipalService.objects.filter(is_active=True)
+    queryset = MunicipalService.objects.all()
 
 
 @method_decorator(name="post", decorator=contact_create_schema)
@@ -1901,7 +1908,12 @@ class AdminServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
     @transaction.atomic
     def perform_update(self, serializer):
         instance = serializer.instance
-        tracked = ("name", "category", "short_description", "opening_hours", "phone", "email", "address", "is_featured", "priority_order", "is_active", "sort_order")
+        tracked = (
+            "name", "category", "short_description", "opening_hours", "phone",
+            "email", "address", "is_featured", "priority_order", "is_active",
+            "unavailability_reason", "alternative_action", "expected_restore_at",
+            "sort_order",
+        )
         previous = {field: getattr(instance, field) for field in tracked}
         instance = serializer.save()
         changed_fields = [field for field in tracked if previous[field] != getattr(instance, field)]
@@ -1916,14 +1928,77 @@ class AdminServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
     @transaction.atomic
     def perform_destroy(self, instance):
         was_active = instance.is_active
-        instance.is_active = False
-        instance.save(update_fields=["is_active", "updated_at"])
+        instance.set_availability(
+            is_available=False,
+            reason=instance.unavailability_reason or "Service temporairement indisponible.",
+            alternative_action=(
+                instance.alternative_action
+                or "Réessayez ultérieurement ou contactez la mairie si votre demande est urgente."
+            ),
+            expected_restore_at=instance.expected_restore_at,
+        )
         record_staff_audit(
             actor=self.request.user, action="service.deactivate", resource_type="service",
             resource_id=instance.pk, resource_reference=instance.slug,
             summary="Service municipal désactivé", changes={"is_active": {"from": was_active, "to": False}},
             request=self.request,
         )
+
+
+class ServiceAvailabilityView(APIView):
+    """Bascule opérationnelle F63/F64 pour un agent responsable ou un admin."""
+
+    permission_classes = [AGENT_OR_ADMIN]
+
+    @service_availability_patch_schema
+    @transaction.atomic
+    def patch(self, request, slug):
+        try:
+            service = MunicipalService.objects.select_for_update().get(slug=slug)
+        except MunicipalService.DoesNotExist:
+            return Response({"detail": "Service municipal introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ServiceAvailabilityUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        previous = {
+            "is_available": service.is_active,
+            "reason": service.unavailability_reason,
+            "alternative_action": service.alternative_action,
+            "expected_restore_at": service.expected_restore_at.isoformat() if service.expected_restore_at else None,
+        }
+
+        service.set_availability(
+            is_available=data["is_available"],
+            reason=data.get("reason", ""),
+            alternative_action=data.get("alternative_action", ""),
+            expected_restore_at=data.get("expected_restore_at"),
+        )
+
+        current = {
+            "is_available": service.is_active,
+            "reason": service.unavailability_reason,
+            "alternative_action": service.alternative_action,
+            "expected_restore_at": service.expected_restore_at.isoformat() if service.expected_restore_at else None,
+        }
+        if previous != current:
+            record_staff_audit(
+                actor=request.user,
+                action=("service.restore" if service.is_active else "service.unavailable"),
+                resource_type="service",
+                resource_id=service.pk,
+                resource_reference=service.slug,
+                summary=(
+                    "Service municipal remis en service"
+                    if service.is_active
+                    else "Service municipal marqué indisponible"
+                ),
+                changes={"availability": {"from": previous, "to": current}},
+                request=request,
+            )
+
+        return Response(AdminMunicipalServiceSerializer(service, context={"request": request}).data)
 
 
 class AdminContactMessageListView(AgentContactMessageListView):

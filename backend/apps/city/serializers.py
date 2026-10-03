@@ -69,6 +69,7 @@ class MunicipalServiceSerializer(serializers.ModelSerializer):
     faq = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
     available_languages = serializers.SerializerMethodField()
+    availability = serializers.SerializerMethodField()
 
     class Meta:
         model = MunicipalService
@@ -76,7 +77,7 @@ class MunicipalServiceSerializer(serializers.ModelSerializer):
             "id", "name", "slug", "category", "short_description", "description",
             "opening_hours", "phone", "email", "address", "actions",
             "required_documents", "faq", "is_featured", "priority_order",
-            "usage_count", "language", "available_languages",
+            "usage_count", "language", "available_languages", "availability",
         )
 
     def _localized_value(self, obj, field):
@@ -123,6 +124,20 @@ class MunicipalServiceSerializer(serializers.ModelSerializer):
         languages.update((obj.translations or {}).keys())
         return sorted(code for code in languages if code in SUPPORTED_LANGUAGE_CODES)
 
+    def get_availability(self, obj):
+        # Un service indisponible reste visible (F64), mais le frontend sait
+        # explicitement qu'une démarche ne doit pas être démarrée dessus.
+        return {
+            "status": obj.availability_status,
+            "is_available": obj.is_active,
+            "can_start_request": obj.is_active,
+            "reason": obj.unavailability_reason if not obj.is_active else "",
+            "unavailable_since": obj.unavailable_since if not obj.is_active else None,
+            "expected_restore_at": obj.expected_restore_at if not obj.is_active else None,
+            "next_action": obj.alternative_action if not obj.is_active else "",
+            "updated_at": obj.availability_updated_at,
+        }
+
 
 class AdminMunicipalServiceSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(required=False, allow_blank=True)
@@ -133,10 +148,15 @@ class AdminMunicipalServiceSerializer(serializers.ModelSerializer):
             "id", "name", "slug", "category", "short_description", "description",
             "opening_hours", "phone", "email", "address", "actions",
             "required_documents", "faq", "translations", "is_featured",
-            "priority_order", "usage_count", "is_active", "sort_order",
+            "priority_order", "usage_count", "is_active",
+            "unavailability_reason", "alternative_action", "unavailable_since",
+            "expected_restore_at", "availability_updated_at", "sort_order",
             "created_at", "updated_at",
         )
-        read_only_fields = ("id", "usage_count", "created_at", "updated_at")
+        read_only_fields = (
+            "id", "usage_count", "unavailable_since", "availability_updated_at",
+            "created_at", "updated_at",
+        )
 
     def validate(self, attrs):
         slug = attrs.get("slug")
@@ -156,7 +176,72 @@ class AdminMunicipalServiceSerializer(serializers.ModelSerializer):
             validated_data["slug"] = _unique_slug(
                 MunicipalService, validated_data.get("name", "service"), max_length=180
             )
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+        if not instance.is_active:
+            instance.set_availability(
+                is_available=False,
+                reason=instance.unavailability_reason or "Service temporairement indisponible.",
+                alternative_action=instance.alternative_action,
+                expected_restore_at=instance.expected_restore_at,
+            )
+        return instance
+
+    def update(self, instance, validated_data):
+        availability_requested = "is_active" in validated_data
+        metadata_requested = any(
+            field in validated_data
+            for field in ("unavailability_reason", "alternative_action", "expected_restore_at")
+        )
+        target_is_active = validated_data.get("is_active", instance.is_active)
+        reason = validated_data.get("unavailability_reason", instance.unavailability_reason)
+        alternative = validated_data.get("alternative_action", instance.alternative_action)
+        restore_at = validated_data.get("expected_restore_at", instance.expected_restore_at)
+
+        # Le changement d'état est appliqué par ``set_availability`` afin que
+        # l'ancien PATCH admin bénéficie aussi des nouvelles métadonnées.
+        if availability_requested:
+            validated_data.pop("is_active", None)
+            validated_data.pop("unavailability_reason", None)
+            validated_data.pop("alternative_action", None)
+            validated_data.pop("expected_restore_at", None)
+
+        instance = super().update(instance, validated_data)
+        if availability_requested:
+            instance.set_availability(
+                is_available=target_is_active,
+                reason=reason or "Service temporairement indisponible.",
+                alternative_action=alternative,
+                expected_restore_at=restore_at,
+            )
+        elif metadata_requested:
+            instance.availability_updated_at = timezone.now()
+            instance.save(update_fields=["availability_updated_at", "updated_at"])
+        return instance
+
+
+class ServiceAvailabilityUpdateSerializer(serializers.Serializer):
+    is_available = serializers.BooleanField(required=True)
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=300)
+    alternative_action = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    expected_restore_at = serializers.DateTimeField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        if attrs["is_available"]:
+            return attrs
+
+        reason = (attrs.get("reason") or "").strip()
+        if not reason:
+            raise serializers.ValidationError({
+                "reason": "Indiquez pourquoi le service est indisponible afin d'informer les citoyens."
+            })
+        restore_at = attrs.get("expected_restore_at")
+        if restore_at and restore_at <= timezone.now():
+            raise serializers.ValidationError({
+                "expected_restore_at": "La date estimée de rétablissement doit être dans le futur."
+            })
+        attrs["reason"] = reason
+        attrs["alternative_action"] = (attrs.get("alternative_action") or "").strip()
+        return attrs
 
 
 from .news_serializers import PublicationSerializer as NewsArticleSerializer, PublicationAdminSerializer as AdminNewsArticleSerializer

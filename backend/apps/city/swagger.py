@@ -221,6 +221,14 @@ ADMIN_SERVICE_PARAMETERS = [
     form_int("sort_order", "Ordre d'affichage"),
 ]
 
+
+SERVICE_AVAILABILITY_PARAMETERS = [
+    form_bool("is_available", "true pour remettre le service en ligne, false pour le rendre indisponible", required=True),
+    form_string("reason", "Motif citoyen de l'indisponibilité"),
+    form_string("alternative_action", "Prochaine action proposée au citoyen"),
+    form_string("expected_restore_at", "Date/heure ISO 8601 estimée de rétablissement"),
+]
+
 ADMIN_NEWS_PARAMETERS = [
     form_string("title", "Titre", required=True),
     form_string("slug", "Slug, généré automatiquement si vide"),
@@ -521,6 +529,21 @@ admin_service_patch_schema = swagger_auto_schema(
     operation_summary="Modifier un service municipal",
     security=JWT_SECURITY,
     manual_parameters=ADMIN_SERVICE_PARAMETERS,
+    responses={200: AdminMunicipalServiceSerializer()},
+)
+
+
+service_availability_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Services - Disponibilité"],
+    operation_summary="Rendre un service disponible ou indisponible",
+    operation_description=(
+        "Accessible aux agents responsables et aux administrateurs. "
+        "Le service n'est jamais supprimé : son état, le motif, le retour estimé "
+        "et la prochaine action sont exposés aux citoyens."
+    ),
+    security=JWT_SECURITY,
+    manual_parameters=SERVICE_AVAILABILITY_PARAMETERS,
     responses={200: AdminMunicipalServiceSerializer()},
 )
 
