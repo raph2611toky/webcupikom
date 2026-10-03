@@ -1,109 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { getAgentRequests } from "../../api/requests.js";
+import { getAgentRequestCount, getAgentRequests } from "../../api/requests.js";
 import { REPORT_TYPES } from "../../constants/requestOptions.js";
+import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
-const STATUS_FILTERS=["Tous","À traiter","En traitement","Action requise","Terminée"];
-
+const STATUS_FILTERS=[["","Tous"],["pending","À traiter"],["in_progress","En traitement"],["action_required","Action requise"],["completed","Terminés"]];
 export default function AgentReports(){
-  const [requests,setRequests]=useState([]);
-  const [status,setStatus]=useState("Tous");
-  const [type,setType]=useState("Tous");
-  const [query,setQuery]=useState("");
-
-  useEffect(()=>{
-    let active=true;
-    getAgentRequests().then(rows=>active&&setRequests(rows.filter(row=>row.requestType==="signalement")));
-    return()=>{active=false};
-  },[]);
-
-  const rows=useMemo(()=>requests.filter(row=>
-    (status==="Tous"||row.status===status) &&
-    (type==="Tous"||row.reportType===type) &&
-    (!query||`${row.ref} ${row.citizen} ${row.reportType||""} ${row.location?.label||""} ${row.service||""} ${row.title||""}`.toLowerCase().includes(query.toLowerCase()))
-  ),[requests,status,type,query]);
-
-  const metrics=useMemo(()=>({
-    pending:requests.filter(row=>row.status==="À traiter").length,
-    processing:requests.filter(row=>row.status==="En traitement").length,
-    action:requests.filter(row=>row.status==="Action requise").length,
-    completed:requests.filter(row=>row.status==="Terminée").length,
-  }),[requests]);
-
-  const reportTypes=useMemo(()=>[
-    "Tous",
-    ...new Set([
-      ...REPORT_TYPES.map(item=>item.label),
-      ...requests.map(row=>row.reportType).filter(Boolean),
-    ])
-  ],[requests]);
-
-  return <div className="portal-layout">
-    <AgentSidebar/>
-    <div className="portal-main">
-      <PortalTopbar eyebrow="Interventions terrain" title="Signalements citoyens"/>
-      <main className="portal-content agent-report-page">
-        <section className="metric-grid metric-grid--4 report-agent-metrics">
-          <article><span>À traiter</span><strong>{metrics.pending}</strong><small>Nouvelle intervention</small></article>
-          <article><span>En traitement</span><strong>{metrics.processing}</strong><small>Agent mobilisé</small></article>
-          <article><span>Action requise</span><strong>{metrics.action}</strong><small>Information manquante</small></article>
-          <article><span>Terminés</span><strong>{metrics.completed}</strong><small>Historique résolu</small></article>
-        </section>
-
-        <section className="toolbar-card toolbar-card--stack" aria-label="Filtres des signalements">
-          <div className="toolbar-line">
-            <label className="portal-search">
-              <span aria-hidden="true">⌕</span>
-              <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Référence, citoyen, type, lieu..." aria-label="Rechercher un signalement"/>
-            </label>
-            <label>
-              <span className="sr-only">Filtrer par type</span>
-              <select value={type} onChange={e=>setType(e.target.value)} aria-label="Filtrer par type de signalement">
-                {reportTypes.map(item=><option key={item}>{item}</option>)}
-              </select>
-            </label>
-          </div>
-          <div className="filter-row filter-row--portal">
-            {STATUS_FILTERS.map(item=><button type="button" key={item} className={status===item?"is-active":""} aria-pressed={status===item} onClick={()=>setStatus(item)}>{item}</button>)}
-          </div>
-        </section>
-
-        <section className="portal-card report-agent-table-card">
-          <div className="accessible-table-wrap">
-            <table className="accessible-table report-agent-table">
-              <caption className="sr-only">Signalements citoyens à traiter</caption>
-              <thead><tr>
-                <th scope="col">Référence</th>
-                <th scope="col">Type</th>
-                <th scope="col">Citoyen</th>
-                <th scope="col">Lieu signalé</th>
-                <th scope="col">Service</th>
-                <th scope="col">Priorité</th>
-                <th scope="col">Statut</th>
-                <th scope="col">Action</th>
-              </tr></thead>
-              <tbody>{rows.map(row=><tr key={row.ref}>
-                <td className="mono">{row.ref}</td>
-                <td><strong>{row.reportType||row.category||"Signalement"}</strong><small>{row.title}</small></td>
-                <td>{row.citizen}</td>
-                <td>
-                  <span className="report-location-cell">{row.location?.label||"Non précisé"}</span>
-                  {row.location?.latitude!=null?<small>⌖ {row.location.latitude}, {row.location.longitude}</small>:null}
-                </td>
-                <td>{row.service}</td>
-                <td><span className={`priority-pill priority-${String(row.priority).toLowerCase()}`}>{row.priority}</span></td>
-                <td><span className={`status-pill status-${String(row.status).replaceAll(" ","-").toLowerCase()}`}>{row.status}</span></td>
-                <td><button className="accessible-table__action" type="button" onClick={()=>navigate(`/agent/requests/${encodeURIComponent(row.ref)}`)}>Ouvrir →</button></td>
-              </tr>)}</tbody>
-            </table>
-            {!rows.length?<div className="dashboard-empty">Aucun signalement correspondant.</div>:null}
-          </div>
-        </section>
-      </main>
-    </div>
-  </div>;
+  const [requests,setRequests]=useState([]),[metrics,setMetrics]=useState({pending:0,processing:0,action:0,completed:0}),[status,setStatus]=useState(""),[type,setType]=useState("Tous"),[query,setQuery]=useState(""),[loading,setLoading]=useState(true),[error,setError]=useState("");
+  useEffect(()=>{Promise.all([getAgentRequestCount({type:"report",status:"pending"}),getAgentRequestCount({type:"report",status:"in_progress"}),getAgentRequestCount({type:"report",status:"action_required"}),getAgentRequestCount({type:"report",status:"completed"})]).then(([pending,processing,action,completed])=>setMetrics({pending,processing,action,completed})).catch(()=>{})},[]);
+  useEffect(()=>{let active=true;const timer=window.setTimeout(()=>{setLoading(true);setError("");getAgentRequests({type:"report",status:status||undefined,search:query||undefined,page_size:100}).then(rows=>active&&setRequests(rows)).catch(e=>active&&setError(getApiErrorMessage(e,"Impossible de charger les signalements."))).finally(()=>active&&setLoading(false))},180);return()=>{active=false;window.clearTimeout(timer)}},[status,query]);
+  const reportTypes=useMemo(()=>["Tous",...new Set([...REPORT_TYPES.map(x=>x.label),...requests.map(r=>r.reportType).filter(Boolean)])],[requests]);
+  const rows=useMemo(()=>requests.filter(row=>type==="Tous"||row.reportType===type||row.category===type),[requests,type]);
+  return <div className="portal-layout"><AgentSidebar/><div className="portal-main"><PortalTopbar eyebrow="Interventions terrain" title="Signalements citoyens"/><main className="portal-content agent-report-page">
+    {error?<div className="error-card" role="alert">{error}</div>:null}
+    <section className="metric-grid metric-grid--4 report-agent-metrics"><button className="metric-action" onClick={()=>setStatus("pending")}><span>À traiter</span><strong>{metrics.pending}</strong><small>Nouvelle intervention</small></button><button className="metric-action" onClick={()=>setStatus("in_progress")}><span>En traitement</span><strong>{metrics.processing}</strong><small>Agent mobilisé</small></button><button className="metric-action" onClick={()=>setStatus("action_required")}><span>Action requise</span><strong>{metrics.action}</strong><small>Information manquante</small></button><button className="metric-action" onClick={()=>setStatus("completed")}><span>Terminés</span><strong>{metrics.completed}</strong><small>Historique résolu</small></button></section>
+    <section className="toolbar-card toolbar-card--stack"><div className="toolbar-line"><label className="portal-search"><span aria-hidden="true">⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Référence, citoyen, lieu, service..." aria-label="Rechercher un signalement"/></label><label><span className="sr-only">Type</span><select value={type} onChange={e=>setType(e.target.value)}>{reportTypes.map(item=><option key={item}>{item}</option>)}</select></label></div><div className="filter-row filter-row--portal">{STATUS_FILTERS.map(([value,label])=><button type="button" key={value||"all"} className={status===value?"is-active":""} aria-pressed={status===value} onClick={()=>setStatus(value)}>{label}</button>)}</div></section>
+    <section className="portal-card report-agent-table-card">{loading?<div className="loading-card">Chargement…</div>:<div className="accessible-table-wrap"><table className="accessible-table report-agent-table"><caption className="sr-only">Signalements citoyens à traiter</caption><thead><tr><th scope="col">Référence</th><th scope="col">Type</th><th scope="col">Citoyen</th><th scope="col">Lieu</th><th scope="col">Service</th><th scope="col">Priorité</th><th scope="col">État</th><th scope="col">Action</th></tr></thead><tbody>{rows.map(row=><tr key={row.ref} className={row.requiresAgentAction?"row-needs-action":""}><td className="mono">{row.ref}</td><td><strong>{row.reportType||row.category||"Signalement"}</strong><small>{row.title}</small></td><td>{row.citizen}</td><td><span>{row.location?.label||row.location||row.district||"Non précisé"}</span>{row.latitude!=null?<small>⌖ {row.latitude}, {row.longitude}</small>:null}</td><td>{row.service}</td><td><span className={`priority-badge priority-${row.priorityCode}`}>{row.priority}</span></td><td><span className={`status-pill status-${String(row.status).replaceAll(" ","-").toLowerCase()}`}>{row.workflowLabel||row.status}</span></td><td><button className="accessible-table__action" onClick={()=>navigate(`/agent/requests/${encodeURIComponent(row.ref)}`)}>Ouvrir →</button></td></tr>)}{!rows.length?<tr><td colSpan="8"><p className="detail-copy">Aucun signalement correspondant.</p></td></tr>:null}</tbody></table></div>}</section>
+  </main></div></div>;
 }

@@ -76,7 +76,9 @@ export function normalizeCitizenAppointment(item = {}) {
     reminderMinutesBefore: Number(item.reminder_minutes_before ?? 60),
     status: item.status || "requested",
     statusLabel: item.status_label || "",
-    canCancel: ["requested", "confirmed"].includes(item.status || "requested"),
+    slot: item.slot || "",
+    preparation: item.preparation || item.preparation_instructions || "",
+    canCancel: typeof item.can_cancel === "boolean" ? item.can_cancel : String(item.can_cancel || "").toLowerCase() === "true" ? true : ["requested", "confirmed"].includes(item.status || "requested"),
     canReschedule: false,
     createdAt: item.created_at || "",
     updatedAt: item.updated_at || "",
@@ -239,8 +241,8 @@ export async function getCitizenAppointmentTimeline() {
 }
 
 /* ------------------------------- Agent ------------------------------- */
-export async function getAgentAppointments() {
-  const { data } = await api.get("/agent/appointments/");
+export async function getAgentAppointments(params = {}) {
+  const { data } = await api.get("/agent/appointments/", { params: cleanParams(params) });
   return unwrapList(data).map(normalizeAgentAppointment);
 }
 

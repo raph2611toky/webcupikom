@@ -9,6 +9,8 @@ const items = [
   ["/agent/signalements", "!", "Signalements"],
   ["/agent/appointments", "◷", "Rendez-vous"],
   ["/agent/citizens", "◉", "Citoyens"],
+  ["/agent/messages", "✉", "Messages"],
+  ["/agent/audit", "⌁", "Journal d’activité"],
   ["/agent/news", "▤", "Publications"],
   ["/agent/services", "◇", "Services"],
   ["/agent/api", "⌘", "Flux WebCup"],

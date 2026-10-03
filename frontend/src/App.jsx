@@ -43,6 +43,7 @@ import AgentServiceDetails from "./pages/agent/AgentServiceDetails.jsx";
 import AgentNewsDetails from "./pages/agent/AgentNewsDetails.jsx";
 import AgentMessages from "./pages/agent/AgentMessages.jsx";
 import AgentMessageDetails from "./pages/agent/AgentMessageDetails.jsx";
+import AgentAudit from "./pages/agent/AgentAudit.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminServices from "./pages/admin/AdminServices.jsx";
@@ -251,6 +252,7 @@ export default function App() {
       "/agent/services":<Protected roles={["agent"]}><AgentServices/></Protected>,
       "/agent/api":<Protected roles={["agent"]}><AgentApi/></Protected>,
       "/agent/messages":<Protected roles={["agent"]}><AgentMessages/></Protected>,
+      "/agent/audit":<Protected roles={["agent"]}><AgentAudit/></Protected>,
 
       "/admin":<Protected roles={["admin"]}><AdminDashboard/></Protected>,
       "/admin/dashboard":<Protected roles={["admin"]}><AdminDashboard/></Protected>,

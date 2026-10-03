@@ -7,6 +7,16 @@ export const CONTACT_STATUS_LABEL = Object.freeze({
   closed: "Clôturé",
 });
 
+function toFormData(payload = {}) {
+  const form = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    if (value === "" && key !== "assigned_to") return;
+    form.append(key, typeof value === "boolean" ? String(value) : value);
+  });
+  return form;
+}
+
 function normalizeContact(item) {
   return {
     ...item,
@@ -43,7 +53,7 @@ export async function getAgentContactMessage(reference) {
 }
 
 export async function updateAgentContactMessage(reference, payload) {
-  const { data } = await api.patch(`/agent/contact-messages/${encodeURIComponent(reference)}/`, payload);
+  const { data } = await api.patch(`/agent/contact-messages/${encodeURIComponent(reference)}/`, toFormData(payload));
   return normalizeContact(data);
 }
 
@@ -58,6 +68,6 @@ export async function getAdminContactMessage(reference) {
 }
 
 export async function updateAdminContactMessage(reference, payload) {
-  const { data } = await api.patch(`/admin/contact-messages/${encodeURIComponent(reference)}/`, payload);
+  const { data } = await api.patch(`/admin/contact-messages/${encodeURIComponent(reference)}/`, toFormData(payload));
   return normalizeContact(data);
 }

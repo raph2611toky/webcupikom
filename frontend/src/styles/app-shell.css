@@ -1046,3 +1046,12 @@ html[data-contrast="high"] .portal-voice-panel__head>button{
   color:#111!important;
   border:2px solid var(--tn-purple)!important;
 }
+
+/* V50 — toutes les fonctions agent restent accessibles, y compris sur petit écran */
+body[data-route-group="portal"] .portal-sidebar--agent nav{overflow-y:auto;scrollbar-width:thin;min-height:0}
+@media(max-width:700px){
+  body[data-route-group="portal"] .portal-sidebar--agent nav{display:flex;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:2px}
+  body[data-route-group="portal"] .portal-sidebar--agent nav::-webkit-scrollbar{display:none}
+  body[data-route-group="portal"] .portal-sidebar--agent nav button:nth-child(n+5){display:flex}
+  body[data-route-group="portal"] .portal-sidebar--agent nav button{flex:0 0 58px;width:58px}
+}

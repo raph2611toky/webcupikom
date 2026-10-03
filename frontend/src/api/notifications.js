@@ -89,3 +89,23 @@ export async function markAllNotificationsRead() {
   const { data } = await api.post("/citizen/notifications/read-all/");
   return data;
 }
+
+export async function sendAgentNotification(payload = {}) {
+  const form = new FormData();
+  const values = {
+    audience: payload.audience || "targeted",
+    recipient: payload.recipient,
+    title: payload.title,
+    message: payload.message,
+    action_label: payload.action_label ?? payload.actionLabel,
+    action_url: payload.action_url ?? payload.actionUrl,
+    visible_from: payload.visible_from ?? payload.visibleFrom,
+    is_important: payload.is_important ?? payload.isImportant ?? false,
+  };
+  Object.entries(values).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    form.append(key, typeof value === "boolean" ? String(value) : value);
+  });
+  const { data } = await api.post("/agent/notifications/", form);
+  return data;
+}
