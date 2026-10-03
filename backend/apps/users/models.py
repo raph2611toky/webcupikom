@@ -48,6 +48,13 @@ class User(AbstractUser):
         default=AuthProvider.LOCAL,
     )
     email_verified = models.BooleanField("email vérifié", default=False)
+    mfa_enabled = models.BooleanField("MFA activé", default=False)
+    mfa_secret_encrypted = models.TextField("secret MFA chiffré", blank=True, default="")
+    mfa_recovery_codes = models.JSONField("codes de récupération MFA", default=list, blank=True)
+    mfa_confirmed_at = models.DateTimeField("MFA confirmé le", null=True, blank=True)
+    mfa_last_used_counter = models.BigIntegerField("dernier compteur TOTP utilisé", null=True, blank=True)
+    mfa_login_nonce = models.CharField("nonce de challenge MFA", max_length=128, blank=True, default="")
+    auth_token_version = models.PositiveIntegerField("version de sécurité JWT", default=0)
     locale = models.CharField(max_length=12, blank=True, default="fr")
     updated_at = models.DateTimeField(auto_now=True)
 

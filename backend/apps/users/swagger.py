@@ -72,6 +72,40 @@ class RefreshResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
 
 
+class AuthOrMFAResponseSerializer(serializers.Serializer):
+    access = serializers.CharField(required=False)
+    user = UserSerializer(required=False)
+    created = serializers.BooleanField(required=False)
+    mfa_required = serializers.BooleanField(required=False)
+    mfa_token = serializers.CharField(required=False)
+    methods = serializers.ListField(child=serializers.CharField(), required=False)
+    expires_in = serializers.IntegerField(required=False)
+
+
+class MFAStatusResponseSerializer(serializers.Serializer):
+    enabled = serializers.BooleanField()
+    confirmed_at = serializers.DateTimeField(allow_null=True)
+    recovery_codes_remaining = serializers.IntegerField()
+    authenticator = serializers.CharField()
+
+
+class MFASetupResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    secret = serializers.CharField()
+    otpauth_uri = serializers.CharField()
+    qr_code_data_url = serializers.CharField()
+    algorithm = serializers.CharField()
+    digits = serializers.IntegerField()
+    period = serializers.IntegerField()
+
+
+class MFARecoveryCodesResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    recovery_codes = serializers.ListField(child=serializers.CharField())
+    recovery_codes_remaining = serializers.IntegerField()
+    requires_relogin = serializers.BooleanField(required=False)
+
+
 class ChangeEmailConfirmResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     email = serializers.EmailField()
@@ -185,15 +219,43 @@ GOOGLE_REAUTH_PARAMETERS = [
     form_string("state", "State signé associé au code OAuth Google", required=False),
 ]
 
+MFA_SENSITIVE_PARAMETERS = [
+    form_string("mfa_code", "Code à 6 chiffres Google Authenticator si le MFA est activé", required=False),
+    form_string("recovery_code", "Code de récupération MFA à usage unique", required=False),
+]
+
+MFA_VERIFY_LOGIN_PARAMETERS = [
+    form_string("mfa_token", "Challenge temporaire retourné après la première étape de connexion", required=True),
+    form_string("mfa_code", "Code à 6 chiffres Google Authenticator", required=False),
+    form_string("recovery_code", "Code de récupération à usage unique", required=False),
+]
+
+MFA_SETUP_PARAMETERS = [
+    form_string("current_password", "Mot de passe actuel (compte local/hybride)", required=False),
+    *GOOGLE_REAUTH_PARAMETERS,
+]
+
+MFA_CONFIRM_PARAMETERS = [
+    form_string("code", "Code à 6 chiffres affiché par Google Authenticator", required=True),
+]
+
+MFA_DISABLE_PARAMETERS = [
+    form_string("current_password", "Mot de passe actuel (compte local/hybride)", required=False),
+    *GOOGLE_REAUTH_PARAMETERS,
+    *MFA_SENSITIVE_PARAMETERS,
+]
+
 CHANGE_PASSWORD_PARAMETERS = [
     form_string("current_password", "Mot de passe actuel (compte local/hybride)", required=False),
     *GOOGLE_REAUTH_PARAMETERS,
+    *MFA_SENSITIVE_PARAMETERS,
     form_string("new_password", "Nouveau mot de passe", required=True),
     form_string("new_password_confirm", "Confirmation du nouveau mot de passe", required=True),
 ]
 
 SET_PASSWORD_PARAMETERS = [
     *GOOGLE_REAUTH_PARAMETERS,
+    *MFA_SENSITIVE_PARAMETERS,
     form_string("new_password", "Nouveau mot de passe", required=True),
     form_string("new_password_confirm", "Confirmation du nouveau mot de passe", required=True),
 ]
@@ -210,6 +272,7 @@ CHANGE_EMAIL_CONFIRM_PARAMETERS = [
 DELETE_ACCOUNT_PARAMETERS = [
     form_string("current_password", "Mot de passe actuel (compte local/hybride)", required=False),
     *GOOGLE_REAUTH_PARAMETERS,
+    *MFA_SENSITIVE_PARAMETERS,
     form_string("confirmation", 'Saisir exactement "DELETE"', required=True),
 ]
 
@@ -302,7 +365,13 @@ login_post_schema = swagger_auto_schema(
     operation_summary="Connexion email / mot de passe",
     security=PUBLIC_SECURITY,
     manual_parameters=LOGIN_PARAMETERS,
-    responses={200: openapi.Response("Connexion réussie", AuthResponseSerializer()), 400: ERROR_RESPONSE},
+    responses={
+        200: openapi.Response(
+            "Connexion réussie, ou challenge MFA si mfa_required=true",
+            AuthOrMFAResponseSerializer(),
+        ),
+        400: ERROR_RESPONSE,
+    },
 )
 
 google_redirect_get_schema = swagger_auto_schema(
@@ -321,7 +390,24 @@ google_login_post_schema = swagger_auto_schema(
     operation_description="Utiliser soit credential, soit le couple code + state.",
     security=PUBLIC_SECURITY,
     manual_parameters=GOOGLE_LOGIN_PARAMETERS,
-    responses={200: openapi.Response("Connexion réussie", GoogleAuthResponseSerializer()), 400: ERROR_RESPONSE, 409: ERROR_RESPONSE},
+    responses={
+        200: openapi.Response(
+            "Connexion réussie, ou challenge MFA si mfa_required=true",
+            AuthOrMFAResponseSerializer(),
+        ),
+        400: ERROR_RESPONSE,
+        409: ERROR_RESPONSE,
+    },
+)
+
+mfa_verify_login_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Authentification MFA"],
+    operation_id="auth_mfa_verify_login",
+    operation_summary="Valider la deuxième étape MFA d'une connexion",
+    security=PUBLIC_SECURITY,
+    manual_parameters=MFA_VERIFY_LOGIN_PARAMETERS,
+    responses={200: openapi.Response("Connexion MFA validée", AuthResponseSerializer()), 400: ERROR_RESPONSE},
 )
 
 logout_post_schema = swagger_auto_schema(
@@ -383,6 +469,62 @@ profile_patch_schema = swagger_auto_schema(
     responses={200: openapi.Response("Profil mis à jour", UserSerializer()), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},
 )
 
+mfa_status_get_schema = swagger_auto_schema(
+    tags=["Sécurité du compte / MFA"],
+    operation_id="account_mfa_status",
+    operation_summary="État du MFA du compte connecté",
+    security=JWT_SECURITY,
+    responses={200: openapi.Response("État MFA", MFAStatusResponseSerializer()), 401: ERROR_RESPONSE},
+)
+
+mfa_setup_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Sécurité du compte / MFA"],
+    operation_id="account_mfa_setup",
+    operation_summary="Préparer l'activation Google Authenticator",
+    operation_description=(
+        "Ré-authentifie d'abord l'utilisateur, génère un secret TOTP chiffré côté serveur, "
+        "puis retourne le QR code et l'URI otpauth. Le MFA n'est actif qu'après confirmation."
+    ),
+    security=JWT_SECURITY,
+    manual_parameters=MFA_SETUP_PARAMETERS,
+    responses={200: openapi.Response("QR code MFA", MFASetupResponseSerializer()), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},
+)
+
+mfa_confirm_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Sécurité du compte / MFA"],
+    operation_id="account_mfa_confirm",
+    operation_summary="Confirmer et activer Google Authenticator",
+    operation_description="Retourne les codes de récupération une seule fois et révoque les refresh tokens existants.",
+    security=JWT_SECURITY,
+    manual_parameters=MFA_CONFIRM_PARAMETERS,
+    responses={200: openapi.Response("MFA activé", MFARecoveryCodesResponseSerializer()), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},
+)
+
+mfa_disable_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Sécurité du compte / MFA"],
+    operation_id="account_mfa_disable",
+    operation_summary="Désactiver le MFA",
+    operation_description="Exige la ré-authentification primaire et un code MFA/recovery valide.",
+    security=JWT_SECURITY,
+    manual_parameters=MFA_DISABLE_PARAMETERS,
+    responses={200: openapi.Response("MFA désactivé", MessageResponseSerializer()), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},
+)
+
+mfa_recovery_regenerate_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Sécurité du compte / MFA"],
+    operation_id="account_mfa_recovery_regenerate",
+    operation_summary="Régénérer les codes de récupération MFA",
+    operation_description="Les anciens codes deviennent immédiatement invalides.",
+    security=JWT_SECURITY,
+    manual_parameters=MFA_DISABLE_PARAMETERS,
+    responses={200: openapi.Response("Nouveaux codes", MFARecoveryCodesResponseSerializer()), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},
+)
+
+
 change_password_post_schema = swagger_auto_schema(
     auto_schema=ManualFormAutoSchema,
     tags=["Compte"],
@@ -390,8 +532,9 @@ change_password_post_schema = swagger_auto_schema(
     operation_summary="Changer le mot de passe",
     operation_description=(
         "Confirmer l'identité avec current_password, ou avec Google via credential "
-        "ou code + state. Pour un compte Google sans mot de passe local, cette route "
-        "permet de définir le premier mot de passe après ré-authentification Google."
+        "ou code + state. Si le MFA est activé, mfa_code ou recovery_code est également requis. "
+        "Pour un compte Google sans mot de passe local, cette route permet de définir le premier "
+        "mot de passe après ré-authentification Google."
     ),
     security=JWT_SECURITY,
     manual_parameters=CHANGE_PASSWORD_PARAMETERS,
@@ -405,7 +548,8 @@ set_password_post_schema = swagger_auto_schema(
     operation_summary="Définir un mot de passe local",
     operation_description=(
         "Pour un compte Google sans mot de passe, une ré-authentification Google "
-        "est requise via credential ou code + state."
+        "est requise via credential ou code + state. Si le MFA est activé, une validation MFA "
+        "est également requise."
     ),
     security=JWT_SECURITY,
     manual_parameters=SET_PASSWORD_PARAMETERS,
@@ -440,6 +584,7 @@ delete_account_schema = swagger_auto_schema(
     operation_description=(
         "Compte local : current_password requis. Compte Google : ré-authentification "
         "Google requise. Compte hybride : current_password ou Google au choix. "
+        "Si le MFA est activé, mfa_code ou recovery_code est également requis. "
         "Le champ confirmation doit toujours valoir DELETE."
     ),
     security=JWT_SECURITY,

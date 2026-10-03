@@ -9,5 +9,6 @@ PyMySQL==1.2.3
 python-dotenv==1.0.1
 requests==2.34.2
 whitenoise==6.12.0
-google-auth>=2.29,<3
 Pillow>=10.4
+cryptography>=43,<47
+qrcode[pil]>=8,<9

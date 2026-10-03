@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .services.account_emails import build_change_email_token
+from .services.mfa import encrypt_secret, generate_recovery_codes, totp_for_counter
 from .tokens import email_verification_token
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
@@ -394,6 +395,153 @@ class AccountApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIn(settings.AUTH_REFRESH_COOKIE_NAME, response.cookies)
         self.assertEqual(response.cookies[settings.AUTH_REFRESH_COOKIE_NAME].value, "")
+
+
+    def test_mfa_setup_confirm_and_login_requires_second_factor(self):
+        user = self.create_verified_user(email="mfa@example.com")
+        self.auth(user)
+
+        setup = self.client.post(
+            reverse("users:mfa-setup"),
+            {"current_password": "StrongPass!2026"},
+            format="json",
+        )
+        self.assertEqual(setup.status_code, status.HTTP_200_OK)
+        self.assertTrue(setup.data["qr_code_data_url"].startswith("data:image/png;base64,"))
+        secret = setup.data["secret"]
+
+        with patch("apps.users.services.mfa.time.time", return_value=1_800_000_000):
+            code = totp_for_counter(secret, int(1_800_000_000 // 30))
+            confirm = self.client.post(
+                reverse("users:mfa-confirm"), {"code": code}, format="json"
+            )
+        self.assertEqual(confirm.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(confirm.data["recovery_codes"]), 10)
+
+        user.refresh_from_db()
+        self.assertTrue(user.mfa_enabled)
+        self.assertNotEqual(user.mfa_secret_encrypted, secret)
+
+        self.client.credentials()
+        login = self.client.post(
+            reverse("users:login"),
+            {"email": user.email, "password": "StrongPass!2026"},
+            format="json",
+        )
+        self.assertEqual(login.status_code, status.HTTP_200_OK)
+        self.assertTrue(login.data["mfa_required"])
+        self.assertNotIn("access", login.data)
+
+        with patch("apps.users.services.mfa.time.time", return_value=1_800_000_030):
+            next_code = totp_for_counter(secret, int(1_800_000_030 // 30))
+            verify = self.client.post(
+                reverse("users:mfa-verify-login"),
+                {"mfa_token": login.data["mfa_token"], "mfa_code": next_code},
+                format="json",
+            )
+        self.assertEqual(verify.status_code, status.HTTP_200_OK)
+        self.assertIn("access", verify.data)
+        self.assertTrue(verify.data["mfa_verified"])
+
+    def test_mfa_recovery_code_is_single_use(self):
+        user = self.create_verified_user(email="recovery@example.com")
+        secret = "JBSWY3DPEHPK3PXP"
+        recovery_codes, hashes = generate_recovery_codes()
+        user.mfa_enabled = True
+        user.mfa_secret_encrypted = encrypt_secret(secret)
+        user.mfa_recovery_codes = hashes
+        user.save(update_fields=["mfa_enabled", "mfa_secret_encrypted", "mfa_recovery_codes", "updated_at"])
+
+        login = self.client.post(
+            reverse("users:login"),
+            {"email": user.email, "password": "StrongPass!2026"},
+            format="json",
+        )
+        first = self.client.post(
+            reverse("users:mfa-verify-login"),
+            {"mfa_token": login.data["mfa_token"], "recovery_code": recovery_codes[0]},
+            format="json",
+        )
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertEqual(len(user.mfa_recovery_codes), 9)
+
+        self.client.cookies.clear()
+        login2 = self.client.post(
+            reverse("users:login"),
+            {"email": user.email, "password": "StrongPass!2026"},
+            format="json",
+        )
+        reused = self.client.post(
+            reverse("users:mfa-verify-login"),
+            {"mfa_token": login2.data["mfa_token"], "recovery_code": recovery_codes[0]},
+            format="json",
+        )
+        self.assertEqual(reused.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_sensitive_action_requires_mfa_when_enabled(self):
+        user = self.create_verified_user(email="mfa-sensitive@example.com")
+        secret = "JBSWY3DPEHPK3PXP"
+        user.mfa_enabled = True
+        user.mfa_secret_encrypted = encrypt_secret(secret)
+        user.save(update_fields=["mfa_enabled", "mfa_secret_encrypted", "updated_at"])
+        self.auth(user)
+
+        missing = self.client.post(
+            reverse("users:change-password"),
+            {
+                "current_password": "StrongPass!2026",
+                "new_password": "ChangedMfaPass!2026",
+                "new_password_confirm": "ChangedMfaPass!2026",
+            },
+            format="json",
+        )
+        self.assertEqual(missing.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("mfa", missing.data)
+
+        with patch("apps.users.services.mfa.time.time", return_value=1_800_000_000):
+            code = totp_for_counter(secret, int(1_800_000_000 // 30))
+            accepted = self.client.post(
+                reverse("users:change-password"),
+                {
+                    "current_password": "StrongPass!2026",
+                    "mfa_code": code,
+                    "new_password": "ChangedMfaPass!2026",
+                    "new_password_confirm": "ChangedMfaPass!2026",
+                },
+                format="json",
+            )
+        self.assertEqual(accepted.status_code, status.HTTP_200_OK)
+
+    @patch("apps.users.views.verify_google_credential")
+    def test_google_user_can_prepare_mfa_with_google_reauthentication(self, verify_mock):
+        user = self.create_google_user(email="google-mfa@example.com", sub="google-mfa-sub")
+        self.auth(user)
+        verify_mock.return_value = {
+            "sub": user.google_sub,
+            "email": user.email,
+            "email_verified": True,
+        }
+        response = self.client.post(
+            reverse("users:mfa-setup"),
+            {"credential": "fresh-google-id-token"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("otpauth_uri", response.data)
+
+    def test_security_version_immediately_revokes_old_access_token(self):
+        user = self.create_verified_user(email="revoked-token@example.com")
+        old_access = str(RefreshToken.for_user(user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {old_access}")
+        before = self.client.get(reverse("users:profile"))
+        self.assertEqual(before.status_code, status.HTTP_200_OK)
+
+        user.auth_token_version += 1
+        user.save(update_fields=["auth_token_version", "updated_at"])
+
+        after = self.client.get(reverse("users:profile"))
+        self.assertEqual(after.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class BackendStructureTests(APITestCase):

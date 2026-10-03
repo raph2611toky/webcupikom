@@ -5,6 +5,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
 from django.core import signing
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -35,6 +36,11 @@ from .serializers import (
     EmailOnlySerializer,
     GoogleAuthSerializer,
     LoginSerializer,
+    MFAConfirmSetupSerializer,
+    MFADisableSerializer,
+    MFARecoveryCodesRegenerateSerializer,
+    MFASetupSerializer,
+    MFAVerifyLoginSerializer,
     PasswordResetConfirmSerializer,
     ProfileUpdateSerializer,
     RegisterSerializer,
@@ -54,6 +60,12 @@ from .swagger import (
     google_redirect_get_schema,
     login_post_schema,
     logout_post_schema,
+    mfa_confirm_post_schema,
+    mfa_disable_post_schema,
+    mfa_recovery_regenerate_post_schema,
+    mfa_setup_post_schema,
+    mfa_status_get_schema,
+    mfa_verify_login_post_schema,
     password_reset_confirm_post_schema,
     password_reset_request_post_schema,
     profile_get_schema,
@@ -80,6 +92,21 @@ from .services.google_identity import (
     build_google_authorization_url,
     exchange_google_authorization_code,
     verify_google_credential,
+)
+from .services.mfa import (
+    MFAError,
+    build_otpauth_uri,
+    clear_mfa,
+    decrypt_secret,
+    encrypt_secret,
+    generate_recovery_codes,
+    generate_totp_secret,
+    issue_login_challenge,
+    load_login_challenge,
+    mark_mfa_enabled,
+    qr_code_data_url,
+    verify_totp_secret,
+    verify_user_mfa,
 )
 
 logger = logging.getLogger(__name__)
@@ -111,13 +138,8 @@ def server_error(exc, view_name):
     )
 
 
-def verify_sensitive_action_identity(user, validated_data):
-    """Confirme l'identité avec le mot de passe local ou Google.
-
-    Pour les comptes hybrides, les deux méthodes sont acceptées. Un compte
-    Google sans mot de passe doit impérativement se ré-authentifier avec la
-    même identité Google avant une action sensible.
-    """
+def verify_sensitive_action_identity(user, validated_data, *, require_mfa=True):
+    """Confirme une action sensible avec l'identité primaire et, si activé, le MFA."""
     current_password = validated_data.get("current_password")
     credential = validated_data.get("credential")
     code = validated_data.get("code")
@@ -126,9 +148,8 @@ def verify_sensitive_action_identity(user, validated_data):
     if current_password:
         if not user.has_usable_password() or not user.check_password(current_password):
             raise ValidationError({"current_password": "Mot de passe actuel incorrect."})
-        return "password"
-
-    if credential or (code and state_value):
+        auth_method = "password"
+    elif credential or (code and state_value):
         if not user.google_sub:
             raise ValidationError({"google": "Ce compte n'est pas associé à Google."})
         try:
@@ -143,17 +164,43 @@ def verify_sensitive_action_identity(user, validated_data):
             raise ValidationError({
                 "google": "Le compte Google utilisé ne correspond pas à celui associé à ce compte."
             })
-        return "google"
+        auth_method = "google"
+    else:
+        if user.google_sub and user.has_usable_password():
+            raise ValidationError({
+                "detail": "Confirmez l'action avec votre mot de passe actuel ou avec Google."
+            })
+        if user.google_sub:
+            raise ValidationError({
+                "google": "Une ré-authentification Google est requise pour confirmer cette action."
+            })
+        raise ValidationError({"current_password": "Le mot de passe actuel est requis."})
 
-    if user.google_sub and user.has_usable_password():
-        raise ValidationError({
-            "detail": "Confirmez l'action avec votre mot de passe actuel ou avec Google."
-        })
-    if user.google_sub:
-        raise ValidationError({
-            "google": "Une ré-authentification Google est requise pour confirmer cette action."
-        })
-    raise ValidationError({"current_password": "Le mot de passe actuel est requis."})
+    if require_mfa and user.mfa_enabled:
+        try:
+            mfa_method = verify_user_mfa(
+                user,
+                mfa_code=validated_data.get("mfa_code"),
+                recovery_code=validated_data.get("recovery_code"),
+            )
+        except MFAError as exc:
+            raise ValidationError({"mfa": str(exc)}) from exc
+
+        update_fields = ["updated_at"]
+        if mfa_method == "totp":
+            update_fields.append("mfa_last_used_counter")
+        else:
+            update_fields.append("mfa_recovery_codes")
+            transaction.on_commit(
+                lambda: send_security_alert(
+                    user,
+                    "Un code de récupération MFA a été utilisé pour confirmer une action sensible.",
+                ),
+                robust=True,
+            )
+        user.save(update_fields=update_fields)
+
+    return auth_method
 
 
 class RegisterView(APIView):
@@ -324,6 +371,17 @@ class LoginView(APIView):
             remember = serializer.validated_data.get(
                 "remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT
             )
+            if user.mfa_enabled:
+                mfa_token = issue_login_challenge(
+                    user, remember=remember, auth_source="password"
+                )
+                return no_store(Response({
+                    "mfa_required": True,
+                    "mfa_token": mfa_token,
+                    "methods": ["totp", "recovery_code"],
+                    "expires_in": settings.MFA_LOGIN_CHALLENGE_MAX_AGE,
+                }))
+
             update_last_login(None, user)
             return auth_response(user, request, remember=remember)
         except APIException:
@@ -433,19 +491,271 @@ class GoogleLoginView(APIView):
                         changed.append("updated_at")
                         user.save(update_fields=changed)
 
-                update_last_login(None, user)
                 if created:
                     transaction.on_commit(lambda: send_welcome_email(user), robust=True)
 
             remember = serializer.validated_data.get(
                 "remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT
             )
+            if user.mfa_enabled:
+                mfa_token = issue_login_challenge(
+                    user, remember=remember, auth_source="google"
+                )
+                return no_store(Response({
+                    "created": False,
+                    "mfa_required": True,
+                    "mfa_token": mfa_token,
+                    "methods": ["totp", "recovery_code"],
+                    "expires_in": settings.MFA_LOGIN_CHALLENGE_MAX_AGE,
+                }))
+
+            update_last_login(None, user)
             return auth_response(
                 user,
                 request,
                 remember=remember,
                 extra={"created": created},
             )
+        except APIException:
+            raise
+        except Exception as exc:
+            return server_error(exc, self.__class__.__name__)
+
+
+class MFAVerifyLoginView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_scope = "mfa"
+
+    @mfa_verify_login_post_schema
+    def post(self, request):
+        try:
+            serializer = MFAVerifyLoginSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            try:
+                challenge = load_login_challenge(serializer.validated_data["mfa_token"])
+            except MFAError as exc:
+                raise ValidationError({"mfa_token": str(exc)}) from exc
+
+            with transaction.atomic():
+                try:
+                    user = User.objects.select_for_update().get(
+                        pk=challenge["user_id"],
+                        is_active=True,
+                        email_verified=True,
+                    )
+                except (User.DoesNotExist, KeyError):
+                    raise ValidationError({"mfa_token": "Challenge MFA invalide."})
+
+                if not user.mfa_enabled or not user.mfa_login_nonce:
+                    raise ValidationError({"mfa_token": "Challenge MFA invalide ou déjà utilisé."})
+                if challenge.get("nonce") != user.mfa_login_nonce:
+                    raise ValidationError({"mfa_token": "Ce challenge MFA n'est plus actif."})
+
+                try:
+                    method = verify_user_mfa(
+                        user,
+                        mfa_code=serializer.validated_data.get("mfa_code"),
+                        recovery_code=serializer.validated_data.get("recovery_code"),
+                    )
+                except MFAError as exc:
+                    raise ValidationError({"mfa": str(exc)}) from exc
+
+                user.mfa_login_nonce = ""
+                fields = ["mfa_login_nonce", "last_login", "updated_at"]
+                if method == "totp":
+                    fields.append("mfa_last_used_counter")
+                else:
+                    fields.append("mfa_recovery_codes")
+                    transaction.on_commit(
+                        lambda: send_security_alert(
+                            user,
+                            "Un code de récupération MFA a été utilisé lors d'une connexion.",
+                        ),
+                        robust=True,
+                    )
+                user.last_login = timezone.now()
+                user.save(update_fields=fields)
+
+            extra = {"mfa_verified": True}
+            if challenge.get("auth_source") == "google":
+                extra["created"] = False
+            return auth_response(
+                user,
+                request,
+                remember=bool(challenge.get("remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT)),
+                extra=extra,
+            )
+        except APIException:
+            raise
+        except Exception as exc:
+            return server_error(exc, self.__class__.__name__)
+
+
+class MFAStatusView(APIView):
+    permission_classes = [IsAuthenticatedAnyRole]
+
+    @mfa_status_get_schema
+    def get(self, request):
+        user = request.user
+        return Response({
+            "enabled": user.mfa_enabled,
+            "confirmed_at": user.mfa_confirmed_at,
+            "recovery_codes_remaining": len(user.mfa_recovery_codes or []) if user.mfa_enabled else 0,
+            "authenticator": "TOTP / Google Authenticator",
+        })
+
+
+class MFASetupView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+    permission_classes = [IsAuthenticatedAnyRole]
+
+    @mfa_setup_post_schema
+    def post(self, request):
+        try:
+            serializer = MFASetupSerializer(data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            user = request.user
+            if user.mfa_enabled:
+                raise ValidationError({"mfa": "Le MFA est déjà activé sur ce compte."})
+            verify_sensitive_action_identity(user, serializer.validated_data, require_mfa=False)
+
+            secret = generate_totp_secret()
+            user.mfa_secret_encrypted = encrypt_secret(secret)
+            user.mfa_last_used_counter = None
+            user.mfa_recovery_codes = []
+            user.mfa_confirmed_at = None
+            user.save(update_fields=[
+                "mfa_secret_encrypted", "mfa_last_used_counter",
+                "mfa_recovery_codes", "mfa_confirmed_at", "updated_at",
+            ])
+            uri = build_otpauth_uri(user, secret)
+            return Response({
+                "message": "Scannez le QR code avec Google Authenticator puis confirmez avec un code à 6 chiffres.",
+                "secret": secret,
+                "otpauth_uri": uri,
+                "qr_code_data_url": qr_code_data_url(uri),
+                "algorithm": "SHA1",
+                "digits": 6,
+                "period": 30,
+            })
+        except APIException:
+            raise
+        except Exception as exc:
+            return server_error(exc, self.__class__.__name__)
+
+
+class MFAConfirmView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+    permission_classes = [IsAuthenticatedAnyRole]
+    throttle_scope = "mfa"
+
+    @mfa_confirm_post_schema
+    def post(self, request):
+        try:
+            serializer = MFAConfirmSetupSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=request.user.pk)
+                if user.mfa_enabled:
+                    raise ValidationError({"mfa": "Le MFA est déjà activé."})
+                try:
+                    secret = decrypt_secret(user.mfa_secret_encrypted)
+                except MFAError as exc:
+                    raise ValidationError({"mfa": str(exc)}) from exc
+                counter = verify_totp_secret(
+                    secret,
+                    serializer.validated_data["code"],
+                    valid_window=settings.MFA_TOTP_VALID_WINDOW,
+                )
+                if counter is None:
+                    raise ValidationError({"code": "Code Google Authenticator invalide ou expiré."})
+                recovery_codes = mark_mfa_enabled(user, secret=secret)
+                transaction.on_commit(
+                    lambda: send_security_alert(
+                        user,
+                        "L'authentification multifacteur (Google Authenticator) a été activée sur votre compte.",
+                    ),
+                    robust=True,
+                )
+
+            response = Response({
+                "message": "MFA activé. Enregistrez immédiatement les codes de récupération dans un endroit sûr.",
+                "recovery_codes": recovery_codes,
+                "recovery_codes_remaining": len(recovery_codes),
+                "requires_relogin": True,
+            })
+            clear_refresh_cookie(response)
+            return no_store(response)
+        except APIException:
+            raise
+        except Exception as exc:
+            return server_error(exc, self.__class__.__name__)
+
+
+class MFADisableView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+    permission_classes = [IsAuthenticatedAnyRole]
+
+    @mfa_disable_post_schema
+    def post(self, request):
+        try:
+            serializer = MFADisableSerializer(data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=request.user.pk)
+                if not user.mfa_enabled:
+                    raise ValidationError({"mfa": "Le MFA n'est pas activé."})
+                verify_sensitive_action_identity(user, serializer.validated_data, require_mfa=True)
+                clear_mfa(user)
+                transaction.on_commit(
+                    lambda: send_security_alert(
+                        user,
+                        "L'authentification multifacteur a été désactivée sur votre compte.",
+                    ),
+                    robust=True,
+                )
+            response = Response({"message": "MFA désactivé.", "requires_relogin": True})
+            clear_refresh_cookie(response)
+            return no_store(response)
+        except APIException:
+            raise
+        except Exception as exc:
+            return server_error(exc, self.__class__.__name__)
+
+
+class MFARecoveryCodesRegenerateView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+    permission_classes = [IsAuthenticatedAnyRole]
+
+    @mfa_recovery_regenerate_post_schema
+    def post(self, request):
+        try:
+            serializer = MFARecoveryCodesRegenerateSerializer(
+                data=request.data, context={"request": request}
+            )
+            serializer.is_valid(raise_exception=True)
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=request.user.pk)
+                if not user.mfa_enabled:
+                    raise ValidationError({"mfa": "Le MFA n'est pas activé."})
+                verify_sensitive_action_identity(user, serializer.validated_data, require_mfa=True)
+                recovery_codes, hashes = generate_recovery_codes()
+                user.mfa_recovery_codes = hashes
+                user.save(update_fields=["mfa_recovery_codes", "updated_at"])
+                transaction.on_commit(
+                    lambda: send_security_alert(
+                        user,
+                        "De nouveaux codes de récupération MFA ont été générés. Les anciens codes ne sont plus valides.",
+                    ),
+                    robust=True,
+                )
+            return Response({
+                "message": "Nouveaux codes de récupération générés.",
+                "recovery_codes": recovery_codes,
+                "recovery_codes_remaining": len(recovery_codes),
+            })
         except APIException:
             raise
         except Exception as exc:
@@ -615,17 +925,17 @@ class ChangePasswordView(APIView):
         try:
             serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
-            user = request.user
-            verify_sensitive_action_identity(user, serializer.validated_data)
-            user.set_password(serializer.validated_data["new_password"])
-            if user.google_sub:
-                user.auth_provider = User.AuthProvider.HYBRID
-            user.save(update_fields=["password", "auth_provider", "updated_at"])
-            update_session_auth_hash(request, user)
-            try:
-                send_password_changed_email(user)
-            except Exception:
-                logger.exception("Échec d'envoi de l'email de changement de mot de passe")
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=request.user.pk)
+                verify_sensitive_action_identity(user, serializer.validated_data)
+                user.set_password(serializer.validated_data["new_password"])
+                if user.google_sub:
+                    user.auth_provider = User.AuthProvider.HYBRID
+                user.save(update_fields=["password", "auth_provider", "updated_at"])
+                update_session_auth_hash(request, user)
+                transaction.on_commit(
+                    lambda: send_password_changed_email(user), robust=True
+                )
             return Response({"message": "Mot de passe modifié."})
         except APIException:
             raise
@@ -642,15 +952,15 @@ class SetPasswordView(APIView):
         try:
             serializer = SetPasswordSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
-            user = request.user
-            verify_sensitive_action_identity(user, serializer.validated_data)
-            user.set_password(serializer.validated_data["new_password"])
-            user.auth_provider = User.AuthProvider.HYBRID if user.google_sub else User.AuthProvider.LOCAL
-            user.save(update_fields=["password", "auth_provider", "updated_at"])
-            try:
-                send_password_changed_email(user)
-            except Exception:
-                logger.exception("Échec d'envoi de l'email de configuration du mot de passe")
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=request.user.pk)
+                verify_sensitive_action_identity(user, serializer.validated_data)
+                user.set_password(serializer.validated_data["new_password"])
+                user.auth_provider = User.AuthProvider.HYBRID if user.google_sub else User.AuthProvider.LOCAL
+                user.save(update_fields=["password", "auth_provider", "updated_at"])
+                transaction.on_commit(
+                    lambda: send_password_changed_email(user), robust=True
+                )
             return Response({"message": "Mot de passe local configuré."})
         except APIException:
             raise
@@ -717,7 +1027,7 @@ class DeleteAccountView(APIView):
             with transaction.atomic():
                 serializer = DeleteAccountSerializer(data=request.data, context={"request": request})
                 serializer.is_valid(raise_exception=True)
-                user = request.user
+                user = User.objects.select_for_update().get(pk=request.user.pk)
                 verify_sensitive_action_identity(user, serializer.validated_data)
                 email = user.email
                 display_name = user.get_full_name().strip() or email.split("@", 1)[0]

@@ -17,19 +17,20 @@ class UserAdmin(DjangoUserAdmin):
         "role",
         "auth_provider",
         "email_verified",
+        "mfa_enabled",
         "is_active",
         "is_staff",
         "date_joined",
     )
-    list_filter = ("role", "auth_provider", "email_verified", "is_active", "is_staff", "is_superuser")
+    list_filter = ("role", "auth_provider", "email_verified", "mfa_enabled", "is_active", "is_staff", "is_superuser")
     search_fields = ("email", "first_name", "last_name", "phone_number")
     ordering = ("-date_joined",)
-    readonly_fields = ("last_login", "date_joined", "updated_at")
+    readonly_fields = ("mfa_enabled", "mfa_confirmed_at", "auth_token_version", "last_login", "date_joined", "updated_at")
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Profil", {"fields": ("first_name", "last_name", "role", "phone_number", "avatar", "avatar_url", "locale")}),
-        ("Authentification", {"fields": ("auth_provider", "google_sub", "email_verified")}),
+        ("Authentification", {"fields": ("auth_provider", "google_sub", "email_verified", "mfa_enabled", "mfa_confirmed_at")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login", "date_joined", "updated_at")}),
     )

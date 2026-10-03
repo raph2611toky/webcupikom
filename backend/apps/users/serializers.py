@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
     display_name = serializers.SerializerMethodField()
     avatar_display_url = serializers.SerializerMethodField()
     has_password = serializers.SerializerMethodField()
+    mfa_recovery_codes_remaining = serializers.SerializerMethodField()
     registration_profile_completed = serializers.SerializerMethodField()
 
     class Meta:
@@ -29,12 +30,14 @@ class UserSerializer(serializers.ModelSerializer):
             "habitat", "district", "sector", "street", "building", "apartment",
             "avatar", "avatar_url", "avatar_display_url",
             "auth_provider", "email_verified", "locale", "has_password",
+            "mfa_enabled", "mfa_confirmed_at", "mfa_recovery_codes_remaining",
             "registration_profile_completed", "registration_profile_completed_at",
             "date_joined", "updated_at",
         )
         read_only_fields = (
             "id", "email", "display_name", "role", "avatar_display_url", "auth_provider",
-            "email_verified", "avatar_url", "has_password",
+            "email_verified", "avatar_url", "has_password", "mfa_enabled",
+            "mfa_confirmed_at", "mfa_recovery_codes_remaining",
             "registration_profile_completed", "registration_profile_completed_at",
             "date_joined", "updated_at",
         )
@@ -50,6 +53,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_has_password(self, obj):
         return obj.has_usable_password()
+
+    def get_mfa_recovery_codes_remaining(self, obj):
+        return len(obj.mfa_recovery_codes or []) if obj.mfa_enabled else 0
 
     def get_registration_profile_completed(self, obj):
         return obj.registration_profile_completed_at is not None
@@ -316,6 +322,12 @@ class SensitiveActionAuthSerializer(serializers.Serializer):
     state = serializers.CharField(
         write_only=True, trim_whitespace=False, required=False, allow_blank=False
     )
+    mfa_code = serializers.CharField(
+        write_only=True, trim_whitespace=True, required=False, allow_blank=False, max_length=12
+    )
+    recovery_code = serializers.CharField(
+        write_only=True, trim_whitespace=True, required=False, allow_blank=False, max_length=32
+    )
 
     def validate_authentication_fields(self, attrs):
         current_password = attrs.get("current_password")
@@ -416,6 +428,42 @@ class DeleteAccountSerializer(SensitiveActionAuthSerializer):
         if attrs.get("confirmation") != "DELETE":
             raise serializers.ValidationError({"confirmation": 'Saisissez exactement "DELETE".'})
         return attrs
+
+
+class MFASetupSerializer(SensitiveActionAuthSerializer):
+    def validate(self, attrs):
+        return self.validate_authentication_fields(attrs)
+
+
+class MFAConfirmSetupSerializer(serializers.Serializer):
+    code = serializers.CharField(trim_whitespace=True, min_length=6, max_length=12)
+
+
+class MFAVerifyLoginSerializer(serializers.Serializer):
+    mfa_token = serializers.CharField(trim_whitespace=False)
+    mfa_code = serializers.CharField(required=False, trim_whitespace=True, allow_blank=False, max_length=12)
+    recovery_code = serializers.CharField(required=False, trim_whitespace=True, allow_blank=False, max_length=32)
+
+    def validate(self, attrs):
+        if bool(attrs.get("mfa_code")) == bool(attrs.get("recovery_code")):
+            raise serializers.ValidationError(
+                "Fournissez soit mfa_code, soit recovery_code, mais pas les deux."
+            )
+        return attrs
+
+
+class MFADisableSerializer(SensitiveActionAuthSerializer):
+    def validate(self, attrs):
+        attrs = self.validate_authentication_fields(attrs)
+        if bool(attrs.get("mfa_code")) == bool(attrs.get("recovery_code")):
+            raise serializers.ValidationError(
+                "Fournissez soit mfa_code, soit recovery_code pour confirmer le MFA."
+            )
+        return attrs
+
+
+class MFARecoveryCodesRegenerateSerializer(MFADisableSerializer):
+    pass
 
 
 class RefreshRequestSerializer(serializers.Serializer):

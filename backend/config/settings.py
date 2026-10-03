@@ -123,7 +123,7 @@ AUTH_USER_MODEL = "users.User"
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.users.authentication.VersionedJWTAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["helpers.permissions.IsAuthenticatedAnyRole"],
     "EXCEPTION_HANDLER": "helpers.api_exception_handler.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
@@ -131,6 +131,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth": os.getenv("THROTTLE_AUTH", "20/min"),
         "auth_email": os.getenv("THROTTLE_AUTH_EMAIL", "5/min"),
+        "mfa": os.getenv("THROTTLE_MFA", "10/min"),
         "password_reset": os.getenv("THROTTLE_PASSWORD_RESET", "5/min"),
         "contact": os.getenv("THROTTLE_CONTACT", "10/min"),
         "webcup": os.getenv("THROTTLE_WEBCUP", "60/min"),
@@ -217,6 +218,16 @@ GOOGLE_REDIRECT_URI = os.getenv(
     f"{FRONTEND_URL.rstrip('/')}/auth/google/callback",
 )
 GOOGLE_OAUTH_STATE_MAX_AGE = int(os.getenv("GOOGLE_OAUTH_STATE_MAX_AGE", "600"))
+
+# MFA TOTP (Google Authenticator et applications compatibles RFC 6238).
+# En production, MFA_ENCRYPTION_KEY et MFA_RECOVERY_PEPPER doivent être des
+# secrets longs, stables et distincts de JWT_SIGNING_KEY.
+MFA_ISSUER = os.getenv("MFA_ISSUER", SITE_NAME)
+MFA_ENCRYPTION_KEY = os.getenv("MFA_ENCRYPTION_KEY", "")
+MFA_RECOVERY_PEPPER = os.getenv("MFA_RECOVERY_PEPPER", "")
+MFA_LOGIN_CHALLENGE_MAX_AGE = int(os.getenv("MFA_LOGIN_CHALLENGE_MAX_AGE", "300"))
+MFA_TOTP_VALID_WINDOW = int(os.getenv("MFA_TOTP_VALID_WINDOW", "1"))
+
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "3600"))
 
 EMAIL_BACKEND = os.getenv(

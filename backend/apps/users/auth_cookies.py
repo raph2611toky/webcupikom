@@ -7,6 +7,7 @@ def build_refresh_token(user, *, remember: bool) -> RefreshToken:
     """Create a signed refresh token and persist the remember preference as a JWT claim."""
     refresh = RefreshToken.for_user(user)
     refresh["remember"] = bool(remember)
+    refresh["security_version"] = int(user.auth_token_version)
     return refresh
 
 
