@@ -15,6 +15,7 @@ from .views import (
     ProfileView,
     RefreshView,
     RegisterView,
+    RegistrationProfileView,
     ResendVerificationView,
     SetPasswordView,
     VerifyEmailView,
@@ -24,6 +25,7 @@ app_name = "users"
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
+    path("auth/register/profile/", RegistrationProfileView.as_view(), name="register-profile"),
     path("auth/register/agent/", AgentRegisterView.as_view(), name="register-agent"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/google/redirect/", GoogleRedirectView.as_view(), name="google-redirect"),

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
+from django.core import signing
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -37,6 +38,8 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     ProfileUpdateSerializer,
     RegisterSerializer,
+    RegistrationProfileSerializer,
+    REGISTRATION_PROFILE_SALT,
     SetPasswordSerializer,
     UserSerializer,
     VerifyEmailSerializer,
@@ -57,6 +60,7 @@ from .swagger import (
     profile_patch_schema,
     refresh_post_schema,
     register_post_schema,
+    registration_profile_post_schema,
     resend_verification_post_schema,
     set_password_post_schema,
     verify_email_post_schema,
@@ -123,11 +127,47 @@ class RegisterView(APIView):
                 transaction.on_commit(lambda: send_verification_email(user), robust=True)
             return Response(
                 {
-                    "message": "Compte créé. Vérifiez votre adresse email pour terminer l'inscription.",
+                    "message": "Compte créé. Complétez maintenant les informations personnelles, puis vérifiez votre adresse email.",
+                    "registration_token": signing.dumps(
+                        {"user_id": user.pk}, salt=REGISTRATION_PROFILE_SALT
+                    ),
+                    "next_step": "complete_profile",
+                    "profile_endpoint": "/api/auth/register/profile/",
                     "user": user_payload(user, request),
                 },
                 status=status.HTTP_201_CREATED,
             )
+        except APIException:
+            raise
+        except Exception as exc:
+            return server_error(exc, self.__class__.__name__)
+
+
+class RegistrationProfileView(APIView):
+    """Deuxième étape de l'inscription citoyenne.
+
+    Le token signé retourné par POST /api/auth/register/ autorise uniquement
+    la complétion des informations personnelles de ce compte. Il ne crée pas
+    de session et ne remplace pas la vérification de l'adresse email.
+    """
+
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_scope = "auth"
+
+    @registration_profile_post_schema
+    def post(self, request):
+        try:
+            serializer = RegistrationProfileSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
+            return Response({
+                "message": "Informations personnelles enregistrées.",
+                "profile_completed": True,
+                "next_step": "verify_email",
+                "user": user_payload(user, request),
+            })
         except APIException:
             raise
         except Exception as exc:

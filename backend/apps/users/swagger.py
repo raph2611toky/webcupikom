@@ -32,6 +32,16 @@ class ApiErrorResponseSerializer(serializers.Serializer):
 
 class RegisterResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
+    registration_token = serializers.CharField(required=False)
+    next_step = serializers.CharField(required=False)
+    profile_endpoint = serializers.CharField(required=False)
+    user = UserSerializer()
+
+
+class RegistrationProfileResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    profile_completed = serializers.BooleanField()
+    next_step = serializers.CharField()
     user = UserSerializer()
 
 
@@ -94,9 +104,26 @@ def form_bool(name, description, *, required=False):
 REGISTER_PARAMETERS = [
     form_string("email", "Adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
     form_string("password", "Mot de passe (8 caractères minimum)", required=True),
-    form_string("password_confirm", "Confirmation du mot de passe", required=True),
-    form_string("first_name", "Prénom"),
-    form_string("last_name", "Nom"),
+    form_string("password_confirm", "Confirmation facultative du mot de passe"),
+    form_string("first_name", "Prénom", required=True),
+    form_string("last_name", "Nom", required=True),
+]
+
+REGISTRATION_PROFILE_PARAMETERS = [
+    form_string("registration_token", "Token retourné par POST /api/auth/register/", required=True),
+    form_string("first_name", "Prénom", required=True),
+    form_string("last_name", "Nom", required=True),
+    form_string("profession", "Profession", required=True),
+    form_string("gender", "Sexe / genre : female, male, other, prefer_not_to_say", required=True),
+    form_string("birth_date", "Date de naissance (AAAA-MM-JJ)"),
+    form_string("phone_number", "Téléphone", required=True),
+    form_string("address", "Adresse", required=True),
+    form_string("habitat", "Habitat / type de logement", required=True),
+    form_string("district", "Quartier / district", required=True),
+    form_string("sector", "Secteur"),
+    form_string("street", "Rue"),
+    form_string("building", "Bâtiment"),
+    form_string("apartment", "Appartement"),
 ]
 
 VERIFY_EMAIL_PARAMETERS = [
@@ -132,6 +159,16 @@ PROFILE_PARAMETERS = [
     form_string("first_name", "Prénom"),
     form_string("last_name", "Nom"),
     form_string("phone_number", "Numéro de téléphone"),
+    form_string("profession", "Profession"),
+    form_string("gender", "Sexe / genre : female, male, other, prefer_not_to_say"),
+    form_string("birth_date", "Date de naissance (AAAA-MM-JJ)"),
+    form_string("address", "Adresse"),
+    form_string("habitat", "Habitat / type de logement"),
+    form_string("district", "Quartier / district"),
+    form_string("sector", "Secteur"),
+    form_string("street", "Rue"),
+    form_string("building", "Bâtiment"),
+    form_string("apartment", "Appartement"),
     openapi.Parameter(
         "avatar",
         openapi.IN_FORM,
@@ -173,7 +210,10 @@ register_post_schema = swagger_auto_schema(
     tags=["Authentification"],
     operation_id="auth_register",
     operation_summary="Créer un compte citoyen",
-    operation_description="Crée un compte local et envoie un email de vérification.",
+    operation_description=(
+        "Étape 1 : crée le compte avec prénom, nom, email et mot de passe, puis retourne "
+        "un registration_token permettant de remplir immédiatement les informations personnelles."
+    ),
     security=PUBLIC_SECURITY,
     manual_parameters=REGISTER_PARAMETERS,
     responses={
@@ -182,6 +222,25 @@ register_post_schema = swagger_auto_schema(
         500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
     },
 )
+
+registration_profile_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Authentification"],
+    operation_id="auth_register_profile",
+    operation_summary="Compléter les informations personnelles après inscription",
+    operation_description=(
+        "Étape 2 du flux d'inscription. Utilise le registration_token retourné à l'étape 1. "
+        "Cet endpoint ne crée pas de session et ne remplace pas la vérification email."
+    ),
+    security=PUBLIC_SECURITY,
+    manual_parameters=REGISTRATION_PROFILE_PARAMETERS,
+    responses={
+        200: openapi.Response("Profil d'inscription complété", RegistrationProfileResponseSerializer()),
+        400: openapi.Response("Données ou token invalides", ERROR_RESPONSE),
+        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
+    },
+)
+
 
 agent_register_post_schema = swagger_auto_schema(
     auto_schema=ManualFormAutoSchema,

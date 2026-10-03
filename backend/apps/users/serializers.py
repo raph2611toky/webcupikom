@@ -3,6 +3,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import User
@@ -10,22 +11,32 @@ from .services.account_emails import CHANGE_EMAIL_SALT
 from .tokens import email_verification_token
 
 
+REGISTRATION_PROFILE_SALT = "users.registration-profile"
+REGISTRATION_PROFILE_TOKEN_MAX_AGE = 60 * 60 * 24
+
+
 class UserSerializer(serializers.ModelSerializer):
     display_name = serializers.SerializerMethodField()
     avatar_display_url = serializers.SerializerMethodField()
     has_password = serializers.SerializerMethodField()
+    registration_profile_completed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "id", "email", "first_name", "last_name", "display_name", "role",
-            "phone_number", "avatar", "avatar_url", "avatar_display_url",
+            "phone_number", "profession", "gender", "birth_date", "address",
+            "habitat", "district", "sector", "street", "building", "apartment",
+            "avatar", "avatar_url", "avatar_display_url",
             "auth_provider", "email_verified", "locale", "has_password",
+            "registration_profile_completed", "registration_profile_completed_at",
             "date_joined", "updated_at",
         )
         read_only_fields = (
             "id", "email", "display_name", "role", "avatar_display_url", "auth_provider",
-            "email_verified", "avatar_url", "has_password", "date_joined", "updated_at",
+            "email_verified", "avatar_url", "has_password",
+            "registration_profile_completed", "registration_profile_completed_at",
+            "date_joined", "updated_at",
         )
 
     def get_display_name(self, obj):
@@ -40,17 +51,34 @@ class UserSerializer(serializers.ModelSerializer):
     def get_has_password(self, obj):
         return obj.has_usable_password()
 
+    def get_registration_profile_completed(self, obj):
+        return obj.registration_profile_completed_at is not None
+
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     """Champs réellement modifiables du profil via multipart/form-data."""
 
     class Meta:
         model = User
-        fields = ("first_name", "last_name", "phone_number", "avatar", "locale")
+        fields = (
+            "first_name", "last_name", "phone_number", "profession", "gender",
+            "birth_date", "address", "habitat", "district", "sector", "street",
+            "building", "apartment", "avatar", "locale",
+        )
         extra_kwargs = {
             "first_name": {"required": False},
             "last_name": {"required": False},
             "phone_number": {"required": False},
+            "profession": {"required": False},
+            "gender": {"required": False},
+            "birth_date": {"required": False, "allow_null": True},
+            "address": {"required": False},
+            "habitat": {"required": False},
+            "district": {"required": False},
+            "sector": {"required": False},
+            "street": {"required": False},
+            "building": {"required": False},
+            "apartment": {"required": False},
             "avatar": {"required": False, "allow_null": True},
             "locale": {"required": False},
         }
@@ -58,11 +86,17 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
-    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False)
+    password_confirm = serializers.CharField(
+        write_only=True, trim_whitespace=False, required=False
+    )
 
     class Meta:
         model = User
         fields = ("email", "password", "password_confirm", "first_name", "last_name")
+        extra_kwargs = {
+            "first_name": {"required": True, "allow_blank": False},
+            "last_name": {"required": True, "allow_blank": False},
+        }
 
     def validate_email(self, value):
         email = value.strip().lower()
@@ -71,7 +105,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         return email
 
     def validate(self, attrs):
-        if attrs["password"] != attrs.pop("password_confirm"):
+        password_confirm = attrs.pop("password_confirm", None)
+        if password_confirm is not None and attrs["password"] != password_confirm:
             raise serializers.ValidationError({"password_confirm": "Les mots de passe ne correspondent pas."})
         password_validation.validate_password(attrs["password"])
         return attrs
@@ -79,6 +114,68 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop("password")
         return User.objects.create_user(password=password, **validated_data)
+
+
+class RegistrationProfileSerializer(serializers.ModelSerializer):
+    registration_token = serializers.CharField(write_only=True, trim_whitespace=False)
+    sex = serializers.ChoiceField(
+        source="gender", choices=User.Gender.choices, required=False, write_only=True
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "registration_token", "first_name", "last_name", "profession", "gender", "sex",
+            "birth_date", "phone_number", "address", "habitat", "district", "sector",
+            "street", "building", "apartment",
+        )
+        extra_kwargs = {
+            "first_name": {"required": True, "allow_blank": False},
+            "last_name": {"required": True, "allow_blank": False},
+            "profession": {"required": True, "allow_blank": False},
+            "gender": {"required": False, "allow_blank": False},
+            "birth_date": {"required": False, "allow_null": True},
+            "phone_number": {"required": True, "allow_blank": False},
+            "address": {"required": True, "allow_blank": False},
+            "habitat": {"required": True, "allow_blank": False},
+            "district": {"required": True, "allow_blank": False},
+            "sector": {"required": False},
+            "street": {"required": False},
+            "building": {"required": False},
+            "apartment": {"required": False},
+        }
+
+    def validate(self, attrs):
+        token = attrs.pop("registration_token")
+        try:
+            payload = signing.loads(
+                token,
+                salt=REGISTRATION_PROFILE_SALT,
+                max_age=REGISTRATION_PROFILE_TOKEN_MAX_AGE,
+            )
+            user = User.objects.get(pk=payload["user_id"], role=User.Role.CITIZEN)
+        except (signing.BadSignature, signing.SignatureExpired, KeyError, User.DoesNotExist):
+            raise serializers.ValidationError({
+                "registration_token": "Token d'inscription invalide ou expiré."
+            })
+
+        # Le formulaire frontend peut envoyer `gender` ou `sex`, mais pas les deux
+        # avec des valeurs différentes. DRF les mappe tous les deux vers `gender`.
+        if not attrs.get("gender"):
+            raise serializers.ValidationError({"gender": "Ce champ est obligatoire."})
+
+        attrs["user"] = user
+        return attrs
+
+    def save(self, **kwargs):
+        validated_data = dict(self.validated_data)
+        user = validated_data.pop("user")
+        for field, value in validated_data.items():
+            setattr(user, field, value)
+        user.registration_profile_completed_at = timezone.now()
+        user.save()
+        self.instance = user
+        return user
 
 
 class AgentRegisterSerializer(RegisterSerializer):

@@ -50,6 +50,50 @@ class AccountApiTests(APITestCase):
         self.assertIn(settings.AUTH_REFRESH_COOKIE_NAME, response.cookies)
         self.assertTrue(response.cookies[settings.AUTH_REFRESH_COOKIE_NAME]["httponly"])
 
+    def test_register_accepts_single_password_and_returns_profile_step_token(self):
+        response = self.client.post(reverse("users:register"), {
+            "email": "flow@example.com",
+            "password": "StrongPass!2026",
+            "first_name": "Mia",
+            "last_name": "Nova",
+        }, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["next_step"], "complete_profile")
+        self.assertIn("registration_token", response.data)
+
+    def test_registration_profile_second_step(self):
+        register = self.client.post(reverse("users:register"), {
+            "email": "profile-flow@example.com",
+            "password": "StrongPass!2026",
+            "first_name": "Mia",
+            "last_name": "Nova",
+        }, format="json")
+        token = register.data["registration_token"]
+
+        response = self.client.post(reverse("users:register-profile"), {
+            "registration_token": token,
+            "first_name": "Mia",
+            "last_name": "Nova",
+            "profession": "Développeuse",
+            "gender": "female",
+            "birth_date": "2002-05-12",
+            "phone_number": "+261340000000",
+            "address": "12 rue Orion",
+            "habitat": "Appartement",
+            "district": "Astra",
+            "sector": "Secteur 4",
+            "building": "B",
+            "apartment": "12",
+        }, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["profile_completed"])
+        self.assertEqual(response.data["next_step"], "verify_email")
+
+        user = User.objects.get(email="profile-flow@example.com")
+        self.assertEqual(user.profession, "Développeuse")
+        self.assertEqual(user.gender, User.Gender.FEMALE)
+        self.assertEqual(user.district, "Astra")
+        self.assertIsNotNone(user.registration_profile_completed_at)
 
     def test_admin_can_register_agent_and_agent_uses_standard_verification_flow(self):
         admin = User.objects.create_superuser(
