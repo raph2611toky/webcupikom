@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  clearPendingMfa,
   getApiErrorMessage,
+  getPendingMfa,
   isEmailNotVerifiedError,
   resendVerification,
+  sendAuthMfaEmail,
   startGoogleAuth,
 } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
@@ -12,9 +15,9 @@ import { useLocale } from "../../utils/i18n.js";
 import "../auth.css";
 
 const LOGIN_COPY={
-  fr:{visualEyebrow:"PORTAIL CITOYEN · NOVA TERRA",visualTitle:<>La ville,<br/><strong>plus proche de vous.</strong></>,visualText:"Retrouvez vos démarches, vos services et les informations de Nova Terra au même endroit.",back:"Retour à l’accueil",kicker:"ESPACE SÉCURISÉ",title:"Heureux de vous revoir",intro:"Connectez-vous à votre espace Nova Terra.",google:"Continuer avec Google",redirect:"Redirection…",or:"ou",email:"Adresse e-mail",password:"Mot de passe",remember:"Se souvenir de moi",forgot:"Mot de passe oublié ?",login:"Se connecter",loading:"Connexion…",resend:"Renvoyer l’e-mail de vérification",noAccount:"Pas encore de compte ?",register:"Créer un compte",privacy:"Confidentialité",terms:"Conditions d’utilisation",tracked:"Démarches suivies",services:"Services accessibles",alerts:"Alertes reçues"},
-  en:{visualEyebrow:"CITIZEN PORTAL · NOVA TERRA",visualTitle:<>The city,<br/><strong>closer to you.</strong></>,visualText:"Find your requests, services and Nova Terra information in one place.",back:"Back to home",kicker:"SECURE SPACE",title:"Welcome back",intro:"Sign in to your Nova Terra space.",google:"Continue with Google",redirect:"Redirecting…",or:"or",email:"Email address",password:"Password",remember:"Remember me",forgot:"Forgot password?",login:"Sign in",loading:"Signing in…",resend:"Resend verification email",noAccount:"No account yet?",register:"Create account",privacy:"Privacy",terms:"Terms of use",tracked:"Tracked requests",services:"Accessible services",alerts:"Alerts received"},
-  mg:{visualEyebrow:"HABAKA MPONINA · NOVA TERRA",visualTitle:<>Ny tanàna,<br/><strong>akaiky kokoa anao.</strong></>,visualText:"Tadiavo amin'ny toerana iray ny fangatahanao, ny sampan-draharaha ary ny vaovao ao Nova Terra.",back:"Hiverina amin'ny fandraisana",kicker:"HABAKA VOARO",title:"Faly mahita anao indray",intro:"Midira ao amin'ny habakao Nova Terra.",google:"Hiditra amin'ny Google",redirect:"Mampifandray…",or:"na",email:"Adiresy mailaka",password:"Teny miafina",remember:"Tsarovy aho",forgot:"Hadinonao ny teny miafina?",login:"Hiditra",loading:"Miditra…",resend:"Alefa indray ny mailaka fanamarinana",noAccount:"Tsy mbola manana kaonty?",register:"Hamorona kaonty",privacy:"Tsiambaratelo",terms:"Fepetra fampiasana",tracked:"Fangatahana arahina",services:"Sampan-draharaha azo idirana",alerts:"Fampitandremana voaray"},
+  fr:{visualEyebrow:"PORTAIL CITOYEN · NOVA TERRA",visualTitle:<>La ville,<br/><strong>plus proche de vous.</strong></>,visualText:"Retrouvez vos démarches, vos services et les informations de Nova Terra au même endroit.",back:"Retour à l’accueil",kicker:"ESPACE SÉCURISÉ",title:"Heureux de vous revoir",intro:"Connectez-vous à votre espace Nova Terra.",google:"Continuer avec Google",redirect:"Redirection…",or:"ou",email:"Adresse e-mail",password:"Mot de passe",remember:"Se souvenir de moi",forgot:"Mot de passe oublié ?",login:"Se connecter",loading:"Connexion…",resend:"Renvoyer l’e-mail de vérification",noAccount:"Pas encore de compte ?",register:"Créer un compte",privacy:"Confidentialité",terms:"Conditions d’utilisation",tracked:"Démarches suivies",services:"Services accessibles",alerts:"Alertes reçues",mfaKicker:"DOUBLE VÉRIFICATION",mfaTitle:"Confirmez votre identité",mfaIntro:"Votre compte utilise une vérification en deux étapes. Choisissez une méthode puis saisissez votre code.",authenticator:"Application d’authentification",emailCode:"Code par e-mail",recovery:"Code de récupération",mfaCode:"Code à 6 chiffres",recoveryCode:"Code de récupération",sendCode:"Envoyer le code",sendingCode:"Envoi…",verify:"Vérifier et continuer",verifying:"Vérification…",backLogin:"Revenir à la connexion",codeSent:"Un code de vérification a été envoyé par e-mail."},
+  en:{visualEyebrow:"CITIZEN PORTAL · NOVA TERRA",visualTitle:<>The city,<br/><strong>closer to you.</strong></>,visualText:"Find your requests, services and Nova Terra information in one place.",back:"Back to home",kicker:"SECURE SPACE",title:"Welcome back",intro:"Sign in to your Nova Terra space.",google:"Continue with Google",redirect:"Redirecting…",or:"or",email:"Email address",password:"Password",remember:"Remember me",forgot:"Forgot password?",login:"Sign in",loading:"Signing in…",resend:"Resend verification email",noAccount:"No account yet?",register:"Create account",privacy:"Privacy",terms:"Terms of use",tracked:"Tracked requests",services:"Accessible services",alerts:"Alerts received",mfaKicker:"TWO-STEP VERIFICATION",mfaTitle:"Confirm your identity",mfaIntro:"Your account uses two-step verification. Choose a method and enter your code.",authenticator:"Authenticator app",emailCode:"Email code",recovery:"Recovery code",mfaCode:"6-digit code",recoveryCode:"Recovery code",sendCode:"Send code",sendingCode:"Sending…",verify:"Verify and continue",verifying:"Verifying…",backLogin:"Back to sign in",codeSent:"A verification code was sent by email."},
+  mg:{visualEyebrow:"HABAKA MPONINA · NOVA TERRA",visualTitle:<>Ny tanàna,<br/><strong>akaiky kokoa anao.</strong></>,visualText:"Tadiavo amin'ny toerana iray ny fangatahanao, ny sampan-draharaha ary ny vaovao ao Nova Terra.",back:"Hiverina amin'ny fandraisana",kicker:"HABAKA VOARO",title:"Faly mahita anao indray",intro:"Midira ao amin'ny habakao Nova Terra.",google:"Hiditra amin'ny Google",redirect:"Mampifandray…",or:"na",email:"Adiresy mailaka",password:"Teny miafina",remember:"Tsarovy aho",forgot:"Hadinonao ny teny miafina?",login:"Hiditra",loading:"Miditra…",resend:"Alefa indray ny mailaka fanamarinana",noAccount:"Tsy mbola manana kaonty?",register:"Hamorona kaonty",privacy:"Tsiambaratelo",terms:"Fepetra fampiasana",tracked:"Fangatahana arahina",services:"Sampan-draharaha azo idirana",alerts:"Fampitandremana voaray",mfaKicker:"FANAMARINANA ROA",mfaTitle:"Hamarino fa ianao marina",mfaIntro:"Mampiasa fanamarinana roa dingana ny kaontinao. Safidio ny fomba ary ampidiro ny kaody.",authenticator:"Application authenticator",emailCode:"Kaody amin’ny mailaka",recovery:"Kaody fanarenana",mfaCode:"Kaody 6 isa",recoveryCode:"Kaody fanarenana",sendCode:"Handefa kaody",sendingCode:"Mandefa…",verify:"Hanamarina sy hanohy",verifying:"Manamarina…",backLogin:"Hiverina amin’ny fidirana",codeSent:"Nalefa tamin’ny mailaka ny kaody fanamarinana."},
 };
 
 function useViewportBox() {
@@ -58,11 +61,23 @@ function GoogleIcon() {
   );
 }
 
+function normalizedMethods(context) {
+  return (context?.methods || []).map((value) => String(value).toLowerCase());
+}
+
+function defaultMfaMode(context) {
+  const methods = normalizedMethods(context);
+  if (methods.some((value) => value.includes("totp") || value.includes("authenticator") || value.includes("mfa"))) return "authenticator";
+  if (methods.some((value) => value.includes("email"))) return "email";
+  if (methods.some((value) => value.includes("recover"))) return "recovery";
+  return "authenticator";
+}
+
 export default function LoginPage() {
   const viewport = useViewportBox();
   const [locale] = useLocale();
   const copy = LOGIN_COPY[locale] || LOGIN_COPY.fr;
-  const { login } = useAuth();
+  const { login, verifyMfa } = useAuth();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -70,11 +85,28 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [email, setEmail] = useState("");
   const [canResend, setCanResend] = useState(false);
+  const [mfa, setMfa] = useState(() => getPendingMfa());
+  const [mfaMode, setMfaMode] = useState(() => defaultMfaMode(getPendingMfa()));
+  const [mfaCode, setMfaCode] = useState("");
+  const [emailChallengeId, setEmailChallengeId] = useState("");
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaEmailLoading, setMfaEmailLoading] = useState(false);
 
   const shellStyle = useMemo(() => ({
     "--auth-screen-w": `${viewport.width}px`,
     "--auth-screen-h": `${viewport.height}px`,
   }), [viewport]);
+
+  const methods = useMemo(() => normalizedMethods(mfa), [mfa]);
+  const allowAuthenticator = !methods.length || methods.some((value) => value.includes("totp") || value.includes("authenticator") || value.includes("mfa"));
+  const allowEmail = !methods.length || methods.some((value) => value.includes("email"));
+  const allowRecovery = !methods.length || methods.some((value) => value.includes("recover"));
+
+  useEffect(() => {
+    if (!mfa && new URLSearchParams(window.location.search).get("mfa") === "1") {
+      setStatus({ type: "error", message: "Le challenge MFA a expiré. Reconnectez-vous." });
+    }
+  }, [mfa]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -84,10 +116,23 @@ export default function LoginPage() {
     const form = new FormData(event.currentTarget);
     try {
       const data = await login({
-        email: String(form.get("email") || ""),
+        email: String(form.get("email") || "").trim(),
         password: String(form.get("password") || ""),
         remember,
       });
+      if (data?.mfa_required) {
+        const pending = getPendingMfa() || {
+          mfa_token: data.mfa_token,
+          methods: data.methods || [],
+          expires_in: data.expires_in,
+        };
+        setMfa(pending);
+        setMfaMode(defaultMfaMode(pending));
+        setMfaCode("");
+        setEmailChallengeId("");
+        setStatus(null);
+        return;
+      }
       navigate(getRoleSafeNextPath(data.user?.role), { replace: true });
     } catch (error) {
       setCanResend(isEmailNotVerifiedError(error));
@@ -101,7 +146,8 @@ export default function LoginPage() {
     setGoogleLoading(true);
     setStatus(null);
     try {
-      await startGoogleAuth({ remember });
+      const next = new URLSearchParams(window.location.search).get("next") || "";
+      await startGoogleAuth({ remember, returnTo: next.startsWith("/") && !next.startsWith("//") ? next : "" });
     } catch (error) {
       setStatus({ type: "error", message: getApiErrorMessage(error, "Connexion Google impossible.") });
       setGoogleLoading(false);
@@ -119,7 +165,62 @@ export default function LoginPage() {
     }
   }
 
-  const busy = loading || googleLoading;
+  async function sendMfaEmail() {
+    if (!mfa?.mfa_token) return;
+    setMfaEmailLoading(true);
+    setStatus(null);
+    try {
+      const data = await sendAuthMfaEmail(mfa.mfa_token);
+      setEmailChallengeId(data?.email_challenge_id || "");
+      setMfaCode("");
+      setStatus({ type: "success", message: data?.message || copy.codeSent });
+    } catch (error) {
+      setStatus({ type: "error", message: getApiErrorMessage(error, "Impossible d’envoyer le code MFA.") });
+    } finally {
+      setMfaEmailLoading(false);
+    }
+  }
+
+  async function handleMfaSubmit(event) {
+    event.preventDefault();
+    if (!mfa?.mfa_token || !mfaCode.trim()) return;
+    if (mfaMode === "email" && !emailChallengeId) {
+      setStatus({ type: "error", message: "Envoyez d’abord le code par e-mail." });
+      return;
+    }
+
+    setMfaLoading(true);
+    setStatus(null);
+    try {
+      const payload = { mfa_token: mfa.mfa_token };
+      if (mfaMode === "authenticator") payload.mfa_code = mfaCode.trim();
+      if (mfaMode === "recovery") payload.recovery_code = mfaCode.trim();
+      if (mfaMode === "email") {
+        payload.email_code = mfaCode.trim();
+        payload.email_challenge_id = emailChallengeId;
+      }
+      const data = await verifyMfa(payload);
+      setMfa(null);
+      navigate(getRoleSafeNextPath(data.user?.role), { replace: true });
+    } catch (error) {
+      setStatus({ type: "error", message: getApiErrorMessage(error, "Code invalide ou expiré.") });
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  function resetMfa() {
+    clearPendingMfa();
+    setMfa(null);
+    setMfaCode("");
+    setEmailChallengeId("");
+    setStatus(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("mfa");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  }
+
+  const busy = loading || googleLoading || mfaLoading || mfaEmailLoading;
 
   return (
     <main className="auth-screen auth-screen--login" style={shellStyle}>
@@ -148,56 +249,100 @@ export default function LoginPage() {
 
         <section className="auth-form-panel" aria-labelledby="login-title">
           <LanguageSwitcher className="auth-language-switcher" compact />
-          <a className="auth-back" href="/" onClick={(e)=>{e.preventDefault();navigate('/')}}>
+          <a className="auth-back" href="/" onClick={(event)=>{event.preventDefault();navigate('/')}}>
             <span>←</span> {copy.back}
           </a>
 
           <div className="auth-form-wrap">
             <div className="auth-page-brand auth-page-brand--mobile">Nova<span>Terra</span></div>
-            <div className="auth-title-block">
-              <span className="auth-mini-kicker">{copy.kicker}</span>
-              <h2 id="login-title">{copy.title}</h2>
-              <p>{copy.intro}</p>
-            </div>
 
-            <form className="auth-modern-form" onSubmit={handleSubmit}>
-              <button className="auth-google-modern" type="button" onClick={handleGoogle} disabled={busy}>
-                <GoogleIcon />
-                <span>{googleLoading ? copy.redirect : copy.google}</span>
-              </button>
-
-              <div className="auth-modern-divider" aria-hidden="true"><span>{copy.or}</span></div>
-
-              <label className="auth-modern-field">
-                <span>{copy.email}</span>
-                <input type="email" name="email" autoComplete="email" placeholder="vous@exemple.com" value={email} onChange={(e)=>setEmail(e.target.value)} disabled={busy} required />
-              </label>
-
-              <label className="auth-modern-field">
-                <span>{copy.password}</span>
-                <div className="auth-input-with-action">
-                  <input type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" placeholder="••••••••••••" disabled={busy} required />
-                  <button type="button" className="auth-eye" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}>
-                    <EyeIcon open={showPassword} />
-                  </button>
-                </div>
-              </label>
-
-              <div className="auth-form-meta">
-                <label className="auth-checkbox"><input type="checkbox" checked={remember} onChange={(e)=>setRemember(e.target.checked)} disabled={busy}/><span>{copy.remember}</span></label>
-                <a href="/mot-de-passe-oublie" onClick={(e)=>{e.preventDefault();navigate('/mot-de-passe-oublie')}}>{copy.forgot}</a>
+            {mfa ? <>
+              <div className="auth-title-block auth-title-block--mfa">
+                <span className="auth-mini-kicker">{copy.mfaKicker}</span>
+                <h2 id="login-title">{copy.mfaTitle}</h2>
+                <p>{copy.mfaIntro}</p>
               </div>
 
-              <button className="auth-primary-button" type="submit" disabled={busy}>
-                <span>{loading ? copy.loading : copy.login}</span>
-                <span className="auth-button-arrow">→</span>
-              </button>
+              <form className="auth-modern-form auth-mfa-form" onSubmit={handleMfaSubmit}>
+                <div className="auth-mfa-methods" role="group" aria-label="Méthode de vérification">
+                  {allowAuthenticator ? <button type="button" className={mfaMode==="authenticator"?"is-active":""} aria-pressed={mfaMode==="authenticator"} onClick={()=>{setMfaMode("authenticator");setMfaCode("");setStatus(null)}}>◉ <span>{copy.authenticator}</span></button> : null}
+                  {allowEmail ? <button type="button" className={mfaMode==="email"?"is-active":""} aria-pressed={mfaMode==="email"} onClick={()=>{setMfaMode("email");setMfaCode("");setStatus(null)}}>✉ <span>{copy.emailCode}</span></button> : null}
+                  {allowRecovery ? <button type="button" className={mfaMode==="recovery"?"is-active":""} aria-pressed={mfaMode==="recovery"} onClick={()=>{setMfaMode("recovery");setMfaCode("");setStatus(null)}}>⌘ <span>{copy.recovery}</span></button> : null}
+                </div>
 
-              {status ? <p className={`auth-feedback auth-feedback--${status.type}`} role={status.type==="error" ? "alert" : "status"} aria-live="polite">{status.message}</p> : null}
-              {canResend ? <button className="auth-secondary-link" type="button" onClick={resend}>{copy.resend}</button> : null}
-            </form>
+                {mfaMode === "email" && !emailChallengeId ? <button className="auth-google-modern auth-mfa-send" type="button" disabled={busy} onClick={sendMfaEmail}>
+                  <span>{mfaEmailLoading ? copy.sendingCode : copy.sendCode}</span>
+                </button> : null}
 
-            <p className="auth-switch-line">{copy.noAccount} <a href="/inscription" onClick={(e)=>{e.preventDefault();navigate('/inscription')}}>{copy.register}</a></p>
+                <label className="auth-modern-field">
+                  <span>{mfaMode === "recovery" ? copy.recoveryCode : copy.mfaCode}</span>
+                  <input
+                    type="text"
+                    inputMode={mfaMode === "recovery" ? "text" : "numeric"}
+                    autoComplete="one-time-code"
+                    value={mfaCode}
+                    onChange={(event)=>setMfaCode(event.target.value)}
+                    placeholder={mfaMode === "recovery" ? "XXXX-XXXX-XXXX" : "000000"}
+                    maxLength={mfaMode === "recovery" ? 64 : 6}
+                    disabled={busy || (mfaMode === "email" && !emailChallengeId)}
+                    required
+                  />
+                </label>
+
+                <button className="auth-primary-button" type="submit" disabled={busy || !mfaCode.trim() || (mfaMode === "email" && !emailChallengeId)}>
+                  <span>{mfaLoading ? copy.verifying : copy.verify}</span>
+                  <span className="auth-button-arrow">→</span>
+                </button>
+
+                {status ? <p className={`auth-feedback auth-feedback--${status.type}`} role={status.type==="error" ? "alert" : "status"} aria-live="polite">{status.message}</p> : null}
+                <button className="auth-secondary-link" type="button" onClick={resetMfa}>{copy.backLogin}</button>
+              </form>
+            </> : <>
+              <div className="auth-title-block">
+                <span className="auth-mini-kicker">{copy.kicker}</span>
+                <h2 id="login-title">{copy.title}</h2>
+                <p>{copy.intro}</p>
+              </div>
+
+              <form className="auth-modern-form" onSubmit={handleSubmit}>
+                <button className="auth-google-modern" type="button" onClick={handleGoogle} disabled={busy}>
+                  <GoogleIcon />
+                  <span>{googleLoading ? copy.redirect : copy.google}</span>
+                </button>
+
+                <div className="auth-modern-divider" aria-hidden="true"><span>{copy.or}</span></div>
+
+                <label className="auth-modern-field">
+                  <span>{copy.email}</span>
+                  <input type="email" name="email" autoComplete="email" placeholder="vous@exemple.com" value={email} onChange={(event)=>setEmail(event.target.value)} disabled={busy} required />
+                </label>
+
+                <label className="auth-modern-field">
+                  <span>{copy.password}</span>
+                  <div className="auth-input-with-action">
+                    <input type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" placeholder="••••••••••••" disabled={busy} required />
+                    <button type="button" className="auth-eye" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}>
+                      <EyeIcon open={showPassword} />
+                    </button>
+                  </div>
+                </label>
+
+                <div className="auth-form-meta">
+                  <label className="auth-checkbox"><input type="checkbox" checked={remember} onChange={(event)=>setRemember(event.target.checked)} disabled={busy}/><span>{copy.remember}</span></label>
+                  <a href="/mot-de-passe-oublie" onClick={(event)=>{event.preventDefault();navigate('/mot-de-passe-oublie')}}>{copy.forgot}</a>
+                </div>
+
+                <button className="auth-primary-button" type="submit" disabled={busy}>
+                  <span>{loading ? copy.loading : copy.login}</span>
+                  <span className="auth-button-arrow">→</span>
+                </button>
+
+                {status ? <p className={`auth-feedback auth-feedback--${status.type}`} role={status.type==="error" ? "alert" : "status"} aria-live="polite">{status.message}</p> : null}
+                {canResend ? <button className="auth-secondary-link" type="button" onClick={resend}>{copy.resend}</button> : null}
+              </form>
+
+              <p className="auth-switch-line">{copy.noAccount} <a href="/inscription" onClick={(event)=>{event.preventDefault();navigate('/inscription')}}>{copy.register}</a></p>
+            </>}
           </div>
 
           <div className="auth-legal"><a href="#confidentialite">{copy.privacy}</a><span>•</span><a href="#conditions">{copy.terms}</a></div>

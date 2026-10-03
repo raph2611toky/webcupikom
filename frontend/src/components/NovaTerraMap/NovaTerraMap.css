@@ -1,0 +1,299 @@
+.nova-city-map{
+  display:grid;
+  gap:12px;
+  min-height:0;
+}
+
+.nova-city-map__header{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.nova-city-map__header>div{display:grid;gap:3px}
+.nova-city-map__header h3{margin:0;color:var(--tn-text);font-size:1rem;letter-spacing:-.025em}
+.nova-city-map__header>span{color:var(--tn-muted);font-size:.63rem}
+
+.nova-city-map__layout{
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(285px,.55fr);
+  gap:12px;
+  min-height:500px;
+}
+
+.nova-city-map__scene-card,
+.nova-city-map__panel{
+  min-width:0;
+  border:1px solid var(--tn-line);
+  border-radius:18px;
+  background:var(--tn-card);
+}
+
+.nova-city-map__scene-card{
+  position:relative;
+  overflow:hidden;
+  min-height:500px;
+  background:
+    radial-gradient(circle at 20% 18%,color-mix(in srgb,var(--tn-purple) 9%,transparent),transparent 28%),
+    linear-gradient(145deg,var(--tn-card),color-mix(in srgb,var(--tn-purple-soft) 45%,var(--tn-card)));
+}
+
+.nova-city-map__scene{
+  position:absolute;
+  inset:0;
+  min-height:500px;
+  overflow:hidden;
+}
+
+.nova-city-map__scene::before{
+  content:"NOVA TERRA";
+  position:absolute;
+  top:18px;
+  left:20px;
+  z-index:2;
+  color:var(--tn-muted);
+  opacity:.45;
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.22em;
+  pointer-events:none;
+}
+
+.nova-city-map__canvas{
+  width:100%;
+  height:100%;
+  display:block;
+  touch-action:none;
+}
+
+.nova-city-map__loading{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:9px;
+  color:var(--tn-muted);
+  font-size:.68rem;
+}
+
+.nova-city-map__loading i{
+  width:28px;
+  height:28px;
+  border:2px solid var(--tn-line);
+  border-top-color:var(--tn-purple);
+  border-radius:50%;
+  animation:novaCitySpin .8s linear infinite;
+}
+
+@keyframes novaCitySpin{to{transform:rotate(360deg)}}
+
+.nova-city-map__panel{
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  overflow:hidden;
+}
+
+.nova-city-map__selected{
+  display:grid;
+  gap:8px;
+  padding:18px;
+  border-bottom:1px solid var(--tn-line);
+}
+
+.nova-city-map__selected-icon{
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border-radius:13px;
+  background:color-mix(in srgb,var(--location-color) 15%,var(--tn-card));
+  color:var(--location-color);
+  border:1px solid color-mix(in srgb,var(--location-color) 38%,var(--tn-line));
+  font-size:1rem;
+}
+
+.nova-city-map__selected>span{
+  margin-top:4px;
+  color:var(--tn-purple);
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.nova-city-map__selected h3{
+  margin:0;
+  color:var(--tn-text);
+  font-size:1.15rem;
+  letter-spacing:-.035em;
+}
+
+.nova-city-map__selected p{
+  margin:0;
+  color:var(--tn-muted);
+  font-size:.69rem;
+  line-height:1.5;
+}
+
+.nova-city-map__selected dl{
+  display:grid;
+  gap:0;
+  margin:4px 0 2px;
+  border-top:1px solid var(--tn-line);
+}
+
+.nova-city-map__selected dl>div{
+  display:grid;
+  grid-template-columns:82px 1fr;
+  gap:10px;
+  padding:8px 0;
+  border-bottom:1px solid var(--tn-line);
+}
+
+.nova-city-map__selected dt{
+  color:var(--tn-muted);
+  font-size:.58rem;
+}
+
+.nova-city-map__selected dd{
+  margin:0;
+  color:var(--tn-text);
+  font-size:.62rem;
+  font-weight:750;
+  text-align:right;
+}
+
+.nova-city-map__accessible-list{
+  min-height:0;
+  overflow:auto;
+  padding:13px;
+}
+
+.nova-city-map__accessible-list>.section-label{
+  display:block;
+  margin:0 5px 7px;
+}
+
+.nova-city-map__accessible-list>button{
+  width:100%;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  min-height:51px;
+  padding:7px 8px;
+  border:1px solid transparent;
+  border-radius:11px;
+  background:transparent;
+  color:var(--tn-text);
+  text-align:left;
+}
+
+.nova-city-map__accessible-list>button:hover,
+.nova-city-map__accessible-list>button.is-active{
+  background:var(--tn-purple-soft);
+  border-color:color-mix(in srgb,var(--tn-purple) 32%,var(--tn-line));
+}
+
+.nova-city-map__accessible-list>button>i{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:color-mix(in srgb,var(--location-color) 13%,var(--tn-card));
+  color:var(--location-color);
+  font-style:normal;
+}
+
+.nova-city-map__accessible-list>button>span{min-width:0;display:grid;gap:2px}
+.nova-city-map__accessible-list b{overflow:hidden;color:var(--tn-text);font-size:.65rem;text-overflow:ellipsis;white-space:nowrap}
+.nova-city-map__accessible-list small{color:var(--tn-muted);font-size:.54rem}
+.nova-city-map__accessible-list em{color:var(--tn-purple);font-size:.52rem;font-style:normal;font-weight:850}
+.nova-city-map__empty,.nova-city-map__accessible-list>p{padding:16px;color:var(--tn-muted);font-size:.67rem}
+
+.nova-city-map__fallback{
+  position:absolute;
+  inset:26px;
+  overflow:hidden;
+  border-radius:16px;
+  background:
+    linear-gradient(90deg,transparent 48%,color-mix(in srgb,var(--tn-muted) 25%,transparent) 48% 52%,transparent 52%),
+    linear-gradient(transparent 48%,color-mix(in srgb,var(--tn-muted) 25%,transparent) 48% 52%,transparent 52%),
+    color-mix(in srgb,var(--tn-purple-soft) 55%,var(--tn-card));
+  transform:rotate(-2deg);
+}
+
+.nova-city-map__fallback-building{
+  position:absolute;
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  transform:translate(-50%,-50%) rotate(45deg);
+  border:2px solid color-mix(in srgb,var(--building) 58%,var(--tn-line));
+  border-radius:11px;
+  background:color-mix(in srgb,var(--building) 20%,var(--tn-card));
+  color:var(--building);
+  box-shadow:0 12px 24px color-mix(in srgb,var(--tn-text) 9%,transparent);
+}
+
+.nova-city-map__fallback-building>span{transform:rotate(-45deg)}
+.nova-city-map__fallback-building.is-selected{outline:4px solid var(--tn-purple);outline-offset:3px}
+.nova-city-map__fallback-note{position:absolute;bottom:12px;left:16px;z-index:4;margin:0;padding:6px 9px;border-radius:8px;background:var(--tn-card);color:var(--tn-muted);font-size:.58rem}
+
+html[data-contrast="high"] .nova-city-map__scene-card,
+html[data-contrast="high"] .nova-city-map__panel,
+html[data-contrast="high"] .nova-city-map__selected,
+html[data-contrast="high"] .nova-city-map__accessible-list>button{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+}
+
+html[data-contrast="high"] .nova-city-map__selected-icon,
+html[data-contrast="high"] .nova-city-map__accessible-list>button>i{
+  background:#000!important;
+  color:var(--tn-purple)!important;
+  border:2px solid var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .nova-city-map__accessible-list>button.is-active{
+  background:var(--tn-purple)!important;
+  color:#000!important;
+}
+
+html[data-contrast="high"] .nova-city-map__accessible-list>button.is-active b,
+html[data-contrast="high"] .nova-city-map__accessible-list>button.is-active small,
+html[data-contrast="high"] .nova-city-map__accessible-list>button.is-active em{
+  color:#000!important;
+}
+
+@media(max-width:1050px){
+  .nova-city-map__layout{grid-template-columns:1fr;min-height:0}
+  .nova-city-map__scene-card,.nova-city-map__scene{min-height:430px}
+  .nova-city-map__panel{grid-template-columns:minmax(260px,.7fr) minmax(0,1fr);grid-template-rows:auto}
+  .nova-city-map__selected{border-right:1px solid var(--tn-line);border-bottom:0}
+  .nova-city-map__accessible-list{max-height:280px}
+}
+
+@media(max-width:700px){
+  .nova-city-map__header{align-items:start;flex-direction:column;gap:4px}
+  .nova-city-map__scene-card,.nova-city-map__scene{min-height:360px}
+  .nova-city-map__panel{grid-template-columns:1fr}
+  .nova-city-map__selected{border-right:0;border-bottom:1px solid var(--tn-line)}
+  .nova-city-map__accessible-list{max-height:240px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .nova-city-map__loading i{animation:none}
+}
+.nova-city-map__webgl{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}

@@ -5726,3 +5726,637 @@ html[data-contrast="high"] .appointment-header-mark>i{
   border-color:var(--appointment-surface);
   box-shadow:none;
 }
+
+
+/* ==========================================================================
+   V42 — visual fixes requested: appointment polish, report contrast, services
+   Uses the existing Nova Terra CSS variables and keeps the current shell.
+   ========================================================================== */
+
+/* --- Appointments: closer to the requested reference without changing shell --- */
+.appointment-redesign-header{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:106px;
+  padding:17px 22px;
+  border-radius:18px;
+  background:linear-gradient(
+    112deg,
+    var(--appointment-surface) 0%,
+    color-mix(in srgb,var(--appointment-primary) 6%,var(--appointment-surface)) 52%,
+    color-mix(in srgb,var(--appointment-primary) 15%,var(--appointment-surface)) 100%
+  );
+}
+
+.appointment-redesign-header::before,
+.appointment-redesign-header::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  border-radius:50%;
+  pointer-events:none;
+}
+
+.appointment-redesign-header::before{
+  width:240px;
+  height:240px;
+  right:-65px;
+  top:-132px;
+  background:color-mix(in srgb,var(--appointment-primary) 8%,transparent);
+}
+
+.appointment-redesign-header::after{
+  width:135px;
+  height:135px;
+  right:118px;
+  bottom:-92px;
+  background:color-mix(in srgb,var(--appointment-primary) 7%,transparent);
+}
+
+.appointment-redesign-header h2{
+  color:var(--appointment-text);
+  font-size:1.48rem;
+}
+
+.appointment-redesign-header p{
+  color:var(--appointment-muted);
+}
+
+.appointment-header-mark{
+  width:74px;
+  height:62px;
+  flex-basis:74px;
+  border:1px solid color-mix(in srgb,var(--appointment-primary) 16%,var(--appointment-line));
+  border-radius:18px;
+  background:color-mix(in srgb,var(--appointment-primary) 10%,var(--appointment-surface));
+  box-shadow:0 12px 28px color-mix(in srgb,var(--appointment-primary) 14%,transparent);
+  transform:rotate(3deg);
+}
+
+.appointment-header-mark>span{
+  font-size:1.8rem;
+}
+
+.appointment-header-mark>i{
+  right:-8px;
+  bottom:-8px;
+  width:29px;
+  height:29px;
+  font-size:.64rem;
+}
+
+.appointment-date-picker-layout{
+  grid-template-columns:minmax(170px,.34fr) minmax(350px,.66fr);
+  gap:14px;
+}
+
+.appointment-date-guide{
+  position:relative;
+  isolation:isolate;
+  min-height:255px;
+  align-content:center;
+  padding:20px 18px;
+  border-radius:15px;
+  background:linear-gradient(
+    145deg,
+    color-mix(in srgb,var(--appointment-primary) 8%,var(--appointment-surface)),
+    color-mix(in srgb,var(--appointment-primary) 3%,var(--appointment-surface))
+  );
+}
+
+.appointment-date-guide::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:150px;
+  height:150px;
+  right:-55px;
+  bottom:-65px;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--appointment-primary) 6%,transparent);
+}
+
+.appointment-date-guide__visual{
+  width:56px;
+  height:56px;
+  border-radius:16px;
+  box-shadow:0 8px 18px color-mix(in srgb,var(--appointment-primary) 12%,transparent);
+}
+
+.appointment-date-guide__visual>span{
+  font-size:1.45rem;
+}
+
+.appointment-date-guide strong{
+  margin-bottom:7px;
+  font-size:.8rem;
+}
+
+.appointment-date-guide p{
+  font-size:.66rem;
+  line-height:1.58;
+}
+
+.appointment-mini-calendar{
+  border-radius:15px;
+  box-shadow:0 10px 24px color-mix(in srgb,var(--appointment-text) 5%,transparent);
+}
+
+/* Keep the status visible directly in the day cells. */
+.appointment-calendar-day.state-available:not(.is-selected){
+  background:color-mix(in srgb,var(--appointment-primary) 12%,var(--appointment-surface));
+  border-color:color-mix(in srgb,var(--appointment-primary) 30%,var(--appointment-line));
+}
+
+.appointment-calendar-day.state-full:not(.is-selected){
+  background:color-mix(in srgb,var(--appointment-danger) 11%,var(--appointment-surface));
+  border-color:color-mix(in srgb,var(--appointment-danger) 32%,var(--appointment-line));
+}
+
+.appointment-calendar-day.state-unavailable:not(.is-selected){
+  background:color-mix(in srgb,var(--appointment-muted) 8%,var(--appointment-surface));
+  border-color:color-mix(in srgb,var(--appointment-muted) 17%,var(--appointment-line));
+}
+
+/* --- Reports: use Nova Terra variables so text can never disappear --- */
+.report-intro,
+.report-form,
+.report-history,
+.report-review,
+.report-review-grid,
+.report-history-list>button,
+.report-type-grid>button,
+.report-location-grid input,
+.report-description-grid input,
+.report-description-grid textarea,
+.report-priority button,
+.report-file,
+.report-success__facts{
+  background:var(--tn-card);
+  color:var(--tn-text);
+  border-color:var(--tn-line);
+}
+
+.report-intro h2,
+.report-step__head b,
+.report-type-grid b,
+.report-file b,
+.report-review-grid b,
+.report-history-list strong,
+.report-success h2,
+.report-success__facts b{
+  color:var(--tn-text);
+}
+
+.report-intro p,
+.report-step__head span,
+.report-type-grid span,
+.report-location-grid label>span,
+.report-description-grid label>span,
+.report-priority>span,
+.report-file span,
+.report-review-grid span,
+.report-history-list span,
+.report-history-list small,
+.report-success>p,
+.report-success__facts span{
+  color:var(--tn-muted);
+}
+
+.report-type-grid>button{
+  min-height:80px;
+  border-width:1px;
+  transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+
+.report-type-grid>button:hover{
+  transform:translateY(-1px);
+  border-color:color-mix(in srgb,var(--tn-purple) 42%,var(--tn-line));
+}
+
+.report-type-grid>button.is-active{
+  background:color-mix(in srgb,var(--tn-purple) 10%,var(--tn-card));
+  border-color:var(--tn-purple);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tn-purple) 35%,transparent);
+}
+
+.report-type-grid>button>i,
+.report-step__head>i{
+  background:var(--tn-purple-soft);
+  color:var(--tn-purple);
+}
+
+.report-type-grid>button.is-active>i{
+  background:var(--tn-purple);
+  color:var(--tn-card);
+}
+
+.report-location-grid input,
+.report-description-grid input,
+.report-description-grid textarea{
+  color:var(--tn-text);
+}
+
+.report-location-grid input::placeholder,
+.report-description-grid input::placeholder,
+.report-description-grid textarea::placeholder{
+  color:color-mix(in srgb,var(--tn-muted) 78%,transparent);
+}
+
+.report-priority button.is-active{
+  background:var(--tn-purple-soft);
+  color:var(--tn-purple);
+  border-color:var(--tn-purple);
+}
+
+.report-priority button:last-child.is-active{
+  background:color-mix(in srgb,var(--tn-red) 10%,var(--tn-card));
+  color:var(--tn-red);
+  border-color:var(--tn-red);
+}
+
+/* Strong high-contrast safeguards on the report workflow.
+   All cards are dark; text is white; yellow is limited to selection/accent. */
+html[data-contrast="high"] .report-page,
+html[data-contrast="high"] .agent-report-page{
+  --report-accent:var(--tn-purple);
+}
+
+html[data-contrast="high"] .report-intro,
+html[data-contrast="high"] .report-form,
+html[data-contrast="high"] .report-history,
+html[data-contrast="high"] .report-step,
+html[data-contrast="high"] .report-review,
+html[data-contrast="high"] .report-review-grid,
+html[data-contrast="high"] .report-history-list>button,
+html[data-contrast="high"] .report-type-grid>button,
+html[data-contrast="high"] .report-file,
+html[data-contrast="high"] .report-success__facts,
+html[data-contrast="high"] .report-coordinate-chip{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .report-intro h2,
+html[data-contrast="high"] .report-step__head b,
+html[data-contrast="high"] .report-type-grid b,
+html[data-contrast="high"] .report-file b,
+html[data-contrast="high"] .report-review-grid b,
+html[data-contrast="high"] .report-history-list strong,
+html[data-contrast="high"] .report-success h2,
+html[data-contrast="high"] .report-success__facts b{
+  color:var(--tn-text)!important;
+}
+
+html[data-contrast="high"] .report-intro p,
+html[data-contrast="high"] .report-step__head span,
+html[data-contrast="high"] .report-type-grid span,
+html[data-contrast="high"] .report-file span,
+html[data-contrast="high"] .report-review-grid span,
+html[data-contrast="high"] .report-history-list span,
+html[data-contrast="high"] .report-history-list small,
+html[data-contrast="high"] .report-success>p,
+html[data-contrast="high"] .report-success__facts span,
+html[data-contrast="high"] .report-coordinate-chip span,
+html[data-contrast="high"] .report-coordinate-chip b{
+  color:var(--tn-muted)!important;
+}
+
+html[data-contrast="high"] .report-type-grid>button:hover{
+  background:color-mix(in srgb,var(--tn-purple) 5%,var(--tn-card))!important;
+  border-color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .report-type-grid>button.is-active{
+  background:color-mix(in srgb,var(--tn-purple) 13%,var(--tn-card))!important;
+  border:2px solid var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .report-type-grid>button>i,
+html[data-contrast="high"] .report-step__head>i,
+html[data-contrast="high"] .report-history-list>button>i{
+  background:var(--tn-card)!important;
+  color:var(--tn-purple)!important;
+  border:2px solid var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .report-type-grid>button.is-active>i{
+  background:var(--tn-purple)!important;
+  color:#111!important;
+}
+
+html[data-contrast="high"] .report-location-grid input,
+html[data-contrast="high"] .report-description-grid input,
+html[data-contrast="high"] .report-description-grid textarea,
+html[data-contrast="high"] .report-priority button{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border:2px solid var(--tn-line)!important;
+}
+
+html[data-contrast="high"] .report-priority button.is-active{
+  background:var(--tn-purple)!important;
+  color:#111!important;
+  border-color:var(--tn-purple)!important;
+}
+
+/* --- Services: more energy while preserving the existing page/shell --- */
+.citizen-services-intro{
+  background:linear-gradient(
+    135deg,
+    var(--tn-card) 0%,
+    color-mix(in srgb,var(--tn-purple) 5%,var(--tn-card)) 65%,
+    color-mix(in srgb,var(--tn-purple) 9%,var(--tn-card)) 100%
+  );
+  border-color:var(--tn-line);
+}
+
+.citizen-services-intro h2{color:var(--tn-text)}
+.citizen-services-intro p{color:var(--tn-muted)}
+
+body[data-route-group="portal"] .citizen-service-grid--v39 .citizen-service-card{
+  min-height:214px;
+  border-color:color-mix(in srgb,var(--service-accent) 18%,var(--tn-line));
+  background:linear-gradient(
+    150deg,
+    var(--tn-card) 0%,
+    var(--tn-card) 64%,
+    color-mix(in srgb,var(--service-accent) 7%,var(--tn-card)) 100%
+  );
+}
+
+body[data-route-group="portal"] .citizen-service-grid--v39 .citizen-service-card::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  right:0;
+  height:3px;
+  background:var(--service-accent);
+  opacity:.8;
+}
+
+body[data-route-group="portal"] .citizen-service-grid--v39 h2{color:var(--tn-text)}
+body[data-route-group="portal"] .citizen-service-grid--v39 p{color:var(--tn-muted)}
+
+html[data-contrast="high"] .citizen-services-intro,
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-service-grid--v39 .citizen-service-card{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-service-grid--v39 .citizen-service-card::before{
+  background:var(--tn-purple)!important;
+  opacity:1!important;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-service-grid--v39 h2,
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-service-grid--v39 p{
+  color:var(--tn-text)!important;
+}
+
+html[data-contrast="high"] .citizen-service-card__icon{
+  background:var(--tn-card)!important;
+  color:var(--tn-purple)!important;
+  border:2px solid var(--tn-purple)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .citizen-service-card__cta,
+html[data-contrast="high"] .citizen-service-card__cta>span{
+  color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .citizen-service-card__cta>i{
+  background:var(--tn-purple)!important;
+  color:#111!important;
+}
+
+/* Appointment high contrast: never leave dark text on dark surfaces. */
+html[data-contrast="high"] .appointment-redesign-header,
+html[data-contrast="high"] .appointment-date-guide,
+html[data-contrast="high"] .appointment-mini-calendar,
+html[data-contrast="high"] .appointment-summary-card,
+html[data-contrast="high"] .appointment-upcoming-card,
+html[data-contrast="high"] .appointment-preferences-details{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .appointment-redesign-header h2,
+html[data-contrast="high"] .appointment-redesign-header p,
+html[data-contrast="high"] .appointment-date-guide strong,
+html[data-contrast="high"] .appointment-date-guide p,
+html[data-contrast="high"] .appointment-calendar-toolbar strong,
+html[data-contrast="high"] .appointment-section-heading h3{
+  color:var(--tn-text)!important;
+}
+
+html[data-contrast="high"] .appointment-header-mark,
+html[data-contrast="high"] .appointment-date-guide__visual{
+  background:var(--tn-card)!important;
+  color:var(--tn-purple)!important;
+  border:2px solid var(--tn-purple)!important;
+  box-shadow:none!important;
+}
+
+@media(max-width:920px){
+  .appointment-date-guide{min-height:auto}
+}
+
+/* ========================================================================== 
+   V44 — Services : cartes / vue carte 3D, sans modifier le shell du portail
+   ========================================================================== */
+.services-view-toolbar{
+  display:grid;
+  grid-template-columns:minmax(220px,.9fr) minmax(0,1.45fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid var(--tn-line);
+  border-radius:14px;
+  background:var(--tn-card);
+}
+
+.services-search-field{
+  min-width:0;
+  min-height:40px;
+  display:grid;
+  grid-template-columns:28px 1fr;
+  align-items:center;
+  gap:4px;
+  padding:0 9px;
+  border:1px solid var(--tn-line);
+  border-radius:10px;
+  background:var(--tn-bg);
+  color:var(--tn-muted);
+}
+
+.services-search-field>span{
+  display:grid;
+  place-items:center;
+  font-size:.74rem;
+}
+
+.services-search-field input{
+  width:100%;
+  min-width:0;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:var(--tn-text)!important;
+  box-shadow:none!important;
+  font:inherit;
+  font-size:.72rem;
+}
+
+.services-search-field input::placeholder{color:var(--tn-muted)}
+
+.services-category-filters{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  overflow:auto;
+  scrollbar-width:thin;
+}
+
+.services-category-filters button,
+.services-view-switch button{
+  min-height:34px;
+  border:1px solid var(--tn-line);
+  border-radius:9px;
+  background:var(--tn-card);
+  color:var(--tn-muted);
+  padding:0 10px;
+  font:inherit;
+  font-size:.62rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.services-category-filters button:hover,
+.services-view-switch button:hover{
+  border-color:color-mix(in srgb,var(--tn-purple) 36%,var(--tn-line));
+  color:var(--tn-purple);
+}
+
+.services-category-filters button.is-active,
+.services-view-switch button.is-active{
+  border-color:var(--tn-purple);
+  background:var(--tn-purple-soft);
+  color:var(--tn-purple);
+}
+
+.services-view-switch{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:5px;
+  padding:3px;
+  border:1px solid var(--tn-line);
+  border-radius:11px;
+  background:var(--tn-bg);
+}
+
+.services-view-switch button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border-color:transparent;
+  background:transparent;
+}
+
+.services-view-switch button i{
+  font-style:normal;
+  font-size:.72rem;
+}
+
+.services-filter-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:24px;
+  color:var(--tn-muted);
+  font-size:.59rem;
+}
+
+.services-filter-summary button{
+  border:0;
+  background:transparent;
+  color:var(--tn-purple);
+  font:inherit;
+  font-weight:850;
+  text-decoration:underline;
+  text-underline-offset:.15em;
+}
+
+.services-empty-state{
+  min-height:240px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:9px;
+  border:1px dashed var(--tn-line);
+  border-radius:16px;
+  background:var(--tn-card);
+  color:var(--tn-muted);
+  text-align:center;
+}
+
+.services-empty-state i{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background:var(--tn-purple-soft);
+  color:var(--tn-purple);
+  font-style:normal;
+}
+
+.services-empty-state strong{font-size:.75rem;color:var(--tn-text)}
+
+html[data-contrast="high"] .services-view-toolbar,
+html[data-contrast="high"] .services-search-field,
+html[data-contrast="high"] .services-view-switch,
+html[data-contrast="high"] .services-empty-state{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+}
+
+html[data-contrast="high"] .services-category-filters button,
+html[data-contrast="high"] .services-view-switch button{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+}
+
+html[data-contrast="high"] .services-category-filters button.is-active,
+html[data-contrast="high"] .services-view-switch button.is-active{
+  background:var(--tn-purple)!important;
+  color:#000!important;
+  border-color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .services-category-filters button.is-active *,
+html[data-contrast="high"] .services-view-switch button.is-active *{color:#000!important}
+
+@media(max-width:1080px){
+  .services-view-toolbar{grid-template-columns:1fr auto}
+  .services-category-filters{grid-column:1/-1;grid-row:2}
+}
+
+@media(max-width:700px){
+  .services-view-toolbar{grid-template-columns:1fr;padding:9px}
+  .services-category-filters{grid-column:auto;grid-row:auto}
+  .services-view-switch{width:100%}
+}

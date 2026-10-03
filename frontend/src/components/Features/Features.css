@@ -895,3 +895,81 @@
 .features-stats__top strong {
   white-space: nowrap;
 }
+
+
+/* ==========================================================================
+   V42 — Features section high-contrast safety
+   Fixes black-on-black / white-on-white text while keeping yellow as accent.
+   ========================================================================== */
+html[data-contrast="high"] .features-section{
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .features-section__texture{
+  opacity:0!important;
+}
+
+html[data-contrast="high"] .features-kicker{
+  background:#000!important;
+  color:#fff!important;
+  border:2px solid var(--tn-purple,#f2d34b)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .features-heading h2{
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .features-heading h2 span{
+  color:var(--tn-purple,#f2d34b)!important;
+}
+
+html[data-contrast="high"] .features-lead,
+html[data-contrast="high"] .features-lead--soft{
+  color:#fff!important;
+  opacity:1!important;
+}
+
+html[data-contrast="high"] .features-sparkles{
+  color:var(--tn-purple,#f2d34b)!important;
+}
+
+html[data-contrast="high"] .features-stage{
+  background:#000!important;
+  border:2px solid #fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .features-stage__intro,
+html[data-contrast="high"] .features-stage__intro>span,
+html[data-contrast="high"] .features-stage__intro h3{
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .features-stage__intro i{
+  background:var(--tn-purple,#f2d34b)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .feature-card{
+  background:#080808!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .feature-card h3,
+html[data-contrast="high"] .feature-card p,
+html[data-contrast="high"] .feature-card strong,
+html[data-contrast="high"] .feature-card span{
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .feature-card__icon,
+html[data-contrast="high"] .feature-arrow-circle{
+  background:#000!important;
+  color:var(--tn-purple,#f2d34b)!important;
+  border:2px solid var(--tn-purple,#f2d34b)!important;
+  box-shadow:none!important;
+}

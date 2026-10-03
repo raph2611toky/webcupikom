@@ -804,3 +804,82 @@ html[data-contrast="high"] .citizen-service-grid--v39 .citizen-service-card:hove
   background:#0c0c00!important;
   border-color:var(--hc-yellow)!important;
 }
+
+
+/* ==========================================================================
+   V42 — final high-contrast consistency layer
+   ========================================================================== */
+html[data-contrast="high"]{
+  --tn-bg:#000000;
+  --tn-card:#080808;
+  --tn-text:#ffffff;
+  --tn-muted:#e2e2e2;
+  --tn-line:#ffffff;
+  --tn-purple:#f2d34b;
+  --tn-purple-soft:#24200b;
+  --tn-green:#8bd7a5;
+  --tn-red:#ff9299;
+  --tn-amber:#f2d34b;
+}
+
+html[data-contrast="high"] .portal-card,
+html[data-contrast="high"] .toolbar-card,
+html[data-contrast="high"] .portal-topbar,
+html[data-contrast="high"] .public-header,
+html[data-contrast="high"] .info-panel,
+html[data-contrast="high"] .contact-form-panel,
+html[data-contrast="high"] .news-visual-card,
+html[data-contrast="high"] .citizen-news-card{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+}
+
+html[data-contrast="high"] .portal-card h1,
+html[data-contrast="high"] .portal-card h2,
+html[data-contrast="high"] .portal-card h3,
+html[data-contrast="high"] .portal-card h4,
+html[data-contrast="high"] .portal-card p,
+html[data-contrast="high"] .portal-card strong,
+html[data-contrast="high"] .portal-card b,
+html[data-contrast="high"] .portal-card small,
+html[data-contrast="high"] .portal-card label{
+  color:var(--tn-text)!important;
+}
+
+html[data-contrast="high"] .section-label,
+html[data-contrast="high"] .panel-kicker,
+html[data-contrast="high"] .portal-topbar__eyebrow,
+html[data-contrast="high"] .text-link,
+html[data-contrast="high"] .back-link{
+  color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] input,
+html[data-contrast="high"] select,
+html[data-contrast="high"] textarea{
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}
+
+html[data-contrast="high"] input::placeholder,
+html[data-contrast="high"] textarea::placeholder{
+  color:#d0d0d0!important;
+  opacity:1!important;
+}
+
+/* Yellow is an accent, not the default text color. */
+html[data-contrast="high"] .primary-action,
+html[data-contrast="high"] .topbar-cta,
+html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"],
+html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"]{
+  background:var(--tn-purple)!important;
+  color:#111!important;
+  border-color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .primary-action *,
+html[data-contrast="high"] .topbar-cta *{
+  color:#111!important;
+}

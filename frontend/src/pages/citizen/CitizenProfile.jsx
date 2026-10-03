@@ -15,9 +15,8 @@ const COPY={
 };
 
 export default function CitizenProfile(){
-  const {user,replaceUser}=useAuth();
+  const {user,replaceUser,refreshUser}=useAuth();
   const [locale]=useLocale(); const copy=COPY[locale]||COPY.fr;
-  const [editing,setEditing]=useState(false);
   const [saving,setSaving]=useState(false);
   const [status,setStatus]=useState(null);
   const [form,setForm]=useState({first_name:"",last_name:"",profession:"",gender:"prefer_not_to_say",birth_date:"",phone_number:"",address:"",habitat:"",district:"",sector:"",street:"",building:"",apartment:"",locale:getLocale()});
@@ -48,8 +47,7 @@ export default function CitizenProfile(){
 
   const initials=((user?.first_name?.[0]||"")+(user?.last_name?.[0]||"")||"NT").toUpperCase();
 
-  async function toggleEdit(){
-    if(!editing){setEditing(true);return}
+  async function saveProfile(){
     setSaving(true);setStatus(null);
     try{
       const payload={
@@ -59,12 +57,14 @@ export default function CitizenProfile(){
         ...(["fr","en","mg"].includes(form.locale)?{locale:form.locale}:{}),
       };
       ["profession","gender","birth_date","address","habitat","district","sector","street","building","apartment"].forEach((key)=>{
-        if(form[key]!=="" || user?.[key])payload[key]=form[key];
+        payload[key]=form[key] ?? "";
       });
-      const next=await updateProfile(payload);
-      replaceUser(next);
+
+      const response=await updateProfile(payload);
+      const candidate=response?.user || response;
+      if(candidate && typeof candidate==="object")replaceUser({...user,...candidate});
+      try{ await refreshUser(); }catch{}
       setLocale(form.locale);
-      setEditing(false);
       setStatus({type:"success",message:copy.updated});
     }catch(error){
       setStatus({type:"error",message:getApiErrorMessage(error,copy.error)});
@@ -72,8 +72,8 @@ export default function CitizenProfile(){
   }
 
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
-    <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button className="topbar-cta" onClick={toggleEdit} disabled={saving}>{saving?copy.saving:editing?copy.save:copy.edit}</button>}/>
-    <main className="portal-content">
+    <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button className="topbar-cta" onClick={saveProfile} disabled={saving}>{saving?copy.saving:copy.save}</button>}/>
+    <main className="portal-content profile-page">
       {status?<div className={status.type==="error"?"error-card":"success-inline"} role={status.type==="error"?"alert":"status"}>{status.message}</div>:null}
       <section className="profile-hero">
         <div className="profile-avatar">{initials}</div>
@@ -85,40 +85,40 @@ export default function CitizenProfile(){
         <section className="portal-card">
           <div className="portal-card__head"><div><span className="section-label">{copy.identity}</span><h3>{copy.personal}</h3></div></div>
           <div className="profile-form-grid">
-            <label><span>{copy.first}</span><input disabled={!editing} value={form.first_name} onChange={e=>setForm({...form,first_name:e.target.value})}/></label>
-            <label><span>{copy.last}</span><input disabled={!editing} value={form.last_name} onChange={e=>setForm({...form,last_name:e.target.value})}/></label>
-            <label><span>{copy.profession}</span><input disabled={!editing} value={form.profession} onChange={e=>setForm({...form,profession:e.target.value})}/></label>
-            <label><span>{copy.gender}</span><select disabled={!editing} value={form.gender} onChange={e=>setForm({...form,gender:e.target.value})}><option value="female">{copy.female}</option><option value="male">{copy.male}</option><option value="other">{copy.other}</option><option value="prefer_not_to_say">{copy.prefer}</option></select></label>
-            <label><span>{copy.birth}</span><input type="date" disabled={!editing} value={form.birth_date} onChange={e=>setForm({...form,birth_date:e.target.value})}/></label>
+            <label><span>{copy.first}</span><input disabled={saving} value={form.first_name} onChange={e=>setForm({...form,first_name:e.target.value})}/></label>
+            <label><span>{copy.last}</span><input disabled={saving} value={form.last_name} onChange={e=>setForm({...form,last_name:e.target.value})}/></label>
+            <label><span>{copy.profession}</span><input disabled={saving} value={form.profession} onChange={e=>setForm({...form,profession:e.target.value})}/></label>
+            <label><span>{copy.gender}</span><select disabled={saving} value={form.gender} onChange={e=>setForm({...form,gender:e.target.value})}><option value="female">{copy.female}</option><option value="male">{copy.male}</option><option value="other">{copy.other}</option><option value="prefer_not_to_say">{copy.prefer}</option></select></label>
+            <label><span>{copy.birth}</span><input type="date" disabled={saving} value={form.birth_date} onChange={e=>setForm({...form,birth_date:e.target.value})}/></label>
           </div>
         </section>
 
         <section className="portal-card">
           <div className="portal-card__head"><div><span className="section-label">{copy.contact}</span><h3>{copy.reach}</h3></div></div>
           <div className="profile-form-grid">
-            <label><span>{copy.email}</span><input disabled value={user?.email||""}/></label>
-            <label><span>{copy.phone}</span><input disabled={!editing} value={form.phone_number} onChange={e=>setForm({...form,phone_number:e.target.value})} placeholder="+261..."/></label>
+            <label><span>{copy.email}</span><input className="profile-readonly-field" readOnly aria-readonly="true" value={user?.email||""}/></label>
+            <label><span>{copy.phone}</span><input disabled={saving} value={form.phone_number} onChange={e=>setForm({...form,phone_number:e.target.value})} placeholder="+261..."/></label>
           </div>
         </section>
 
         <section className="portal-card">
           <div className="portal-card__head"><div><span className="section-label">{copy.addressBlock}</span><h3>{copy.addressTitle}</h3></div></div>
           <div className="profile-form-grid">
-            <label className="span-2"><span>{copy.address}</span><input disabled={!editing} value={form.address} onChange={e=>setForm({...form,address:e.target.value})}/></label>
-            <label><span>{copy.habitat}</span><input disabled={!editing} value={form.habitat} onChange={e=>setForm({...form,habitat:e.target.value})}/></label>
-            <label><span>{copy.district}</span><input disabled={!editing} value={form.district} onChange={e=>setForm({...form,district:e.target.value})}/></label>
-            <label><span>{copy.sector}</span><input disabled={!editing} value={form.sector} onChange={e=>setForm({...form,sector:e.target.value})}/></label>
-            <label><span>{copy.street}</span><input disabled={!editing} value={form.street} onChange={e=>setForm({...form,street:e.target.value})}/></label>
-            <label><span>{copy.building}</span><input disabled={!editing} value={form.building} onChange={e=>setForm({...form,building:e.target.value})}/></label>
-            <label><span>{copy.apartment}</span><input disabled={!editing} value={form.apartment} onChange={e=>setForm({...form,apartment:e.target.value})}/></label>
+            <label className="span-2"><span>{copy.address}</span><input disabled={saving} value={form.address} onChange={e=>setForm({...form,address:e.target.value})}/></label>
+            <label><span>{copy.habitat}</span><input disabled={saving} value={form.habitat} onChange={e=>setForm({...form,habitat:e.target.value})}/></label>
+            <label><span>{copy.district}</span><input disabled={saving} value={form.district} onChange={e=>setForm({...form,district:e.target.value})}/></label>
+            <label><span>{copy.sector}</span><input disabled={saving} value={form.sector} onChange={e=>setForm({...form,sector:e.target.value})}/></label>
+            <label><span>{copy.street}</span><input disabled={saving} value={form.street} onChange={e=>setForm({...form,street:e.target.value})}/></label>
+            <label><span>{copy.building}</span><input disabled={saving} value={form.building} onChange={e=>setForm({...form,building:e.target.value})}/></label>
+            <label><span>{copy.apartment}</span><input disabled={saving} value={form.apartment} onChange={e=>setForm({...form,apartment:e.target.value})}/></label>
           </div>
         </section>
 
         <section className="portal-card">
           <div className="portal-card__head"><div><span className="section-label">{copy.preferences}</span><h3>{copy.experience}</h3></div></div>
           <div className="profile-form-grid">
-            <label><span>{copy.language}</span><select disabled={!editing} value={form.locale} onChange={e=>setForm({...form,locale:e.target.value})}><option value="fr">Français</option><option value="en">English</option><option value="mg">Malagasy</option></select></label>
-            <label><span>{copy.notifications}</span><input disabled value={copy.enabled}/></label>
+            <label><span>{copy.language}</span><select disabled={saving} value={form.locale} onChange={e=>setForm({...form,locale:e.target.value})}><option value="fr">Français</option><option value="en">English</option><option value="mg">Malagasy</option></select></label>
+            <label><span>{copy.notifications}</span><input className="profile-readonly-field" readOnly aria-readonly="true" value={copy.enabled}/></label>
           </div>
         </section>
 

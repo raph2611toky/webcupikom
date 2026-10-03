@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import NovaTerraMap from "../../components/NovaTerraMap/NovaTerraMap.jsx";
 import { getServices } from "../../api/services.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
@@ -14,6 +15,13 @@ const COPY={
     introTitle:"Tous vos services municipaux",
     intro:"Retrouvez rapidement les services de Nova Terra et accédez aux informations utiles avant de commencer une démarche.",
     open:"Ouvrir le service",
+    search:"Rechercher un service",
+    all:"Tous",
+    cards:"Cartes",
+    map:"Vue carte 3D",
+    result:"service",
+    results:"services",
+    empty:"Aucun service ne correspond à votre recherche.",
   },
   en:{
     eyebrow:"City",
@@ -21,6 +29,13 @@ const COPY={
     introTitle:"All city services",
     intro:"Quickly find Nova Terra services and the useful information you need before starting a procedure.",
     open:"Open service",
+    search:"Search for a service",
+    all:"All",
+    cards:"Cards",
+    map:"3D map view",
+    result:"service",
+    results:"services",
+    empty:"No service matches your search.",
   },
   mg:{
     eyebrow:"Tanàna",
@@ -28,6 +43,13 @@ const COPY={
     introTitle:"Ireo sampan-draharaha rehetra",
     intro:"Tadiavo haingana ireo sampan-draharaha ao Nova Terra sy ny vaovao ilaina alohan'ny hanombohana dingana iray.",
     open:"Hijery ny sampan-draharaha",
+    search:"Hitady sampan-draharaha",
+    all:"Rehetra",
+    cards:"Karatra",
+    map:"Sarintany 3D",
+    result:"sampan-draharaha",
+    results:"sampan-draharaha",
+    empty:"Tsy misy sampan-draharaha mifanaraka amin'ny fikarohanao.",
   },
 };
 
@@ -49,6 +71,9 @@ export default function CitizenServices(){
   const [locale]=useLocale();
   const copy=COPY[locale]||COPY.fr;
   const [services,setServices]=useState([]);
+  const [query,setQuery]=useState("");
+  const [category,setCategory]=useState("all");
+  const [view,setView]=useState(()=>localStorage.getItem("nova_terra_services_view")||"cards");
 
   useEffect(()=>{getServices().then(setServices).catch(()=>setServices([]))},[locale]);
 
@@ -56,6 +81,24 @@ export default function CitizenServices(){
     ...service,
     tone:serviceTone(service,index),
   })),[services]);
+
+  const categories=useMemo(()=>Array.from(new Set(prepared.map(item=>item.category).filter(Boolean))),[prepared]);
+
+  const filtered=useMemo(()=>{
+    const normalized=query.trim().toLowerCase();
+    return prepared.filter(service=>{
+      const matchesCategory=category==="all"||service.category===category;
+      const matchesText=!normalized||`${service.name} ${service.category} ${service.shortDescription||""} ${service.description||""}`.toLowerCase().includes(normalized);
+      return matchesCategory&&matchesText;
+    });
+  },[prepared,query,category]);
+
+  const visibleSlugs=useMemo(()=>new Set(filtered.map(item=>item.slug)),[filtered]);
+
+  function changeView(next){
+    setView(next);
+    localStorage.setItem("nova_terra_services_view",next);
+  }
 
   return <div className="portal-layout">
     <CitizenSidebar/>
@@ -70,8 +113,30 @@ export default function CitizenServices(){
           </div>
         </section>
 
-        <section className="citizen-service-grid citizen-service-grid--v39">
-          {prepared.map(service=><article
+        <section className="services-view-toolbar" aria-label="Affichage et filtres des services">
+          <label className="services-search-field">
+            <span aria-hidden="true">⌕</span>
+            <input value={query} onChange={event=>setQuery(event.target.value)} placeholder={copy.search} aria-label={copy.search}/>
+          </label>
+
+          <div className="services-category-filters" role="group" aria-label="Filtrer par catégorie">
+            <button type="button" className={category==="all"?"is-active":""} aria-pressed={category==="all"} onClick={()=>setCategory("all")}>{copy.all}</button>
+            {categories.map(item=><button type="button" key={item} className={category===item?"is-active":""} aria-pressed={category===item} onClick={()=>setCategory(item)}>{item}</button>)}
+          </div>
+
+          <div className="services-view-switch" role="group" aria-label="Choisir la vue">
+            <button type="button" className={view==="cards"?"is-active":""} aria-pressed={view==="cards"} onClick={()=>changeView("cards")}><i aria-hidden="true">▦</i><span>{copy.cards}</span></button>
+            <button type="button" className={view==="map"?"is-active":""} aria-pressed={view==="map"} onClick={()=>changeView("map")}><i aria-hidden="true">◇</i><span>{copy.map}</span></button>
+          </div>
+        </section>
+
+        <div className="services-filter-summary" aria-live="polite">
+          <span>{filtered.length} {filtered.length>1?copy.results:copy.result}</span>
+          {(query||category!=="all")?<button type="button" onClick={()=>{setQuery("");setCategory("all")}}>Réinitialiser</button>:null}
+        </div>
+
+        {view==="map"?<NovaTerraMap services={prepared} visibleSlugs={visibleSlugs} locale={locale}/>:filtered.length?<section className="citizen-service-grid citizen-service-grid--v39">
+          {filtered.map(service=><article
             key={service.slug}
             className={`citizen-service-card service-tone-${service.tone}`}
           >
@@ -90,7 +155,7 @@ export default function CitizenServices(){
               <i aria-hidden="true">→</i>
             </button>
           </article>)}
-        </section>
+        </section>:<div className="services-empty-state"><i aria-hidden="true">⌕</i><strong>{copy.empty}</strong></div>}
       </main>
     </div>
   </div>;

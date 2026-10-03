@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { clearGoogleFlow, getGoogleFlow, getApiErrorMessage } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import { navigate, roleHome } from "../../utils/navigation.js";
+import { isPathAllowedForRole, navigate, roleHome } from "../../utils/navigation.js";
 import "../auth.css";
 
 export default function GoogleCallbackPage() {
@@ -26,6 +26,13 @@ export default function GoogleCallbackPage() {
       .then((data) => {
         if (!mounted) return;
 
+        if (data?.mfa_required) {
+          const next = flow?.returnTo ? `&next=${encodeURIComponent(flow.returnTo)}` : "";
+          clearGoogleFlow();
+          navigate(`/login?mfa=1${next}`, { replace: true });
+          return;
+        }
+
         if (flow?.purpose === "delete-account") {
           clearGoogleFlow();
           const sameAccount =
@@ -49,8 +56,11 @@ export default function GoogleCallbackPage() {
           return;
         }
 
+        const target = flow?.returnTo && isPathAllowedForRole(flow.returnTo, data.user?.role)
+          ? flow.returnTo
+          : roleHome(data.user?.role);
         clearGoogleFlow();
-        navigate(flow?.returnTo || roleHome(data.user?.role), { replace: true });
+        navigate(target, { replace: true });
       })
       .catch((error) => {
         if (!mounted) return;

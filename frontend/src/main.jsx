@@ -7,6 +7,7 @@ import { getLocale } from "./utils/i18n.js";
 import "./styles/variables.css";
 import "./styles/global.css";
 import "./styles/accessibility.css";
+import "./styles/scroll-fixes.css";
 
 applyAccessibilityPreferences(loadAccessibilityPreferences());
 document.documentElement.lang = getLocale();

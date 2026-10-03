@@ -993,3 +993,56 @@ html[data-contrast="high"] .portal-notification-bell>b{
   color:#fff!important;
   border-color:#fff!important;
 }
+
+
+/* ==========================================================================
+   V42 — high contrast shell safeguards
+   ========================================================================== */
+html[data-contrast="high"] .language-switcher,
+html[data-contrast="high"] .language-switcher select,
+html[data-contrast="high"] .portal-topbar__icon,
+html[data-contrast="high"] .topbar-ghost,
+html[data-contrast="high"] .portal-voice-trigger,
+html[data-contrast="high"] .portal-voice-panel,
+html[data-contrast="high"] .portal-voice-panel__status,
+html[data-contrast="high"] .citizen-context-guide{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .portal-topbar h1,
+html[data-contrast="high"] .portal-user strong,
+html[data-contrast="high"] .portal-user span:last-child,
+html[data-contrast="high"] .portal-breadcrumb,
+html[data-contrast="high"] .portal-breadcrumb button,
+html[data-contrast="high"] .portal-breadcrumb b,
+html[data-contrast="high"] .portal-voice-panel__head span,
+html[data-contrast="high"] .portal-voice-panel__head small,
+html[data-contrast="high"] .portal-voice-panel__status,
+html[data-contrast="high"] .citizen-context-guide__body>strong,
+html[data-contrast="high"] .citizen-context-guide__body>p{
+  color:var(--tn-text)!important;
+  opacity:1!important;
+}
+
+html[data-contrast="high"] .portal-topbar__eyebrow,
+html[data-contrast="high"] .guide-dismiss,
+html[data-contrast="high"] .portal-voice-trigger>span{
+  color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .portal-voice-trigger>span,
+html[data-contrast="high"] .citizen-context-guide__icon{
+  background:var(--tn-card)!important;
+  color:var(--tn-purple)!important;
+  border:2px solid var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .citizen-context-guide__close,
+html[data-contrast="high"] .portal-voice-panel__head>button{
+  background:var(--tn-purple)!important;
+  color:#111!important;
+  border:2px solid var(--tn-purple)!important;
+}

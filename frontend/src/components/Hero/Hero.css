@@ -544,3 +544,59 @@ body {
 @media (max-width: 760px) {
   .hero-language-switcher { top: 84px; right: 22px; }
 }
+
+
+/* ==========================================================================
+   V42 — landing high contrast: no black-on-black text
+   ========================================================================== */
+html[data-contrast="high"] .kamo-hero{
+  --hero-hc-accent:var(--tn-purple,#f2d34b);
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .kamo-hero,
+html[data-contrast="high"] .kamo-hero .hero-title,
+html[data-contrast="high"] .kamo-hero .hero-title__top,
+html[data-contrast="high"] .kamo-hero .hero-title__bottom,
+html[data-contrast="high"] .kamo-hero .hero-subtitle,
+html[data-contrast="high"] .kamo-hero .kamo-nav a,
+html[data-contrast="high"] .kamo-hero .kamo-logo,
+html[data-contrast="high"] .kamo-hero .demo-link,
+html[data-contrast="high"] .kamo-hero .kamo-orbit text{
+  color:#fff!important;
+  fill:#fff!important;
+  text-shadow:none!important;
+}
+
+html[data-contrast="high"] .kamo-hero .kamo-logo span,
+html[data-contrast="high"] .kamo-hero .demo-sparkles{
+  color:var(--hero-hc-accent)!important;
+}
+
+html[data-contrast="high"] .kamo-hero .hero-title__band{
+  background:var(--hero-hc-accent)!important;
+  color:#111!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .kamo-hero .hero-title__band-text,
+html[data-contrast="high"] .kamo-hero .hero-title__band-text *{
+  color:#111!important;
+}
+
+html[data-contrast="high"] .kamo-hero .kamo-login{
+  background:#000!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+}
+
+html[data-contrast="high"] .kamo-hero .start-button{
+  background:var(--hero-hc-accent)!important;
+  color:#111!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .kamo-hero .hero-photo{
+  border:2px solid #fff!important;
+}

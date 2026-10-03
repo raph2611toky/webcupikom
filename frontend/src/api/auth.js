@@ -3,6 +3,7 @@ import { api, clearAccessToken, setAccessToken } from "./api.js";
 const GOOGLE_REMEMBER_KEY = "nova_terra_google_remember";
 const GOOGLE_FLOW_KEY = "nova_terra_google_flow";
 const REGISTRATION_CONTEXT_KEY = "nova_terra_registration_context";
+const MFA_CONTEXT_KEY = "nova_terra_pending_mfa";
 let bootstrapPromise = null;
 
 function rememberFromSession() {
@@ -15,9 +16,66 @@ function consumeGoogleRemember() {
   return remember;
 }
 
+function toFormData(values = {}) {
+  const form = new FormData();
+  Object.entries(values).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    form.append(key, typeof value === "boolean" ? String(value) : value);
+  });
+  return form;
+}
+
+function rememberPendingMfa(data, source = "login") {
+  if (!data?.mfa_required || !data?.mfa_token) return null;
+  const context = {
+    mfa_token: data.mfa_token,
+    methods: Array.isArray(data.methods) ? data.methods : [],
+    expires_in: Number(data.expires_in || 300),
+    source,
+    created_at: Date.now(),
+  };
+  window.sessionStorage.setItem(MFA_CONTEXT_KEY, JSON.stringify(context));
+  return context;
+}
+
+export function getPendingMfa() {
+  const raw = window.sessionStorage.getItem(MFA_CONTEXT_KEY);
+  if (!raw) return null;
+  try {
+    const context = JSON.parse(raw);
+    const ttl = Math.max(30, Number(context?.expires_in || 300)) * 1000;
+    if (!context?.mfa_token || Date.now() - Number(context.created_at || 0) > ttl) {
+      window.sessionStorage.removeItem(MFA_CONTEXT_KEY);
+      return null;
+    }
+    return context;
+  } catch {
+    window.sessionStorage.removeItem(MFA_CONTEXT_KEY);
+    return null;
+  }
+}
+
+export function clearPendingMfa() {
+  window.sessionStorage.removeItem(MFA_CONTEXT_KEY);
+}
+
+function applyAuthenticatedSession(data) {
+  if (!data?.access || !data?.user) return false;
+  setAccessToken(data.access);
+  bootstrapPromise = Promise.resolve(data.user);
+  clearPendingMfa();
+  return true;
+}
+
 export function getApiErrorMessage(error, fallback = "Une erreur est survenue.") {
   const data = error?.response?.data;
-  if (!data) return fallback;
+  if (!data) {
+    if (error?.code === "ECONNABORTED") return "Le serveur met trop de temps à répondre.";
+    return fallback;
+  }
+  if (error?.response?.status === 403 && /csrf/i.test(String(data?.detail || data || ""))) {
+    return "La session de sécurité a expiré. Réessayez la connexion.";
+  }
 
   const candidates = [];
   if (typeof data.detail === "string" && data.detail !== "Données invalides.") {
@@ -42,24 +100,34 @@ export function getApiErrorMessage(error, fallback = "Une erreur est survenue.")
 }
 
 export function isEmailNotVerifiedError(error) {
-  const value = error?.response?.data?.errors?.email;
-  const text = Array.isArray(value) ? value.join(" ") : String(value || "");
-  return text.toLowerCase().includes("non vérifiée");
+  const data = error?.response?.data || {};
+  const value = data?.errors?.email;
+  const text = [
+    data?.detail,
+    Array.isArray(value) ? value.join(" ") : value,
+  ].filter(Boolean).join(" ").toLowerCase();
+  return (
+    text.includes("non vérifi") ||
+    text.includes("non verifi") ||
+    text.includes("not verified") ||
+    text.includes("verify your email")
+  );
 }
 
 export async function login({ email, password, remember }) {
+  clearPendingMfa();
   const { data } = await api.post(
     "/auth/login/",
-    { email, password, remember },
-    { skipAuthRefresh: true, skipAccessToken: true },
+    toFormData({ email, password, remember }),
+    { skipAuthRefresh: true, skipAccessToken: true, csrf: true },
   );
-  setAccessToken(data.access);
-  bootstrapPromise = Promise.resolve(data.user);
+  if (data?.mfa_required) rememberPendingMfa(data, "password");
+  else applyAuthenticatedSession(data);
   return data;
 }
 
 export async function register(payload) {
-  const { data } = await api.post("/auth/register/", payload, {
+  const { data } = await api.post("/auth/register/", toFormData(payload), {
     skipAuthRefresh: true,
     skipAccessToken: true,
   });
@@ -124,7 +192,7 @@ export async function completeRegistrationProfile(payload = {}) {
   });
   const { data } = await api.post(
     "/auth/register/profile/",
-    body,
+    toFormData(body),
     { skipAuthRefresh: true, skipAccessToken: true },
   );
   clearRegistrationContext();
@@ -153,10 +221,15 @@ export async function startGoogleAuth({
     window.sessionStorage.removeItem(GOOGLE_FLOW_KEY);
   }
 
+  await api.get("/auth/csrf/", {
+    skipAuthRefresh: true,
+    skipAccessToken: true,
+  });
   const { data } = await api.get("/auth/google/redirect/", {
     skipAuthRefresh: true,
     skipAccessToken: true,
   });
+  if (!data?.authorization_url) throw new Error("Le backend n’a pas retourné l’URL Google.");
   window.location.assign(data.authorization_url);
 }
 
@@ -175,31 +248,62 @@ export function clearGoogleFlow() {
 }
 
 export async function completeGoogleAuth({ code, state }) {
+  clearPendingMfa();
   const { data } = await api.post(
     "/auth/google/",
-    { code, state, remember: consumeGoogleRemember() },
+    toFormData({ code, state, remember: consumeGoogleRemember() }),
+    { skipAuthRefresh: true, skipAccessToken: true, csrf: true },
+  );
+  if (data?.mfa_required) rememberPendingMfa(data, "google");
+  else applyAuthenticatedSession(data);
+  return data;
+}
+
+export async function sendAuthMfaEmail(mfaToken) {
+  const { data } = await api.post(
+    "/auth/mfa/email/send/",
+    { mfa_token: mfaToken },
     { skipAuthRefresh: true, skipAccessToken: true },
   );
-  setAccessToken(data.access);
-  bootstrapPromise = Promise.resolve(data.user);
+  return data;
+}
+
+export async function verifyAuthMfa(payload = {}) {
+  const pending = getPendingMfa();
+  const mfaToken = payload.mfa_token || pending?.mfa_token;
+  if (!mfaToken) throw new Error("Le challenge MFA n’est plus disponible. Reconnectez-vous.");
+
+  const { data } = await api.post(
+    "/auth/mfa/verify/",
+    toFormData({
+      mfa_token: mfaToken,
+      mfa_code: payload.mfa_code,
+      recovery_code: payload.recovery_code,
+      email_code: payload.email_code,
+      email_challenge_id: payload.email_challenge_id,
+    }),
+    { skipAuthRefresh: true, skipAccessToken: true, csrf: true },
+  );
+  if (!applyAuthenticatedSession(data)) {
+    throw new Error("La vérification MFA n’a pas retourné de session valide.");
+  }
   return data;
 }
 
 export async function verifyEmail({ uid, token }) {
   const { data } = await api.post(
     "/auth/verify-email/",
-    { uid, token },
+    toFormData({ uid, token }),
     { skipAuthRefresh: true, skipAccessToken: true },
   );
-  setAccessToken(data.access);
-  bootstrapPromise = Promise.resolve(data.user);
+  applyAuthenticatedSession(data);
   return data;
 }
 
 export async function resendVerification(email) {
   const { data } = await api.post(
     "/auth/resend-verification/",
-    { email },
+    toFormData({ email }),
     { skipAuthRefresh: true, skipAccessToken: true },
   );
   return data;
@@ -208,7 +312,7 @@ export async function resendVerification(email) {
 export async function requestPasswordReset(email) {
   const { data } = await api.post(
     "/auth/password-reset/",
-    { email },
+    toFormData({ email }),
     { skipAuthRefresh: true, skipAccessToken: true },
   );
   return data;
@@ -217,12 +321,12 @@ export async function requestPasswordReset(email) {
 export async function confirmPasswordReset({ uid, token, newPassword, newPasswordConfirm }) {
   const { data } = await api.post(
     "/auth/password-reset/confirm/",
-    {
+    toFormData({
       uid,
       token,
       new_password: newPassword,
       new_password_confirm: newPasswordConfirm,
-    },
+    }),
     { skipAuthRefresh: true, skipAccessToken: true },
   );
   return data;
@@ -258,6 +362,7 @@ export async function logout() {
     await api.post("/auth/logout/", undefined, {
       skipAuthRefresh: true,
       skipAccessToken: true,
+      csrf: true,
     });
   } finally {
     clearAccessToken();

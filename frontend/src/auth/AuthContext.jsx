@@ -6,6 +6,7 @@ import {
   invalidateSessionBootstrap,
   login as loginRequest,
   logout as logoutRequest,
+  verifyAuthMfa as verifyAuthMfaRequest,
   verifyEmail as verifyEmailRequest,
 } from "../api/auth.js";
 import { clearAccessToken, setUnauthorizedHandler } from "../api/api.js";
@@ -48,13 +49,24 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const data = await loginRequest(credentials);
-    setUser(data.user);
-    if (data.user?.locale) seedLocaleFromBackend(data.user.locale);
+    if (!data?.mfa_required && data?.user) {
+      setUser(data.user);
+      if (data.user?.locale) seedLocaleFromBackend(data.user.locale);
+    }
     return data;
   }, []);
 
   const completeGoogle = useCallback(async (params) => {
     const data = await completeGoogleAuth(params);
+    if (!data?.mfa_required && data?.user) {
+      setUser(data.user);
+      if (data.user?.locale) seedLocaleFromBackend(data.user.locale);
+    }
+    return data;
+  }, []);
+
+  const verifyMfa = useCallback(async (payload) => {
+    const data = await verifyAuthMfaRequest(payload);
     setUser(data.user);
     if (data.user?.locale) seedLocaleFromBackend(data.user.locale);
     return data;
@@ -99,13 +111,14 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       login,
       completeGoogle,
+      verifyMfa,
       verifyEmail,
       refreshUser,
       replaceUser,
       clearSession,
       logout,
     }),
-    [clearSession, completeGoogle, login, logout, ready, refreshUser, replaceUser, user, verifyEmail],
+    [clearSession, completeGoogle, login, logout, ready, refreshUser, replaceUser, user, verifyEmail, verifyMfa],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

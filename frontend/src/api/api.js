@@ -4,6 +4,28 @@ let accessToken = null;
 let refreshPromise = null;
 let unauthorizedHandler = null;
 
+async function fetchCsrfToken() {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), env.apiTimeoutMs);
+  try {
+    const response = await fetch(`${env.apiBaseUrl}/auth/csrf/`, {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    const data = await parseResponse(response);
+    if (!response.ok) {
+      throw httpError(response, data, { method: "GET", path: "/auth/csrf/" });
+    }
+    const token = data?.csrf_token;
+    if (!token) throw new Error("Le backend n’a pas retourné de jeton CSRF.");
+    return token;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export function setAccessToken(token) {
   accessToken = token || null;
 }
@@ -67,6 +89,11 @@ async function rawRequest(method, path, body, config = {}) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
+  if (config.csrf) {
+    const csrfToken = await fetchCsrfToken();
+    headers.set("X-CSRFToken", csrfToken);
+  }
+
   let payload;
   if (body !== undefined && body !== null) {
     if (body instanceof FormData || body instanceof Blob || typeof body === "string") {
@@ -123,6 +150,7 @@ export async function refreshAccessToken() {
     refreshPromise = rawRequest("POST", "/auth/refresh/", undefined, {
       skipAuthRefresh: true,
       skipAccessToken: true,
+      csrf: true,
     })
       .then(({ data }) => {
         if (!data?.access) throw new Error("Le backend n'a pas retourné de nouvel access token.");
