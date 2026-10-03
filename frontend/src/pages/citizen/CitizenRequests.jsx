@@ -173,8 +173,9 @@ export default function CitizenRequests() {
     setExporting(true);setError("");
     try{
       const all=await getAllCitizenRequests({type:"procedure",ordering:"-updated_at"});
-      const {buildRequestsHtml,downloadRequestsCsv,openPrintWindow}=await import("../../utils/dataExport.js");
+      const {buildRequestsHtml,downloadRequestsCsv,downloadJson,openPrintWindow}=await import("../../utils/dataExport.js");
       if(format==="print") openPrintWindow(buildRequestsHtml(all));
+      else if(format==="json") downloadJson("nova-terra-mes-demandes.json",all);
       else downloadRequestsCsv(all,"nova-terra-mes-demandes.csv");
     }catch(err){setError(getApiErrorMessage(err,"Impossible d’exporter vos demandes."))}finally{setExporting(false)}
   }
@@ -222,12 +223,25 @@ export default function CitizenRequests() {
     <div className="portal-layout">
       <CitizenSidebar />
       <div className="portal-main">
-        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<div className="topbar-action-group"><button type="button" className="secondary-action" disabled={exporting} onClick={() => exportRequests("csv")}>{exporting?"Export…":"CSV"}</button><button type="button" className="secondary-action" disabled={exporting} onClick={() => exportRequests("print")}>Imprimer</button><button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button></div>} />
+        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button>} />
         <main className="portal-content">
           {error && !showForm ? <div className="error-card" role="alert">{error}</div> : null}
           <section className="toolbar-card">
             <label className="portal-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label={copy.search} placeholder={copy.search} /></label>
             <div className="filter-row filter-row--portal">{filters.map((item) => <button className={item === filter ? "is-active" : ""} aria-pressed={item === filter} key={item} onClick={() => setFilter(item)}>{statusLabel(item, locale)}</button>)}</div>
+          </section>
+
+          <section className="portal-card request-export-panel" aria-labelledby="request-export-title">
+            <div className="request-export-panel__copy">
+              <span className="section-label">F56 · Export</span>
+              <h3 id="request-export-title">Exporter mes demandes</h3>
+              <p className="detail-copy">Téléchargez un récapitulatif de vos démarches depuis cette page. Pour un dossier précis, ouvrez la demande puis utilisez « Exporter cette demande ».</p>
+            </div>
+            <div className="request-export-panel__actions">
+              <button type="button" className="primary-action" disabled={exporting} onClick={() => exportRequests("print")}>{exporting?"Préparation…":"Imprimer / PDF"}</button>
+              <button type="button" className="secondary-action" disabled={exporting} onClick={() => exportRequests("csv")}>CSV</button>
+              <button type="button" className="secondary-action" disabled={exporting} onClick={() => exportRequests("json")}>JSON</button>
+            </div>
           </section>
 
           <section className="portal-card">

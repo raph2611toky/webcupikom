@@ -126,9 +126,21 @@ export default function CitizenRequestDetails({params}){
           {request.attachments?.length?<div className="document-grid">{request.attachments.map((file,index)=><div className="document-row" key={file.id||index}><i>{file.type?.includes("image")?"IMG":"DOC"}</i><div><b>{file.name}</b><span>{file.caption||file.uploaderName||"Pièce jointe"}{file.size?` · ${Math.max(1,Math.round(file.size/1024))} Ko`:""}</span></div>{file.downloadUrl?<button type="button" onClick={()=>download(file)}>{copy.download}</button>:null}</div>)}</div>:<div className="empty-inline">{copy.none}</div>}
         </article>
 
+        <article className="portal-card portal-card--wide request-single-export" aria-labelledby="single-request-export-title">
+          <div>
+            <span className="section-label">Export du dossier</span>
+            <h3 id="single-request-export-title">Exporter cette demande</h3>
+            <p className="detail-copy">Conservez une copie lisible de ce dossier avec sa référence, son statut, les informations principales et son historique.</p>
+          </div>
+          <div className="request-single-export__actions">
+            <button className="primary-action" type="button" onClick={printRequest}>Imprimer / PDF</button>
+            <button className="secondary-action" type="button" onClick={exportRequestJson}>JSON</button>
+          </div>
+        </article>
+
         <article className="action-bar portal-card--wide">
           <div><b>{copy.need}</b><span>{copy.needText}</span></div>
-          <div>{canMessage?<button className="secondary-action" onClick={()=>setShowNote(true)}>{copy.addInfo}</button>:null}{canEdit?<button className="secondary-action" onClick={()=>setShowEdit(true)}>{copy.edit}</button>:null}{canCancel?<button className="text-danger" disabled={busy} onClick={cancelReport}>{copy.cancel}</button>:null}{isReport&&request.isClosed?<button className="secondary-action" disabled={busy} onClick={reopenReport}>{copy.reopen}</button>:null}<button className="secondary-action" type="button" onClick={printRequest}>Imprimer / PDF</button><button className="secondary-action" type="button" onClick={exportRequestJson}>Exporter JSON</button><button className="primary-action" onClick={()=>navigate("/citizen/notifications")}>{copy.notifications}</button></div>
+          <div>{canMessage?<button className="secondary-action" onClick={()=>setShowNote(true)}>{copy.addInfo}</button>:null}{canEdit?<button className="secondary-action" onClick={()=>setShowEdit(true)}>{copy.edit}</button>:null}{canCancel?<button className="text-danger" disabled={busy} onClick={cancelReport}>{copy.cancel}</button>:null}{isReport&&request.isClosed?<button className="secondary-action" disabled={busy} onClick={reopenReport}>{copy.reopen}</button>:null}<button className="primary-action" onClick={()=>navigate("/citizen/notifications")}>{copy.notifications}</button></div>
         </article>
       </section>
 

@@ -14,17 +14,17 @@ const LABELS = {
   fr: {
     citizen:"Espace citoyen", agent:"Espace agent", admin:"Administration", dashboard:"Tableau de bord", profile:"Mon profil",
     requests:"Mes demandes", reports:"Signalements", signalements:"Signalements", services:"Services", news:"Actualités", notifications:"Notifications", appointments:"Rendez-vous", messages:"Messages",
-    settings:"Paramètres", "supprimer-compte":"Supprimer le compte", citizens:"Citoyens", users:"Utilisateurs", api:"Flux WebCup", help:"Nous contacter",
+    settings:"Paramètres", projects:"Projets", "supprimer-compte":"Supprimer le compte", citizens:"Citoyens", users:"Utilisateurs", api:"Flux WebCup", help:"Nous contacter",
   },
   en: {
     citizen:"Citizen space", agent:"Agent space", admin:"Administration", dashboard:"Dashboard", profile:"My profile",
     requests:"My requests", reports:"Reports", signalements:"Reports", services:"Services", news:"News", notifications:"Notifications", appointments:"Appointments", messages:"Messages",
-    settings:"Settings", "supprimer-compte":"Delete account", citizens:"Citizens", users:"Users", api:"WebCup feed", help:"Contact us",
+    settings:"Settings", projects:"Projects", "supprimer-compte":"Delete account", citizens:"Citizens", users:"Users", api:"WebCup feed", help:"Contact us",
   },
   mg: {
     citizen:"Habaka mponina", agent:"Habaka mpiasan'ny tanàna", admin:"Fitantanana", dashboard:"Tabilao", profile:"Ny mombamomba ahy",
     requests:"Ny fangatahako", reports:"Tatitra", signalements:"Tatitra", services:"Sampan-draharaha", news:"Vaovao", notifications:"Fampahafantarana", appointments:"Fotoana fihaonana", messages:"Hafatra",
-    settings:"Fikirana", "supprimer-compte":"Hamafa kaonty", citizens:"Mponina", users:"Mpampiasa", api:"WebCup", help:"Hifandray aminay",
+    settings:"Fikirana", projects:"Tetikasa", "supprimer-compte":"Hamafa kaonty", citizens:"Mponina", users:"Mpampiasa", api:"WebCup", help:"Hifandray aminay",
   },
 };
 

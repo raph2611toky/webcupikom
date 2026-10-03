@@ -7,37 +7,44 @@ const GUIDES = {
   dashboard: {
     match:(path)=>path==="/citizen"||path==="/citizen/dashboard",
     action:"/citizen/services",
-    fr:{title:"Pour bien commencer",text:"Commencez par vérifier votre profil, puis ouvrez un service ou créez votre première demande.",action:"Découvrir les services"},
-    en:{title:"A quick start",text:"Check your profile first, then open a service or create your first request.",action:"Discover services"},
-    mg:{title:"Hanombohana tsara",text:"Jereo aloha ny mombamomba anao, avy eo sokafy ny sampan-draharaha iray na mamoròna fangatahana voalohany.",action:"Hijery sampan-draharaha"},
+    fr:{title:"Pour bien commencer",text:"Vérifiez votre profil, découvrez un service puis lancez votre première démarche. Trois repères suffisent pour démarrer.",action:"Découvrir les services"},
+    en:{title:"A quick start",text:"Check your profile, discover a service, then start your first request. Three simple steps are enough to begin.",action:"Discover services"},
+    mg:{title:"Hanombohana tsara",text:"Jereo ny mombamomba anao, tadiavo ny sampan-draharaha iray ary atombohy ny fangatahana voalohany.",action:"Hijery sampan-draharaha"},
   },
   reports: {
     match:(path)=>path==="/citizen/signalements",
     action:null,
-    fr:{title:"Un bon signalement = un lieu précis",text:"Choisissez d’abord le type de problème. Ajoutez ensuite la rue, le quartier ou votre position GPS, puis une description et si possible une photo.",action:""},
-    en:{title:"A good report needs a precise location",text:"Choose the problem type first. Then add the street, district or GPS position, followed by a description and a photo if possible.",action:""},
-    mg:{title:"Mila toerana mazava ny tatitra",text:"Safidio aloha ny karazana olana. Ampio ny arabe, faritra na GPS, avy eo ny fanazavana ary sary raha misy.",action:""},
+    fr:{title:"Un bon signalement = un lieu précis",text:"Choisissez le type de problème, ajoutez le lieu puis une description et, si possible, une photo.",action:""},
+    en:{title:"A good report needs a precise location",text:"Choose the problem type, add the location, then a description and a photo if possible.",action:""},
+    mg:{title:"Mila toerana mazava ny tatitra",text:"Safidio ny karazana olana, ampio ny toerana, ny fanazavana ary sary raha misy.",action:""},
   },
   requests: {
     match:(path)=>path==="/citizen/requests",
     action:null,
-    fr:{title:"Votre premier envoi",text:"Cliquez sur « Nouvelle demande », choisissez le besoin, écrivez votre message puis envoyez. Une référence apparaît immédiatement.",action:""},
-    en:{title:"Your first request",text:"Select “New request”, choose what you need, write your message and send it. A reference appears immediately.",action:""},
-    mg:{title:"Ny fangatahana voalohany",text:"Tsindrio « Fangatahana vaovao », safidio ny filànao, soraty ny hafatra ary alefaso. Hiseho avy hatrany ny laharana.",action:""},
+    fr:{title:"Votre première demande",text:"Cliquez sur « Nouvelle demande », choisissez votre besoin, décrivez-le puis envoyez. Une référence confirme immédiatement l’envoi.",action:""},
+    en:{title:"Your first request",text:"Choose “New request”, select your need, describe it and send it. A reference immediately confirms submission.",action:""},
+    mg:{title:"Ny fangatahana voalohany",text:"Tsindrio « Fangatahana vaovao », safidio ny filànao, hazavao ary alefaso. Hiseho avy hatrany ny laharana.",action:""},
   },
   services: {
     match:(path)=>path==="/citizen/services",
     action:null,
-    fr:{title:"Trouver le bon service",text:"Ouvrez une carte pour voir les horaires, coordonnées, démarches et documents requis.",action:""},
-    en:{title:"Find the right service",text:"Open a card to see opening hours, contact details, procedures and required documents.",action:""},
-    mg:{title:"Tadiavo ny sampan-draharaha mety",text:"Sokafy ny karatra mba hahitana ny ora, fifandraisana, dingana ary taratasy ilaina.",action:""},
+    fr:{title:"Trouver le bon service",text:"Utilisez la liste ou la carte pour comparer horaires, coordonnées, démarches et documents requis.",action:""},
+    en:{title:"Find the right service",text:"Use the list or map to compare opening hours, contacts, procedures and required documents.",action:""},
+    mg:{title:"Tadiavo ny sampan-draharaha mety",text:"Ampiasao ny lisitra na sarintany hijerena ora, fifandraisana, dingana ary taratasy ilaina.",action:""},
   },
   appointments: {
     match:(path)=>path==="/citizen/appointments",
     action:null,
-    fr:{title:"Choisissez un créneau sans ambiguïté",text:"Sélectionnez d’abord le service et la date. Les créneaux réservés ou indisponibles sont désactivés. Vérifiez le récapitulatif avant de confirmer.",action:""},
-    en:{title:"Choose an unambiguous time slot",text:"Select the service and date first. Booked or unavailable slots are disabled. Check the summary before confirming.",action:""},
-    mg:{title:"Safidio mazava ny fotoana",text:"Safidio aloha ny sampan-draharaha sy daty. Tsy azo tsindriana ny ora efa voatokana na tsy misy. Jereo ny famintinana alohan'ny hanamafisana.",action:""},
+    fr:{title:"Choisissez un créneau sans ambiguïté",text:"Sélectionnez le service et la date, puis vérifiez le récapitulatif avant de confirmer votre rendez-vous.",action:""},
+    en:{title:"Choose an unambiguous time slot",text:"Select the service and date, then check the summary before confirming your appointment.",action:""},
+    mg:{title:"Safidio mazava ny fotoana",text:"Safidio ny sampan-draharaha sy daty, avy eo jereo ny famintinana alohan'ny hanamafisana.",action:""},
+  },
+  projects: {
+    match:(path)=>path==="/citizen/projects"||path.startsWith("/citizen/projects/"),
+    action:"/citizen/projects",
+    fr:{title:"Participer à Nova Terra",text:"Consultez l’avancement d’un projet. Lorsqu’une consultation ou décision est ouverte, votre contribution reçoit une référence et reste consultable.",action:"Voir les projets"},
+    en:{title:"Take part in Nova Terra",text:"Review a project’s progress. When a consultation or decision is open, your contribution gets a reference and remains visible.",action:"View projects"},
+    mg:{title:"Mandraisa anjara ao Nova Terra",text:"Jereo ny fandrosoan'ny tetikasa. Raha misokatra ny fandraisana hevitra dia hahazo laharana ny fandraisanao anjara.",action:"Hijery tetikasa"},
   },
   help: {
     match:(path)=>path==="/citizen/help",
@@ -48,8 +55,15 @@ const GUIDES = {
   },
 };
 
+const GENERIC_GUIDE = {
+  action:null,
+  fr:{title:"Besoin d’un repère ?",text:"Utilisez le menu pour revenir au tableau de bord, retrouver vos demandes, services, projets et rendez-vous.",action:""},
+  en:{title:"Need a quick pointer?",text:"Use the menu to return to the dashboard or find your requests, services, projects and appointments.",action:""},
+  mg:{title:"Mila toromarika ?",text:"Ampiasao ny sakafo hiverenana amin'ny tabilao na hahitana fangatahana, serivisy, tetikasa ary fotoana.",action:""},
+};
+
 function getGuide(path) {
-  return Object.entries(GUIDES).find(([,guide])=>guide.match(path)) || null;
+  return Object.entries(GUIDES).find(([,guide])=>guide.match(path)) || ["general",GENERIC_GUIDE];
 }
 
 export default function CitizenGuide() {
@@ -59,12 +73,9 @@ export default function CitizenGuide() {
   const matched=useMemo(()=>getGuide(path),[path]);
 
   useEffect(()=>{
-    if(!matched){setVisible(false);return}
     const [key]=matched;
     setVisible(localStorage.getItem(`nova_terra_context_help_${key}`)!=="done");
   },[matched]);
-
-  if(!matched||!visible) return null;
 
   const [key,guide]=matched;
   const copy=guide[locale]||guide.fr;
@@ -74,9 +85,19 @@ export default function CitizenGuide() {
     setVisible(false);
   }
 
+  function reopen(){
+    setVisible(true);
+  }
+
   function act(){
     close();
     if(guide.action) navigate(guide.action);
+  }
+
+  if(!visible){
+    return <button className="citizen-context-guide-trigger" type="button" onClick={reopen} aria-label={locale==="en"?"Open contextual tips":locale==="mg"?"Sokafy ny toromarika":"Ouvrir les indications contextuelles"}>
+      <span aria-hidden="true">?</span><b>{locale==="en"?"Tips":locale==="mg"?"Toromarika":"Indications"}</b>
+    </button>;
   }
 
   return <aside className="citizen-context-guide" role="status" aria-live="polite">
@@ -89,6 +110,6 @@ export default function CitizenGuide() {
         <button className="guide-dismiss" type="button" onClick={close}>{locale==="en"?"Got it":locale==="mg"?"Azoko":"Compris"}</button>
       </div>
     </div>
-    <button className="citizen-context-guide__close" type="button" onClick={close} aria-label="Fermer">×</button>
+    <button className="citizen-context-guide__close" type="button" onClick={close} aria-label={locale==="en"?"Close":locale==="mg"?"Hidio":"Fermer"}>×</button>
   </aside>;
 }

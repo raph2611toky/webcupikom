@@ -945,3 +945,11 @@ html[data-contrast="high"] .primary-action *,
 html[data-contrast="high"] .topbar-cta *{
   color:#111!important;
 }
+
+/* V60 — safety: high contrast never falls back to light cards. */
+html[data-contrast="high"] .portal-main :is(.portal-card,.toolbar-card,[class$="-panel"],[class*="-panel "]){
+  background:#050505!important;
+  color:#fff!important;
+  border-color:#fff!important;
+  box-shadow:none!important;
+}

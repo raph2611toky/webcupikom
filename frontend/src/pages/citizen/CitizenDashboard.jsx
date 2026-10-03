@@ -24,6 +24,7 @@ export default function CitizenDashboard(){
   const [services,setServices]=useState([]);
   const [news,setNews]=useState([]);
   const [alerts,setAlerts]=useState([]);
+  const [showStartGuide,setShowStartGuide]=useState(()=>localStorage.getItem("nova_terra_first_steps_done")!=="done");
 
   const load = async () => {
     const [requestsData, servicesData, newsData, alertResult] = await Promise.all([
@@ -78,6 +79,18 @@ export default function CitizenDashboard(){
           </div>
           <div className="welcome-banner__orb"><i/><b>{Math.round(([user?.first_name,user?.last_name,user?.email,user?.phone_number,user?.locale].filter(Boolean).length/5)*100)}%</b><span>{copy.profile}</span></div>
         </section>
+
+        {showStartGuide?<section className="portal-card citizen-start-guide" aria-label={copy.first}>
+          <div className="citizen-start-guide__head">
+            <div><span className="section-label">{copy.first}</span><h3>{copy.welcome}</h3><p>{copy.steps}</p></div>
+            <button type="button" className="guide-dismiss" onClick={()=>{localStorage.setItem("nova_terra_first_steps_done","done");setShowStartGuide(false)}}>{copy.skip}</button>
+          </div>
+          <div className="citizen-start-guide__steps">
+            <button type="button" onClick={()=>navigate('/citizen/profile')}><i aria-hidden="true">1</i><div><strong>{copy.profileStep}</strong><span>{copy.profileText}</span></div><em aria-hidden="true">→</em></button>
+            <button type="button" onClick={()=>navigate('/citizen/services')}><i aria-hidden="true">2</i><div><strong>{copy.servicesStep}</strong><span>{copy.servicesText}</span></div><em aria-hidden="true">→</em></button>
+            <button type="button" onClick={()=>navigate('/citizen/requests')}><i aria-hidden="true">3</i><div><strong>{copy.requestStep}</strong><span>{copy.requestText}</span></div><em aria-hidden="true">→</em></button>
+          </div>
+        </section>:null}
 
         <section className="metric-grid metric-grid--3">
           <article><span>{copy.open}</span><strong>{active.length}</strong><small>{copy.track}</small></article>

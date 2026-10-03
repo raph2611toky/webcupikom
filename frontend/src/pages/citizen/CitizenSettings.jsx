@@ -36,12 +36,9 @@ export default function CitizenSettings(){
       setExportBundle(bundle);
     }catch(error){setExportError(error?.response?.data?.detail||error?.message||"Impossible de préparer l’export.")}finally{setExporting(false)}
   }
-  function allRequests(){return exportBundle?[...(exportBundle.requests||[]),...(exportBundle.reports||[])]:[]}
   async function printPersonal(){try{const u=await import("../../utils/dataExport.js");u.openPrintWindow(u.buildPersonalDataHtml(exportBundle))}catch(error){setExportError(error?.message||"Impression impossible.")}}
   async function downloadPersonalHtml(){const u=await import("../../utils/dataExport.js");u.downloadHtml("nova-terra-mes-donnees.html",u.buildPersonalDataHtml(exportBundle))}
   async function downloadPersonalJson(){const u=await import("../../utils/dataExport.js");u.downloadJson("nova-terra-mes-donnees.json",exportBundle)}
-  async function downloadAllRequestsCsv(){const u=await import("../../utils/dataExport.js");u.downloadRequestsCsv(allRequests())}
-  async function printAllRequests(){try{const u=await import("../../utils/dataExport.js");u.openPrintWindow(u.buildRequestsHtml(allRequests()))}catch(error){setExportError(error?.message||"Impression impossible.")}}
   function changeDataPreference(next){setDataPreferenceState(next);setDataModePreference(next)}
 
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
@@ -98,11 +95,9 @@ export default function CitizenSettings(){
               <button type="button" className="primary-action" onClick={printPersonal}>Imprimer / PDF</button>
               <button type="button" className="secondary-action" onClick={downloadPersonalHtml}>HTML</button>
               <button type="button" className="secondary-action" onClick={downloadPersonalJson}>JSON</button>
-              <button type="button" className="secondary-action" onClick={downloadAllRequestsCsv}>CSV demandes</button>
-              <button type="button" className="secondary-action" onClick={printAllRequests}>Récapitulatif demandes</button>
               <button type="button" className="text-action" onClick={prepareExport} disabled={exporting}>Actualiser les données</button>
             </div>
-            <p className="detail-copy">Le CSV et le récapitulatif regroupent les démarches et les signalements avec leur référence, statut, service et dates.</p>
+            <p className="detail-copy">Pour exporter vos demandes ou un dossier précis, utilisez directement la rubrique « Mes demandes ». Ici, l’export concerne l’ensemble de vos données personnelles.</p>
           </>}
         </section>
 

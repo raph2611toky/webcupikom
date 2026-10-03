@@ -47,6 +47,36 @@ const TYPE_META={
   "Information":{icon:"i",className:"type-info"},
 };
 
+
+function NotificationIcon({kind="info",size=20}){
+  const common={width:size,height:size,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"1.9",strokeLinecap:"round",strokeLinejoin:"round","aria-hidden":"true"};
+  if(kind==="mail")return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>;
+  if(kind==="unread")return <svg {...common}><path d="M5 6.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H10l-4.5 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/><path d="M8 10h8M8 13h5"/></svg>;
+  if(kind==="calendar")return <svg {...common}><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 9h16"/><path d="M8 13h3M14 13h2M8 16h2"/></svg>;
+  if(kind==="request")return <svg {...common}><path d="M12 3a4 4 0 0 1 4 4v2.5c0 1.2.35 2.38 1 3.38l1.1 1.7A1.55 1.55 0 0 1 16.8 17H7.2a1.55 1.55 0 0 1-1.3-2.42l1.1-1.7a6.2 6.2 0 0 0 1-3.38V7a4 4 0 0 1 4-4Z"/><path d="M10 20h4"/></svg>;
+  if(kind==="filter")return <svg {...common}><path d="M4 6h16M7 12h10M10 18h4"/></svg>;
+  if(kind==="service")return <svg {...common}><path d="M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5l-2.4 2.4-3-3 2.4-2.4Z"/></svg>;
+  if(kind==="appointment")return <svg {...common}><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M14 20a4 4 0 0 1 7 0"/></svg>;
+  if(kind==="report")return <svg {...common}><path d="M4 5h16v11H9l-5 4V5Z"/><path d="M8 9h8M8 12h5"/></svg>;
+  if(kind==="message")return <svg {...common}><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>;
+  return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>;
+}
+
+const FILTER_ICON={
+  "Toutes":"mail",
+  "Non lues":"unread",
+  "Démarche":"calendar",
+  "Service":"service",
+  "Rendez-vous":"appointment",
+  "Signalement":"report",
+  "Message":"message",
+  "Information":"info",
+};
+
+function filterClass(value){
+  return `filter-${String(value).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}`;
+}
+
 function metaFor(type){
   return TYPE_META[type]||TYPE_META.Information;
 }
@@ -203,22 +233,38 @@ export default function CitizenNotifications(){
     <main className="portal-content notification-center-page">
       {error?<div className="error-card" role="alert">{error}</div>:null}
 
-      <section className="notification-overview notification-overview--backend" aria-label="Résumé des notifications">
-        <div><span>Total</span><strong>{overview.total}</strong><small>{copy.backend}</small></div>
-        <div><span>{copy.unread}</span><strong>{overview.unread}</strong><small>À consulter</small></div>
-        <div><span>Rendez-vous</span><strong>{overview.appointments}</strong><small>Informations et rappels</small></div>
-        <div><span>Démarches / signalements</span><strong>{overview.requests}</strong><small>Suivi des demandes</small></div>
+      <section className="notification-overview notification-overview--backend notification-kpi-grid" aria-label="Résumé des notifications">
+        <div className="notification-kpi-card kpi-total">
+          <i className="notification-kpi-icon"><NotificationIcon kind="mail"/></i>
+          <div><span>Total</span><strong>{overview.total}</strong><small>{copy.backend}</small></div>
+        </div>
+        <div className="notification-kpi-card kpi-unread">
+          <i className="notification-kpi-icon"><NotificationIcon kind="unread"/></i>
+          <div><span>{copy.unread}</span><strong>{overview.unread}</strong><small>À consulter</small></div>
+        </div>
+        <div className="notification-kpi-card kpi-appointments">
+          <i className="notification-kpi-icon"><NotificationIcon kind="appointment"/></i>
+          <div><span>Rendez-vous</span><strong>{overview.appointments}</strong><small>Informations et rappels</small></div>
+        </div>
+        <div className="notification-kpi-card kpi-requests">
+          <i className="notification-kpi-icon"><NotificationIcon kind="request"/></i>
+          <div><span>Démarches / signalements</span><strong>{overview.requests}</strong><small>Suivi des demandes</small></div>
+        </div>
       </section>
 
-      <section className="toolbar-card notification-toolbar">
-        <div className="management-filter-row notification-filter-row">
-          {filters.map(([value,label])=><button
-            key={value}
-            type="button"
-            className={filter===value?"is-active":""}
-            aria-pressed={filter===value}
-            onClick={()=>setFilter(value)}
-          >{label}{value!=="Toutes"&&value!=="Non lues"?<small>{normalized.filter(item=>item.notificationType===value).length}</small>:null}</button>)}
+      <section className="toolbar-card notification-toolbar notification-category-card">
+        <div className="notification-category-title"><NotificationIcon kind="filter" size={17}/><strong>Catégories</strong></div>
+        <div className="management-filter-row notification-filter-row notification-filter-row--visual">
+          {filters.map(([value,label])=>{
+            const count=value==="Toutes"?normalized.length:value==="Non lues"?overview.unread:normalized.filter(item=>item.notificationType===value).length;
+            return <button
+              key={value}
+              type="button"
+              className={`${filterClass(value)} ${filter===value?"is-active":""}`}
+              aria-pressed={filter===value}
+              onClick={()=>setFilter(value)}
+            ><i aria-hidden="true"><NotificationIcon kind={FILTER_ICON[value]||"info"} size={15}/></i><span>{label}</span><small>{count}</small></button>;
+          })}
         </div>
       </section>
 
@@ -230,10 +276,10 @@ export default function CitizenNotifications(){
           {visible.map(item=><button
             key={item.id}
             type="button"
-            className={`${!item.is_read?"is-unread":""} ${String(selected?.id)===String(item.id)?"is-selected":""}`}
+            className={`${item.typeMeta.className} ${!item.is_read?"is-unread":""} ${String(selected?.id)===String(item.id)?"is-selected":""}`}
             onClick={()=>openNotification(item)}
           >
-            <i className={`notification-type-icon ${item.typeMeta.className}`} aria-hidden="true">{item.typeMeta.icon}</i>
+            <i className={`notification-type-icon ${item.typeMeta.className}`} aria-hidden="true"><NotificationIcon kind={FILTER_ICON[item.notificationType]||"info"} size={20}/></i>
             <div className="notification-main">
               <div className="notification-title-line">
                 <strong>{item.title}</strong>
@@ -243,7 +289,7 @@ export default function CitizenNotifications(){
               <div className="notification-meta">
                 <em className={`notification-type-badge ${item.typeMeta.className}`}>{item.notificationType}</em>
                 {item.eventStatus?<em className="notification-event-status">{item.eventStatus}</em>:null}
-                <span>{formatCreated(item.created_at,locale)}</span>
+                <span className="notification-date"><NotificationIcon kind="calendar" size={13}/>{formatCreated(item.created_at,locale)}</span>
               </div>
             </div>
             <span className="notification-arrow" aria-hidden="true">→</span>
@@ -260,7 +306,7 @@ export default function CitizenNotifications(){
           </div>
 
           <div className={`notification-detail-icon ${selected.typeMeta?.className||""}`} aria-hidden="true">
-            {selected.typeMeta?.icon||"i"}
+            <NotificationIcon kind={FILTER_ICON[selected.notificationType]||"info"} size={21}/>
           </div>
 
           <p className="notification-detail-message">{selected.message||"—"}</p>
