@@ -7,29 +7,25 @@ const items = [
   ["/agent", "◫", "Tableau de bord"],
   ["/agent/requests", "◎", "Demandes"],
   ["/agent/citizens", "◉", "Citoyens"],
-  ["/agent/messages", "✉", "Messages"],
+  ["/agent/news", "▤", "Publications"],
+  ["/agent/services", "◇", "Services"],
   ["/agent/api", "⌘", "Flux WebCup"],
-  ["/agent/settings", "⚙", "Paramètres"],
 ];
 
 export default function AgentSidebar() {
   const path = window.location.pathname;
   const { logout } = useAuth();
   const [leaving,setLeaving]=useState(false);
-
-  async function signOut(){
-    if(leaving)return;
-    setLeaving(true);
-    try{await logout()}finally{navigate('/login',{replace:true})}
-  }
-
+  async function signOut(){if(leaving)return;setLeaving(true);try{await logout()}finally{navigate("/",{replace:true})}}
   return <aside className="portal-sidebar portal-sidebar--agent">
-    <button className="portal-sidebar__brand" onClick={() => navigate("/agent")} aria-label="Nova Terra, tableau de bord agent">Nova<span>Terra</span></button>
+    <button className="portal-sidebar__brand" aria-label="Nova Terra, tableau de bord" onClick={() => navigate("/agent")}>Nova<span>Terra</span></button>
     <div className="portal-sidebar__role">Espace agent</div>
     <nav aria-label="Navigation de l’espace agent">{items.map(([to, icon, label]) => {
-      const active = to === "/agent" ? path === to || path === "/agent/dashboard" : path.startsWith(to);
+      const active = to === "/agent" ? path === to : path.startsWith(to);
       return <button key={to} className={active ? "is-active" : ""} aria-current={active ? "page" : undefined} onClick={() => navigate(to)}><i aria-hidden="true">{icon}</i><span>{label}</span></button>;
     })}</nav>
-    <div className="portal-sidebar__bottom"><button onClick={signOut} disabled={leaving}><i aria-hidden="true">↗</i><span>{leaving?'Déconnexion…':'Déconnexion'}</span></button></div>
+    <div className="portal-sidebar__bottom">
+      <button onClick={signOut}><i aria-hidden="true">↗</i><span>Déconnexion</span></button>
+    </div>
   </aside>;
 }

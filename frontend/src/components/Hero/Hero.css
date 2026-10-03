@@ -532,3 +532,15 @@ body {
   .kamo-logo { font-size: 2.25rem; }
   .start-button { width: 210px; min-width: 0; font-size: 1.0625rem; }
 }
+
+/* V29 — language choice visible from the first screen; approved geometry preserved */
+.hero-language-switcher {
+  position: absolute;
+  pointer-events: auto;
+  top: 5.15%;
+  right: 4.9%;
+  z-index: 60;
+}
+@media (max-width: 760px) {
+  .hero-language-switcher { top: 84px; right: 22px; }
+}

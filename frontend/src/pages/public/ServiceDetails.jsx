@@ -3,68 +3,39 @@ import PublicHeader from "../../components/ui/PublicHeader.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getService } from "../../api/services.js";
-import { getLocale } from "../../utils/i18n.js";
+import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/public-pages.css";
 
-export default function ServiceDetails({ params }) {
-  const { isAuthenticated, user } = useAuth();
+const COPY={
+  fr:{missing:"Service introuvable",back:"Retour aux services",all:"Tous les services",request:"Faire une demande",steps:"Démarches",can:"Ce que vous pouvez faire",hours:"Horaires",confirm:"À confirmer",contact:"Coordonnées",docs:"Documents nécessaires",prepare:"Préparez votre dossier"},
+  en:{missing:"Service not found",back:"Back to services",all:"All services",request:"Start a request",steps:"Procedures",can:"What you can do",hours:"Opening hours",confirm:"To confirm",contact:"Contact",docs:"Required documents",prepare:"Prepare your request"},
+  mg:{missing:"Tsy hita ny sampan-draharaha",back:"Hiverina amin'ny sampan-draharaha",all:"Sampan-draharaha rehetra",request:"Hanao fangatahana",steps:"Dingana",can:"Ireo azonao atao",hours:"Ora fiasana",confirm:"Mbola hohamafisina",contact:"Fifandraisana",docs:"Taratasy ilaina",prepare:"Omano ny fangatahanao"},
+};
+
+export default function ServiceDetails({params}){
+  const {isAuthenticated,user}=useAuth();
+  const [locale]=useLocale();
+  const copy=COPY[locale]||COPY.fr;
   const [service,setService]=useState(undefined);
-  const [error,setError]=useState("");
-  const locale=getLocale();
 
-  useEffect(()=>{
-    getService(params.slug).then(setService).catch(()=>{setService(null);setError(locale==="en"?"Service not found.":"Service introuvable.")});
-  },[params.slug,locale]);
+  useEffect(()=>{setService(undefined);getService(params.slug).then(setService).catch(()=>setService(null))},[params.slug,locale]);
 
-  function startRequest(){
-    const target=`/citizen/requests?new=1&subject=${encodeURIComponent(service?.name||"")}`;
-    if(isAuthenticated&&user?.role==="citizen")navigate(target);
-    else navigate(`/login?next=${encodeURIComponent(target)}`);
+  if(service===undefined)return null;
+  if(!service)return <div className="public-page public-page--service-detail"><PublicHeader/><main className="public-content"><div className="empty-state"><h1>{copy.missing}</h1><button className="primary-button" onClick={()=>navigate('/services')}>{copy.back}</button></div></main><Footer/></div>;
+
+  function start(){
+    const next=`/citizen/requests?new=1&subject=${encodeURIComponent(service.name)}`;
+    navigate(isAuthenticated&&user?.role==="citizen"?next:`/login?next=${encodeURIComponent(next)}`);
   }
 
-  if(service===undefined) return null;
-
-  if(!service) return <div className="public-page public-page--service-detail"><PublicHeader/><main className="public-content"><div className="empty-state"><h1>{error||"Service introuvable"}</h1><button className="primary-button" onClick={()=>navigate("/services")}>{locale==="en"?"Back to services":"Retour aux services"}</button></div></main><Footer/></div>;
-
-  return <div className="public-page public-page--service-detail">
-    <PublicHeader/>
-    <main>
-      <section className="service-detail-hero">
-        <button className="text-link" onClick={()=>navigate("/services")}>← {locale==="en"?"All services":"Tous les services"}</button>
-        <div className="service-detail-hero__icon" aria-hidden="true">{service.icon}</div>
-        <span>{service.category}</span>
-        <h1>{service.name}</h1>
-        <p>{service.description}</p>
-        <button className="primary-button" onClick={startRequest}>{locale==="en"?"Start a request":"Faire une demande"}</button>
-      </section>
-
-      <section className="service-detail-grid public-content">
-        <article className="info-panel info-panel--large">
-          <span className="panel-kicker">{locale==="en"?"PROCEDURES":"DÉMARCHES"}</span>
-          <h2>{locale==="en"?"What you can do":"Ce que vous pouvez faire"}</h2>
-          <div className="action-list">{(service.actions||[]).map((item,i)=><div key={item}><b>{String(i+1).padStart(2,"0")}</b><span>{item}</span><i aria-hidden="true">→</i></div>)}</div>
-        </article>
-
-        <article className="info-panel">
-          <span className="panel-kicker">{locale==="en"?"HOURS":"HORAIRES"}</span>
-          <h3>{service.openingHours||(locale==="en"?"To confirm":"À confirmer")}</h3>
-          <p>{service.address}</p>
-        </article>
-
-        <article className="info-panel">
-          <span className="panel-kicker">{locale==="en"?"CONTACT":"COORDONNÉES"}</span>
-          <h3>{service.phone||"—"}</h3>
-          <p>{service.email}</p>
-        </article>
-
-        <article className="info-panel info-panel--large">
-          <span className="panel-kicker">{locale==="en"?"REQUIRED DOCUMENTS":"DOCUMENTS NÉCESSAIRES"}</span>
-          <h2>{locale==="en"?"Prepare your request":"Préparez votre dossier"}</h2>
-          <ul>{(service.requiredDocuments||[]).map(item=><li key={item}>{item}</li>)}</ul>
-        </article>
-      </section>
-    </main>
-    <Footer/>
-  </div>;
+  return <div className="public-page public-page--service-detail"><PublicHeader/><main>
+    <section className="service-detail-hero"><button className="text-link" onClick={()=>navigate('/services')}>← {copy.all}</button><div className="service-detail-hero__icon" aria-hidden="true">{service.icon}</div><span>{service.category}</span><h1>{service.name}</h1><p>{service.description}</p><button className="primary-button" onClick={start}>{copy.request}</button></section>
+    <section className="service-detail-grid public-content">
+      <article className="info-panel info-panel--large"><span className="panel-kicker">{copy.steps}</span><h2>{copy.can}</h2><div className="action-list">{(service.actions||[]).map((item,i)=><div key={item}><b>{String(i+1).padStart(2,'0')}</b><span>{item}</span><i aria-hidden="true">→</i></div>)}</div></article>
+      <article className="info-panel"><span className="panel-kicker">{copy.hours}</span><h3>{service.openingHours||copy.confirm}</h3><p>{service.address}</p></article>
+      <article className="info-panel"><span className="panel-kicker">{copy.contact}</span><h3>{service.phone||"—"}</h3><p>{service.email}</p></article>
+      <article className="info-panel info-panel--large"><span className="panel-kicker">{copy.docs}</span><h2>{copy.prepare}</h2><ul>{(service.requiredDocuments||[]).map(item=><li key={item}>{item}</li>)}</ul></article>
+    </section>
+  </main><Footer/></div>;
 }

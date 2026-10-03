@@ -2,148 +2,136 @@ import { useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import { getCitizenDashboard } from "../../api/dashboards.js";
 import { getCitizenRequests } from "../../api/requests.js";
 import { getServices } from "../../api/services.js";
 import { getNews } from "../../api/news.js";
-import { getApiErrorMessage } from "../../api/auth.js";
-import { getLocale, syncLocaleFromUser, t } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import { t, useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
-function profileCompletion(user) {
-  const fields = [user?.first_name, user?.last_name, user?.email, user?.phone_number, user?.locale];
-  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
-}
+const DASH_COPY = {
+  fr:{hello:"Bonjour",space:"Espace citoyen",news:"Actualités",newRequest:"Nouvelle demande",banner:"Votre espace Nova Terra",headline:<>Votre ville,<br/>en un coup d’œil.</>,intro:"Suivez vos démarches et accédez aux services utiles sans chercher partout.",profile:"profil complété",open:"Démarches en cours",track:"À suivre",action:"Action requise",complete:"À compléter",pubs:"Publications disponibles",my:"MES DÉMARCHES",now:"À suivre maintenant",empty:"Aucune démarche en cours.",priority:"SERVICES PRIORITAIRES",quick:"Accès rapide",first:"PREMIÈRE CONNEXION",welcome:"Bienvenue sur Nova Terra",steps:"Trois repères pour commencer rapidement.",profileStep:"Compléter mon profil",profileText:"Coordonnées et langue préférée.",servicesStep:"Découvrir les services",servicesText:"Trouver le bon service municipal.",requestStep:"Commencer une démarche",requestText:"Envoyer puis suivre une demande.",skip:"Passer pour le moment"},
+  en:{hello:"Hello",space:"Citizen space",news:"News",newRequest:"New request",banner:"Your Nova Terra space",headline:<>Your city,<br/>at a glance.</>,intro:"Track your requests and access useful services without searching everywhere.",profile:"profile complete",open:"Open requests",track:"To track",action:"Action required",complete:"To complete",pubs:"Available publications",my:"MY REQUESTS",now:"Track now",empty:"No request in progress.",priority:"PRIORITY SERVICES",quick:"Quick access",first:"FIRST LOGIN",welcome:"Welcome to Nova Terra",steps:"Three quick steps to get started.",profileStep:"Complete my profile",profileText:"Contact details and preferred language.",servicesStep:"Discover services",servicesText:"Find the right city service.",requestStep:"Start a request",requestText:"Submit and track a request.",skip:"Skip for now"},
+  mg:{hello:"Manao ahoana",space:"Habaka mponina",news:"Vaovao",newRequest:"Fangatahana vaovao",banner:"Ny habakao ao Nova Terra",headline:<>Ny tanànanao,<br/>amin'ny fijery iray.</>,intro:"Araho ny fangatahanao ary midira haingana amin'ny sampan-draharaha ilainao.",profile:"mombamomba feno",open:"Fangatahana mandeha",track:"Araho",action:"Mila hetsika",complete:"Hofenoina",pubs:"Vaovao azo jerena",my:"NY FANGATAHAKO",now:"Araho izao",empty:"Tsy misy fangatahana mandeha.",priority:"SAMPAN-DRAHARAHA LAHARAM-PAHAMEHANA",quick:"Fidirana haingana",first:"FIDIRANA VOALOHANY",welcome:"Tongasoa eto Nova Terra",steps:"Dingana telo hanombohana haingana.",profileStep:"Fenoy ny mombamomba ahy",profileText:"Fifandraisana sy fiteny tiana ampiasaina.",servicesStep:"Hijery sampan-draharaha",servicesText:"Tadiavo ny sampan-draharaha mety.",requestStep:"Hanomboka fangatahana",requestText:"Alefaso ary araho ny fangatahana.",skip:"Handalo aloha"},
+};
 
 export default function CitizenDashboard(){
   const { user } = useAuth();
-  const [summary,setSummary]=useState(null);
-  const [requests,setRequests]=useState([]);
+  const [locale] = useLocale();
+  const copy = DASH_COPY[locale] || DASH_COPY.fr;
+  const [citizenRequests,setCitizenRequests]=useState([]);
   const [services,setServices]=useState([]);
   const [news,setNews]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [error,setError]=useState("");
-  const [onboarding,setOnboarding]=useState(false);
-  const locale = user?.locale || getLocale();
+  const [showOnboarding,setShowOnboarding]=useState(false);
+
+  const load = async () => {
+    const [requestsData, servicesData, newsData] = await Promise.all([
+      getCitizenRequests(),
+      getServices(),
+      getNews(),
+    ]);
+    setCitizenRequests(requestsData);
+    setServices(servicesData);
+    setNews(newsData);
+  };
 
   useEffect(()=>{
-    syncLocaleFromUser(user);
-    const key = user?.id ? `nova_terra_onboarding_${user.id}` : "nova_terra_onboarding_guest";
-    setOnboarding(window.localStorage.getItem(key) !== "done");
+    load();
+    const refresh=()=>load();
+    window.addEventListener("terra-news-updated",refresh);
+    window.addEventListener("terra-services-updated",refresh);
+    return ()=>{
+      window.removeEventListener("terra-news-updated",refresh);
+      window.removeEventListener("terra-services-updated",refresh);
+    };
+  },[locale]);
 
-    let mounted=true;
-    Promise.allSettled([getCitizenDashboard(),getCitizenRequests(),getServices(),getNews()]).then((results)=>{
-      if(!mounted)return;
-      const [dashboardResult, requestsResult, servicesResult, newsResult] = results;
-      if(dashboardResult.status==="fulfilled") setSummary(dashboardResult.value);
-      if(requestsResult.status==="fulfilled") setRequests(requestsResult.value);
-      if(servicesResult.status==="fulfilled") setServices(servicesResult.value);
-      if(newsResult.status==="fulfilled") setNews(newsResult.value);
+  useEffect(()=>{
+    if(!user?.id)return;
+    const key=`nova_terra_onboarding_${user.id}`;
+    setShowOnboarding(localStorage.getItem(key)!=="done");
+  },[user?.id]);
 
-      const rejected = results.find((item)=>item.status==="rejected");
-      if(rejected && requestsResult.status==="rejected" && servicesResult.status==="rejected"){
-        setError(getApiErrorMessage(rejected.reason,"Impossible de charger votre espace citoyen."));
-      }
-      setLoading(false);
-    });
-    return()=>{mounted=false};
-  },[user?.id,user?.locale]);
-
-  const active=useMemo(()=>requests.filter(r=>r.statusCode!=="completed"),[requests]);
-  const actionRequired=useMemo(()=>requests.filter(r=>r.statusCode==="action_required").length,[requests]);
-  const stats=summary?.requests||{};
-  const inProgress=stats.pending!==undefined
-    ? (stats.pending||0)+(stats.submitted||0)+(stats.in_progress||0)
-    : active.length;
-  const completion=profileCompletion(user);
-
-  function finishOnboarding(to){
-    const key = user?.id ? `nova_terra_onboarding_${user.id}` : "nova_terra_onboarding_guest";
-    window.localStorage.setItem(key,"done");
-    setOnboarding(false);
-    if(to) navigate(to);
+  function closeOnboarding(nextPath){
+    if(user?.id)localStorage.setItem(`nova_terra_onboarding_${user.id}`,"done");
+    setShowOnboarding(false);
+    if(nextPath)navigate(nextPath);
   }
+
+  const active=useMemo(()=>citizenRequests.filter(r=>r.status!=="Terminée"),[citizenRequests]);
+  const actions=useMemo(()=>citizenRequests.filter(r=>r.status==="Action requise").length,[citizenRequests]);
 
   return <div className="portal-layout">
     <CitizenSidebar/>
     <div className="portal-main">
       <PortalTopbar
-        eyebrow={t("citizenSpace",locale)}
-        title={`${locale==="en"?"Hello":"Bonjour"} ${user?.first_name || user?.display_name || "Citoyen"} 👋`}
+        eyebrow={copy.space}
+        title={`${copy.hello} ${user?.first_name || user?.display_name || (locale==="mg"?"Mponina":locale==="en"?"Citizen":"Citoyen")} 👋`}
         actions={<>
-          <button className="topbar-ghost" onClick={()=>navigate("/citizen/news")}>{t("news",locale)}</button>
-          <button className="topbar-cta" onClick={()=>navigate("/citizen/requests?new=1")}>{t("newRequest",locale)}</button>
+          <button className="topbar-ghost" onClick={()=>navigate("/citizen/news")}>{copy.news}</button>
+          <button className="topbar-cta" onClick={()=>navigate('/citizen/requests?new=1&type=signalement')}>{copy.newRequest}</button>
         </>}
       />
-
       <main className="portal-content citizen-dashboard">
-        {loading?<div className="loading-card">{t("loading",locale)}</div>:null}
-        {error?<div className="error-card">{error}</div>:null}
+        <section className="welcome-banner welcome-banner--compact">
+          <div>
+            <span>{copy.banner}</span>
+            <h2>{copy.headline}</h2>
+            <p>{copy.intro}</p>
+          </div>
+          <div className="welcome-banner__orb"><i/><b>{Math.round(([user?.first_name,user?.last_name,user?.email,user?.phone_number,user?.locale].filter(Boolean).length/5)*100)}%</b><span>{copy.profile}</span></div>
+        </section>
 
-        {!loading?<>
-          <section className="welcome-banner welcome-banner--compact">
-            <div>
-              <span>{locale==="en"?"YOUR NOVA TERRA SPACE":"VOTRE ESPACE NOVA TERRA"}</span>
-              <h2>{locale==="en"?<>Your city,<br/>at a glance.</>:<>Votre ville,<br/>en un coup d’œil.</>}</h2>
-              <p>{locale==="en"?"Track your requests and access useful services without searching everywhere.":"Suivez vos démarches et accédez aux services utiles sans chercher partout."}</p>
+        <section className="metric-grid metric-grid--3">
+          <article><span>{copy.open}</span><strong>{active.length}</strong><small>{copy.track}</small></article>
+          <article><span>{copy.action}</span><strong>{actions}</strong><small>{copy.complete}</small></article>
+          <article><span>{copy.news}</span><strong>{news.length}</strong><small>{copy.pubs}</small></article>
+        </section>
+
+        <section className="portal-grid portal-grid--2 citizen-dashboard__main">
+          <article className="portal-card">
+            <div className="portal-card__head">
+              <div><span className="section-label">{copy.my}</span><h3>{copy.now}</h3></div>
+              <button onClick={()=>navigate('/citizen/requests')}>{t("allRequests", locale)} →</button>
             </div>
-            <div className="welcome-banner__orb"><i/><b>{completion}%</b><span>{locale==="en"?"PROFILE COMPLETE":"PROFIL COMPLÉTÉ"}</span></div>
-          </section>
+            <div className="request-stack">
+              {active.slice(0,3).map(r=><button key={r.id} onClick={()=>navigate(`/citizen/requests/${r.id}`)}>
+                <div><span>{r.id}</span><strong>{r.title}</strong><small>{r.service} · {r.updated}</small></div>
+                <em className={`status-pill status-${r.status.replaceAll(' ','-').toLowerCase()}`}>{r.status}</em>
+              </button>)}
+              {!active.length ? <div className="dashboard-empty">{copy.empty}</div> : null}
+            </div>
+          </article>
 
-          <section className="metric-grid metric-grid--3">
-            <article><span>{t("currentRequests",locale)}</span><strong>{inProgress}</strong><small>{locale==="en"?"To track":"À suivre"}</small></article>
-            <article><span>{t("actionRequired",locale)}</span><strong>{stats.action_required ?? actionRequired}</strong><small>{locale==="en"?"To complete":"À compléter"}</small></article>
-            <article><span>{t("latestNews",locale)}</span><strong>{news.length}</strong><small>{locale==="en"?"Available publications":"Publications disponibles"}</small></article>
-          </section>
-
-          <section className="portal-grid portal-grid--2 citizen-dashboard__main">
-            <article className="portal-card">
-              <div className="portal-card__head">
-                <div><span className="section-label">{t("requests",locale)}</span><h3>{t("followNow",locale)}</h3></div>
-                <button onClick={()=>navigate("/citizen/requests")}>{t("allRequests",locale)} →</button>
-              </div>
-              <div className="request-stack">
-                {active.slice(0,3).map(r=><button key={r.id} onClick={()=>navigate(`/citizen/requests/${encodeURIComponent(r.id)}`)}>
-                  <div><span>{r.id}</span><strong>{r.title}</strong><small>{r.service} · {r.updated}</small></div>
-                  <em className={`status-pill status-${String(r.status).replaceAll(" ","-").toLowerCase()}`}>{r.status}</em>
-                </button>)}
-                {!active.length?<div className="dashboard-empty">{locale==="en"?"No request in progress.":"Aucune démarche en cours."}</div>:null}
-              </div>
-            </article>
-
-            <article className="portal-card">
-              <div className="portal-card__head">
-                <div><span className="section-label">{t("quickServices",locale)}</span><h3>{locale==="en"?"Direct access":"Accès direct"}</h3></div>
-                <button onClick={()=>navigate("/citizen/services")}>{t("allServices",locale)} →</button>
-              </div>
-              <div className="quick-services quick-services--compact">
-                {services.slice(0,6).map(s=><button key={s.slug} onClick={()=>navigate(`/services/${s.slug}`)}>
-                  <i aria-hidden="true">{s.icon}</i><span>{s.name}</span>
-                </button>)}
-              </div>
-            </article>
-          </section>
-        </>:null}
+          <article className="portal-card">
+            <div className="portal-card__head">
+              <div><span className="section-label">{copy.priority}</span><h3>{copy.quick}</h3></div>
+              <button onClick={()=>navigate('/citizen/services')}>{t("allServices", locale)} →</button>
+            </div>
+            <div className="quick-services quick-services--compact">
+              {services.slice(0,6).map(s=><button key={s.slug} onClick={()=>navigate(`/services/${s.slug}`)}>
+                <i>{s.icon}</i><span>{s.name}</span>
+              </button>)}
+            </div>
+          </article>
+        </section>
       </main>
 
-      {onboarding ? <div className="onboarding-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+      {showOnboarding ? <div className="onboarding-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
         <section className="onboarding-card">
-          <button className="modal-close" type="button" aria-label="Fermer" onClick={()=>finishOnboarding()}>×</button>
-          <span className="section-label">{locale==="en"?"FIRST LOGIN":"PREMIÈRE CONNEXION"}</span>
-          <h2 id="onboarding-title">{locale==="en"?"Welcome to Nova Terra":"Bienvenue sur Nova Terra"}</h2>
-          <p>{locale==="en"?"Three quick steps to get started.":"Trois étapes simples pour prendre rapidement vos repères."}</p>
-
+          <button className="modal-close" type="button" aria-label="Fermer" onClick={()=>closeOnboarding()}>×</button>
+          <span className="section-label">{copy.first}</span>
+          <h2 id="onboarding-title">{copy.welcome}</h2>
+          <p>{copy.steps}</p>
           <div className="onboarding-steps">
-            <button type="button" onClick={()=>finishOnboarding("/citizen/profile")}><i>01</i><div><b>{locale==="en"?"Complete your profile":"Compléter votre profil"}</b><span>{locale==="en"?"Add your contact details and preferred language.":"Ajoutez vos coordonnées et votre langue préférée."}</span></div><em>→</em></button>
-            <button type="button" onClick={()=>finishOnboarding("/citizen/services")}><i>02</i><div><b>{locale==="en"?"Find a city service":"Trouver un service"}</b><span>{locale==="en"?"Discover the municipal services available to you.":"Découvrez les services municipaux disponibles."}</span></div><em>→</em></button>
-            <button type="button" onClick={()=>finishOnboarding("/citizen/requests?new=1")}><i>03</i><div><b>{locale==="en"?"Start a request":"Commencer une démarche"}</b><span>{locale==="en"?"Submit a request and track its progress.":"Envoyez une demande et suivez son avancement."}</span></div><em>→</em></button>
+            <button type="button" onClick={()=>closeOnboarding("/citizen/profile")}><i>01</i><div><b>{copy.profileStep}</b><span>{copy.profileText}</span></div><em>→</em></button>
+            <button type="button" onClick={()=>closeOnboarding("/citizen/services")}><i>02</i><div><b>{copy.servicesStep}</b><span>{copy.servicesText}</span></div><em>→</em></button>
+            <button type="button" onClick={()=>closeOnboarding("/citizen/requests?new=1")}><i>03</i><div><b>{copy.requestStep}</b><span>{copy.requestText}</span></div><em>→</em></button>
           </div>
-
-          <button className="onboarding-skip" type="button" onClick={()=>finishOnboarding()}>{locale==="en"?"Skip for now":"Passer pour le moment"}</button>
+          <button className="onboarding-skip" type="button" onClick={()=>closeOnboarding()}>{copy.skip}</button>
         </section>
-      </div>:null}
+      </div> : null}
     </div>
   </div>;
 }

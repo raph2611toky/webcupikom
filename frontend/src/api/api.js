@@ -34,11 +34,10 @@ function buildUrl(path, params) {
       }
     });
   }
-
   return url.toString();
 }
 
-function makeHttpError(response, data, config) {
+function httpError(response, data, config) {
   const error = new Error(
     (data && typeof data === "object" && (data.detail || data.message)) ||
     `HTTP ${response.status}`,
@@ -61,7 +60,6 @@ async function parseResponse(response) {
 async function rawRequest(method, path, body, config = {}) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), env.apiTimeoutMs);
-
   const headers = new Headers(config.headers || {});
   headers.set("Accept", "application/json");
 
@@ -80,7 +78,6 @@ async function rawRequest(method, path, body, config = {}) {
   }
 
   const requestConfig = {
-    ...config,
     method,
     headers,
     credentials: "include",
@@ -88,19 +85,12 @@ async function rawRequest(method, path, body, config = {}) {
     body: method === "GET" || method === "HEAD" ? undefined : payload,
   };
 
-  delete requestConfig.params;
-  delete requestConfig.skipAccessToken;
-  delete requestConfig.skipAuthRefresh;
-  delete requestConfig._authRetry;
-  delete requestConfig.data;
-
   try {
     const response = await fetch(buildUrl(path, config.params), requestConfig);
     const data = await parseResponse(response);
-
     if (response.ok) return { data, status: response.status, headers: response.headers };
 
-    const error = makeHttpError(response, data, { ...config, method, path });
+    const error = httpError(response, data, { ...config, method, path });
 
     if (
       response.status === 401 &&
@@ -115,7 +105,6 @@ async function rawRequest(method, path, body, config = {}) {
         throw refreshError;
       }
     }
-
     throw error;
   } catch (error) {
     if (error?.name === "AbortError") {
@@ -136,9 +125,7 @@ export async function refreshAccessToken() {
       skipAccessToken: true,
     })
       .then(({ data }) => {
-        if (!data?.access) {
-          throw new Error("Le backend n'a pas retourné de nouvel access token.");
-        }
+        if (!data?.access) throw new Error("Le backend n'a pas retourné de nouvel access token.");
         setAccessToken(data.access);
         return data.access;
       })
@@ -146,32 +133,15 @@ export async function refreshAccessToken() {
         clearAccessToken();
         throw error;
       })
-      .finally(() => {
-        refreshPromise = null;
-      });
+      .finally(() => { refreshPromise = null; });
   }
-
   return refreshPromise;
 }
 
 export const api = {
-  get(path, config = {}) {
-    return rawRequest("GET", path, undefined, config);
-  },
-
-  post(path, body, config = {}) {
-    return rawRequest("POST", path, body, config);
-  },
-
-  patch(path, body, config = {}) {
-    return rawRequest("PATCH", path, body, config);
-  },
-
-  put(path, body, config = {}) {
-    return rawRequest("PUT", path, body, config);
-  },
-
-  delete(path, config = {}) {
-    return rawRequest("DELETE", path, config.data, config);
-  },
+  get(path, config = {}) { return rawRequest("GET", path, undefined, config); },
+  post(path, body, config = {}) { return rawRequest("POST", path, body, config); },
+  patch(path, body, config = {}) { return rawRequest("PATCH", path, body, config); },
+  put(path, body, config = {}) { return rawRequest("PUT", path, body, config); },
+  delete(path, config = {}) { return rawRequest("DELETE", path, config.data, config); },
 };

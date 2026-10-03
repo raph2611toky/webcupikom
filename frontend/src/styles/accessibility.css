@@ -7,11 +7,11 @@ html {
 }
 
 html[data-font-size="large"] {
-  font-size: 112.5%;
+  font-size: 106.25%;
 }
 
 html[data-font-size="xlarge"] {
-  font-size: 125%;
+  font-size: 112.5%;
 }
 
 .skip-link {
@@ -299,22 +299,24 @@ html[data-font-size="xlarge"] .citizen-news-grid {
   font-weight: 800;
 }
 
-/* F23 — contraste renforcé, distinct d'un simple mode sombre. */
+
+/* F23 — contraste renforcé cohérent avec le design Nova Terra.
+   Ce n'est PAS un thème noir/jaune : on augmente surtout la lisibilité,
+   les bordures, les liens et le focus sans casser l'identité visuelle. */
 html[data-contrast="high"] {
-  --tn-bg: #000000;
-  --tn-card: #000000;
-  --tn-text: #ffffff;
-  --tn-muted: #ffffff;
-  --tn-line: #ffffff;
-  --tn-purple: #ffff00;
-  --tn-purple-soft: #000000;
-  --kamo-bg: #000000;
-  --kamo-black: #000000;
-  --kamo-purple: #ffff00;
-  --kamo-purple-2: #ffff00;
-  --kamo-purple-3: #ffff00;
-  --kamo-purple-line: #ffff00;
-  color-scheme: dark;
+  --tn-bg: #ffffff;
+  --tn-card: #ffffff;
+  --tn-text: #000000;
+  --tn-muted: #202020;
+  --tn-line: #111111;
+  --tn-purple: #4c00b8;
+  --tn-purple-soft: #f0e7ff;
+  --kamo-bg: #ffffff;
+  --kamo-purple: #4c00b8;
+  --kamo-purple-2: #4c00b8;
+  --kamo-purple-3: #4c00b8;
+  --kamo-purple-line: #4c00b8;
+  color-scheme: light;
 }
 
 html[data-contrast="high"] body,
@@ -324,20 +326,21 @@ html[data-contrast="high"] .portal-layout,
 html[data-contrast="high"] .portal-main,
 html[data-contrast="high"] .portal-content,
 html[data-contrast="high"] .auth-screen,
-html[data-contrast="high"] .auth-form-panel,
-html[data-contrast="high"] .kamo-hero,
-html[data-contrast="high"] .features-section,
-html[data-contrast="high"] .mission-section {
-  background: #000000 !important;
-  color: #ffffff !important;
+html[data-contrast="high"] .auth-form-panel {
+  background: #ffffff !important;
+  color: #000000 !important;
 }
 
+html[data-contrast="high"] body * {
+  text-shadow: none !important;
+}
+
+/* Surfaces claires : vraies bordures visibles, texte noir, aucune zone blanche illisible. */
 html[data-contrast="high"] .public-header,
 html[data-contrast="high"] .portal-topbar,
 html[data-contrast="high"] .portal-card,
 html[data-contrast="high"] .toolbar-card,
 html[data-contrast="high"] .portal-modal,
-html[data-contrast="high"] .portal-help,
 html[data-contrast="high"] .a11y-panel,
 html[data-contrast="high"] .news-visual-card,
 html[data-contrast="high"] .citizen-news-card,
@@ -345,107 +348,185 @@ html[data-contrast="high"] .article-visual,
 html[data-contrast="high"] .citizen-news-detail,
 html[data-contrast="high"] .contact-form-panel,
 html[data-contrast="high"] .smart-request-panel,
-html[data-contrast="high"] .auth-modern-field input,
-html[data-contrast="high"] .auth-modern-field select,
-html[data-contrast="high"] .auth-phone-field,
-html[data-contrast="high"] .auth-input-with-action {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border-color: #ffffff !important;
+html[data-contrast="high"] .metric-grid > article,
+html[data-contrast="high"] .quick-services button,
+html[data-contrast="high"] .request-stack > button,
+html[data-contrast="high"] .notification-list > button,
+html[data-contrast="high"] .toggle-line,
+html[data-contrast="high"] .setting-line,
+html[data-contrast="high"] .agent-queue button,
+html[data-contrast="high"] .activity-feed > div,
+html[data-contrast="high"] .citizen-service-grid article,
+html[data-contrast="high"] .service-card,
+html[data-contrast="high"] .info-panel,
+html[data-contrast="high"] .management-row,
+html[data-contrast="high"] .profile-hero,
+html[data-contrast="high"] .request-studio-grid--extras,
+html[data-contrast="high"] .management-image-upload,
+html[data-contrast="high"] .management-news-thumb {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #111111 !important;
   box-shadow: none !important;
 }
 
-html[data-contrast="high"] .portal-sidebar {
-  background: #000000 !important;
-  border-right: 2px solid #ffffff !important;
-}
-
-html[data-contrast="high"] body * {
-  text-shadow: none !important;
-}
-
-html[data-contrast="high"] p,
-html[data-contrast="high"] small,
-html[data-contrast="high"] label,
-html[data-contrast="high"] span,
-html[data-contrast="high"] h1,
-html[data-contrast="high"] h2,
-html[data-contrast="high"] h3,
-html[data-contrast="high"] h4,
-html[data-contrast="high"] strong,
-html[data-contrast="high"] td,
-html[data-contrast="high"] th {
+/* Les zones volontairement sombres restent sombres, mais avec un contraste propre. */
+html[data-contrast="high"] .portal-sidebar,
+html[data-contrast="high"] .welcome-banner,
+html[data-contrast="high"] .terra-footer,
+html[data-contrast="high"] .features-stage,
+html[data-contrast="high"] .auth-visual {
+  background: #090909 !important;
   color: #ffffff !important;
-}
-
-html[data-contrast="high"] a,
-html[data-contrast="high"] .text-link,
-html[data-contrast="high"] .back-link,
-html[data-contrast="high"] .portal-card__head button,
-html[data-contrast="high"] .news-read-link {
-  color: #ffff00 !important;
-  text-decoration: underline !important;
-  text-underline-offset: .18em;
-}
-
-html[data-contrast="high"] button,
-html[data-contrast="high"] input,
-html[data-contrast="high"] textarea,
-html[data-contrast="high"] select {
   border-color: #ffffff !important;
 }
 
+html[data-contrast="high"] .portal-sidebar *,
+html[data-contrast="high"] .welcome-banner *,
+html[data-contrast="high"] .terra-footer *,
+html[data-contrast="high"] .auth-visual * {
+  color: #ffffff;
+}
+
+html[data-contrast="high"] .portal-sidebar nav button,
+html[data-contrast="high"] .portal-sidebar__bottom button {
+  color: #ffffff !important;
+}
+
+html[data-contrast="high"] .portal-sidebar nav button.is-active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+html[data-contrast="high"] .portal-sidebar nav button.is-active * {
+  color: #000000 !important;
+}
+
+/* Texte secondaire : plus de gris trop clair. */
+html[data-contrast="high"] .portal-main p,
+html[data-contrast="high"] .portal-main small,
+html[data-contrast="high"] .portal-main label,
+html[data-contrast="high"] .portal-main td,
+html[data-contrast="high"] .portal-main th,
+html[data-contrast="high"] .public-page p,
+html[data-contrast="high"] .public-page small,
+html[data-contrast="high"] .public-page label,
+html[data-contrast="high"] .auth-form-panel p,
+html[data-contrast="high"] .auth-form-panel label {
+  color: #111111 !important;
+  opacity: 1 !important;
+}
+
+/* Formulaires */
 html[data-contrast="high"] input,
 html[data-contrast="high"] textarea,
 html[data-contrast="high"] select {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border-width: 2px !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #111111 !important;
+  box-shadow: none !important;
 }
 
 html[data-contrast="high"] input::placeholder,
 html[data-contrast="high"] textarea::placeholder {
-  color: #dddddd !important;
+  color: #444444 !important;
   opacity: 1;
 }
 
+/* Liens et actions */
+html[data-contrast="high"] a,
+html[data-contrast="high"] .text-link,
+html[data-contrast="high"] .back-link,
+html[data-contrast="high"] .portal-card__head button,
+html[data-contrast="high"] .news-read-link,
+html[data-contrast="high"] .setting-line > button {
+  color: #3b008f !important;
+  text-decoration: underline !important;
+  text-underline-offset: .18em;
+}
+
 html[data-contrast="high"] .primary-action,
+html[data-contrast="high"] .primary-button,
 html[data-contrast="high"] .topbar-cta,
 html[data-contrast="high"] .public-header__cta,
 html[data-contrast="high"] .auth-primary-button,
 html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"],
 html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"] {
-  background: #ffff00 !important;
-  color: #000000 !important;
-  border: 2px solid #ffff00 !important;
+  background: #4c00b8 !important;
+  color: #ffffff !important;
+  border: 2px solid #22005c !important;
   box-shadow: none !important;
 }
 
+html[data-contrast="high"] .primary-action *,
+html[data-contrast="high"] .primary-button *,
+html[data-contrast="high"] .topbar-cta *,
+html[data-contrast="high"] .public-header__cta *,
+html[data-contrast="high"] .auth-primary-button * {
+  color: #ffffff !important;
+}
+
 html[data-contrast="high"] .secondary-action,
+html[data-contrast="high"] .secondary-button,
 html[data-contrast="high"] .topbar-ghost,
 html[data-contrast="high"] .filter-row button,
 html[data-contrast="high"] .accessible-table__action,
 html[data-contrast="high"] .a11y-trigger,
 html[data-contrast="high"] .a11y-size-buttons button,
-html[data-contrast="high"] .a11y-contrast-button {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border: 2px solid #ffffff !important;
+html[data-contrast="high"] .a11y-contrast-button,
+html[data-contrast="high"] .auth-google-modern {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #111111 !important;
 }
 
+html[data-contrast="high"] .filter-row button.is-active,
+html[data-contrast="high"] .management-filter-row button.is-active,
+html[data-contrast="high"] .request-studio-types button.is-active,
+html[data-contrast="high"] .smart-request-types button.is-active {
+  background: #4c00b8 !important;
+  color: #ffffff !important;
+  border-color: #22005c !important;
+}
+
+html[data-contrast="high"] .filter-row button.is-active *,
+html[data-contrast="high"] .management-filter-row button.is-active *,
+html[data-contrast="high"] .request-studio-types button.is-active *,
+html[data-contrast="high"] .smart-request-types button.is-active * {
+  color: #ffffff !important;
+}
+
+/* Statuts : texte + bordure, jamais la couleur seule. */
 html[data-contrast="high"] .status-pill {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border: 2px solid #ffffff !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #111111 !important;
 }
 
+/* Tableaux et listes : séparateurs renforcés. */
+html[data-contrast="high"] .accessible-table th,
+html[data-contrast="high"] .accessible-table td,
+html[data-contrast="high"] .request-stack > button,
+html[data-contrast="high"] .notification-list > button,
+html[data-contrast="high"] .agent-queue button,
+html[data-contrast="high"] .detail-list > div,
+html[data-contrast="high"] .account-facts > div {
+  border-color: #111111 !important;
+}
+
+html[data-contrast="high"] .accessible-table tbody tr:hover {
+  background: #f1e8ff !important;
+}
+
+/* Focus très visible sans changer toute la palette en jaune/noir. */
 html[data-contrast="high"] :focus-visible {
-  outline: 4px solid #ffff00 !important;
+  outline: 4px solid #4c00b8 !important;
   outline-offset: 3px !important;
 }
 
 html[data-contrast="high"] .skip-link {
-  background: #ffff00;
+  background: #ffffff;
   color: #000000;
   border-color: #000000;
 }
@@ -470,217 +551,4 @@ html[data-contrast="high"] .skip-link {
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
-}
-
-
-/* Couverture des surfaces qui utilisaient encore des couleurs codées en dur. */
-html[data-contrast="high"] .features-stage,
-html[data-contrast="high"] .feature-card,
-html[data-contrast="high"] .terra-mission,
-html[data-contrast="high"] .terra-mission__card,
-html[data-contrast="high"] .terra-footer,
-html[data-contrast="high"] .welcome-banner,
-html[data-contrast="high"] .metric-grid > article,
-html[data-contrast="high"] .quick-services button,
-html[data-contrast="high"] .request-studio-types button,
-html[data-contrast="high"] .management-row,
-html[data-contrast="high"] .profile-hero,
-html[data-contrast="high"] .notification-row,
-html[data-contrast="high"] .info-panel,
-html[data-contrast="high"] .service-card {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border-color: #ffffff !important;
-  box-shadow: none !important;
-}
-
-html[data-contrast="high"] .primary-action *,
-html[data-contrast="high"] .topbar-cta *,
-html[data-contrast="high"] .public-header__cta *,
-html[data-contrast="high"] .auth-primary-button *,
-html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"] *,
-html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"] * {
-  color: #000000 !important;
-}
-
-html[data-contrast="high"] .filter-row button.is-active,
-html[data-contrast="high"] .management-filter-row button.is-active {
-  background: #ffff00 !important;
-  color: #000000 !important;
-  border-color: #ffff00 !important;
-}
-
-html[data-contrast="high"] .filter-row button.is-active *,
-html[data-contrast="high"] .management-filter-row button.is-active * {
-  color: #000000 !important;
-}
-
-
-/* ==========================================================================
-   V26 — correction contraste renforcé
-   Les sous-surfaces qui restaient blanches (listes, lignes, formulaires)
-   héritent maintenant réellement du thème à contraste élevé.
-   ========================================================================== */
-
-html[data-contrast="high"] .request-stack > button,
-html[data-contrast="high"] .mini-news button,
-html[data-contrast="high"] .notice,
-html[data-contrast="high"] .profile-hero,
-html[data-contrast="high"] .profile-form-grid input,
-html[data-contrast="high"] .notification-list > button,
-html[data-contrast="high"] .toggle-line,
-html[data-contrast="high"] .setting-line,
-html[data-contrast="high"] .agent-queue button,
-html[data-contrast="high"] .webcup-snapshot > div,
-html[data-contrast="high"] .activity-feed > div,
-html[data-contrast="high"] .citizen-service-grid article,
-html[data-contrast="high"] .public-form input,
-html[data-contrast="high"] .public-form select,
-html[data-contrast="high"] .public-form textarea,
-html[data-contrast="high"] .secondary-button,
-html[data-contrast="high"] .service-card,
-html[data-contrast="high"] .info-panel,
-html[data-contrast="high"] .action-list > div,
-html[data-contrast="high"] .news-card,
-html[data-contrast="high"] .news-card > button,
-html[data-contrast="high"] .article-body blockquote,
-html[data-contrast="high"] .smart-request-types button,
-html[data-contrast="high"] .smart-request-types i,
-html[data-contrast="high"] .smart-request-evidence,
-html[data-contrast="high"] .smart-request-location > button,
-html[data-contrast="high"] .smart-request-attachment > button,
-html[data-contrast="high"] .smart-request-attachment > span,
-html[data-contrast="high"] .smart-request-suggestion,
-html[data-contrast="high"] .smart-request-suggestion > div > i,
-html[data-contrast="high"] .request-studio-types button,
-html[data-contrast="high"] .request-studio-grid input,
-html[data-contrast="high"] .request-studio-grid select,
-html[data-contrast="high"] .request-studio-grid textarea,
-html[data-contrast="high"] .request-studio-grid--extras,
-html[data-contrast="high"] .management-image-upload,
-html[data-contrast="high"] .management-news-thumb,
-html[data-contrast="high"] .management-form-grid input,
-html[data-contrast="high"] .management-form-grid select,
-html[data-contrast="high"] .management-form-grid textarea,
-html[data-contrast="high"] .citizen-news-card > div,
-html[data-contrast="high"] .citizen-news-detail__content {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border-color: #ffffff !important;
-  box-shadow: none !important;
-}
-
-/* Les séparateurs des listes restent visibles sur fond noir. */
-html[data-contrast="high"] .request-stack > button,
-html[data-contrast="high"] .mini-news button,
-html[data-contrast="high"] .notification-list > button,
-html[data-contrast="high"] .toggle-line,
-html[data-contrast="high"] .setting-line,
-html[data-contrast="high"] .agent-queue button,
-html[data-contrast="high"] .activity-feed > div,
-html[data-contrast="high"] .account-facts > div,
-html[data-contrast="high"] .detail-list > div,
-html[data-contrast="high"] .action-list > div {
-  border-color: #ffffff !important;
-}
-
-/* Icônes : jaune sur noir pour rester identifiables. */
-html[data-contrast="high"] .quick-services button i,
-html[data-contrast="high"] .citizen-service-grid i,
-html[data-contrast="high"] .service-card__icon,
-html[data-contrast="high"] .smart-request-types i,
-html[data-contrast="high"] .request-studio-types i,
-html[data-contrast="high"] .management-badge,
-html[data-contrast="high"] .service-admin-icon {
-  background: #000000 !important;
-  color: #ffff00 !important;
-  border: 2px solid #ffff00 !important;
-}
-
-/* Texte secondaire : blanc, sans gris trop faible. */
-html[data-contrast="high"] .request-stack > button > div > span,
-html[data-contrast="high"] .request-stack > button small,
-html[data-contrast="high"] .mini-news button small,
-html[data-contrast="high"] .notice span,
-html[data-contrast="high"] .agent-queue button small,
-html[data-contrast="high"] .activity-feed span,
-html[data-contrast="high"] .metric-grid article > span,
-html[data-contrast="high"] .metric-grid article > small,
-html[data-contrast="high"] .citizen-service-grid p,
-html[data-contrast="high"] .service-card p {
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* Liens / actions textuelles : jaune. */
-html[data-contrast="high"] .citizen-service-grid button,
-html[data-contrast="high"] .service-card button,
-html[data-contrast="high"] .setting-line > button,
-html[data-contrast="high"] .smart-request-extra-toggle,
-html[data-contrast="high"] .request-studio-extra-toggle {
-  color: #ffff00 !important;
-  background: #000000 !important;
-}
-
-/* Les états sélectionnés restent jaunes avec texte noir. */
-html[data-contrast="high"] .portal-sidebar nav button.is-active,
-html[data-contrast="high"] .smart-request-types button.is-active,
-html[data-contrast="high"] .request-studio-types button.is-active,
-html[data-contrast="high"] .filter-row button.is-active,
-html[data-contrast="high"] .management-filter-row button.is-active {
-  background: #ffff00 !important;
-  color: #000000 !important;
-  border-color: #ffff00 !important;
-}
-
-html[data-contrast="high"] .portal-sidebar nav button.is-active *,
-html[data-contrast="high"] .smart-request-types button.is-active *,
-html[data-contrast="high"] .request-studio-types button.is-active *,
-html[data-contrast="high"] .filter-row button.is-active *,
-html[data-contrast="high"] .management-filter-row button.is-active * {
-  color: #000000 !important;
-}
-
-/* Sur le dashboard citoyen, la liste des démarches ne doit jamais produire
-   une grande zone blanche lorsque le contraste renforcé est activé. */
-html[data-contrast="high"] .request-stack {
-  background: #000000 !important;
-}
-
-/* Les lignes de tableau restent noires et lisibles. */
-html[data-contrast="high"] .accessible-table,
-html[data-contrast="high"] .accessible-table table,
-html[data-contrast="high"] .accessible-table thead,
-html[data-contrast="high"] .accessible-table tbody,
-html[data-contrast="high"] .accessible-table tr,
-html[data-contrast="high"] .portal-table,
-html[data-contrast="high"] .portal-table__head,
-html[data-contrast="high"] .portal-table__row {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border-color: #ffffff !important;
-}
-
-/* Réappliquer en dernier les boutons d'action jaunes afin qu'aucun sélecteur
-   de surface générique ne les transforme en noir. */
-html[data-contrast="high"] .primary-action,
-html[data-contrast="high"] .topbar-cta,
-html[data-contrast="high"] .public-header__cta,
-html[data-contrast="high"] .auth-primary-button,
-html[data-contrast="high"] .primary-button,
-html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"],
-html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"] {
-  background: #ffff00 !important;
-  color: #000000 !important;
-  border-color: #ffff00 !important;
-}
-
-html[data-contrast="high"] .primary-action *,
-html[data-contrast="high"] .topbar-cta *,
-html[data-contrast="high"] .public-header__cta *,
-html[data-contrast="high"] .auth-primary-button *,
-html[data-contrast="high"] .primary-button *,
-html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"] *,
-html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"] * {
-  color: #000000 !important;
 }

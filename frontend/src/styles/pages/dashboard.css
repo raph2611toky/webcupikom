@@ -208,3 +208,184 @@
   .citizen-news-card__image>span{font-size:0.625rem}.citizen-news-card .news-meta span{font-size:0.625rem}.citizen-news-card .news-meta time{font-size:0.6875rem}
   .citizen-news-card h3{font-size:1.125rem}.citizen-news-card p{font-size:0.75rem}.citizen-news-card .news-read-link{font-size:0.75rem}
 }
+
+
+/* V28 — Nous contacter, dans le langage visuel V26 */
+.citizen-contact-layout {
+  align-items: stretch;
+}
+.citizen-contact-copy h2 {
+  margin: .45rem 0 .7rem;
+  font-family: var(--kamo-display-font);
+  font-size: clamp(1.55rem, 2vw, 2.15rem);
+  line-height: 1.05;
+  letter-spacing: -.045em;
+}
+.citizen-contact-copy > p {
+  margin: 0;
+  color: #746d7a;
+  font-size: .8125rem;
+  line-height: 1.55;
+}
+.citizen-contact-points {
+  display: grid;
+  gap: .65rem;
+  margin-top: 1.2rem;
+}
+.citizen-contact-points > div {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  align-items: center;
+  gap: .65rem;
+  padding: .7rem 0;
+  border-top: 1px solid #eee9f1;
+}
+.citizen-contact-points i {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: .6rem;
+  background: #efe7ff;
+  color: var(--tn-purple);
+  font-style: normal;
+  font-size: .6875rem;
+  font-weight: 900;
+}
+.citizen-contact-points span {
+  font-size: .8125rem;
+  color: #4f4756;
+}
+.citizen-contact-form {
+  display: grid;
+  gap: .8rem;
+}
+.citizen-contact-form h3 {
+  margin: .35rem 0 0;
+  font-size: 1.25rem;
+}
+.citizen-contact-form label {
+  display: grid;
+  gap: .35rem;
+}
+.citizen-contact-form label > span {
+  font-size: .75rem;
+  font-weight: 800;
+  color: #4f4756;
+}
+.citizen-contact-form input,
+.citizen-contact-form select,
+.citizen-contact-form textarea {
+  width: 100%;
+  border: 1px solid #e1dbe5;
+  border-radius: .65rem;
+  background: #fff;
+  padding: .7rem .75rem;
+  color: #211a28;
+  font: inherit;
+  font-size: .8125rem;
+}
+.citizen-contact-form textarea { resize: vertical; }
+.citizen-contact-destination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  padding: .7rem .8rem;
+  border-radius: .7rem;
+  background: #f8f5fb;
+}
+.citizen-contact-destination span { color: #7b7281; font-size: .6875rem; }
+.citizen-contact-destination b { font-size: .8125rem; }
+
+@media(max-width:900px){
+  .citizen-contact-layout { grid-template-columns: 1fr; }
+}
+
+
+/* V28 — onboarding première connexion, compact et cohérent avec le design V26 */
+.onboarding-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 720;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(14, 9, 19, .48);
+  backdrop-filter: blur(6px);
+}
+.onboarding-card {
+  position: relative;
+  width: min(38rem, calc(100vw - 2rem));
+  border: 1px solid #e8e2ec;
+  border-radius: 1.25rem;
+  background: #fff;
+  padding: 1.4rem;
+  box-shadow: 0 1.6rem 5rem rgba(24, 12, 34, .22);
+}
+.onboarding-card h2 {
+  margin: .35rem 0 .35rem;
+  font-family: var(--kamo-display-font);
+  font-size: clamp(1.55rem, 2.2vw, 2.05rem);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+}
+.onboarding-card > p {
+  margin: 0;
+  color: #746c7b;
+  font-size: .8125rem;
+}
+.onboarding-steps {
+  display: grid;
+  gap: .55rem;
+  margin: 1rem 0 .7rem;
+}
+.onboarding-steps > button {
+  width: 100%;
+  min-height: 3.8rem;
+  display: grid;
+  grid-template-columns: 2.25rem 1fr auto;
+  gap: .7rem;
+  align-items: center;
+  padding: .7rem .8rem;
+  border: 1px solid #e8e2ec;
+  border-radius: .85rem;
+  background: #fbf9fd;
+  color: #211a28;
+  text-align: left;
+}
+.onboarding-steps > button:hover {
+  border-color: var(--tn-purple);
+  background: #f6f0ff;
+}
+.onboarding-steps i {
+  width: 2.15rem;
+  height: 2.15rem;
+  display: grid;
+  place-items: center;
+  border-radius: .65rem;
+  background: #eee6ff;
+  color: var(--tn-purple);
+  font-size: .6875rem;
+  font-style: normal;
+  font-weight: 900;
+}
+.onboarding-steps div { display: grid; gap: .15rem; }
+.onboarding-steps b { font-size: .8125rem; }
+.onboarding-steps span { color: #7b7281; font-size: .6875rem; line-height: 1.35; }
+.onboarding-steps em { color: var(--tn-purple); font-size: 1.1rem; font-style: normal; }
+.onboarding-skip {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #6f6677;
+  padding: .45rem;
+  font-size: .75rem;
+  font-weight: 800;
+}
+html[data-contrast="high"] .onboarding-card,
+html[data-contrast="high"] .onboarding-steps > button {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #111 !important;
+}

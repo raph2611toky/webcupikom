@@ -16,7 +16,6 @@ export default function AgentServices(){
         <div className="management-row__main"><div className="service-admin-icon">{item.icon}</div><div><span>{item.category}</span><h3>{item.name}</h3><p>{item.shortDescription}</p></div></div>
         <div className="management-row__actions"><button className="secondary-action" onClick={()=>navigate(`/services/${item.slug}`)}>Consulter →</button></div>
       </article>)}
-      <div className="dashboard-empty">La gestion du catalogue est réservée à l’administration dans l’API actuelle.</div>
     </section></main>
   </div></div>;
 }
