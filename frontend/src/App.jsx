@@ -301,6 +301,15 @@ export default function App() {
         </div>
 
         <div className="a11y-setting">
+          <span className="a11y-setting__label">Espacement des caractères</span>
+          <div className="a11y-spacing-buttons" role="group" aria-label="Espacement des caractères">
+            <button type="button" aria-pressed={a11y.characterSpacing==="normal"} onClick={()=>updateAccessibility({characterSpacing:"normal"})}>Normal</button>
+            <button type="button" aria-pressed={a11y.characterSpacing==="wide"} onClick={()=>updateAccessibility({characterSpacing:"wide"})}>+ Espacé</button>
+            <button type="button" aria-pressed={a11y.characterSpacing==="xwide"} onClick={()=>updateAccessibility({characterSpacing:"xwide"})}>++ Espacé</button>
+          </div>
+        </div>
+
+        <div className="a11y-setting">
           <span className="a11y-setting__label">Contraste</span>
           <button className="a11y-contrast-button" type="button" aria-pressed={a11y.contrast==="high"} onClick={()=>updateAccessibility({contrast:a11y.contrast==="high"?"normal":"high"})}>
             <span>Contraste renforcé</span><strong>{a11y.contrast==="high"?"Activé":"Désactivé"}</strong>

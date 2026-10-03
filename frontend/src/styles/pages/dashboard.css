@@ -6360,3 +6360,258 @@ html[data-contrast="high"] .services-view-switch button.is-active *{color:#000!i
   .services-category-filters{grid-column:auto;grid-row:auto}
   .services-view-switch{width:100%}
 }
+
+
+/* ==========================================================================
+   V46 — MFA facultatif dans Paramètres
+   ========================================================================== */
+.setting-line--mfa {
+  align-items:center;
+  gap:14px;
+}
+
+.setting-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:7px;
+}
+
+.setting-actions button {
+  min-height:34px;
+  border:1px solid var(--tn-line, #ddd7e3);
+  border-radius:9px;
+  background:var(--tn-card, #fff);
+  color:var(--tn-text, #241d29);
+  padding:0 10px;
+  font:inherit;
+  font-size:.66rem;
+  font-weight:850;
+}
+
+.setting-actions button:hover:not(:disabled) {
+  border-color:var(--tn-purple, #6600fc);
+  color:var(--tn-purple, #6600fc);
+}
+
+.setting-actions .setting-action-danger {
+  color:var(--tn-red, #a42b35);
+  border-color:color-mix(in srgb, var(--tn-red, #a42b35) 30%, var(--tn-line, #ddd7e3));
+}
+
+.portal-modal--mfa {
+  width:min(520px,calc(100vw - 28px));
+  max-height:min(82dvh,680px);
+  overflow:auto;
+}
+
+.mfa-qr-panel {
+  display:grid;
+  grid-template-columns:150px minmax(0,1fr);
+  align-items:center;
+  gap:16px;
+  padding:14px;
+  border:1px solid var(--tn-line, #e5dfea);
+  border-radius:13px;
+  background:var(--tn-bg, #faf8fc);
+}
+
+.mfa-qr-panel img {
+  width:150px;
+  height:150px;
+  object-fit:contain;
+  border-radius:10px;
+  background:#fff;
+  padding:6px;
+}
+
+.mfa-qr-panel > div {
+  min-width:0;
+  display:grid;
+  gap:7px;
+}
+
+.mfa-qr-panel span,
+.mfa-qr-panel small {
+  color:var(--tn-muted, #756d7b);
+  font-size:.65rem;
+}
+
+.mfa-qr-panel code {
+  display:block;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  padding:9px 10px;
+  border-radius:9px;
+  background:var(--tn-card, #fff);
+  color:var(--tn-text, #241d29);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.7rem;
+}
+
+.mfa-google-proof,
+.mfa-relogin-note {
+  padding:10px 12px;
+  border:1px solid var(--tn-line, #ddd7e3);
+  border-radius:10px;
+  background:var(--tn-bg, #f8f6fa);
+  color:var(--tn-muted, #6d6573);
+  font-size:.68rem;
+  line-height:1.5;
+}
+
+.mfa-google-proof {
+  border-color:color-mix(in srgb, var(--tn-green, #2f7b4c) 30%, var(--tn-line, #ddd7e3));
+  color:var(--tn-green, #2f7b4c);
+}
+
+.mfa-recovery-codes {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  padding:12px;
+  border:1px solid var(--tn-line, #ddd7e3);
+  border-radius:11px;
+  background:var(--tn-bg, #f8f6fa);
+}
+
+.mfa-recovery-codes code {
+  display:block;
+  padding:9px 10px;
+  border:1px solid var(--tn-line, #e1dbe5);
+  border-radius:8px;
+  background:var(--tn-card, #fff);
+  color:var(--tn-text, #241d29);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.7rem;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+
+.mfa-modal-actions {
+  display:grid;
+  grid-template-columns:1fr 1.2fr;
+  gap:8px;
+}
+
+html[data-contrast="high"] .setting-actions button,
+html[data-contrast="high"] .mfa-qr-panel,
+html[data-contrast="high"] .mfa-google-proof,
+html[data-contrast="high"] .mfa-relogin-note,
+html[data-contrast="high"] .mfa-recovery-codes,
+html[data-contrast="high"] .mfa-recovery-codes code,
+html[data-contrast="high"] .mfa-qr-panel code {
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}
+
+html[data-contrast="high"] .mfa-qr-panel img {
+  background:#fff!important;
+  border:2px solid var(--hc-yellow, #f2d34b)!important;
+}
+
+html[data-contrast="high"] .mfa-google-proof {
+  color:var(--hc-yellow, #f2d34b)!important;
+  border-color:var(--hc-yellow, #f2d34b)!important;
+}
+
+html[data-contrast="high"] .setting-actions .setting-action-danger {
+  color:#fff!important;
+}
+
+@media(max-width:620px) {
+  .setting-line--mfa {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .setting-actions {
+    justify-content:stretch;
+  }
+
+  .setting-actions > button {
+    flex:1;
+  }
+
+  .mfa-qr-panel {
+    grid-template-columns:1fr;
+    justify-items:center;
+  }
+
+  .mfa-qr-panel > div {
+    width:100%;
+  }
+
+  .mfa-recovery-codes {
+    grid-template-columns:1fr;
+  }
+
+  .mfa-modal-actions {
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* V46 — MFA verification inside account deletion */
+.delete-account-mfa {
+  display:grid;
+  gap:10px;
+  padding:12px;
+  border:1px solid var(--tn-line, #ddd7e3);
+  border-radius:11px;
+  background:var(--tn-bg, #f8f6fa);
+}
+
+.delete-account-mfa > div {
+  display:grid;
+  gap:3px;
+}
+
+.delete-account-mfa > div b {
+  font-size:.73rem;
+  color:var(--tn-text, #241d29);
+}
+
+.delete-account-mfa > div span {
+  font-size:.65rem;
+  line-height:1.45;
+  color:var(--tn-muted, #756d7b);
+}
+
+.delete-account-mfa label {
+  display:grid;
+  gap:6px;
+}
+
+.delete-account-mfa label > span {
+  font-size:.68rem;
+  font-weight:800;
+  color:var(--tn-text, #241d29);
+}
+
+.delete-account-form select {
+  width:100%;
+  min-height:46px;
+  border:1px solid #ded7e3;
+  border-radius:10px;
+  background:#fff;
+  padding:0 13px;
+  color:#211a27;
+  font:inherit;
+  font-size:.82rem;
+}
+
+html[data-contrast="high"] .delete-account-mfa,
+html[data-contrast="high"] .delete-account-form select {
+  background:#000!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+}
+
+html[data-contrast="high"] .delete-account-mfa > div b,
+html[data-contrast="high"] .delete-account-mfa > div span,
+html[data-contrast="high"] .delete-account-mfa label > span {
+  color:#fff!important;
+}

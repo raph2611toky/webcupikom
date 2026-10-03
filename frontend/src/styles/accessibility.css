@@ -82,7 +82,10 @@ html[data-font-size="xlarge"] {
 }
 
 .a11y-panel {
-  width: min(21rem, calc(100vw - 2rem));
+  width: min(23rem, calc(100vw - 2rem));
+  max-height: min(78vh, 38rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1rem;
   border: 1px solid #e3dde8;
   border-radius: 1rem;
@@ -143,7 +146,19 @@ html[data-font-size="xlarge"] {
   gap: .45rem;
 }
 
+.a11y-spacing-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .45rem;
+}
+
+.a11y-spacing-buttons button {
+  padding-inline: .45rem;
+  line-height: 1.25;
+}
+
 .a11y-size-buttons button,
+.a11y-spacing-buttons button,
 .a11y-contrast-button,
 .a11y-reset {
   min-height: 2.5rem;
@@ -156,6 +171,7 @@ html[data-font-size="xlarge"] {
 }
 
 .a11y-size-buttons button[aria-pressed="true"],
+.a11y-spacing-buttons button[aria-pressed="true"],
 .a11y-contrast-button[aria-pressed="true"] {
   border-color: #6600fc;
   background: #efe7ff;
@@ -299,6 +315,49 @@ html[data-font-size="xlarge"] .citizen-news-grid {
   font-weight: 800;
 }
 
+
+
+
+/* F24+ — Espacement des caractères.
+   Appliqué globalement sans modifier les tailles ni les dimensions fixes. */
+html[data-character-spacing="normal"] {
+  --a11y-character-spacing: normal;
+}
+
+html[data-character-spacing="wide"] {
+  --a11y-character-spacing: .04em;
+}
+
+html[data-character-spacing="xwide"] {
+  --a11y-character-spacing: .08em;
+}
+
+html[data-character-spacing="wide"] body :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,b,small,label,a,button,input,textarea,select,option,li,td,th,code
+),
+html[data-character-spacing="xwide"] body :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,b,small,label,a,button,input,textarea,select,option,li,td,th,code
+) {
+  letter-spacing: var(--a11y-character-spacing) !important;
+}
+
+/* Les champs et boutons peuvent grandir au lieu de couper le texte espacé. */
+html[data-character-spacing="wide"] button,
+html[data-character-spacing="xwide"] button,
+html[data-character-spacing="wide"] input,
+html[data-character-spacing="xwide"] input,
+html[data-character-spacing="wide"] select,
+html[data-character-spacing="xwide"] select {
+  min-width: 0;
+  white-space: normal;
+}
+
+html[data-character-spacing="wide"] .portal-content,
+html[data-character-spacing="xwide"] .portal-content,
+html[data-character-spacing="wide"] .auth-screen,
+html[data-character-spacing="xwide"] .auth-screen {
+  overflow-wrap: anywhere;
+}
 
 /* F23 — contraste renforcé jaune / noir.
    Retour au mode haute visibilité historique de Nova Terra. */
@@ -469,6 +528,7 @@ html[data-contrast="high"] .topbar-cta,
 html[data-contrast="high"] .public-header__cta,
 html[data-contrast="high"] .auth-primary-button,
 html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"],
+html[data-contrast="high"] .a11y-spacing-buttons button[aria-pressed="true"],
 html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"],
 html[data-contrast="high"] .filter-row button.is-active,
 html[data-contrast="high"] .management-filter-row button.is-active,
@@ -505,6 +565,7 @@ html[data-contrast="high"] .management-filter-row button,
 html[data-contrast="high"] .accessible-table__action,
 html[data-contrast="high"] .a11y-trigger,
 html[data-contrast="high"] .a11y-size-buttons button,
+html[data-contrast="high"] .a11y-spacing-buttons button,
 html[data-contrast="high"] .a11y-contrast-button,
 html[data-contrast="high"] .a11y-reset,
 html[data-contrast="high"] .auth-google-modern,
@@ -873,6 +934,7 @@ html[data-contrast="high"] textarea::placeholder{
 html[data-contrast="high"] .primary-action,
 html[data-contrast="high"] .topbar-cta,
 html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"],
+html[data-contrast="high"] .a11y-spacing-buttons button[aria-pressed="true"],
 html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"]{
   background:var(--tn-purple)!important;
   color:#111!important;

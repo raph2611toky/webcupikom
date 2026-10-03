@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { clearGoogleFlow, getGoogleFlow, getApiErrorMessage } from "../../api/auth.js";
+import { clearGoogleFlow, getGoogleFlow, getApiErrorMessage, storeAccountGoogleProof } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { isPathAllowedForRole, navigate, roleHome } from "../../utils/navigation.js";
 import "../auth.css";
@@ -22,6 +22,15 @@ export default function GoogleCallbackPage() {
       return undefined;
     }
 
+    const sensitivePurpose = ["mfa-setup", "mfa-disable", "mfa-recovery", "set-password", "change-email", "delete-account"].includes(flow?.purpose);
+    if (sensitivePurpose) {
+      storeAccountGoogleProof({ purpose: flow.purpose, code, state });
+      const target = flow?.returnTo || "/citizen/settings";
+      clearGoogleFlow();
+      navigate(target, { replace: true });
+      return undefined;
+    }
+
     completeGoogle({ code, state })
       .then((data) => {
         if (!mounted) return;
@@ -30,29 +39,6 @@ export default function GoogleCallbackPage() {
           const next = flow?.returnTo ? `&next=${encodeURIComponent(flow.returnTo)}` : "";
           clearGoogleFlow();
           navigate(`/login?mfa=1${next}`, { replace: true });
-          return;
-        }
-
-        if (flow?.purpose === "delete-account") {
-          clearGoogleFlow();
-          const sameAccount =
-            flow.expectedUserId === null ||
-            String(flow.expectedUserId) === String(data.user?.id);
-
-          if (!sameAccount) {
-            navigate("/citizen/supprimer-compte?google_error=account_mismatch", { replace: true });
-            return;
-          }
-
-          window.sessionStorage.setItem(
-            "nova_terra_google_delete_verified",
-            JSON.stringify({
-              userId: data.user?.id,
-              verifiedAt: Date.now(),
-            }),
-          );
-
-          navigate(flow.returnTo || "/citizen/supprimer-compte", { replace: true });
           return;
         }
 

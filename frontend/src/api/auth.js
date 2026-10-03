@@ -4,6 +4,7 @@ const GOOGLE_REMEMBER_KEY = "nova_terra_google_remember";
 const GOOGLE_FLOW_KEY = "nova_terra_google_flow";
 const REGISTRATION_CONTEXT_KEY = "nova_terra_registration_context";
 const MFA_CONTEXT_KEY = "nova_terra_pending_mfa";
+const ACCOUNT_GOOGLE_PROOF_KEY = "nova_terra_account_google_proof";
 let bootstrapPromise = null;
 
 function rememberFromSession() {
@@ -245,6 +246,35 @@ export function getGoogleFlow() {
 
 export function clearGoogleFlow() {
   window.sessionStorage.removeItem(GOOGLE_FLOW_KEY);
+}
+
+
+
+export function storeAccountGoogleProof({ purpose, code, state }) {
+  window.sessionStorage.setItem(
+    ACCOUNT_GOOGLE_PROOF_KEY,
+    JSON.stringify({ purpose, code, state, createdAt: Date.now() }),
+  );
+}
+
+export function getAccountGoogleProof(maxAgeMs = 5 * 60 * 1000) {
+  const raw = window.sessionStorage.getItem(ACCOUNT_GOOGLE_PROOF_KEY);
+  if (!raw) return null;
+  try {
+    const proof = JSON.parse(raw);
+    if (!proof?.code || !proof?.state || Date.now() - Number(proof.createdAt || 0) > maxAgeMs) {
+      window.sessionStorage.removeItem(ACCOUNT_GOOGLE_PROOF_KEY);
+      return null;
+    }
+    return proof;
+  } catch {
+    window.sessionStorage.removeItem(ACCOUNT_GOOGLE_PROOF_KEY);
+    return null;
+  }
+}
+
+export function clearAccountGoogleProof() {
+  window.sessionStorage.removeItem(ACCOUNT_GOOGLE_PROOF_KEY);
 }
 
 export async function completeGoogleAuth({ code, state }) {
