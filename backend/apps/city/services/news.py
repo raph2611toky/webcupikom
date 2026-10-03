@@ -21,9 +21,10 @@ def ordered_news(queryset):
 
 
 def deliver_news(article_id, limit=500):
-    """One bounded transaction per article; cursor and notices commit together.
+    """Diffuse un lot de publication de façon atomique et reprenable.
 
-    No external email is sent here. The existing email worker drains the outbox.
+    Les alertes/publications importantes tentent aussi un envoi email après
+    commit ; la commande périodique reprend les emails futurs ou échoués.
     """
     limit = min(max(int(limit), 1), 2000)
     with transaction.atomic():
@@ -38,22 +39,39 @@ def deliver_news(article_id, limit=500):
             for district in article.target_districts:
                 areas |= Q(district__iexact=district)
             users = users.filter(areas)
-        ids = list(users.order_by('pk').values_list('pk', flat=True)[:limit])
+        # Lire un élément supplémentaire permet de savoir si une autre passe est
+        # réellement nécessaire. Avec exactement ``limit`` habitants, l'ancien
+        # code laissait la diffusion artificiellement incomplète jusqu'au cron.
+        fetched_ids = list(users.order_by('pk').values_list('pk', flat=True)[:limit + 1])
+        has_more = len(fetched_ids) > limit
+        ids = fetched_ids[:limit]
+        notification_code = f'news:{article.pk}'
+        important = article.is_important or article.publication_type == 'alert'
         for user_id in ids:
             CitizenNotification.objects.get_or_create(user_id=user_id, related_news=article, defaults={
                 'sender_id': article.author_id, 'scope': 'targeted' if article.target_districts else 'global',
                 'kind': CitizenNotification.Kind.NEWS, 'title': article.title,
                 'message': article.excerpt or article.instructions[:1000] or 'Nouvelle publication municipale disponible.',
-                'action_label': 'Consulter les consignes' if article.publication_type == 'alert' else 'Lire la publication',
-                'action_url': f'/news/{article.slug}', 'notification_code': f'news:{article.pk}',
+                'action_label': article.action_label or ('Consulter les consignes' if article.publication_type == 'alert' else 'Lire la publication'),
+                'action_url': article.action_url or f'/news/{article.slug}', 'notification_code': notification_code,
                 'visible_from': article.published_at,
-                'is_important': article.is_important or article.publication_type == 'alert',
+                'is_important': important,
             })
         if ids:
             article.delivery_cursor = ids[-1]
-        if len(ids) < limit:
+        if not has_more:
             article.delivery_completed_at = timezone.now()
         article.save(update_fields=['delivery_cursor', 'delivery_started_at', 'delivery_completed_at'])
+
+        # Les alertes et publications importantes doivent déclencher l'email
+        # dès que leur lot de notifications est commité. Le worker/cron reste
+        # le filet de rattrapage pour les publications futures et les échecs SMTP.
+        if ids and important:
+            def dispatch_email_batch():
+                from .notifications import dispatch_due_notification_emails
+                dispatch_due_notification_emails(notification_code=notification_code, limit=limit)
+            transaction.on_commit(dispatch_email_batch, robust=True)
+
         return len(ids)
 
 

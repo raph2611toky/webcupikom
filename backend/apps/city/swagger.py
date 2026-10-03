@@ -23,6 +23,7 @@ from .serializers import (
     CitizenNotificationSerializer,
     CitizenPreferenceSerializer,
     CitizenRequestSerializer,
+    SimilarCitizenRequestResponseSerializer,
     ContactMessageSerializer,
     StaffAuditEventSerializer,
 )
@@ -144,6 +145,10 @@ REQUEST_AGENT_LIST_PARAMETERS = [
     query_string("incident_category", "Catégorie d'incident"),
     query_string("search", "Référence, titre, description, citoyen ou service"),
     openapi.Parameter(
+        "duplicate", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, required=False,
+        description="true : uniquement les signalements déjà marqués comme doublons ; false : les autres.",
+    ),
+    openapi.Parameter(
         "awaiting_handling", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, required=False,
         description="true : demandes envoyées/à traiter qui n'ont pas encore été prises en charge.",
     ),
@@ -165,6 +170,43 @@ class AgentRequestPageSerializer(serializers.Serializer):
     next = serializers.CharField(allow_null=True)
     previous = serializers.CharField(allow_null=True)
     results = AgentCitizenRequestSerializer(many=True)
+
+
+REQUEST_SIMILAR_PARAMETERS = [
+    openapi.Parameter(
+        "limit", openapi.IN_QUERY, type=openapi.TYPE_INTEGER, required=False,
+        description="Nombre maximum de suggestions (1 à 20, défaut 8).",
+    ),
+    openapi.Parameter(
+        "min_score", openapi.IN_QUERY, type=openapi.TYPE_NUMBER, required=False,
+        description="Seuil minimal de similarité entre 0.20 et 0.95 (défaut 0.42).",
+    ),
+]
+
+agent_request_similar_schema = swagger_auto_schema(
+    tags=["Agent - Demandes"],
+    operation_id="agent_request_similar",
+    operation_summary="Détecter les signalements similaires (F75)",
+    operation_description=(
+        "Retourne des suggestions explicables (texte, catégorie, service, quartier, proximité). "
+        "Aucun doublon n'est créé automatiquement : l'agent confirme ensuite via PATCH duplicate_of."
+    ),
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_SIMILAR_PARAMETERS,
+    responses={200: SimilarCitizenRequestResponseSerializer()},
+)
+
+admin_request_similar_schema = swagger_auto_schema(
+    tags=["Administration - Demandes"],
+    operation_id="admin_request_similar",
+    operation_summary="Détecter les signalements similaires (F75)",
+    operation_description=(
+        "Même détection que l'espace agent. Le marquage comme doublon reste une décision humaine via PATCH duplicate_of."
+    ),
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_SIMILAR_PARAMETERS,
+    responses={200: SimilarCitizenRequestResponseSerializer()},
+)
 
 
 REQUEST_EVENT_PARAMETERS = [

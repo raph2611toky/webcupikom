@@ -64,6 +64,7 @@ from .serializers import (
     ServiceAvailabilityUpdateSerializer,
     NewsArticleSerializer,
     NotificationCreateSerializer,
+    SimilarCitizenRequestResponseSerializer,
     StaffAuditEventSerializer,
     WebCupRequestSnapshotSerializer,
 )
@@ -78,6 +79,7 @@ from .swagger import (
     admin_request_event_post_schema,
     admin_request_list_schema,
     admin_request_patch_schema,
+    admin_request_similar_schema,
     admin_service_delete_schema,
     admin_service_patch_schema,
     admin_service_post_schema,
@@ -93,6 +95,7 @@ from .swagger import (
     agent_request_event_post_schema,
     agent_request_list_schema,
     agent_request_patch_schema,
+    agent_request_similar_schema,
     citizen_notification_patch_schema,
     citizen_notification_read_all_schema,
     citizen_appointment_patch_schema,
@@ -108,6 +111,7 @@ from .services.audit import record_staff_audit
 from .report_api import ReportMutationMixin, ReportPagination, filter_local_date_range, filter_requests
 from .report_swagger import report_list_schema
 from .services.reports import attachment_transaction, CLOSED, event as report_event, notify_citizen as notify_report_citizen
+from .services.request_similarity import find_similar_requests
 from .services.webcup import WebCupUpstreamError, get_webcup_requests
 
 
@@ -1349,6 +1353,7 @@ class AgentRequestListView(generics.ListAPIView):
         request_type = self.request.query_params.get("type")
         incident_category = self.request.query_params.get("incident_category")
         search = self.request.query_params.get("search")
+        duplicate = (self.request.query_params.get("duplicate") or "").strip().lower()
         if request_status:
             queryset = queryset.filter(status=request_status)
         if service:
@@ -1375,6 +1380,12 @@ class AgentRequestListView(generics.ListAPIView):
                 | Q(citizen__last_name__icontains=search)
                 | Q(service__name__icontains=search)
             )
+        if duplicate in {"1", "true", "yes"}:
+            queryset = queryset.filter(duplicate_of__isnull=False)
+        elif duplicate in {"0", "false", "no"}:
+            queryset = queryset.filter(duplicate_of__isnull=True)
+        elif duplicate:
+            raise ValidationError({"duplicate": "Utilisez true ou false."})
         queryset = _filter_agent_workflow(queryset, self.request.query_params)
         return filter_requests(queryset, self.request.query_params)
 
@@ -1403,7 +1414,53 @@ class AgentRequestSummaryView(APIView):
             "rejected": queryset.filter(status=CitizenRequest.Status.REJECTED).count(),
             "needs_triage": open_queryset.filter(request_type="report", service__isnull=True).count(),
             "reports": queryset.filter(request_type=CitizenRequest.RequestType.REPORT).count(),
+            "duplicates": queryset.filter(duplicate_of__isnull=False).count(),
         })
+
+
+class AgentRequestSimilarView(APIView):
+    permission_classes = [AGENT_OR_ADMIN]
+
+    @agent_request_similar_schema
+    def get(self, request, reference):
+        source = generics.get_object_or_404(
+            CitizenRequest.objects.select_related("service", "duplicate_of"),
+            reference=reference,
+        )
+        if source.request_type != CitizenRequest.RequestType.REPORT:
+            raise ValidationError({
+                "detail": "La détection de similarité F75 concerne uniquement les signalements."
+            })
+        try:
+            limit = int(request.query_params.get("limit", 8))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError({"limit": "Un entier entre 1 et 20 est requis."}) from exc
+        if not 1 <= limit <= 20:
+            raise ValidationError({"limit": "Un entier entre 1 et 20 est requis."})
+        try:
+            threshold = float(request.query_params.get("min_score", 0.42))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError({"min_score": "Une valeur entre 0.20 et 0.95 est requise."}) from exc
+        if not 0.20 <= threshold <= 0.95:
+            raise ValidationError({"min_score": "Une valeur entre 0.20 et 0.95 est requise."})
+
+        results = find_similar_requests(source, limit=limit, min_score=threshold)
+        payload = {
+            "request_id": source.pk,
+            "request_reference": source.reference,
+            "threshold": threshold,
+            "count": len(results),
+            "results": results,
+        }
+        return Response(SimilarCitizenRequestResponseSerializer(payload).data)
+
+
+class AdminRequestSimilarView(AgentRequestSimilarView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_request_similar_schema
+    def get(self, request, reference):
+        return super().get(request, reference)
 
 
 @method_decorator(name="patch", decorator=agent_request_patch_schema)

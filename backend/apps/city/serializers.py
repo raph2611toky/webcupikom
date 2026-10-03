@@ -448,7 +448,12 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
         if not request or obj.request_type != 'report':
             return []
         if request.user.role in ('agent', 'admin'):
-            return (['reopen', 'add_private_note'] if obj.status in ('completed','rejected') else ['add_private_note'] if obj.status == 'cancelled' else ['update_processing', 'add_note', 'upload_photos'])
+            if obj.status in ('completed', 'rejected'):
+                return ['reopen', 'add_private_note', 'find_similar']
+            if obj.status == 'cancelled':
+                return ['add_private_note', 'find_similar']
+            duplicate_action = 'unlink_duplicate' if obj.duplicate_of_id else 'mark_duplicate'
+            return ['update_processing', 'add_note', 'upload_photos', 'find_similar', duplicate_action]
         if request.user.pk != obj.citizen_id:
             return []
         if obj.status in ('completed','rejected'):
@@ -619,11 +624,21 @@ class CitizenRequestDetailSerializer(CitizenRequestSerializer):
 class AgentCitizenRequestSerializer(CitizenRequestSerializer):
     service = serializers.PrimaryKeyRelatedField(queryset=MunicipalService.objects.filter(is_active=True), required=False, allow_null=True)
     duplicate_of = serializers.PrimaryKeyRelatedField(queryset=CitizenRequest.objects.filter(request_type='report'), required=False, allow_null=True)
+    is_duplicate = serializers.SerializerMethodField()
+    duplicate_of_reference = serializers.CharField(source='duplicate_of.reference', read_only=True, allow_null=True)
+    duplicate_of_title = serializers.CharField(source='duplicate_of.title', read_only=True, allow_null=True)
 
     class Meta(CitizenRequestSerializer.Meta):
-        fields = CitizenRequestSerializer.Meta.fields + ('duplicate_of',)
+        fields = CitizenRequestSerializer.Meta.fields + (
+            'duplicate_of', 'is_duplicate', 'duplicate_of_reference', 'duplicate_of_title',
+        )
         read_only_fields = tuple(name for name in CitizenRequestSerializer.Meta.fields
-                                if name not in ('status', 'priority', 'assigned_to', 'service', 'resolution_summary'))
+                                if name not in ('status', 'priority', 'assigned_to', 'service', 'resolution_summary')) + (
+            'is_duplicate', 'duplicate_of_reference', 'duplicate_of_title',
+        )
+
+    def get_is_duplicate(self, obj) -> bool:
+        return bool(obj.duplicate_of_id)
 
     def validate(self, attrs):
         allowed = {'status','priority','assigned_to','service','resolution_summary','duplicate_of'}
@@ -631,6 +646,10 @@ class AgentCitizenRequestSerializer(CitizenRequestSerializer):
         if extra:
             raise serializers.ValidationError({field: 'Champ non modifiable par un agent.' for field in extra})
         # Agent updates affect processing, not the original observation payload.
+        if self.instance and self.instance.request_type != 'report' and 'duplicate_of' in attrs:
+            raise serializers.ValidationError({
+                'duplicate_of': 'Seuls les signalements peuvent être marqués comme doublons.'
+            })
         if self.instance and self.instance.request_type == 'report':
             if self.instance.status in CLOSED:
                 raise serializers.ValidationError('Réouvrez le dossier avant de modifier son traitement.')
@@ -674,6 +693,35 @@ class AgentCitizenRequestSerializer(CitizenRequestSerializer):
         ):
             raise serializers.ValidationError("La demande ne peut être assignée qu'à un agent ou administrateur actif.")
         return value
+
+
+class SimilarCitizenRequestSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    reference = serializers.CharField()
+    title = serializers.CharField()
+    description_excerpt = serializers.CharField()
+    status = serializers.CharField()
+    status_label = serializers.CharField()
+    priority = serializers.CharField()
+    incident_category = serializers.CharField(allow_blank=True)
+    district = serializers.CharField(allow_blank=True)
+    service_id = serializers.IntegerField(allow_null=True)
+    service_name = serializers.CharField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    duplicate_of = serializers.IntegerField(allow_null=True)
+    duplicate_of_reference = serializers.CharField(allow_null=True)
+    score = serializers.FloatField()
+    similarity_percent = serializers.IntegerField()
+    reasons = serializers.ListField(child=serializers.CharField())
+    distance_meters = serializers.FloatField(allow_null=True)
+
+
+class SimilarCitizenRequestResponseSerializer(serializers.Serializer):
+    request_id = serializers.IntegerField()
+    request_reference = serializers.CharField()
+    threshold = serializers.FloatField()
+    count = serializers.IntegerField()
+    results = SimilarCitizenRequestSerializer(many=True)
 
 
 class AgentCitizenRequestDetailSerializer(AgentCitizenRequestSerializer):
@@ -940,7 +988,10 @@ class NotificationCreateSerializer(serializers.Serializer):
 
 
 class CitizenNotificationSerializer(serializers.ModelSerializer):
-    news_slug = serializers.CharField(source="related_news.slug", read_only=True)
+    news_slug = serializers.CharField(source="related_news.slug", read_only=True, allow_null=True)
+    news_publication_type = serializers.CharField(source="related_news.publication_type", read_only=True, allow_null=True)
+    news_severity = serializers.CharField(source="related_news.severity", read_only=True, allow_null=True)
+    news_expires_at = serializers.DateTimeField(source="related_news.expires_at", read_only=True, allow_null=True)
     request_reference = serializers.CharField(source="related_request.reference", read_only=True)
     contact_reference = serializers.CharField(source="related_contact.reference", read_only=True)
     appointment_reference = serializers.CharField(source="related_appointment.reference", read_only=True)
@@ -951,12 +1002,14 @@ class CitizenNotificationSerializer(serializers.ModelSerializer):
         fields = (
             "id", "kind", "scope", "title", "message", "sender", "sender_name",
             "action_label", "action_url", "request_reference", "contact_reference",
-            "appointment_reference", "news_slug", "visible_from", "is_important", "is_read", "read_at", "created_at",
+            "appointment_reference", "news_slug", "news_publication_type", "news_severity",
+            "news_expires_at", "visible_from", "is_important", "is_read", "read_at", "created_at",
         )
         read_only_fields = (
             "id", "kind", "scope", "title", "message", "sender", "sender_name",
             "action_label", "action_url", "request_reference", "contact_reference",
-            "appointment_reference", "news_slug", "visible_from", "is_important", "read_at", "created_at",
+            "appointment_reference", "news_slug", "news_publication_type", "news_severity",
+            "news_expires_at", "visible_from", "is_important", "read_at", "created_at",
         )
 
     def get_sender_name(self, obj):
