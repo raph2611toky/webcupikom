@@ -389,3 +389,1384 @@ html[data-contrast="high"] .onboarding-steps > button {
   color: #000 !important;
   border-color: #111 !important;
 }
+
+
+/* ==========================================================================
+   V30 — unified portal pages
+   ========================================================================== */
+body[data-route-group="portal"] .welcome-banner--compact {
+  min-height:132px;
+  height:132px;
+  padding:19px 22px;
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 78% 20%,rgba(124,49,255,.25),transparent 32%),
+    linear-gradient(135deg,#111015,#17121d);
+  box-shadow:none;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact h2 {
+  margin:5px 0 6px;
+  font-size:1.9rem;
+  line-height:1;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact p {
+  max-width:600px;
+  font-size:.75rem;
+  line-height:1.45;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact .welcome-banner__orb {
+  flex-basis:98px;
+  height:98px;
+  box-shadow:0 0 0 10px rgba(102,0,252,.055);
+}
+
+body[data-route-group="portal"] .welcome-banner--compact .welcome-banner__orb b {
+  font-size:1.35rem;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact .welcome-banner__orb span {
+  font-size:.48rem;
+}
+
+body[data-route-group="portal"] .metric-grid--3 {
+  gap:9px;
+  margin:9px 0;
+}
+
+body[data-route-group="portal"] .metric-grid--3 article {
+  min-height:72px;
+  padding:11px 14px;
+  border-radius:13px;
+  box-shadow:none;
+}
+
+body[data-route-group="portal"] .metric-grid--3 article > span,
+body[data-route-group="portal"] .metric-grid--3 article > small {
+  font-size:.63rem;
+}
+
+body[data-route-group="portal"] .metric-grid--3 article > strong {
+  font-size:1.45rem;
+}
+
+body[data-route-group="portal"] .citizen-dashboard__main,
+body[data-route-group="portal"] .agent-dashboard__main {
+  gap:10px;
+  margin-top:9px;
+}
+
+body[data-route-group="portal"] .citizen-dashboard__main .portal-card,
+body[data-route-group="portal"] .agent-dashboard__main .portal-card {
+  min-height:218px;
+}
+
+/* Requests */
+body[data-route-group="portal"] .request-stack > button {
+  padding:10px 0;
+}
+
+body[data-route-group="portal"] .request-stack > button strong {
+  font-size:.75rem;
+}
+
+body[data-route-group="portal"] .request-stack > button small,
+body[data-route-group="portal"] .request-stack > button > div > span {
+  font-size:.62rem;
+}
+
+/* Priority services */
+body[data-route-group="portal"] .quick-services--compact button {
+  min-height:64px;
+  border-radius:11px;
+  background:#faf8fc;
+}
+
+body[data-route-group="portal"] .quick-services--compact button:hover {
+  border-color:#cdb4f7;
+  background:#f5effd;
+}
+
+body[data-route-group="portal"] .quick-services--compact button i {
+  width:29px;
+  height:29px;
+  border-radius:9px;
+}
+
+body[data-route-group="portal"] .quick-services--compact button span {
+  font-size:.63rem;
+}
+
+/* Services page */
+body[data-route-group="portal"] .citizen-service-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:11px;
+}
+
+body[data-route-group="portal"] .citizen-service-grid article {
+  min-height:196px;
+  padding:18px;
+  border-radius:15px;
+  box-shadow:none;
+  transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+
+body[data-route-group="portal"] .citizen-service-grid article:hover {
+  border-color:#cdb8ee;
+  transform:translateY(-2px);
+  box-shadow:0 10px 25px rgba(41,22,57,.055);
+}
+
+body[data-route-group="portal"] .citizen-service-grid i {
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  font-size:1rem;
+}
+
+body[data-route-group="portal"] .citizen-service-grid article > span {
+  margin-top:14px;
+  font-size:.55rem;
+}
+
+body[data-route-group="portal"] .citizen-service-grid h2 {
+  margin:5px 0 6px;
+  font-size:1.08rem;
+}
+
+body[data-route-group="portal"] .citizen-service-grid p {
+  font-size:.69rem;
+  line-height:1.45;
+}
+
+body[data-route-group="portal"] .citizen-service-grid button {
+  padding-top:12px;
+  font-size:.66rem;
+}
+
+/* News page */
+body[data-route-group="portal"] .citizen-news-intro {
+  align-items:center;
+  padding:0 1px 2px;
+}
+
+body[data-route-group="portal"] .citizen-news-intro h2 {
+  font-size:1.6rem;
+  margin-top:4px;
+}
+
+body[data-route-group="portal"] .citizen-news-intro > p {
+  max-width:410px;
+  font-size:.73rem;
+}
+
+body[data-route-group="portal"] .citizen-news-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:11px;
+  overflow:visible;
+}
+
+body[data-route-group="portal"] .citizen-news-card {
+  grid-template-rows:138px minmax(0,1fr);
+  border-radius:15px;
+  box-shadow:none;
+}
+
+body[data-route-group="portal"] .citizen-news-card__image {
+  height:138px;
+}
+
+body[data-route-group="portal"] .citizen-news-card > div {
+  padding:13px 14px 14px;
+}
+
+body[data-route-group="portal"] .citizen-news-card h3 {
+  font-size:1rem;
+}
+
+body[data-route-group="portal"] .citizen-news-card p {
+  font-size:.69rem;
+  line-height:1.48;
+}
+
+body[data-route-group="portal"] .citizen-news-card .news-read-link {
+  font-size:.66rem;
+}
+
+/* Request modal: readable without becoming oversized */
+body[data-route-group="portal"] .request-studio {
+  width:min(720px,calc(100% - 24px));
+  padding:20px;
+  gap:11px;
+  border-radius:17px;
+}
+
+body[data-route-group="portal"] .request-studio > h2 {
+  font-size:1.35rem;
+}
+
+body[data-route-group="portal"] .request-studio__intro {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .request-studio-types {
+  gap:7px;
+}
+
+body[data-route-group="portal"] .request-studio-types button {
+  min-height:54px;
+  height:auto;
+  border-radius:10px;
+}
+
+body[data-route-group="portal"] .request-studio-types span {
+  font-size:.67rem;
+  line-height:1.2;
+}
+
+body[data-route-group="portal"] .request-studio-grid label > span,
+body[data-route-group="portal"] .request-studio-file > span {
+  font-size:.68rem;
+}
+
+body[data-route-group="portal"] .request-studio-grid input,
+body[data-route-group="portal"] .request-studio-grid select,
+body[data-route-group="portal"] .request-studio-grid textarea {
+  font-size:.75rem;
+  padding:9px 10px;
+}
+
+body[data-route-group="portal"] .request-studio-file > button,
+body[data-route-group="portal"] .request-studio-suggestion b,
+body[data-route-group="portal"] .request-studio-suggestion > button {
+  font-size:.66rem;
+}
+
+body[data-route-group="portal"] .request-studio-suggestion small {
+  font-size:.58rem;
+}
+
+/* Profile/settings/notifications */
+body[data-route-group="portal"] .profile-hero {
+  padding:18px;
+  border-radius:16px;
+  box-shadow:none;
+}
+
+body[data-route-group="portal"] .profile-avatar {
+  width:58px;
+  height:58px;
+  border-radius:16px;
+  font-size:1rem;
+}
+
+body[data-route-group="portal"] .profile-hero h2 {
+  font-size:1.25rem;
+}
+
+body[data-route-group="portal"] .profile-progress b {
+  font-size:1.4rem;
+}
+
+body[data-route-group="portal"] .profile-form-grid label > span,
+body[data-route-group="portal"] .account-facts span,
+body[data-route-group="portal"] .detail-list span {
+  font-size:.65rem;
+}
+
+body[data-route-group="portal"] .profile-form-grid input,
+body[data-route-group="portal"] .profile-form-grid select {
+  font-size:.74rem;
+}
+
+body[data-route-group="portal"] .notification-list > button {
+  padding:14px 17px;
+}
+
+body[data-route-group="portal"] .notification-list strong {
+  font-size:.74rem;
+}
+
+body[data-route-group="portal"] .notification-list span,
+body[data-route-group="portal"] .notification-list em {
+  font-size:.62rem;
+}
+
+/* New internal service / publication details */
+.portal-detail-page {
+  display:grid;
+  align-content:start;
+  gap:0;
+}
+
+.service-portal-hero {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:16px;
+  min-height:128px;
+  padding:20px;
+  border:1px solid #e5dfea;
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 90% 0%,rgba(109,29,255,.08),transparent 30%),
+    #fff;
+}
+
+.service-portal-hero__icon {
+  width:54px;
+  height:54px;
+  display:grid;
+  place-items:center;
+  border-radius:15px;
+  background:#eee5ff;
+  color:#6c12df;
+  font-size:1.35rem;
+}
+
+.service-portal-hero__copy {
+  min-width:0;
+}
+
+.service-portal-hero__copy > span {
+  color:#7b7282;
+  font-size:.58rem;
+  font-weight:800;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.service-portal-hero__copy h2 {
+  margin:4px 0 5px;
+  font-size:1.45rem;
+  letter-spacing:-.035em;
+}
+
+.service-portal-hero__copy p {
+  max-width:760px;
+  margin:0;
+  color:#726a79;
+  font-size:.74rem;
+  line-height:1.5;
+}
+
+.service-portal-hero__cta {
+  white-space:nowrap;
+}
+
+.portal-detail-grid {
+  display:grid;
+  grid-template-columns:1.15fr .9fr .95fr;
+  gap:11px;
+  margin-top:11px;
+}
+
+.portal-action-list {
+  display:grid;
+  margin-top:11px;
+}
+
+.portal-action-list > div {
+  display:grid;
+  grid-template-columns:30px 1fr;
+  align-items:center;
+  gap:9px;
+  min-height:42px;
+  border-top:1px solid #eeeaf1;
+}
+
+.portal-action-list > div:first-child {
+  border-top:0;
+}
+
+.portal-action-list i {
+  width:26px;
+  height:26px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:#f2ebff;
+  color:#6a10dc;
+  font-size:.58rem;
+  font-style:normal;
+  font-weight:900;
+}
+
+.portal-action-list span {
+  font-size:.72rem;
+  font-weight:700;
+}
+
+.portal-document-list {
+  margin:12px 0 0;
+  padding-left:17px;
+  color:#4f4855;
+  font-size:.72rem;
+  line-height:1.7;
+}
+
+.portal-contact-block {
+  display:grid;
+  gap:9px;
+  margin-top:13px;
+}
+
+.portal-contact-block > div {
+  display:grid;
+  gap:3px;
+  padding-top:9px;
+  border-top:1px solid #eeeaf1;
+}
+
+.portal-contact-block span {
+  color:#918898;
+  font-size:.6rem;
+}
+
+.portal-contact-block b {
+  font-size:.73rem;
+}
+
+.portal-contact-block small {
+  color:#756d7c;
+  font-size:.65rem;
+}
+
+.portal-news-detail {
+  display:grid;
+  grid-template-columns:minmax(300px,.85fr) minmax(0,1.15fr);
+  gap:18px;
+  padding:14px;
+  border:1px solid #e5e0e9;
+  border-radius:17px;
+  background:#fff;
+}
+
+.portal-news-detail__media {
+  min-height:360px;
+  overflow:hidden;
+  border-radius:13px;
+  background:#eee9f4;
+}
+
+.portal-news-detail__media img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.portal-news-detail__content {
+  align-self:center;
+  padding:12px 16px 12px 4px;
+}
+
+.portal-news-detail__content h2 {
+  margin:8px 0 10px;
+  font-size:1.65rem;
+  line-height:1.06;
+  letter-spacing:-.04em;
+}
+
+.portal-news-detail__lead {
+  margin:0;
+  color:#665e6c;
+  font-size:.82rem;
+  line-height:1.55;
+}
+
+.portal-news-detail__body {
+  margin-top:16px;
+  color:#4f4855;
+  font-size:.76rem;
+  line-height:1.7;
+}
+
+.portal-empty-centered {
+  min-height:180px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:12px;
+  text-align:center;
+}
+
+/* Contact page inside the app */
+body[data-route-group="portal"] .citizen-contact-layout {
+  gap:11px;
+  margin-top:0;
+}
+
+body[data-route-group="portal"] .citizen-contact-copy h2 {
+  font-size:1.4rem;
+}
+
+body[data-route-group="portal"] .citizen-contact-copy > p,
+body[data-route-group="portal"] .citizen-contact-points span,
+body[data-route-group="portal"] .citizen-contact-form input,
+body[data-route-group="portal"] .citizen-contact-form select,
+body[data-route-group="portal"] .citizen-contact-form textarea {
+  font-size:.74rem;
+}
+
+/* High contrast must remain coherent inside the app. */
+html[data-contrast="high"] body[data-route-group="portal"] .service-portal-hero,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-news-detail,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-detail-grid .portal-card {
+  background:#fff!important;
+  color:#000!important;
+  border:2px solid #111!important;
+}
+
+@media(max-width:1050px) {
+  body[data-route-group="portal"] .citizen-service-grid,
+  body[data-route-group="portal"] .citizen-news-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .portal-detail-grid {
+    grid-template-columns:1fr 1fr;
+  }
+
+  .portal-detail-grid > :first-child {
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:700px) {
+  body[data-route-group="portal"] .welcome-banner--compact {
+    height:auto;
+    min-height:146px;
+  }
+
+  body[data-route-group="portal"] .welcome-banner__orb {
+    display:none;
+  }
+
+  body[data-route-group="portal"] .metric-grid--3,
+  body[data-route-group="portal"] .citizen-service-grid,
+  body[data-route-group="portal"] .citizen-news-grid,
+  .portal-detail-grid,
+  .portal-news-detail {
+    grid-template-columns:1fr;
+  }
+
+  .portal-detail-grid > :first-child {
+    grid-column:auto;
+  }
+
+  .service-portal-hero {
+    grid-template-columns:auto 1fr;
+  }
+
+  .service-portal-hero__cta {
+    grid-column:1/-1;
+    width:100%;
+  }
+
+  .portal-news-detail__media {
+    min-height:220px;
+  }
+}
+
+
+/* V30 — finish readability on operational agent/admin pages */
+body[data-route-group="portal"] .timeline b,
+body[data-route-group="portal"] .document-row b,
+body[data-route-group="portal"] .toggle-line > span,
+body[data-route-group="portal"] .setting-line b,
+body[data-route-group="portal"] .agent-queue strong,
+body[data-route-group="portal"] .activity-feed b,
+body[data-route-group="portal"] .citizen-request-link strong,
+body[data-route-group="portal"] .api-request-list article strong,
+body[data-route-group="portal"] .admin-list b,
+body[data-route-group="portal"] .admin-shortcuts b,
+body[data-route-group="portal"] .system-check span,
+body[data-route-group="portal"] .admin-service-list h3,
+body[data-route-group="portal"] .admin-news-list h3 {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .timeline span,
+body[data-route-group="portal"] .document-row span,
+body[data-route-group="portal"] .document-row button,
+body[data-route-group="portal"] .setting-line span,
+body[data-route-group="portal"] .setting-line > button,
+body[data-route-group="portal"] .agent-queue small,
+body[data-route-group="portal"] .webcup-snapshot span,
+body[data-route-group="portal"] .activity-feed span,
+body[data-route-group="portal"] .citizen-request-link span,
+body[data-route-group="portal"] .citizen-request-link em,
+body[data-route-group="portal"] .api-status small,
+body[data-route-group="portal"] .api-request-list article span,
+body[data-route-group="portal"] .admin-list span,
+body[data-route-group="portal"] .admin-list em,
+body[data-route-group="portal"] .admin-shortcuts span,
+body[data-route-group="portal"] .system-banner span,
+body[data-route-group="portal"] .system-banner small,
+body[data-route-group="portal"] .admin-service-list article > div:nth-child(2) > span,
+body[data-route-group="portal"] .admin-service-list p,
+body[data-route-group="portal"] .admin-service-meta span,
+body[data-route-group="portal"] .admin-service-meta b,
+body[data-route-group="portal"] .admin-news-list span,
+body[data-route-group="portal"] .admin-news-list p,
+body[data-route-group="portal"] .admin-news-list time,
+body[data-route-group="portal"] .admin-news-list em,
+body[data-route-group="portal"] .system-check b {
+  font-size:.63rem;
+}
+
+body[data-route-group="portal"] .request-location-chip,
+body[data-route-group="portal"] .empty-inline,
+body[data-route-group="portal"] .agent-inline-notice {
+  font-size:.65rem;
+}
+
+body[data-route-group="portal"] .agent-detail-controls label > span {
+  font-size:.62rem;
+}
+
+body[data-route-group="portal"] .agent-detail-controls select {
+  font-size:.7rem;
+}
+
+body[data-route-group="portal"] .admin-service-list article > button,
+body[data-route-group="portal"] .admin-news-list article > div:last-child > button {
+  font-size:.65rem;
+}
+
+body[data-route-group="portal"] .system-banner h3 {
+  font-size:.82rem;
+}
+
+body[data-route-group="portal"] .api-status > div > span {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .api-request-list article em {
+  font-size:.64rem;
+}
+
+/* A/A+/A++: grow naturally; portal is allowed to scroll rather than overlap. */
+html[data-font-size="large"] body[data-route-group="portal"] .portal-main,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-main {
+  min-height:100dvh;
+  height:auto;
+}
+
+html[data-font-size="large"] body[data-route-group="portal"] .portal-content,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-content {
+  overflow:visible;
+}
+
+html[data-font-size="large"] body[data-route-group="portal"] .portal-topbar,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar {
+  height:auto;
+  min-height:72px;
+  flex-wrap:wrap;
+}
+
+
+/* ==========================================================================
+   V31 — more breathing room and readable portal typography
+   ========================================================================== */
+body[data-route-group="portal"] .welcome-banner--compact {
+  min-height:150px;
+  height:auto;
+  padding:24px 28px;
+  border-radius:18px;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact h2 {
+  font-size:2rem;
+  margin:7px 0 9px;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact p {
+  font-size:.82rem;
+  line-height:1.55;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact > div:first-child > span {
+  font-size:.68rem;
+}
+
+body[data-route-group="portal"] .welcome-banner--compact .welcome-banner__orb {
+  flex-basis:110px;
+  height:110px;
+}
+
+body[data-route-group="portal"] .metric-grid--3 {
+  gap:12px;
+  margin:12px 0;
+}
+
+body[data-route-group="portal"] .metric-grid--3 article {
+  min-height:88px;
+  padding:16px 18px;
+  border-radius:15px;
+}
+
+body[data-route-group="portal"] .metric-grid--3 article > span,
+body[data-route-group="portal"] .metric-grid--3 article > small {
+  font-size:.7rem;
+}
+
+body[data-route-group="portal"] .metric-grid--3 article > strong {
+  font-size:1.65rem;
+}
+
+body[data-route-group="portal"] .citizen-dashboard__main,
+body[data-route-group="portal"] .agent-dashboard__main {
+  gap:14px;
+  margin-top:12px;
+}
+
+body[data-route-group="portal"] .citizen-dashboard__main .portal-card,
+body[data-route-group="portal"] .agent-dashboard__main .portal-card {
+  min-height:235px;
+}
+
+body[data-route-group="portal"] .request-stack > button {
+  padding:13px 0;
+}
+
+body[data-route-group="portal"] .request-stack > button strong {
+  font-size:.81rem;
+}
+
+body[data-route-group="portal"] .request-stack > button small,
+body[data-route-group="portal"] .request-stack > button > div > span {
+  font-size:.69rem;
+}
+
+body[data-route-group="portal"] .quick-services--compact {
+  gap:10px;
+}
+
+body[data-route-group="portal"] .quick-services--compact button {
+  min-height:78px;
+  padding:9px;
+}
+
+body[data-route-group="portal"] .quick-services--compact button span {
+  font-size:.7rem;
+}
+
+body[data-route-group="portal"] .citizen-service-grid {
+  gap:14px;
+}
+
+body[data-route-group="portal"] .citizen-service-grid article {
+  min-height:220px;
+  padding:22px;
+  border-radius:17px;
+}
+
+body[data-route-group="portal"] .citizen-service-grid i {
+  width:42px;
+  height:42px;
+}
+
+body[data-route-group="portal"] .citizen-service-grid article > span {
+  margin-top:17px;
+  font-size:.62rem;
+}
+
+body[data-route-group="portal"] .citizen-service-grid h2 {
+  font-size:1.18rem;
+}
+
+body[data-route-group="portal"] .citizen-service-grid p {
+  font-size:.77rem;
+  line-height:1.55;
+}
+
+body[data-route-group="portal"] .citizen-service-grid button {
+  font-size:.73rem;
+}
+
+body[data-route-group="portal"] .citizen-news-intro h2 {
+  font-size:1.75rem;
+}
+
+body[data-route-group="portal"] .citizen-news-intro > p {
+  font-size:.8rem;
+  line-height:1.55;
+}
+
+body[data-route-group="portal"] .citizen-news-grid {
+  gap:14px;
+}
+
+body[data-route-group="portal"] .citizen-news-card {
+  grid-template-rows:150px minmax(0,1fr);
+  border-radius:17px;
+}
+
+body[data-route-group="portal"] .citizen-news-card__image {
+  height:150px;
+}
+
+body[data-route-group="portal"] .citizen-news-card > div {
+  padding:16px 17px 17px;
+}
+
+body[data-route-group="portal"] .citizen-news-card h3 {
+  font-size:1.08rem;
+}
+
+body[data-route-group="portal"] .citizen-news-card p {
+  font-size:.76rem;
+  line-height:1.55;
+}
+
+body[data-route-group="portal"] .citizen-news-card .news-read-link,
+body[data-route-group="portal"] .citizen-news-card .news-meta span,
+body[data-route-group="portal"] .citizen-news-card .news-meta time {
+  font-size:.68rem;
+}
+
+/* D04 request form: larger text and spacing without becoming a huge modal */
+body[data-route-group="portal"] .request-studio {
+  width:min(760px,calc(100% - 26px));
+  padding:24px;
+  gap:14px;
+  border-radius:19px;
+}
+
+body[data-route-group="portal"] .request-studio > h2 {
+  font-size:1.5rem;
+}
+
+body[data-route-group="portal"] .request-studio__intro {
+  font-size:.78rem;
+  line-height:1.45;
+}
+
+body[data-route-group="portal"] .request-studio-types {
+  gap:9px;
+}
+
+body[data-route-group="portal"] .request-studio-types button {
+  min-height:62px;
+  padding:9px;
+  gap:8px;
+  border-radius:12px;
+}
+
+body[data-route-group="portal"] .request-studio-types i {
+  width:28px;
+  height:28px;
+}
+
+body[data-route-group="portal"] .request-studio-types span {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .request-studio-grid {
+  gap:11px;
+}
+
+body[data-route-group="portal"] .request-studio-grid label,
+body[data-route-group="portal"] .request-studio-file {
+  gap:6px;
+}
+
+body[data-route-group="portal"] .request-studio-grid label > span,
+body[data-route-group="portal"] .request-studio-file > span {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .request-studio-grid input,
+body[data-route-group="portal"] .request-studio-grid select,
+body[data-route-group="portal"] .request-studio-grid textarea {
+  min-height:42px;
+  padding:10px 11px;
+  border-radius:10px;
+  font-size:.81rem;
+}
+
+body[data-route-group="portal"] .request-studio-grid textarea {
+  min-height:104px;
+}
+
+body[data-route-group="portal"] .request-studio-file > button {
+  min-height:40px;
+  font-size:.7rem;
+}
+
+body[data-route-group="portal"] .request-studio-footer {
+  padding-top:8px;
+  gap:14px;
+}
+
+body[data-route-group="portal"] .request-studio-footer span {
+  font-size:.68rem;
+}
+
+body[data-route-group="portal"] .request-studio-footer b {
+  font-size:.78rem;
+}
+
+/* Profile / settings / notifications */
+body[data-route-group="portal"] .profile-hero {
+  gap:22px;
+  padding:22px;
+  border-radius:18px;
+}
+
+body[data-route-group="portal"] .profile-avatar {
+  width:64px;
+  height:64px;
+  border-radius:18px;
+}
+
+body[data-route-group="portal"] .profile-hero h2 {
+  font-size:1.38rem;
+}
+
+body[data-route-group="portal"] .profile-hero p,
+body[data-route-group="portal"] .profile-hero > div:nth-child(2) > span,
+body[data-route-group="portal"] .profile-progress span {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .profile-form-grid {
+  gap:16px;
+  margin-top:20px;
+}
+
+body[data-route-group="portal"] .profile-form-grid label {
+  gap:8px;
+}
+
+body[data-route-group="portal"] .profile-form-grid label > span {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .profile-form-grid input,
+body[data-route-group="portal"] .profile-form-grid select {
+  min-height:46px;
+  padding-inline:13px;
+  font-size:.8rem;
+}
+
+body[data-route-group="portal"] .account-facts > div,
+body[data-route-group="portal"] .detail-list > div {
+  padding:14px 0;
+}
+
+body[data-route-group="portal"] .account-facts span,
+body[data-route-group="portal"] .detail-list span,
+body[data-route-group="portal"] .account-facts b,
+body[data-route-group="portal"] .detail-list b {
+  font-size:.72rem;
+}
+
+body[data-route-group="portal"] .notification-list > button {
+  padding:17px 20px;
+  gap:15px;
+}
+
+body[data-route-group="portal"] .notification-list strong {
+  font-size:.8rem;
+}
+
+body[data-route-group="portal"] .notification-list span,
+body[data-route-group="portal"] .notification-list em {
+  font-size:.68rem;
+}
+
+body[data-route-group="portal"] .toggle-line,
+body[data-route-group="portal"] .setting-line {
+  min-height:62px;
+  padding:10px 0;
+}
+
+body[data-route-group="portal"] .toggle-line > span,
+body[data-route-group="portal"] .setting-line b {
+  font-size:.78rem;
+}
+
+body[data-route-group="portal"] .setting-line span,
+body[data-route-group="portal"] .setting-line > button {
+  font-size:.68rem;
+}
+
+/* Contact form */
+body[data-route-group="portal"] .citizen-contact-layout {
+  gap:15px;
+}
+
+body[data-route-group="portal"] .citizen-contact-copy h2 {
+  font-size:1.55rem;
+}
+
+body[data-route-group="portal"] .citizen-contact-copy > p,
+body[data-route-group="portal"] .citizen-contact-points span {
+  font-size:.8rem;
+}
+
+body[data-route-group="portal"] .citizen-contact-points > div {
+  padding:.85rem 0;
+}
+
+body[data-route-group="portal"] .citizen-contact-form {
+  gap:1rem;
+}
+
+body[data-route-group="portal"] .citizen-contact-form label > span {
+  font-size:.75rem;
+}
+
+body[data-route-group="portal"] .citizen-contact-form input,
+body[data-route-group="portal"] .citizen-contact-form select,
+body[data-route-group="portal"] .citizen-contact-form textarea {
+  padding:.8rem .85rem;
+  font-size:.8rem;
+}
+
+body[data-route-group="portal"] .citizen-contact-destination {
+  padding:.85rem .9rem;
+}
+
+/* Internal detail pages */
+.service-portal-hero {
+  min-height:145px;
+  padding:24px;
+  gap:19px;
+}
+
+.service-portal-hero__icon {
+  width:60px;
+  height:60px;
+}
+
+.service-portal-hero__copy > span {
+  font-size:.64rem;
+}
+
+.service-portal-hero__copy h2 {
+  font-size:1.58rem;
+}
+
+.service-portal-hero__copy p {
+  font-size:.8rem;
+  line-height:1.55;
+}
+
+.portal-detail-grid {
+  gap:14px;
+  margin-top:14px;
+}
+
+.portal-action-list > div {
+  min-height:48px;
+}
+
+.portal-action-list span,
+.portal-document-list,
+.portal-contact-block b {
+  font-size:.77rem;
+}
+
+.portal-contact-block span,
+.portal-contact-block small {
+  font-size:.68rem;
+}
+
+.portal-news-detail {
+  gap:22px;
+  padding:18px;
+}
+
+.portal-news-detail__content {
+  padding:14px 18px 14px 6px;
+}
+
+.portal-news-detail__content h2 {
+  font-size:1.82rem;
+}
+
+.portal-news-detail__lead {
+  font-size:.88rem;
+}
+
+.portal-news-detail__body {
+  font-size:.8rem;
+}
+
+/* More room when the accessibility size is increased. */
+html[data-font-size="large"] body[data-route-group="portal"] .portal-content,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-content {
+  padding-top:28px;
+  padding-bottom:36px;
+}
+
+@media(max-width:700px) {
+  body[data-route-group="portal"] .welcome-banner--compact {
+    padding:21px;
+  }
+
+  body[data-route-group="portal"] .request-studio {
+    padding:18px;
+  }
+
+  body[data-route-group="portal"] .request-studio-types {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  body[data-route-group="portal"] .request-studio-grid,
+  body[data-route-group="portal"] .profile-form-grid {
+    grid-template-columns:1fr;
+  }
+
+  body[data-route-group="portal"] .request-studio-grid .span-2,
+  body[data-route-group="portal"] .profile-form-grid .span-2 {
+    grid-column:auto;
+  }
+}
+
+
+/* ==========================================================================
+   V32 — suppression de compte : parcours dédié en deux étapes
+   ========================================================================== */
+.delete-account-shell {
+  display:grid;
+  grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+  gap:16px;
+  align-items:start;
+}
+
+.delete-account-summary h2 {
+  margin:.45rem 0 .7rem;
+  font-size:1.45rem;
+  letter-spacing:-.035em;
+}
+
+.delete-account-summary > p {
+  margin:0;
+  color:#716978;
+  font-size:.8rem;
+  line-height:1.6;
+}
+
+.delete-account-warning {
+  display:grid;
+  grid-template-columns:40px 1fr;
+  gap:11px;
+  align-items:center;
+  margin-top:18px;
+  padding:13px;
+  border:1px solid #efc9cc;
+  border-radius:12px;
+  background:#fff7f7;
+}
+
+.delete-account-warning > i {
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:#ffe2e4;
+  color:#b52631;
+  font-style:normal;
+  font-weight:900;
+}
+
+.delete-account-warning > div {
+  display:grid;
+  gap:3px;
+}
+
+.delete-account-warning b {
+  color:#8d1f28;
+  font-size:.76rem;
+}
+
+.delete-account-warning span {
+  color:#735f62;
+  font-size:.68rem;
+  word-break:break-word;
+}
+
+.delete-account-steps {
+  display:grid;
+  gap:9px;
+  margin:18px 0 0;
+  padding:0;
+  list-style:none;
+}
+
+.delete-account-steps li {
+  display:grid;
+  grid-template-columns:30px 1fr;
+  align-items:center;
+  gap:10px;
+  color:#8d8494;
+  font-size:.73rem;
+  font-weight:700;
+}
+
+.delete-account-steps i {
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border:1px solid #ded7e3;
+  border-radius:50%;
+  background:#fff;
+  color:#7b7281;
+  font-style:normal;
+  font-size:.65rem;
+}
+
+.delete-account-steps li.is-current {
+  color:#281f2f;
+}
+
+.delete-account-steps li.is-current i {
+  border-color:#6b18df;
+  background:#eee5ff;
+  color:#6115ce;
+}
+
+.delete-account-steps li.is-done i {
+  border-color:#a78bd1;
+  background:#f5efff;
+  color:#5f16ca;
+}
+
+.delete-account-form-card {
+  min-height:340px;
+}
+
+.delete-account-form {
+  display:grid;
+  gap:15px;
+}
+
+.delete-account-form h3 {
+  margin:.15rem 0 0;
+  font-size:1.22rem;
+}
+
+.delete-account-form label {
+  display:grid;
+  gap:7px;
+}
+
+.delete-account-form label > span {
+  color:#584f5f;
+  font-size:.74rem;
+  font-weight:800;
+}
+
+.delete-account-form input {
+  width:100%;
+  min-height:46px;
+  border:1px solid #ded7e3;
+  border-radius:10px;
+  background:#fff;
+  padding:0 13px;
+  color:#211a27;
+  font:inherit;
+  font-size:.82rem;
+}
+
+.delete-account-form input:focus {
+  outline:3px solid rgba(102,0,252,.12);
+  border-color:#7222e8;
+}
+
+.delete-account-confirm-input {
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;
+  letter-spacing:.08em;
+  font-weight:800!important;
+}
+
+.delete-account-security {
+  margin:0;
+  padding:10px 12px;
+  border-radius:10px;
+  background:#f7f5f9;
+  color:#746b7a;
+  font-size:.69rem;
+  line-height:1.5;
+}
+
+.delete-account-actions {
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+  margin-top:3px;
+}
+
+.danger-action {
+  min-height:40px;
+  border:1px solid #9f202a;
+  border-radius:9px;
+  background:#b52a35;
+  color:#fff;
+  padding:0 14px;
+  font:inherit;
+  font-size:.73rem;
+  font-weight:850;
+}
+
+.danger-action:hover:not(:disabled) {
+  background:#991f29;
+}
+
+.danger-action:disabled {
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+.delete-account-danger {
+  min-width:210px;
+}
+
+html[data-contrast="high"] .delete-account-warning,
+html[data-contrast="high"] .delete-account-form input,
+html[data-contrast="high"] .delete-account-security {
+  border:2px solid #111!important;
+}
+
+html[data-contrast="high"] .delete-account-warning,
+html[data-contrast="high"] .delete-account-security {
+  background:#fff!important;
+  color:#000!important;
+}
+
+html[data-contrast="high"] .delete-account-warning b,
+html[data-contrast="high"] .delete-account-warning span,
+html[data-contrast="high"] .delete-account-security {
+  color:#000!important;
+}
+
+html[data-contrast="high"] .danger-action {
+  background:#8d0000!important;
+  color:#fff!important;
+  border:2px solid #000!important;
+}
+
+@media(max-width:900px) {
+  .delete-account-shell {
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:600px) {
+  .delete-account-actions {
+    flex-direction:column-reverse;
+  }
+
+  .delete-account-actions > button,
+  .delete-account-danger {
+    width:100%;
+  }
+}

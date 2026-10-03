@@ -137,8 +137,23 @@ export default function CitizenRequests() {
     };
 
     applyIntent();
+
+    const applyVoiceDictation = (event) => {
+      const text = String(event?.detail?.text || "").trim();
+      if (!text) return;
+      setDraft((current) => ({
+        ...current,
+        message: current.message ? `${current.message} ${text}` : text,
+      }));
+      setShowForm(true);
+    };
+
+    window.addEventListener("nova-terra-voice-dictation", applyVoiceDictation);
     window.addEventListener("popstate", applyIntent);
-    return () => window.removeEventListener("popstate", applyIntent);
+    return () => {
+      window.removeEventListener("nova-terra-voice-dictation", applyVoiceDictation);
+      window.removeEventListener("popstate", applyIntent);
+    };
   }, []);
 
   const rows = useMemo(() => requests.filter((row) =>

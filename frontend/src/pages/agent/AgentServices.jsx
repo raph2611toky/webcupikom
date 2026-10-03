@@ -14,7 +14,7 @@ export default function AgentServices(){
     <main className="portal-content"><section className="portal-card management-list">
       {items.map(item=><article key={item.slug} className="management-row">
         <div className="management-row__main"><div className="service-admin-icon">{item.icon}</div><div><span>{item.category}</span><h3>{item.name}</h3><p>{item.shortDescription}</p></div></div>
-        <div className="management-row__actions"><button className="secondary-action" onClick={()=>navigate(`/services/${item.slug}`)}>Consulter →</button></div>
+        <div className="management-row__actions"><button className="secondary-action" onClick={()=>navigate(`/agent/services/${item.slug}`)}>Consulter →</button></div>
       </article>)}
     </section></main>
   </div></div>;

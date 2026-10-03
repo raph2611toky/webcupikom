@@ -18,10 +18,12 @@ import CitizenProfile from "./pages/citizen/CitizenProfile.jsx";
 import CitizenRequests from "./pages/citizen/CitizenRequests.jsx";
 import CitizenRequestDetails from "./pages/citizen/CitizenRequestDetails.jsx";
 import CitizenServices from "./pages/citizen/CitizenServices.jsx";
+import CitizenServiceDetails from "./pages/citizen/CitizenServiceDetails.jsx";
 import CitizenNotifications from "./pages/citizen/CitizenNotifications.jsx";
 import CitizenNews from "./pages/citizen/CitizenNews.jsx";
 import CitizenNewsDetails from "./pages/citizen/CitizenNewsDetails.jsx";
 import CitizenSettings from "./pages/citizen/CitizenSettings.jsx";
+import CitizenDeleteAccount from "./pages/citizen/CitizenDeleteAccount.jsx";
 import CitizenHelp from "./pages/citizen/CitizenHelp.jsx";
 import CitizenMessages from "./pages/citizen/CitizenMessages.jsx";
 import CitizenMessageDetails from "./pages/citizen/CitizenMessageDetails.jsx";
@@ -33,6 +35,8 @@ import AgentCitizenDetails from "./pages/agent/AgentCitizenDetails.jsx";
 import AgentApi from "./pages/agent/AgentApi.jsx";
 import AgentNews from "./pages/agent/AgentNews.jsx";
 import AgentServices from "./pages/agent/AgentServices.jsx";
+import AgentServiceDetails from "./pages/agent/AgentServiceDetails.jsx";
+import AgentNewsDetails from "./pages/agent/AgentNewsDetails.jsx";
 import AgentMessages from "./pages/agent/AgentMessages.jsx";
 import AgentMessageDetails from "./pages/agent/AgentMessageDetails.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -102,6 +106,62 @@ function RoleEntry(){
   return <Redirect to={roleHome(user?.role)}/>;
 }
 
+function internalPublicTarget(pathname, role) {
+  if (!role) return null;
+  if (pathname === "/" || pathname === "/landing") return roleHome(role);
+
+  if (pathname === "/services") {
+    if (role === "citizen") return "/citizen/services";
+    if (role === "agent") return "/agent/services";
+    if (role === "admin") return "/admin/services";
+  }
+
+  if (pathname.startsWith("/services/")) {
+    const slug = pathname.split("/").filter(Boolean)[1];
+    if (role === "citizen") return `/citizen/services/${encodeURIComponent(slug)}`;
+    if (role === "agent") return `/agent/services/${encodeURIComponent(slug)}`;
+    if (role === "admin") return "/admin/services";
+  }
+
+  if (pathname === "/news") {
+    if (role === "citizen") return "/citizen/news";
+    if (role === "agent") return "/agent/news";
+    if (role === "admin") return "/admin/news";
+  }
+
+  if (pathname.startsWith("/news/")) {
+    const slug = pathname.split("/").filter(Boolean)[1];
+    if (role === "citizen") return `/citizen/news/${encodeURIComponent(slug)}`;
+    if (role === "agent") return `/agent/news/${encodeURIComponent(slug)}`;
+    if (role === "admin") return "/admin/news";
+  }
+
+  if (pathname === "/contact") {
+    if (role === "citizen") return "/citizen/help";
+    if (role === "agent") return "/agent/messages";
+    if (role === "admin") return "/admin/messages";
+  }
+
+  return null;
+}
+
+function PublicOnly({ pathname, children }) {
+  const { ready, isAuthenticated, user } = useAuth();
+  if (!ready) return <AuthLoading />;
+  if (isAuthenticated) {
+    const target = internalPublicTarget(pathname, user?.role);
+    if (target) return <Redirect to={target} />;
+  }
+  return children;
+}
+
+function FallbackRoute() {
+  const { ready, isAuthenticated, user } = useAuth();
+  if (!ready) return <AuthLoading />;
+  if (isAuthenticated) return <Redirect to={roleHome(user?.role)} />;
+  return <LandingPage />;
+}
+
 export default function App() {
   const pathname=useLocationPath();
   const [a11yOpen,setA11yOpen]=useState(false);
@@ -146,11 +206,11 @@ export default function App() {
 
   const route=useMemo(()=>{
     const routes={
-      "/":<LandingPage/>,
-      "/landing":<LandingPage/>,
-      "/services":<Services/>,
-      "/news":<News/>,
-      "/contact":<Contact/>,
+      "/":<PublicOnly pathname="/"><LandingPage/></PublicOnly>,
+      "/landing":<PublicOnly pathname="/landing"><LandingPage/></PublicOnly>,
+      "/services":<PublicOnly pathname="/services"><Services/></PublicOnly>,
+      "/news":<PublicOnly pathname="/news"><News/></PublicOnly>,
+      "/contact":<PublicOnly pathname="/contact"><Contact/></PublicOnly>,
 
       "/login":<Guest><LoginPage/></Guest>,
       "/inscription":<Guest><InscriptionPage/></Guest>,
@@ -170,6 +230,7 @@ export default function App() {
       "/citizen/news":<Protected roles={["citizen"]}><CitizenNews/></Protected>,
       "/citizen/notifications":<Protected roles={["citizen"]}><CitizenNotifications/></Protected>,
       "/citizen/settings":<Protected roles={["citizen"]}><CitizenSettings/></Protected>,
+      "/citizen/supprimer-compte":<Protected roles={["citizen"]}><CitizenDeleteAccount/></Protected>,
       "/citizen/help":<Protected roles={["citizen"]}><CitizenHelp/></Protected>,
       "/citizen/messages":<Protected roles={["citizen"]}><CitizenMessages/></Protected>,
 
@@ -192,17 +253,20 @@ export default function App() {
     };
     if(routes[pathname])return routes[pathname];
 
-    let params=match("/services/:slug",pathname); if(params)return <ServiceDetails params={params}/>;
-    params=match("/news/:slug",pathname); if(params)return <NewsDetails params={params}/>;
+    let params=match("/services/:slug",pathname); if(params)return <PublicOnly pathname={pathname}><ServiceDetails params={params}/></PublicOnly>;
+    params=match("/news/:slug",pathname); if(params)return <PublicOnly pathname={pathname}><NewsDetails params={params}/></PublicOnly>;
+    params=match("/citizen/services/:slug",pathname); if(params)return <Protected roles={["citizen"]}><CitizenServiceDetails params={params}/></Protected>;
     params=match("/citizen/requests/:id",pathname); if(params)return <Protected roles={["citizen"]}><CitizenRequestDetails params={params}/></Protected>;
     params=match("/citizen/news/:slug",pathname); if(params)return <Protected roles={["citizen"]}><CitizenNewsDetails params={params}/></Protected>;
     params=match("/citizen/messages/:id",pathname); if(params)return <Protected roles={["citizen"]}><CitizenMessageDetails params={params}/></Protected>;
+    params=match("/agent/services/:slug",pathname); if(params)return <Protected roles={["agent"]}><AgentServiceDetails params={params}/></Protected>;
+    params=match("/agent/news/:slug",pathname); if(params)return <Protected roles={["agent"]}><AgentNewsDetails params={params}/></Protected>;
     params=match("/agent/requests/:id",pathname); if(params)return <Protected roles={["agent"]}><AgentRequestDetails params={params}/></Protected>;
     params=match("/agent/citizens/:id",pathname); if(params)return <Protected roles={["agent"]}><AgentCitizenDetails params={params}/></Protected>;
     params=match("/agent/messages/:id",pathname); if(params)return <Protected roles={["agent"]}><AgentMessageDetails params={params}/></Protected>;
     params=match("/admin/messages/:id",pathname); if(params)return <Protected roles={["admin"]}><AdminMessageDetails params={params}/></Protected>;
 
-    return <LandingPage/>;
+    return <FallbackRoute/>;
   },[pathname]);
 
   return <>

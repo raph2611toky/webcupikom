@@ -14,7 +14,7 @@ export default function AgentNews(){
     <main className="portal-content"><section className="portal-card management-list">
       {items.map(item=><article key={item.slug} className="management-row">
         <div className="management-row__main management-row__main--news"><div className="management-news-thumb"><img src={item.image} alt=""/></div><div><span>{item.category}</span><h3>{item.title}</h3><p>{item.excerpt}</p></div></div>
-        <div className="management-row__actions"><button className="secondary-action" onClick={()=>navigate(`/news/${item.slug}`)}>Consulter →</button></div>
+        <div className="management-row__actions"><button className="secondary-action" onClick={()=>navigate(`/agent/news/${item.slug}`)}>Consulter →</button></div>
       </article>)}
     </section></main>
   </div></div>;

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
   changePassword,
-  deleteAccount,
   requestEmailChange,
   setPassword,
   updateProfile,
@@ -90,23 +89,7 @@ export default function AccountSettingsCard({ allowDelete = false }) {
     }
   }
 
-  async function deleteSubmit(event) {
-    event.preventDefault();
-    setBusy(true);
-    setStatus(null);
-    const form = new FormData(event.currentTarget);
-    try {
-      await deleteAccount({
-        currentPassword: formText(form, "current_password") || "",
-        confirmation: formText(form, "confirmation"),
-      });
-      clearSession();
-      navigate("/", { replace: true });
-    } catch (error) {
-      setStatus({ type: "error", message: getApiErrorMessage(error, "Impossible de supprimer le compte.") });
-      setBusy(false);
-    }
-  }
+
 
   return (
     <>
@@ -129,7 +112,7 @@ export default function AccountSettingsCard({ allowDelete = false }) {
         {allowDelete ? (
           <div className="setting-line setting-line--danger">
             <div><b>Supprimer mon compte</b><span>Cette opération est définitive.</span></div>
-            <button type="button" onClick={() => setMode("delete")}>Supprimer</button>
+            <button type="button" onClick={() => navigate("/citizen/supprimer-compte")}>Supprimer</button>
           </div>
         ) : null}
       </section>
@@ -171,16 +154,6 @@ export default function AccountSettingsCard({ allowDelete = false }) {
             </form>
           ) : null}
 
-          {mode === "delete" ? (
-            <form className="portal-modal" onClick={(event) => event.stopPropagation()} onSubmit={deleteSubmit}>
-              <button type="button" className="modal-close" onClick={close}>×</button>
-              <span className="section-label">Zone sensible</span><h2>Supprimer le compte</h2>
-              <p className="detail-copy">Saisissez <b>DELETE</b> pour confirmer.</p>
-              <label><span>Confirmation</span><input name="confirmation" pattern="DELETE" placeholder="DELETE" required /></label>
-              {user?.has_password ? <label><span>Mot de passe actuel</span><input type="password" name="current_password" autoComplete="current-password" required /></label> : null}
-              <button className="danger-action" type="submit" disabled={busy}>{busy ? "Suppression…" : "Supprimer définitivement"}</button>
-            </form>
-          ) : null}
         </div>
       ) : null}
     </>

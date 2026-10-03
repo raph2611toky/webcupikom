@@ -30,6 +30,16 @@ export default function CitizenHelp(){
     getServices().then(rows=>{setServices(rows);if(rows[0])setServiceId(String(rows[0].id))}).catch(()=>setServices([]));
   },[locale]);
 
+  useEffect(()=>{
+    const applyVoiceDictation=(event)=>{
+      const text=String(event?.detail?.text||"").trim();
+      if(!text)return;
+      setMessage(current=>current?`${current} ${text}`:text);
+    };
+    window.addEventListener("nova-terra-voice-dictation",applyVoiceDictation);
+    return()=>window.removeEventListener("nova-terra-voice-dictation",applyVoiceDictation);
+  },[]);
+
   const selected=useMemo(()=>services.find(s=>String(s.id)===String(serviceId)),[services,serviceId]);
 
   async function submit(event){

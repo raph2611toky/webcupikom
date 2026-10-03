@@ -23,7 +23,6 @@ export default function CitizenDashboard(){
   const [citizenRequests,setCitizenRequests]=useState([]);
   const [services,setServices]=useState([]);
   const [news,setNews]=useState([]);
-  const [showOnboarding,setShowOnboarding]=useState(false);
 
   const load = async () => {
     const [requestsData, servicesData, newsData] = await Promise.all([
@@ -46,18 +45,6 @@ export default function CitizenDashboard(){
       window.removeEventListener("terra-services-updated",refresh);
     };
   },[locale]);
-
-  useEffect(()=>{
-    if(!user?.id)return;
-    const key=`nova_terra_onboarding_${user.id}`;
-    setShowOnboarding(localStorage.getItem(key)!=="done");
-  },[user?.id]);
-
-  function closeOnboarding(nextPath){
-    if(user?.id)localStorage.setItem(`nova_terra_onboarding_${user.id}`,"done");
-    setShowOnboarding(false);
-    if(nextPath)navigate(nextPath);
-  }
 
   const active=useMemo(()=>citizenRequests.filter(r=>r.status!=="Terminée"),[citizenRequests]);
   const actions=useMemo(()=>citizenRequests.filter(r=>r.status==="Action requise").length,[citizenRequests]);
@@ -110,28 +97,12 @@ export default function CitizenDashboard(){
               <button onClick={()=>navigate('/citizen/services')}>{t("allServices", locale)} →</button>
             </div>
             <div className="quick-services quick-services--compact">
-              {services.slice(0,6).map(s=><button key={s.slug} onClick={()=>navigate(`/services/${s.slug}`)}>
+              {services.slice(0,6).map(s=><button key={s.slug} onClick={()=>navigate(`/citizen/services/${s.slug}`)}>
                 <i>{s.icon}</i><span>{s.name}</span>
               </button>)}
             </div>
           </article>
         </section>
-      </main>
-
-      {showOnboarding ? <div className="onboarding-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-        <section className="onboarding-card">
-          <button className="modal-close" type="button" aria-label="Fermer" onClick={()=>closeOnboarding()}>×</button>
-          <span className="section-label">{copy.first}</span>
-          <h2 id="onboarding-title">{copy.welcome}</h2>
-          <p>{copy.steps}</p>
-          <div className="onboarding-steps">
-            <button type="button" onClick={()=>closeOnboarding("/citizen/profile")}><i>01</i><div><b>{copy.profileStep}</b><span>{copy.profileText}</span></div><em>→</em></button>
-            <button type="button" onClick={()=>closeOnboarding("/citizen/services")}><i>02</i><div><b>{copy.servicesStep}</b><span>{copy.servicesText}</span></div><em>→</em></button>
-            <button type="button" onClick={()=>closeOnboarding("/citizen/requests?new=1")}><i>03</i><div><b>{copy.requestStep}</b><span>{copy.requestText}</span></div><em>→</em></button>
-          </div>
-          <button className="onboarding-skip" type="button" onClick={()=>closeOnboarding()}>{copy.skip}</button>
-        </section>
-      </div> : null}
-    </div>
+      </main>    </div>
   </div>;
 }

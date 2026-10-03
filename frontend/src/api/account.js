@@ -43,5 +43,9 @@ export async function confirmEmailChange(token) {
 }
 
 export async function deleteAccount({ currentPassword = "", confirmation = "DELETE" }) {
-  await api.delete("/account/", { data: { current_password: currentPassword, confirmation } });
+  const form = new FormData();
+  if (currentPassword) form.append("current_password", currentPassword);
+  form.append("confirmation", confirmation);
+  const { data } = await api.delete("/account/", { data: form });
+  return data;
 }

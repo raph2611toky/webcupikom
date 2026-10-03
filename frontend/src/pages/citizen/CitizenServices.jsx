@@ -18,5 +18,5 @@ export default function CitizenServices(){
   const copy=COPY[locale]||COPY.fr;
   const [services,setServices]=useState([]);
   useEffect(()=>{getServices().then(setServices)},[locale]);
-  return <div className="portal-layout"><CitizenSidebar/><div className="portal-main"><PortalTopbar eyebrow={copy.eyebrow} title={copy.title}/><main className="portal-content"><section className="citizen-service-grid">{services.map(s=><article key={s.slug}><i aria-hidden="true">{s.icon}</i><span>{s.category}</span><h2>{s.name}</h2><p>{s.shortDescription}</p><button onClick={()=>navigate(`/services/${s.slug}`)}>{copy.open} →</button></article>)}</section></main></div></div>;
+  return <div className="portal-layout"><CitizenSidebar/><div className="portal-main"><PortalTopbar eyebrow={copy.eyebrow} title={copy.title}/><main className="portal-content"><section className="citizen-service-grid">{services.map(s=><article key={s.slug}><i aria-hidden="true">{s.icon}</i><span>{s.category}</span><h2>{s.name}</h2><p>{s.shortDescription}</p><button onClick={()=>navigate(`/citizen/services/${s.slug}`)}>{copy.open} →</button></article>)}</section></main></div></div>;
 }

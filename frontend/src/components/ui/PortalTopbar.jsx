@@ -1,5 +1,7 @@
 import { useAuth } from "../../auth/AuthContext.jsx";
 import LanguageSwitcher from "./LanguageSwitcher.jsx";
+import VoiceControl from "./VoiceControl.jsx";
+import CitizenGuide from "./CitizenGuide.jsx";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
@@ -8,23 +10,23 @@ const LABELS = {
   fr: {
     citizen:"Espace citoyen", agent:"Espace agent", admin:"Administration", dashboard:"Tableau de bord", profile:"Mon profil",
     requests:"Mes demandes", services:"Services", news:"Actualités", notifications:"Notifications", messages:"Messages",
-    settings:"Paramètres", citizens:"Citoyens", users:"Utilisateurs", api:"Flux WebCup", help:"Nous contacter",
+    settings:"Paramètres", "supprimer-compte":"Supprimer le compte", citizens:"Citoyens", users:"Utilisateurs", api:"Flux WebCup", help:"Nous contacter",
   },
   en: {
     citizen:"Citizen space", agent:"Agent space", admin:"Administration", dashboard:"Dashboard", profile:"My profile",
     requests:"My requests", services:"Services", news:"News", notifications:"Notifications", messages:"Messages",
-    settings:"Settings", citizens:"Citizens", users:"Users", api:"WebCup feed", help:"Contact us",
+    settings:"Settings", "supprimer-compte":"Delete account", citizens:"Citizens", users:"Users", api:"WebCup feed", help:"Contact us",
   },
   mg: {
     citizen:"Habaka mponina", agent:"Habaka mpiasan'ny tanàna", admin:"Fitantanana", dashboard:"Tabilao", profile:"Ny mombamomba ahy",
     requests:"Ny fangatahako", services:"Sampan-draharaha", news:"Vaovao", notifications:"Fampahafantarana", messages:"Hafatra",
-    settings:"Fikirana", citizens:"Mponina", users:"Mpampiasa", api:"WebCup", help:"Hifandray aminay",
+    settings:"Fikirana", "supprimer-compte":"Hamafa kaonty", citizens:"Mponina", users:"Mpampiasa", api:"WebCup", help:"Hifandray aminay",
   },
 };
 
 function Breadcrumbs({ locale }) {
   const parts = window.location.pathname.split("/").filter(Boolean);
-  if (!parts.length) return null;
+  if (parts.length < 2) return null;
   const labels = LABELS[locale] || LABELS.fr;
   const items = parts.map((part, index) => ({
     label: labels[part] || decodeURIComponent(part),
@@ -52,29 +54,35 @@ export default function PortalTopbar({ eyebrow, title, actions }) {
   const initials = displayName.split(/\s+/).filter(Boolean).map((part)=>part[0]).join("").slice(0,2).toUpperCase() || "NT";
 
   return (
-    <header className="portal-topbar">
-      <div className="portal-topbar__title">
-        <div className="portal-topbar__meta">
-          <Breadcrumbs locale={locale} />
-          {eyebrow ? <span className="portal-topbar__eyebrow">{eyebrow}</span> : null}
+    <>
+      <header className="portal-topbar">
+        <div className="portal-topbar__title">
+          <div className="portal-topbar__meta">
+            <Breadcrumbs locale={locale} />
+            {window.location.pathname.split("/").filter(Boolean).length < 2 && eyebrow
+              ? <span className="portal-topbar__eyebrow">{eyebrow}</span>
+              : null}
+          </div>
+          <h1>{title}</h1>
         </div>
-        <h1>{title}</h1>
-      </div>
-      <div className="portal-topbar__right">
-        {actions}
-        {user?.role === "citizen" ? <LanguageSwitcher compact /> : null}
-        {user?.role === "citizen" ? (
-          <button className="portal-topbar__icon" type="button" aria-label={t("notifications", locale)} onClick={() => navigate("/citizen/notifications")}>⌁</button>
-        ) : null}
-        <div className="portal-user">
-          <span className="portal-user__avatar">{initials}</span>
-          <div><strong>{displayName}</strong><span>{
-            user?.role === "citizen"
-              ? (locale === "mg" ? "Mponina" : locale === "en" ? "Citizen" : "Citoyen")
-              : user?.role === "agent" ? "Agent" : user?.role === "admin" ? "Admin" : (locale === "en" ? "Visitor" : locale === "mg" ? "Mpitsidika" : "Visiteur")
-          }</span></div>
+        <div className="portal-topbar__right">
+          {actions}
+          {user?.role === "citizen" ? <VoiceControl /> : null}
+          {user?.role === "citizen" ? <LanguageSwitcher compact /> : null}
+          {user?.role === "citizen" ? (
+            <button className="portal-topbar__icon" type="button" aria-label={t("notifications", locale)} onClick={() => navigate("/citizen/notifications")}>⌁</button>
+          ) : null}
+          <div className="portal-user">
+            <span className="portal-user__avatar">{initials}</span>
+            <div><strong>{displayName}</strong><span>{
+              user?.role === "citizen"
+                ? (locale === "mg" ? "Mponina" : locale === "en" ? "Citizen" : "Citoyen")
+                : user?.role === "agent" ? "Agent" : user?.role === "admin" ? "Admin" : (locale === "en" ? "Visitor" : locale === "mg" ? "Mpitsidika" : "Visiteur")
+            }</span></div>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      {user?.role === "citizen" ? <CitizenGuide /> : null}
+    </>
   );
 }
