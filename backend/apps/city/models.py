@@ -97,6 +97,78 @@ class MunicipalService(models.Model):
         return self.name
 
 
+class CityLocation(models.Model):
+    """Lieu physique unifié pour mobilité, services, urgences et partenaires.
+
+    Ce modèle évite de créer quatre architectures différentes pour F36/F45/F46
+    et le bloc partenaires/géolocalisation : les mêmes coordonnées, horaires et
+    coordonnées de contact alimentent tous les parcours publics.
+    """
+
+    class Kind(models.TextChoices):
+        SERVICE = "service", "Service municipal"
+        TRANSPORT_STOP = "transport_stop", "Arrêt / point de transport"
+        HOSPITAL = "hospital", "Hôpital / établissement de santé"
+        EMERGENCY = "emergency", "Service d'urgence"
+        PARTNER = "partner", "Partenaire"
+
+    name = models.CharField(max_length=180)
+    slug = models.SlugField(max_length=200, unique=True)
+    kind = models.CharField(max_length=30, choices=Kind.choices, default=Kind.SERVICE)
+    category = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
+    service = models.ForeignKey(
+        MunicipalService,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="locations",
+    )
+    partner_name = models.CharField(max_length=180, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    district = models.CharField(max_length=120, blank=True)
+    opening_hours = models.CharField(max_length=180, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    website = models.URLField(max_length=500, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    transport_lines = models.JSONField(default=list, blank=True)
+    timetable = models.JSONField(default=list, blank=True)
+    practical_info = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("sort_order", "name")
+        indexes = [
+            models.Index(fields=("kind", "is_active"), name="cityloc_kind_active_idx"),
+            models.Index(fields=("district", "is_active"), name="cityloc_dist_active_idx"),
+        ]
+        verbose_name = "lieu municipal / partenaire"
+        verbose_name_plural = "lieux municipaux / partenaires"
+
+    @property
+    def is_emergency_location(self):
+        return self.kind in {self.Kind.HOSPITAL, self.Kind.EMERGENCY}
+
+    def clean(self):
+        super().clean()
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValidationError("Latitude et longitude doivent être renseignées ensemble.")
+        if self.latitude is not None and not (-90 <= float(self.latitude) <= 90):
+            raise ValidationError({"latitude": "La latitude doit être comprise entre -90 et 90."})
+        if self.longitude is not None and not (-180 <= float(self.longitude) <= 180):
+            raise ValidationError({"longitude": "La longitude doit être comprise entre -180 et 180."})
+        if self.kind == self.Kind.PARTNER and not self.partner_name:
+            self.partner_name = self.name
+
+    def __str__(self):
+        return self.name
+
+
 class NewsArticle(models.Model):
     title = models.CharField(max_length=220)
     slug = models.SlugField(max_length=240, unique=True)

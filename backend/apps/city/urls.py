@@ -231,3 +231,23 @@ urlpatterns += [
         name="admin-idea-detail",
     ),
 ]
+
+
+# Mobilité / partenaires / géolocalisation (F36/F45/F46 + bloc partenaires).
+from .location_views import (
+    AdminCityLocationDetailView,
+    AdminCityLocationListCreateView,
+    CityLocationDetailView,
+    CityLocationListView,
+    EmergencyLocationListView,
+    TransportInfoView,
+)
+
+urlpatterns += [
+    path("city/locations/", CityLocationListView.as_view(), name="city-location-list"),
+    path("city/locations/emergency/", EmergencyLocationListView.as_view(), name="city-emergency-location-list"),
+    path("city/locations/<slug:slug>/", CityLocationDetailView.as_view(), name="city-location-detail"),
+    path("city/transport/", TransportInfoView.as_view(), name="city-transport-info"),
+    path("admin/locations/", AdminCityLocationListCreateView.as_view(), name="admin-location-list"),
+    path("admin/locations/<slug:slug>/", AdminCityLocationDetailView.as_view(), name="admin-location-detail"),
+]

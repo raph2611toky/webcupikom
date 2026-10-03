@@ -21,6 +21,7 @@ from .models import (
     CitizenRequest,
     CitizenRequestEvent,
     ContactMessage,
+    CityLocation,
     MunicipalService,
     NewsArticle,
     StaffAuditEvent,
@@ -137,6 +138,85 @@ class MunicipalServiceSerializer(serializers.ModelSerializer):
             "next_action": obj.alternative_action if not obj.is_active else "",
             "updated_at": obj.availability_updated_at,
         }
+
+
+class CityLocationSerializer(serializers.ModelSerializer):
+    kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    service_slug = serializers.CharField(source="service.slug", read_only=True, allow_null=True)
+    service_name = serializers.CharField(source="service.name", read_only=True, allow_null=True)
+    is_emergency = serializers.BooleanField(source="is_emergency_location", read_only=True)
+    distance_km = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CityLocation
+        fields = (
+            "id", "name", "slug", "kind", "kind_label", "category", "description",
+            "service", "service_slug", "service_name", "partner_name", "address",
+            "district", "opening_hours", "phone", "email", "website", "latitude",
+            "longitude", "transport_lines", "timetable", "practical_info",
+            "is_emergency", "distance_km", "updated_at",
+        )
+
+    def get_distance_km(self, obj):
+        distances = self.context.get("distance_map") or {}
+        value = distances.get(obj.pk)
+        return round(value, 3) if value is not None else None
+
+
+class AdminCityLocationSerializer(serializers.ModelSerializer):
+    slug = serializers.SlugField(required=False, allow_blank=True)
+    kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+
+    class Meta:
+        model = CityLocation
+        fields = (
+            "id", "name", "slug", "kind", "kind_label", "category", "description",
+            "service", "partner_name", "address", "district", "opening_hours", "phone",
+            "email", "website", "latitude", "longitude", "transport_lines", "timetable",
+            "practical_info", "is_active", "sort_order", "created_at", "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at", "kind_label")
+
+    def validate(self, attrs):
+        slug = attrs.get("slug")
+        if slug:
+            queryset = CityLocation.objects.filter(slug=slug)
+            if self.instance:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            if queryset.exists():
+                raise serializers.ValidationError({"slug": "Ce slug est déjà utilisé."})
+
+        lat = attrs.get("latitude", getattr(self.instance, "latitude", None))
+        lon = attrs.get("longitude", getattr(self.instance, "longitude", None))
+        if (lat is None) != (lon is None):
+            raise serializers.ValidationError({
+                "location": "Latitude et longitude doivent être renseignées ensemble."
+            })
+        if lat is not None and not (Decimal("-90") <= lat <= Decimal("90")):
+            raise serializers.ValidationError({"latitude": "La latitude doit être comprise entre -90 et 90."})
+        if lon is not None and not (Decimal("-180") <= lon <= Decimal("180")):
+            raise serializers.ValidationError({"longitude": "La longitude doit être comprise entre -180 et 180."})
+
+        kind = attrs.get("kind", getattr(self.instance, "kind", CityLocation.Kind.SERVICE))
+        partner_name = attrs.get("partner_name", getattr(self.instance, "partner_name", ""))
+        if kind == CityLocation.Kind.PARTNER and not (partner_name or attrs.get("name")):
+            raise serializers.ValidationError({"partner_name": "Le nom du partenaire est requis."})
+
+        for field in ("transport_lines", "timetable"):
+            if field in attrs and not isinstance(attrs[field], list):
+                raise serializers.ValidationError({field: "Ce champ doit être un tableau JSON."})
+        if "practical_info" in attrs and not isinstance(attrs["practical_info"], dict):
+            raise serializers.ValidationError({"practical_info": "Ce champ doit être un objet JSON."})
+        return attrs
+
+    def create(self, validated_data):
+        if not validated_data.get("slug"):
+            validated_data["slug"] = _unique_slug(
+                CityLocation, validated_data.get("name", "lieu"), max_length=200
+            )
+        if validated_data.get("kind") == CityLocation.Kind.PARTNER and not validated_data.get("partner_name"):
+            validated_data["partner_name"] = validated_data.get("name", "")
+        return super().create(validated_data)
 
 
 class AdminMunicipalServiceSerializer(serializers.ModelSerializer):

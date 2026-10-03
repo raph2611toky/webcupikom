@@ -15,12 +15,24 @@ from .models import (
     CitizenRequestEvent,
     CitizenRequestAttachment,
     ContactMessage,
+    CityLocation,
     MunicipalService,
     NewsArticle,
     StaffAuditEvent,
     WebCupRequestSnapshot,
     WebCupSyncState,
 )
+
+
+@admin.register(CityLocation)
+class CityLocationAdmin(admin.ModelAdmin):
+    list_display = ("name", "kind", "district", "service", "partner_name", "is_active", "sort_order", "updated_at")
+    list_filter = ("kind", "district", "is_active")
+    search_fields = ("name", "description", "address", "partner_name", "service__name")
+    list_select_related = ("service",)
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("sort_order", "name")
+
 
 
 @admin.register(MunicipalService)
