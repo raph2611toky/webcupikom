@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.models import User
+from apps.realtime.services import publish_after_commit, role_group, user_group
 from helpers.permissions import (
     IsAuthenticatedAdmin,
     IsAuthenticatedAgent,
@@ -307,6 +308,11 @@ def _dispatch_manual_notification(*, sender, validated_data):
     notifications = [CitizenNotification(user=user, **common) for user in citizens]
     if notifications:
         CitizenNotification.objects.bulk_create(notifications, batch_size=500)
+        publish_after_commit(
+            groups=[role_group(User.Role.CITIZEN)],
+            event="notifications.refresh",
+            payload={"reason": "global_notification", "batch_code": batch_code},
+        )
         if common["is_important"]:
             schedule_notification_batch(batch_code)
     return len(notifications), batch_code
@@ -795,6 +801,12 @@ class CitizenNotificationReadAllView(APIView):
         updated = CitizenNotification.objects.filter(
             user=request.user, is_read=False, visible_from__lte=now
         ).filter(visible_notifications()).update(is_read=True, read_at=now)
+        if updated:
+            publish_after_commit(
+                groups=[user_group(request.user.pk)],
+                event="notifications.read_all",
+                payload={"updated": updated},
+            )
         return Response({"updated": updated})
 
 

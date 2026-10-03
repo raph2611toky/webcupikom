@@ -13,6 +13,7 @@ from config.views import (
 
 urlpatterns = [
     path("health/", health, name="health"),
+    path("api/realtime/", include("apps.realtime.urls")),
     path("api/", include("apps.users.urls")),
     path("api/", include("apps.city.urls")),
     path("admin/", admin.site.urls),

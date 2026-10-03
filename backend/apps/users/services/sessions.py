@@ -10,6 +10,26 @@ from ..models import AccountSession, User, SecurityEvent
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 
+def _publish_realtime_security_event(*, user_id, event, session_id=None, reason=""):
+    """Best-effort uniquement : une panne Redis ne touche jamais la révocation DB."""
+    try:
+        from apps.realtime.services import publish_after_commit, session_group, user_group
+
+        groups = [session_group(session_id)] if session_id else [user_group(user_id)]
+        publish_after_commit(
+            groups=groups,
+            event=event,
+            payload={
+                "session_id": str(session_id) if session_id else None,
+                "reason": reason,
+                "reauthentication_required": True,
+            },
+        )
+    except Exception:
+        # La base et les JWT restent la source de vérité.
+        return
+
+
 def request_ip(request):
     # Never trust client-controlled X-Forwarded-For without a trusted proxy policy.
     try:
@@ -53,6 +73,12 @@ def revoke_session(session, reason='user'):
     SecurityEvent.objects.create(subject=session.user, kind='session_revoked', session_id=session.pk, details={'reason': reason})
     AccountSession.objects.filter(pk=session.pk, revoked_at__isnull=True).update(
         revoked_at=timezone.now(), revoke_reason=reason)
+    _publish_realtime_security_event(
+        user_id=session.user_id,
+        session_id=session.pk,
+        event="security.session_revoked",
+        reason=reason,
+    )
     from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
     outstanding = OutstandingToken.objects.filter(jti=session.refresh_jti).first()
     if outstanding:
@@ -67,6 +93,11 @@ def revoke_all(user, reason='security_change'):
     user.save(update_fields=['auth_token_version', 'mfa_login_nonce', 'updated_at'])
     AccountSession.objects.filter(user=user, revoked_at__isnull=True).update(
         revoked_at=timezone.now(), revoke_reason=reason)
+    _publish_realtime_security_event(
+        user_id=user.pk,
+        event="security.sessions_revoked",
+        reason=reason,
+    )
     from .mfa import revoke_user_refresh_tokens
     revoke_user_refresh_tokens(user)
 

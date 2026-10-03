@@ -2,6 +2,7 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import quote, urlencode
 
 from dotenv import load_dotenv
 
@@ -28,8 +29,10 @@ ALLOWED_HOSTS = env_list(
 LOCAL_APPS = [
     "apps.users.apps.UsersConfig",
     "apps.city.apps.CityConfig",
+    "apps.realtime.apps.RealtimeConfig",
 ]
 THIRD_APPS = [
+    "channels",
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
@@ -38,6 +41,7 @@ THIRD_APPS = [
 ]
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -136,6 +140,7 @@ REST_FRAMEWORK = {
         "password_reset": os.getenv("THROTTLE_PASSWORD_RESET", "5/min"),
         "contact": os.getenv("THROTTLE_CONTACT", "10/min"),
         "webcup": os.getenv("THROTTLE_WEBCUP", "60/min"),
+        "realtime_ticket": os.getenv("THROTTLE_REALTIME_TICKET", "12/min"),
     },
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
@@ -219,6 +224,73 @@ GOOGLE_REDIRECT_URI = os.getenv(
     f"{FRONTEND_URL.rstrip('/')}/auth/google/callback",
 )
 GOOGLE_OAUTH_STATE_MAX_AGE = int(os.getenv("GOOGLE_OAUTH_STATE_MAX_AGE", "600"))
+
+
+# -----------------------------------------------------------------------------
+# Temps réel / WebSocket (optionnel)
+# -----------------------------------------------------------------------------
+REALTIME_ENABLED = env_bool("REALTIME_ENABLED", True)
+REALTIME_REDIS_DB = int(os.getenv("REALTIME_REDIS_DB", "15"))
+REALTIME_REDIS_PREFIX = os.getenv("REALTIME_REDIS_PREFIX", "terra_nova_rt").strip() or "terra_nova_rt"
+REALTIME_REDIS_CONNECT_TIMEOUT = float(os.getenv("REALTIME_REDIS_CONNECT_TIMEOUT", "0.35"))
+REALTIME_REDIS_SOCKET_TIMEOUT = float(os.getenv("REALTIME_REDIS_SOCKET_TIMEOUT", "0.75"))
+
+
+def _realtime_redis_url():
+    explicit = os.getenv("REALTIME_REDIS_URL", "").strip()
+    if explicit:
+        return explicit
+
+    password = os.getenv("REDIS_PASSWORD", "").strip()
+    socket_path = os.getenv("REDIS_SOCKET", "").strip()
+    if socket_path:
+        query = {"db": REALTIME_REDIS_DB}
+        if password:
+            query["password"] = password
+        return f"unix://{quote(socket_path, safe='/')}?{urlencode(query)}"
+
+    host = os.getenv("REDIS_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    port = int(os.getenv("REDIS_PORT", "6379"))
+    auth = f":{quote(password, safe='')}@" if password else ""
+    return f"redis://{auth}{host}:{port}/{REALTIME_REDIS_DB}"
+
+
+REALTIME_REDIS_URL = _realtime_redis_url()
+REALTIME_TICKET_TTL = max(10, min(int(os.getenv("REALTIME_TICKET_TTL", "30")), 120))
+REALTIME_SESSION_RECHECK_SECONDS = max(15, int(os.getenv("REALTIME_SESSION_RECHECK_SECONDS", "45")))
+REALTIME_MAX_MESSAGE_BYTES = max(1024, int(os.getenv("REALTIME_MAX_MESSAGE_BYTES", "8192")))
+REALTIME_MAX_CLIENT_MESSAGES_PER_MINUTE = max(10, int(os.getenv("REALTIME_MAX_CLIENT_MESSAGES_PER_MINUTE", "60")))
+REALTIME_MAX_RESOURCE_SUBSCRIPTIONS = max(1, int(os.getenv("REALTIME_MAX_RESOURCE_SUBSCRIPTIONS", "20")))
+REALTIME_EMIT_QUEUE_MAX = max(20, int(os.getenv("REALTIME_EMIT_QUEUE_MAX", "500")))
+REALTIME_ALLOWED_ORIGINS = env_list(
+    "REALTIME_ALLOWED_ORIGINS",
+    ",".join(CORS_ALLOWED_ORIGINS) if CORS_ALLOWED_ORIGINS else FRONTEND_URL,
+)
+REALTIME_CHANNEL_ENCRYPTION_KEY = os.getenv(
+    "REALTIME_CHANNEL_ENCRYPTION_KEY", SECRET_KEY
+).strip() or SECRET_KEY
+
+if REALTIME_ENABLED:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REALTIME_REDIS_URL],
+                "prefix": REALTIME_REDIS_PREFIX,
+                "capacity": 150,
+                "expiry": 60,
+                "group_expiry": 86400,
+                "symmetric_encryption_keys": [REALTIME_CHANNEL_ENCRYPTION_KEY],
+                "serializer_format": "json",
+            },
+        }
+    }
+else:
+    # L'API HTTP reste entièrement utilisable. Le layer mémoire évite les imports
+    # conditionnels dans le code, mais l'endpoint ticket renvoie 503.
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+    }
 
 # MFA TOTP (Google Authenticator et applications compatibles RFC 6238).
 # En production, MFA_ENCRYPTION_KEY et MFA_RECOVERY_PEPPER doivent être des
