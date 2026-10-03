@@ -330,6 +330,9 @@ class CitizenNotification(models.Model):
     action_url = models.CharField(max_length=500, blank=True)
     notification_code = models.CharField(max_length=80, blank=True, db_index=True)
     visible_from = models.DateTimeField(default=timezone.now, db_index=True)
+    is_important = models.BooleanField(default=False, db_index=True)
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    email_last_error = models.TextField(blank=True)
     related_request = models.ForeignKey(
         CitizenRequest,
         on_delete=models.SET_NULL,

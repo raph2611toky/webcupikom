@@ -637,6 +637,7 @@ class NotificationCreateSerializer(serializers.Serializer):
     action_label = serializers.CharField(max_length=120, required=False, allow_blank=True)
     action_url = serializers.CharField(max_length=500, required=False, allow_blank=True)
     visible_from = serializers.DateTimeField(required=False, default=timezone.now)
+    is_important = serializers.BooleanField(required=False, default=False)
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -663,12 +664,12 @@ class CitizenNotificationSerializer(serializers.ModelSerializer):
         fields = (
             "id", "kind", "scope", "title", "message", "sender", "sender_name",
             "action_label", "action_url", "request_reference", "contact_reference",
-            "appointment_reference", "visible_from", "is_read", "read_at", "created_at",
+            "appointment_reference", "visible_from", "is_important", "is_read", "read_at", "created_at",
         )
         read_only_fields = (
             "id", "kind", "scope", "title", "message", "sender", "sender_name",
             "action_label", "action_url", "request_reference", "contact_reference",
-            "appointment_reference", "visible_from", "read_at", "created_at",
+            "appointment_reference", "visible_from", "is_important", "read_at", "created_at",
         )
 
     def get_sender_name(self, obj):

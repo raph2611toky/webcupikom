@@ -70,10 +70,13 @@ class CitizenPreferenceAdmin(admin.ModelAdmin):
 
 @admin.register(CitizenNotification)
 class CitizenNotificationAdmin(admin.ModelAdmin):
-    list_display = ("user", "kind", "scope", "title", "sender", "visible_from", "is_read", "created_at")
-    list_filter = ("kind", "scope", "is_read")
+    list_display = (
+        "user", "kind", "scope", "title", "sender", "is_important",
+        "visible_from", "email_sent_at", "is_read", "created_at",
+    )
+    list_filter = ("kind", "scope", "is_important", "is_read")
     search_fields = ("user__email", "sender__email", "title", "message", "notification_code")
-    readonly_fields = ("created_at", "read_at")
+    readonly_fields = ("created_at", "read_at", "email_sent_at", "email_last_error")
 
 
 @admin.register(CitizenAppointment)

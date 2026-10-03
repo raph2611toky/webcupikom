@@ -221,6 +221,7 @@ NOTIFICATION_SEND_PARAMETERS = [
     form_string("action_label", "Libellé du bouton d'action"),
     form_string("action_url", "URL ou route frontend de l'action"),
     form_string("visible_from", "Date/heure ISO 8601 à partir de laquelle la notification devient visible"),
+    form_bool("is_important", "Notification importante : envoie également un email au citoyen"),
 ]
 
 

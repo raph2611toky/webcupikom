@@ -1,0 +1,39 @@
+{% extends "emails/base.html" %}
+{% block title %}{{ notification_title }}{% endblock %}
+{% block content %}
+  <p style="margin:0 0 12px;color:#64748b;font-size:15px;">Bonjour {{ display_name }},</p>
+
+  <div style="display:inline-block;margin:0 0 14px;padding:6px 10px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12px;font-weight:700;letter-spacing:.02em;">
+    Notification importante
+  </div>
+
+  <h1 style="margin:0 0 14px;font-size:26px;line-height:1.25;color:#111827;">{{ notification_title }}</h1>
+
+  {% if notification_kind or sender_name %}
+    <p style="margin:0 0 18px;color:#94a3b8;font-size:13px;line-height:1.6;">
+      {% if notification_kind %}<strong style="color:#64748b;">Type :</strong> {{ notification_kind }}{% endif %}
+      {% if notification_kind and sender_name %}&nbsp;&nbsp;•&nbsp;&nbsp;{% endif %}
+      {% if sender_name %}<strong style="color:#64748b;">Émetteur :</strong> {{ sender_name }}{% endif %}
+    </p>
+  {% endif %}
+
+  {% if notification_message %}
+    <div style="padding:17px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;color:#334155;line-height:1.7;white-space:pre-line;">{{ notification_message }}</div>
+  {% endif %}
+
+  {% if action_url %}
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:24px;">
+      <tr>
+        <td style="border-radius:10px;background:#5b7eff;">
+          <a href="{{ action_url }}" style="display:inline-block;padding:12px 18px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;">
+            {{ action_label|default:"Voir la notification" }}
+          </a>
+        </td>
+      </tr>
+    </table>
+  {% endif %}
+
+  <p style="margin:24px 0 0;color:#64748b;font-size:13px;line-height:1.7;">
+    Cette information est également disponible dans votre espace citoyen {{ site_name }}.
+  </p>
+{% endblock %}

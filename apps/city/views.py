@@ -91,6 +91,7 @@ from .swagger import (
     citizen_request_post_schema,
     contact_create_schema,
 )
+from .services.notifications import schedule_notification_batch, schedule_notification_email
 from .services.webcup import WebCupUpstreamError, get_webcup_requests
 
 
@@ -151,6 +152,7 @@ def _sync_appointment_reminder(appointment):
         "action_url": _appointment_frontend_url(appointment),
         "visible_from": visible_from,
         "sender": appointment.agent,
+        "is_important": True,
         "is_read": False,
         "read_at": None,
     }
@@ -160,13 +162,16 @@ def _sync_appointment_reminder(appointment):
             setattr(reminder, field, value)
         reminder.save(update_fields=[*defaults.keys()])
         reminders.exclude(pk=reminder.pk).delete()
+        schedule_notification_email(reminder)
         return reminder
-    return CitizenNotification.objects.create(
+    reminder = CitizenNotification.objects.create(
         user=appointment.citizen,
         related_appointment=appointment,
         notification_code="appointment_reminder",
         **defaults,
     )
+    schedule_notification_email(reminder)
+    return reminder
 
 
 def _notify_appointment_update(appointment, *, sender, message=None):
@@ -176,7 +181,7 @@ def _notify_appointment_update(appointment, *, sender, message=None):
             f"Votre rendez-vous du {local_start:%d/%m/%Y à %H:%M} est maintenant "
             f"« {appointment.get_status_display()} » ."
         )
-    return CitizenNotification.objects.create(
+    notification = CitizenNotification.objects.create(
         user=appointment.citizen,
         sender=sender,
         scope=CitizenNotification.Scope.TARGETED,
@@ -187,7 +192,10 @@ def _notify_appointment_update(appointment, *, sender, message=None):
         action_url=_appointment_frontend_url(appointment),
         notification_code=f"appointment_update:{uuid.uuid4().hex}",
         related_appointment=appointment,
+        is_important=True,
     )
+    schedule_notification_email(notification)
+    return notification
 
 
 def _dispatch_manual_notification(*, sender, validated_data):
@@ -208,30 +216,40 @@ def _dispatch_manual_notification(*, sender, validated_data):
         "action_url": validated_data.get("action_url", ""),
         "visible_from": validated_data["visible_from"],
         "notification_code": batch_code,
+        "is_important": validated_data.get("is_important", False),
     }
 
     if audience == "targeted":
-        CitizenNotification.objects.create(user=recipient, **common)
+        notification = CitizenNotification.objects.create(user=recipient, **common)
+        schedule_notification_email(notification)
         return 1, batch_code
 
     citizens = User.objects.filter(role=User.Role.CITIZEN, is_active=True).only("id")
     notifications = [CitizenNotification(user=user, **common) for user in citizens]
     if notifications:
         CitizenNotification.objects.bulk_create(notifications, batch_size=500)
+        if common["is_important"]:
+            schedule_notification_batch(batch_code)
     return len(notifications), batch_code
 
 
-def _notify_request_status(citizen_request, previous_status=None):
+def _notify_request_status(citizen_request, previous_status=None, *, sender=None):
     if previous_status == citizen_request.status:
         return
     label = citizen_request.get_status_display()
-    CitizenNotification.objects.create(
+    notification = CitizenNotification.objects.create(
         user=citizen_request.citizen,
+        sender=sender or citizen_request.assigned_to,
+        scope=CitizenNotification.Scope.TARGETED,
         kind=CitizenNotification.Kind.REQUEST,
         title=f"Demande {citizen_request.reference}",
         message=f"Le statut de votre demande est maintenant : {label}.",
+        action_label="Voir la demande",
+        action_url=f"/requests/{citizen_request.reference}",
         related_request=citizen_request,
+        is_important=True,
     )
+    schedule_notification_email(notification)
 
 
 def _create_request_event(citizen_request, *, actor=None, event_type=None, title=None, message="", is_public=True):
@@ -866,6 +884,12 @@ class _NotificationCreateBaseView(APIView):
                 "audience": serializer.validated_data["audience"],
                 "notification_code": batch_code,
                 "visible_from": serializer.validated_data["visible_from"],
+                "is_important": serializer.validated_data.get("is_important", False),
+                "email_delivery": (
+                    "scheduled_or_sent"
+                    if serializer.validated_data.get("is_important", False)
+                    else "not_requested"
+                ),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -1084,7 +1108,11 @@ class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
         previous_priority = serializer.instance.priority
         previous_assignee = serializer.instance.assigned_to_id
         instance = serializer.save()
-        _notify_request_status(instance, previous_status=previous_status)
+        _notify_request_status(
+            instance,
+            previous_status=previous_status,
+            sender=self.request.user,
+        )
         if previous_status != instance.status:
             _create_request_event(
                 instance,
