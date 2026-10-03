@@ -8,3 +8,114 @@
 @media(max-width:1100px){.projects-hero,.project-participation-card{grid-template-columns:1fr}.project-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.projects-hero__stats{max-width:620px}.project-detail-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.project-grid,.projects-hero__stats,.project-date-grid,.project-form__row,.project-choice-grid{grid-template-columns:1fr}.idea-callout,.project-backend-note{align-items:flex-start;flex-direction:column}.project-receipt b{margin-left:0}.project-form__actions{flex-direction:column-reverse}.project-form__actions button{width:100%}.project-modal-backdrop{padding:10px}.project-modal{padding:17px}.agent-project-row{grid-template-columns:1fr}.agent-project-row button{width:100%}}
 .citizen-ideas-history__list{display:grid}.citizen-ideas-history__list>div{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:11px 0;border-top:1px solid #eee8f1}.citizen-ideas-history__list>div:first-child{border-top:0}.citizen-ideas-history__list>div>div{display:grid;gap:3px}.citizen-ideas-history strong{font-size:.68rem}.citizen-ideas-history span{font-size:.57rem;color:#857a8e}.citizen-ideas-history b{font-size:.6rem;color:#6b18df;font-family:ui-monospace,monospace}.project-closed-note{padding:16px;border:1px solid #e4dce8;border-radius:15px;background:#f8f6f9;color:#6f6577;font-size:.67rem;line-height:1.55}
+
+/* ========================================================================== 
+   V63 — Projects polish: compact intro + robust high contrast
+   ========================================================================== */
+.projects-page{gap:14px}
+.project-compact-intro{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) auto;
+  align-items:center;
+  gap:16px;
+  padding:16px 18px!important;
+}
+.project-compact-intro__copy{display:grid;gap:4px}
+.project-compact-intro__copy strong{font-size:.9rem;color:#221a28}
+.project-compact-intro__copy p{margin:0;color:#73697c;font-size:.66rem;line-height:1.55}
+.project-compact-intro__stats{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(74px,96px));
+  gap:8px;
+}
+.project-compact-intro__stats>div{
+  display:grid;
+  gap:2px;
+  padding:11px 12px;
+  border:1px solid #ece5f2;
+  border-radius:16px;
+  background:#fbf9fd;
+  text-align:center;
+}
+.project-compact-intro__stats strong{font-size:1.08rem;color:#6b18df;line-height:1}
+.project-compact-intro__stats span{font-size:.56rem;color:#82778c}
+.project-grid{align-items:stretch}
+.project-card{min-height:380px}
+.project-card h3{font-size:1rem;line-height:1.18}
+.project-card p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.project-detail-page{gap:14px}
+.project-detail-hero{padding:20px}
+.project-detail-hero h2{font-size:clamp(1.35rem,2.6vw,2.25rem);line-height:1.06}
+.project-date-grid>div{padding:12px}
+.project-milestones>div,.project-choice-grid label,.project-date-grid>div,.project-participation-card,.project-closed-note{border-color:#ebe3f0}
+
+html[data-contrast="high"] .project-compact-intro,
+html[data-contrast="high"] .project-card,
+html[data-contrast="high"] .idea-callout,
+html[data-contrast="high"] .citizen-ideas-history,
+html[data-contrast="high"] .project-detail-hero,
+html[data-contrast="high"] .project-date-grid>div,
+html[data-contrast="high"] .project-detail-grid .portal-card,
+html[data-contrast="high"] .project-participation-card,
+html[data-contrast="high"] .project-choice-grid label,
+html[data-contrast="high"] .project-milestones>div,
+html[data-contrast="high"] .project-backend-note,
+html[data-contrast="high"] .project-closed-note,
+html[data-contrast="high"] .project-modal,
+html[data-contrast="high"] .project-form input,
+html[data-contrast="high"] .project-form select,
+html[data-contrast="high"] .project-form textarea,
+html[data-contrast="high"] .project-comment textarea,
+html[data-contrast="high"] .project-filter-row button{
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+  box-shadow:none!important;
+}
+html[data-contrast="high"] .project-compact-intro__copy strong,
+html[data-contrast="high"] .project-compact-intro__copy p,
+html[data-contrast="high"] .project-card h3,
+html[data-contrast="high"] .project-card p,
+html[data-contrast="high"] .project-card dt,
+html[data-contrast="high"] .project-card dd,
+html[data-contrast="high"] .project-progress>div,
+html[data-contrast="high"] .project-detail-hero h2,
+html[data-contrast="high"] .project-detail-hero p,
+html[data-contrast="high"] .project-date-grid span,
+html[data-contrast="high"] .project-date-grid strong,
+html[data-contrast="high"] .project-objectives li,
+html[data-contrast="high"] .project-milestones span,
+html[data-contrast="high"] .project-participation-copy h3,
+html[data-contrast="high"] .project-participation-copy p,
+html[data-contrast="high"] .project-participation-copy small,
+html[data-contrast="high"] .idea-callout h3,
+html[data-contrast="high"] .idea-callout p,
+html[data-contrast="high"] .citizen-ideas-history strong,
+html[data-contrast="high"] .citizen-ideas-history span,
+html[data-contrast="high"] .project-form label>span{
+  color:#fff!important;
+}
+html[data-contrast="high"] .project-compact-intro__stats>div,
+html[data-contrast="high"] .project-card__icon,
+html[data-contrast="high"] .project-status,
+html[data-contrast="high"] .project-participation-badge,
+html[data-contrast="high"] .project-progress progress,
+html[data-contrast="high"] .project-choice-grid label.is-selected,
+html[data-contrast="high"] .project-filter-row button.is-active{
+  background:#f2d34b!important;
+  color:#000!important;
+  border-color:#f2d34b!important;
+}
+html[data-contrast="high"] .project-card__icon{font-weight:900}
+html[data-contrast="high"] .project-receipt{background:#000!important;color:#fff!important;border-color:#fff!important}
+html[data-contrast="high"] .project-receipt strong,
+html[data-contrast="high"] .project-receipt span,
+html[data-contrast="high"] .project-receipt b{color:#fff!important}
+
+@media(max-width:920px){
+  .project-compact-intro{grid-template-columns:1fr}
+  .project-compact-intro__stats{grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+}
+@media(max-width:700px){
+  .project-compact-intro__stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}

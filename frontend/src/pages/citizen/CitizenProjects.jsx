@@ -54,15 +54,25 @@ export default function CitizenProjects(){
     finally{setSaving(false)}
   }
 
+  const activeProjects=projects.filter(p=>p.status!=="completed").length;
+  const openParticipations=projects.filter(p=>p.participation_type!=="none").length;
+
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
     <PortalTopbar eyebrow="Participation citoyenne" title="Projets municipaux" actions={<button className="primary-action" onClick={()=>setIdeaOpen(true)}>+ Proposer une idée</button>}/>
     <main className="portal-content projects-page">
       {error?<div className="error-card" role="alert">{error}</div>:null}
       {receipt?<div className="project-receipt" role="status"><strong>✓ Proposition envoyée</strong><span>Votre idée a bien été enregistrée.</span><b>Référence : {receipt.reference}</b></div>:null}
 
-      <section className="projects-hero portal-card">
-        <div><span className="section-label">F67 · F66 · F65 · F68</span><h2>Découvrez les projets en cours à Nova Terra et participez à leur évolution.</h2><p>Consultez l’avancement, donnez votre avis lorsqu’une consultation est ouverte et retrouvez une trace claire de vos contributions.</p></div>
-        <div className="projects-hero__stats"><div><strong>{projects.filter(p=>p.status!=="completed").length}</strong><span>projets actifs</span></div><div><strong>{projects.filter(p=>p.participation_type!=="none").length}</strong><span>participations ouvertes</span></div><div><strong>{ideas.length}</strong><span>idées proposées</span></div></div>
+      <section className="project-compact-intro portal-card">
+        <div className="project-compact-intro__copy">
+          <strong>Suivez les projets et participez simplement.</strong>
+          <p>Consultez l’avancement, donnez votre avis lorsqu’une consultation est ouverte et retrouvez vos contributions en un seul endroit.</p>
+        </div>
+        <div className="project-compact-intro__stats" aria-label="Résumé des projets">
+          <div><strong>{activeProjects}</strong><span>actifs</span></div>
+          <div><strong>{openParticipations}</strong><span>consultations</span></div>
+          <div><strong>{ideas.length}</strong><span>idées</span></div>
+        </div>
       </section>
 
       <div className="project-filter-row" role="toolbar" aria-label="Filtrer les projets">{FILTERS.map(([value,label])=><button type="button" key={value} className={filter===value?"is-active":""} aria-pressed={filter===value} onClick={()=>setFilter(value)}>{label}</button>)}</div>
@@ -78,11 +88,11 @@ export default function CitizenProjects(){
         </article>)}
       </section>
 
-      <section className="idea-callout portal-card"><div><span className="section-label">F68</span><h3>Une idée pour Nova Terra ?</h3><p>Proposez une amélioration pour votre quartier ou pour l’ensemble de la ville. Une référence vous sera donnée immédiatement.</p></div><button className="primary-action" onClick={()=>setIdeaOpen(true)}>+ Proposer une idée</button></section>
+      <section className="idea-callout portal-card"><div><h3>Une idée pour Nova Terra ?</h3><p>Proposez une amélioration pour votre quartier ou pour l’ensemble de la ville. Une référence vous sera donnée immédiatement.</p></div><button className="primary-action" onClick={()=>setIdeaOpen(true)}>+ Proposer une idée</button></section>
 
-      {ideas.length?<section className="portal-card citizen-ideas-history"><div className="portal-card__head"><div><span className="section-label">Mes contributions</span><h3>Mes idées proposées</h3></div></div><div className="citizen-ideas-history__list">{ideas.slice(0,5).map(item=><div key={item.id}><div><strong>{item.title}</strong><span>{item.category} · {item.district}</span></div><b>{item.reference}</b></div>)}</div></section>:null}
+      {ideas.length?<section className="portal-card citizen-ideas-history"><div className="portal-card__head"><div><h3>Mes idées proposées</h3></div></div><div className="citizen-ideas-history__list">{ideas.slice(0,5).map(item=><div key={item.id}><div><strong>{item.title}</strong><span>{item.category} · {item.district}</span></div><b>{item.reference}</b></div>)}</div></section>:null}
 
-      {ideaOpen?<div className="project-modal-backdrop" role="presentation" onMouseDown={(e)=>{if(e.target===e.currentTarget)setIdeaOpen(false)}}><section className="project-modal" role="dialog" aria-modal="true" aria-labelledby="idea-title"><div className="project-modal__head"><div><span className="section-label">F68 · Contribution citoyenne</span><h3 id="idea-title">Proposer une idée</h3></div><button type="button" aria-label="Fermer" onClick={()=>setIdeaOpen(false)}>×</button></div><form onSubmit={submitIdea} className="project-form">
+      {ideaOpen?<div className="project-modal-backdrop" role="presentation" onMouseDown={(e)=>{if(e.target===e.currentTarget)setIdeaOpen(false)}}><section className="project-modal" role="dialog" aria-modal="true" aria-labelledby="idea-title"><div className="project-modal__head"><div><h3 id="idea-title">Proposer une idée</h3></div><button type="button" aria-label="Fermer" onClick={()=>setIdeaOpen(false)}>×</button></div><form onSubmit={submitIdea} className="project-form">
         <label><span>Titre</span><input value={idea.title} onChange={e=>setIdea(v=>({...v,title:e.target.value}))} placeholder="Ex. Installer des bancs au Jardin Lyra" required/></label>
         <div className="project-form__row"><label><span>Catégorie</span><select value={idea.category} onChange={e=>setIdea(v=>({...v,category:e.target.value}))}>{CATEGORIES.map(v=><option key={v}>{v}</option>)}</select></label><label><span>Quartier</span><select value={idea.district} onChange={e=>setIdea(v=>({...v,district:e.target.value}))}>{DISTRICTS.map(v=><option key={v}>{v}</option>)}</select></label></div>
         <label><span>Votre proposition</span><textarea value={idea.description} onChange={e=>setIdea(v=>({...v,description:e.target.value}))} placeholder="Expliquez simplement le besoin et l’amélioration proposée…" required/></label>

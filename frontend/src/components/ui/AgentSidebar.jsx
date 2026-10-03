@@ -12,7 +12,7 @@ const items = [
   ["/agent/messages", "✉", "Messages"],
   ["/agent/audit", "⌁", "Journal d’activité"],
   ["/agent/projects", "✦", "Projets municipaux"],
-  ["/agent/news", "▤", "Publications"],
+  ["/agent/news", "▤", "Actualités"],
   ["/agent/services", "◇", "Services"],
   ["/agent/api", "⌘", "Flux WebCup"],
 ];

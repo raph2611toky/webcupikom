@@ -8,7 +8,7 @@ const LanguageSwitcher = lazy(() => import("./LanguageSwitcher.jsx"));
 const VoiceControl = lazy(() => import("./VoiceControl.jsx"));
 const CitizenGuide = lazy(() => import("./CitizenGuide.jsx"));
 const NotificationBell = lazy(() => import("./NotificationBell.jsx"));
-const ReportShortcut = lazy(() => import("./ReportShortcut.jsx"));
+const AlertShortcut = lazy(() => import("./AlertShortcut.jsx"));
 
 const LABELS = {
   fr: {
@@ -73,7 +73,7 @@ export default function PortalTopbar({ eyebrow, title, actions }) {
           {actions}
           {user?.role === "citizen" ? <Suspense fallback={null}><VoiceControl /></Suspense> : null}
           {user?.role === "citizen" ? <Suspense fallback={null}><LanguageSwitcher compact /></Suspense> : null}
-          {user?.role === "citizen" ? <Suspense fallback={null}><ReportShortcut label={LABELS[locale]?.reports || "Signalements"} /></Suspense> : null}
+          {user?.role === "citizen" ? <Suspense fallback={null}><AlertShortcut label={locale === "en" ? "City alerts" : locale === "mg" ? "Fanairana avy amin’ny tanàna" : "Alertes municipales"} /></Suspense> : null}
           {user?.role === "citizen" ? <Suspense fallback={null}><NotificationBell label={t("notifications", locale)} /></Suspense> : null}
           <div className="portal-user">
             <span className="portal-user__avatar">{initials}</span>

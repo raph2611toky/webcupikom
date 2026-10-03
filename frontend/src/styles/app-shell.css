@@ -1063,3 +1063,11 @@ body[data-route-group="portal"] .portal-sidebar--agent nav{overflow-y:auto;scrol
 .citizen-context-guide-trigger{position:fixed;z-index:639;left:272px;bottom:24px;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px 6px 7px;border:1px solid #dfd7e6;border-radius:999px;background:#fff;color:#4f405d;box-shadow:0 10px 28px rgba(26,14,35,.12);font-size:.68rem;font-weight:800}.citizen-context-guide-trigger>span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#efe7ff;color:#6414d4;font-size:.78rem;font-weight:900}.citizen-context-guide-trigger:hover{border-color:#cbb9dc;background:#fbf9fd}.citizen-context-guide-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--tn-purple) 35%,transparent);outline-offset:3px}
 html[data-contrast="high"] .citizen-context-guide-trigger{background:#fff!important;color:#000!important;border:2px solid #111!important}html[data-contrast="high"] .citizen-context-guide-trigger>span{background:#000!important;color:#fff!important}
 @media(max-width:1000px){.citizen-context-guide-trigger{left:98px}}@media(max-width:700px){.citizen-context-guide-trigger{left:12px;bottom:78px}.citizen-context-guide-trigger b{display:none}}
+
+/* v64 — true municipal alert shortcut */
+.portal-alert-shortcut{position:relative;display:grid;place-items:center;color:#b26a00}
+.portal-alert-shortcut svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.portal-alert-shortcut>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#e58b00;color:#fff;font-size:.48rem;font-weight:900;line-height:1}
+.portal-alert-shortcut:hover{border-color:#e4b057;background:#fff6e6;color:#9b5900}
+html[data-contrast="high"] .portal-alert-shortcut{color:#f2d34b!important}
+html[data-contrast="high"] .portal-alert-shortcut>b{background:#f2d34b!important;color:#000!important;border-color:#000!important}

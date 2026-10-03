@@ -18,6 +18,8 @@ export default function CitizenNews(){
   const dataProfile=useDataMode();
   const [locale]=useLocale(); const copy=COPY[locale]||COPY.fr;
   const [items,setItems]=useState([]);
+  const initialType=new URLSearchParams(window.location.search).get("type")||"all";
+  const [typeFilter,setTypeFilter]=useState(["news","announcement","alert"].includes(initialType)?initialType:"all");
   const [filter,setFilter]=useState("Toutes");
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -29,8 +31,27 @@ export default function CitizenNews(){
     return()=>{active=false};
   },[locale]);
 
-  const filters=useMemo(()=>["Toutes",...Array.from(new Set(items.map(item=>item.category).filter(Boolean)))],[items]);
-  const visible=useMemo(()=>items.filter(item=>filter==="Toutes"||item.category===filter),[items,filter]);
+  useEffect(()=>{
+    const syncType=()=>{
+      const value=new URLSearchParams(window.location.search).get("type")||"all";
+      setTypeFilter(["news","announcement","alert"].includes(value)?value:"all");
+      setFilter("Toutes");
+    };
+    window.addEventListener("popstate",syncType);
+    return()=>window.removeEventListener("popstate",syncType);
+  },[]);
+
+  const typeOptions=[["all","Toutes"],["news","Actualités"],["announcement","Annonces"],["alert","Alertes"]];
+  const typeVisible=useMemo(()=>items.filter(item=>typeFilter==="all"||(item.publication_type||item.publicationType)===typeFilter),[items,typeFilter]);
+  const filters=useMemo(()=>["Toutes",...Array.from(new Set(typeVisible.map(item=>item.category).filter(Boolean)))],[typeVisible]);
+  const visible=useMemo(()=>typeVisible.filter(item=>filter==="Toutes"||item.category===filter),[typeVisible,filter]);
+
+  function chooseType(value){
+    setTypeFilter(value);
+    setFilter("Toutes");
+    const url=value==="all"?"/citizen/news":`/citizen/news?type=${encodeURIComponent(value)}`;
+    window.history.replaceState({},"",url);
+  }
 
   return <div className="portal-layout">
     <CitizenSidebar/>
@@ -45,15 +66,20 @@ export default function CitizenNews(){
           <p>{copy.intro}</p>
         </section>
 
-        <div className="filter-row filter-row--portal citizen-news-filters">
+        <div className="filter-row filter-row--portal citizen-news-type-filters" aria-label="Type de publication">
+          {typeOptions.map(([value,label])=><button key={value} className={typeFilter===value?"is-active":""} aria-pressed={typeFilter===value} onClick={()=>chooseType(value)}>{value==="all"?copy.all:label}</button>)}
+        </div>
+
+        <div className="filter-row filter-row--portal citizen-news-filters" aria-label="Catégorie">
           {filters.map(item=><button key={item} className={filter===item?"is-active":""} aria-pressed={filter===item} onClick={()=>setFilter(item)}>{item==="Toutes"?copy.all:item}</button>)}
         </div>
 
         <section className="citizen-news-grid">
+          {!loading&&!visible.length?<div className="portal-card citizen-news-empty" role="status"><strong>{typeFilter==="alert"?"Aucune alerte municipale active.":"Aucune publication pour ce filtre."}</strong><span>{typeFilter==="alert"?"Les alertes publiées par l’administration apparaîtront ici automatiquement.":"Essayez un autre type ou une autre catégorie."}</span></div>:null}
           {visible.map((item,index)=><article className={index===0?"citizen-news-card is-featured":"citizen-news-card"} key={item.slug}>
             <button className="citizen-news-card__image" onClick={()=>navigate(`/citizen/news/${item.slug}`)} aria-label={`${copy.read} ${item.title}`}>
               {dataProfile.reduced?<span className="media-light-placeholder" aria-label={`Illustration différée : ${item.title}`}>Image différée</span>:<img src={item.image} alt={`Illustration : ${item.title}`} loading={index===0?"eager":"lazy"} decoding="async" fetchPriority={index===0?"high":"low"} width="960" height="540" />}
-              <span>{item.kind || item.category}</span>
+              <span>{(item.publication_type||item.publicationType)==="alert"?"Alerte":(item.publication_type||item.publicationType)==="announcement"?"Annonce":"Actualité"}</span>
             </button>
             <div>
               <div className="news-meta"><span>{item.category}</span><time>{item.date}</time></div>

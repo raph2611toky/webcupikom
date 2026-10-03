@@ -26,19 +26,34 @@ function formatDate(value) {
 }
 
 function normalizeNews(item) {
+  const publicationType = item.publication_type || item.publicationType || "news";
   return {
     ...item,
     id: item.id ?? item.slug,
     slug: item.slug,
     category: item.category || "Information",
-    kind: item.kind || "Information pratique",
+    publicationType,
+    publication_type: publicationType,
+    severity: item.severity || "info",
+    kind: publicationType === "alert" ? "Alerte" : publicationType === "announcement" ? "Annonce" : "Actualité",
     audience: item.audience || "Tous les habitants",
     title: item.title || "Information municipale",
     excerpt: item.excerpt || "",
     body: item.content || item.body || "",
-    image: item.image_url || item.image || FALLBACK_IMAGES[item.category] || fallbackCitizen,
+    content: item.content || item.body || "",
+    image: item.cover_url || item.image_url || item.image || FALLBACK_IMAGES[item.category] || fallbackCitizen,
+    coverAlt: item.cover_alt || "",
     date: item.date || formatDate(item.published_at),
-    published: item.is_published !== false,
+    published: item.is_published !== false && item.publication_state !== "draft",
+    important: Boolean(item.is_important),
+    pinned: Boolean(item.is_pinned),
+    notifyResidents: item.notify_residents !== false,
+    targetDistricts: Array.isArray(item.target_districts) ? item.target_districts : [],
+    affectedAreas: item.affected_areas || "",
+    instructions: item.instructions || "",
+    expiresAt: item.expires_at || "",
+    publishedAt: item.published_at || "",
+    publicationState: item.publication_state || "",
   };
 }
 
@@ -73,19 +88,38 @@ export async function getNewsItem(slug, { includeDrafts = false, force = false }
 }
 
 function toBackendPayload(payload) {
+  const districts = Array.isArray(payload.target_districts)
+    ? payload.target_districts
+    : Array.isArray(payload.targetDistricts)
+      ? payload.targetDistricts
+      : String(payload.target_districts || payload.targetDistricts || "")
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean);
   return {
     title: payload.title,
     category: payload.category || "Information",
     excerpt: payload.excerpt || "",
     content: payload.body ?? payload.content ?? "",
-    is_published: payload.published !== false,
-    ...(payload.published_at ? { published_at: payload.published_at } : {}),
+    publication_type: payload.publication_type || payload.publicationType || "news",
+    severity: payload.severity || "info",
+    is_published: payload.is_published ?? payload.published ?? true,
+    is_important: payload.is_important ?? payload.important ?? false,
+    is_pinned: payload.is_pinned ?? payload.pinned ?? false,
+    notify_residents: payload.notify_residents ?? payload.notifyResidents ?? true,
+    target_districts: districts,
+    affected_areas: payload.affected_areas ?? payload.affectedAreas ?? "",
+    instructions: payload.instructions || "",
+    ...(payload.published_at || payload.publishedAt ? { published_at: payload.published_at || payload.publishedAt } : {}),
+    ...(payload.expires_at || payload.expiresAt ? { expires_at: payload.expires_at || payload.expiresAt } : { expires_at: null }),
   };
 }
 
 export async function createNews(payload) {
   const { data } = await api.post("/admin/news/", toBackendPayload(payload));
   invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
   return normalizeNews(data);
 }
 
@@ -103,6 +137,8 @@ export async function updateNews(idOrSlug, patch) {
   const payload = toBackendPayload({ ...current, ...patch });
   const { data } = await api.patch(`/admin/news/${encodeURIComponent(current.slug)}/`, payload);
   invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
   return normalizeNews(data);
 }
 
@@ -111,6 +147,8 @@ export async function deleteNews(idOrSlug) {
   if (!current) return false;
   await api.delete(`/admin/news/${encodeURIComponent(current.slug)}/`);
   invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
   return true;
 }
 
@@ -127,32 +165,33 @@ export async function getAdminNewsItem(slug) {
 }
 
 export async function createAdminNews(payload) {
-  const { data } = await api.post("/admin/news/", {
-    title: payload.title,
-    category: payload.category || "Information",
-    excerpt: payload.excerpt || "",
-    content: payload.content ?? payload.body ?? "",
-    is_published: payload.is_published ?? payload.published ?? true,
-    ...(payload.published_at ? { published_at: payload.published_at } : {}),
-  });
+  const { data } = await api.post("/admin/news/", toBackendPayload(payload));
   invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
   return normalizeNews(data);
 }
 
 export async function updateAdminNews(slug, payload) {
-  const { data } = await api.patch(`/admin/news/${encodeURIComponent(slug)}/`, {
-    title: payload.title,
-    category: payload.category || "Information",
-    excerpt: payload.excerpt || "",
-    content: payload.content ?? payload.body ?? "",
-    is_published: payload.is_published ?? payload.published ?? true,
-    ...(payload.published_at ? { published_at: payload.published_at } : {}),
-  });
+  const { data } = await api.patch(`/admin/news/${encodeURIComponent(slug)}/`, toBackendPayload(payload));
   invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
   return normalizeNews(data);
 }
 
 export async function unpublishAdminNews(slug) {
+  const { data } = await api.patch(`/admin/news/${encodeURIComponent(slug)}/`, { is_published: false });
+  invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
+  return normalizeNews(data);
+}
+
+export async function deleteAdminNews(slug) {
   await api.delete(`/admin/news/${encodeURIComponent(slug)}/`);
   invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
+  return true;
 }
