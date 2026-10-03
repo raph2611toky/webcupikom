@@ -1,0 +1,20 @@
+import { useState } from "react";
+import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
+import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import { currentCitizen } from "../../data/mockData.js";
+import "../../styles/app-shell.css";
+import "../../styles/pages/dashboard.css";
+
+export default function CitizenProfile(){
+  const [editing,setEditing]=useState(false);
+  return <div className="portal-layout"><CitizenSidebar/><div className="portal-main"><PortalTopbar eyebrow="Compte citoyen" title="Mon profil" actions={<button className="topbar-cta" onClick={()=>setEditing(!editing)}>{editing?'Enregistrer':'Modifier'}</button>}/><main className="portal-content">
+    <section className="profile-hero"><div className="profile-avatar">JR</div><div><span>{currentCitizen.id}</span><h2>{currentCitizen.firstName} {currentCitizen.lastName}</h2><p>Résidente du district {currentCitizen.district} · Compte {currentCitizen.accountStatus.toLowerCase()}</p></div><div className="profile-progress"><b>{currentCitizen.profileCompletion}%</b><span>Profil complété</span></div></section>
+    <div className="profile-sections">
+      <section className="portal-card"><div className="portal-card__head"><div><span className="section-label">Identité</span><h3>Informations personnelles</h3></div></div><div className="profile-form-grid"><label><span>Prénom</span><input disabled={!editing} defaultValue={currentCitizen.firstName}/></label><label><span>Nom</span><input disabled={!editing} defaultValue={currentCitizen.lastName}/></label><label><span>Date de naissance</span><input disabled={!editing} defaultValue="12/05/2003"/></label><label><span>Genre</span><input disabled={!editing} defaultValue="Femme"/></label></div></section>
+      <section className="portal-card"><div className="portal-card__head"><div><span className="section-label">Contact</span><h3>Comment vous joindre</h3></div></div><div className="profile-form-grid"><label><span>Email</span><input disabled={!editing} defaultValue={currentCitizen.email}/></label><label><span>Téléphone</span><input disabled={!editing} defaultValue={currentCitizen.phone}/></label><label className="span-2"><span>Canal préféré</span><input disabled={!editing} defaultValue={currentCitizen.preferredChannel}/></label></div></section>
+      <section className="portal-card"><div className="portal-card__head"><div><span className="section-label">Résidence</span><h3>Adresse à Terra Nova</h3></div></div><div className="profile-form-grid"><label><span>District</span><input disabled={!editing} defaultValue={currentCitizen.district}/></label><label><span>Secteur</span><input disabled={!editing} defaultValue={currentCitizen.sector}/></label><label><span>Rue</span><input disabled={!editing} defaultValue={currentCitizen.street}/></label><label><span>Bâtiment</span><input disabled={!editing} defaultValue={currentCitizen.building}/></label><label><span>Appartement</span><input disabled={!editing} defaultValue={currentCitizen.apartment}/></label></div></section>
+      <section className="portal-card"><div className="portal-card__head"><div><span className="section-label">Préférences</span><h3>Votre expérience</h3></div></div><div className="profile-form-grid"><label><span>Langue</span><input disabled={!editing} defaultValue={currentCitizen.language}/></label><label><span>Notifications</span><input disabled={!editing} defaultValue="Activées"/></label><label><span>Newsletter</span><input disabled={!editing} defaultValue="Hebdomadaire"/></label></div></section>
+      <section className="portal-card"><div className="portal-card__head"><div><span className="section-label">Compte</span><h3>Informations système</h3></div></div><div className="account-facts"><div><span>Identifiant citoyen</span><b>{currentCitizen.id}</b></div><div><span>Date d'inscription</span><b>{currentCitizen.joinedAt}</b></div><div><span>Dernière connexion</span><b>{currentCitizen.lastLogin}</b></div><div><span>Statut</span><b>{currentCitizen.accountStatus}</b></div></div></section>
+    </div>
+  </main></div></div>;
+}

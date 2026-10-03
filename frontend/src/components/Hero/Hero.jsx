@@ -1,39 +1,36 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
+  useInView,
   useReducedMotion,
 } from "framer-motion";
 import "./Hero.css";
 import CoreEffect from "./CoreEffect.jsx";
 
-import heroList from "../../assets/hero/hero-list.png";
-import heroPhone from "../../assets/hero/hero-phone.png";
-import heroPlanning from "../../assets/hero/hero-planning.png";
-import heroTravel from "../../assets/hero/hero-travel.png";
-import hero1 from "../../assets/hero/hero-1.png";
-import hero2 from "../../assets/hero/hero-2.png";
-import hero3 from "../../assets/hero/hero-3.png";
-import hero4 from "../../assets/hero/hero-4.png";
+import heroPhone from "../../assets/hero/hero-phone.webp";
+import hero1 from "../../assets/hero/hero-1.webp";
 
 // Keep each side coherent, but avoid repeating the same visual every second.
-const LEFT_IMAGES = [heroList, heroPlanning, hero2, heroTravel];
-const RIGHT_IMAGES = [heroPhone, hero1, hero3, hero4];
+const LEFT_IMAGES = [heroPhone, hero1];
+const RIGHT_IMAGES = [hero1, heroPhone];
 const IMAGE_INTERVAL_LEFT = 7200;
 const IMAGE_INTERVAL_RIGHT = 8800;
 const EASE = [0.16, 1, 0.3, 1];
 
-function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 5600 }) {
+function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 5600, active = true }) {
   const [index, setIndex] = useState(start);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (!active || reduceMotion || images.length < 2) return undefined;
+
     const timer = window.setInterval(() => {
       setIndex((value) => (value + 1) % images.length);
     }, intervalMs);
 
     return () => window.clearInterval(timer);
-  }, [images, intervalMs]);
+  }, [active, images, intervalMs, reduceMotion]);
 
   return (
     <div className={className}>
@@ -46,22 +43,23 @@ function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 56
           initial={
             reduceMotion
               ? false
-              : { opacity: 0, scale: 1.012, filter: "blur(5px)" }
+              : { opacity: 0, scale: 1.008 }
           }
-          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          animate={{ opacity: 1, scale: 1 }}
           exit={
             reduceMotion
               ? undefined
-              : { opacity: 0, scale: 0.995, filter: "blur(4px)" }
+              : { opacity: 0, scale: 0.997 }
           }
-          transition={{ duration: 0.66, ease: EASE }}
+          transition={{ duration: 0.52, ease: EASE }}
+          decoding="async"
         />
       </AnimatePresence>
     </div>
   );
 }
 
-function OrbitText() {
+function OrbitText({ active = true }) {
   const id = useId().replace(/:/g, "");
   const reduceMotion = useReducedMotion();
 
@@ -71,11 +69,11 @@ function OrbitText() {
       viewBox="0 0 230 230"
       aria-hidden="true"
       initial={{ rotate: -12 }}
-      animate={{ rotate: reduceMotion ? -12 : 348 }}
+      animate={{ rotate: reduceMotion || !active ? -12 : 348 }}
       whileHover={reduceMotion ? undefined : { scale: 1.05 }}
       transition={
-        reduceMotion
-          ? { duration: 0 }
+        reduceMotion || !active
+          ? { duration: 0.2 }
           : {
               rotate: { duration: 20, repeat: Infinity, ease: "linear" },
               scale: { duration: 0.25, ease: "easeOut" },
@@ -90,7 +88,7 @@ function OrbitText() {
       </defs>
       <text>
         <textPath href={`#${id}`} startOffset="1%">
-          KAMO · AGENTS IA · ALLÉGEZ VOTRE QUOTIDIEN · KAMO ·
+          TERRA NOVA · SERVICES · CITOYENS · VILLE · TERRA NOVA ·
         </textPath>
       </text>
       <circle className="dot d1" cx="49" cy="114" r="4.1" />
@@ -137,7 +135,7 @@ function Scribbles() {
   );
 }
 
-function Sparkles() {
+function Sparkles({ active = true }) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -145,11 +143,11 @@ function Sparkles() {
       className="demo-sparkles"
       aria-hidden="true"
       animate={
-        reduceMotion
-          ? undefined
+        reduceMotion || !active
+          ? { rotate: 0, scale: 1 }
           : { rotate: [0, 8, -4, 0], scale: [1, 1.08, 1, 1] }
       }
-      transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 0.7 }}
+      transition={{ duration: active && !reduceMotion ? 2.6 : 0.2, repeat: active && !reduceMotion ? Infinity : 0, repeatDelay: 0.7 }}
     >
       <span className="spark spark-big">✦</span>
       <span className="spark spark-small">✦</span>
@@ -180,38 +178,15 @@ function AnimatedWords({ words, delay = 0 }) {
 
 export default function Hero() {
   const reduceMotion = useReducedMotion();
-
+  const heroRef = useRef(null);
+  const heroInView = useInView(heroRef, { amount: 0.2, initial: true });
   return (
-    <main className="kamo-hero">
-      <motion.div
-        className="kamo-hero__glow kamo-hero__glow--tl"
-        animate={
-          reduceMotion
-            ? undefined
-            : { x: [0, 22, -8, 0], y: [0, 12, 4, 0], scale: [1, 1.08, 1.03, 1] }
-        }
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="kamo-hero__glow kamo-hero__glow--right"
-        animate={
-          reduceMotion
-            ? undefined
-            : { x: [0, -18, 5, 0], y: [0, 16, -4, 0], scale: [1, 1.05, 1.1, 1] }
-        }
-        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="kamo-hero__glow kamo-hero__glow--br"
-        animate={
-          reduceMotion
-            ? undefined
-            : { x: [0, -20, 8, 0], y: [0, -12, 5, 0], scale: [1, 1.08, 1.02, 1] }
-        }
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
+    <main ref={heroRef} className="kamo-hero">
+      <div className="kamo-hero__glow kamo-hero__glow--tl" />
+      <div className="kamo-hero__glow kamo-hero__glow--right" />
+      <div className="kamo-hero__glow kamo-hero__glow--br" />
 
-      <CoreEffect />
+      <CoreEffect active={heroInView} />
 
       <motion.header
         className="kamo-header"
@@ -220,14 +195,14 @@ export default function Hero() {
         transition={{ duration: 0.75, delay: 0.08, ease: EASE }}
       >
         <nav className="kamo-nav" aria-label="Navigation principale">
-          <a href="#home">Home</a>
-          <a href="#fonctionnalites">Fonctionnalités</a>
-          <a href="#cas">Cas d’usage</a>
-          <a href="#contact">Contact</a>
+          <a href="#home">Accueil</a>
+          <a href="/services">Services</a>
+          <a href="/news">Actualités</a>
+          <a href="/contact">Contact</a>
         </nav>
 
-        <a className="kamo-logo" href="/" aria-label="Kamo, accueil">
-          Kam<span>o</span>
+        <a className="kamo-logo" href="/" aria-label="Terra Nova, accueil">
+          Terra<span>Nova</span>
         </a>
 
         <a className="kamo-login" href="/login">
@@ -245,8 +220,9 @@ export default function Hero() {
           className="hero-photo hero-photo--left"
           images={LEFT_IMAGES}
           start={0}
-          alt="Tâches quotidiennes gérées par Kamo"
+          alt="Habitante utilisant les services numériques de Terra Nova"
           intervalMs={IMAGE_INTERVAL_LEFT}
+          active={heroInView}
         />
       </motion.div>
 
@@ -257,13 +233,14 @@ export default function Hero() {
         transition={{ duration: 1.0, delay: reduceMotion ? 0 : 3.58, ease: EASE }}
       >
         <div className="hero-top-right" aria-hidden="true">
-          <OrbitText />
+          <OrbitText active={heroInView} />
           <RotatingImage
             className="hero-photo hero-photo--right"
             images={RIGHT_IMAGES}
-            start={1}
-            alt="Utilisatrice de Kamo"
+            start={0}
+            alt="Habitante connectée aux services de Terra Nova"
             intervalMs={IMAGE_INTERVAL_RIGHT}
+            active={heroInView}
           />
         </div>
       </motion.div>
@@ -278,12 +255,12 @@ export default function Hero() {
               initial={
                 reduceMotion
                   ? false
-                  : { y: "-135%", opacity: 0, scale: 0.97, filter: "blur(10px)" }
+                  : { y: "-135%", opacity: 0, scale: 0.97 }
               }
-              animate={{ y: "0%", opacity: 1, scale: 1, filter: "blur(0px)" }}
+              animate={{ y: "0%", opacity: 1, scale: 1 }}
               transition={{ duration: 0.82, delay: reduceMotion ? 0 : 2.86, ease: EASE }}
             >
-              <span className="hero-title__top">DÉLÉGUEZ</span>
+              <span className="hero-title__top">BIENVENUE</span>
             </motion.span>
           </span>
 
@@ -296,25 +273,23 @@ export default function Hero() {
                     clipPath: "inset(0 50% 0 50%)",
                     opacity: 0,
                     scale: 0.92,
-                    filter: "blur(8px)",
                   }
             }
             animate={{
               clipPath: "inset(0 0% 0 0%)",
               opacity: 1,
               scale: 1,
-              filter: "blur(0px)",
             }}
             transition={{ duration: 0.72, delay: reduceMotion ? 0 : 2.94, ease: EASE }}
           >
             <span className="hero-title__band-text">
-              <AnimatedWords words={["VOTRE", "QUOTIDIEN"]} delay={reduceMotion ? 0 : 3.10} />
+              <AnimatedWords words={["TERRA", "NOVA"]} delay={reduceMotion ? 0 : 3.10} />
             </span>
           </motion.span>
 
           <span className="hero-title__mask hero-title__mask--bottom">
             <span className="hero-title__bottom">
-              <AnimatedWords words={["À", "DES", "AGENTS", "IA"]} delay={reduceMotion ? 0 : 3.18} />
+              <AnimatedWords words={["LA", "VILLE", "ÉVOLUE"]} delay={reduceMotion ? 0 : 3.18} />
             </span>
           </span>
         </h1>
@@ -325,9 +300,9 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.72, delay: reduceMotion ? 0 : 3.56, ease: EASE }}
         >
-          La plateforme qui permet de déléguer sa vie quotidienne
+          Accédez aux services de la ville, informez-vous, communiquez
           <br />
-          à des agents IA autonomes.
+          et faites remonter vos besoins depuis un même espace.
         </motion.p>
       </section>
 
@@ -354,15 +329,15 @@ export default function Hero() {
 
       <motion.a
         className="demo-link"
-        href="#demo"
+        href="#fonctionnalites"
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.65, delay: reduceMotion ? 0 : 3.82, ease: EASE }}
         whileHover={reduceMotion ? undefined : { x: 4, scale: 1.025 }}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
       >
-        <span>Voir démo</span>
-        <Sparkles />
+        <span>Découvrir</span>
+        <Sparkles active={heroInView} />
       </motion.a>
 
       <motion.a
@@ -382,7 +357,7 @@ export default function Hero() {
         }
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
       >
-        Commencer
+        Créer mon espace
       </motion.a>
     </main>
   );
