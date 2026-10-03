@@ -1,4 +1,5 @@
-import { api } from "./api.js";
+import { api, getAccessToken } from "./api.js";
+import { env } from "../config/env.js";
 import { formatDateTime, unwrapList } from "./helpers.js";
 import { getServices } from "./services.js";
 import { getProfile } from "./auth.js";
@@ -58,6 +59,27 @@ function toFormData(payload = {}) {
   return form;
 }
 
+function appendFormValue(form, key, value, { allowEmpty = false } = {}) {
+  if (value === undefined || value === null) return;
+  if (value === "" && !allowEmpty) return;
+  form.append(key, typeof value === "boolean" ? String(value) : String(value));
+}
+
+function normalizeAttachments(items = []) {
+  return (items || []).map((file, index) => ({
+    ...file,
+    id: file.id ?? file.uuid ?? `attachment-${index}`,
+    name: file.original_name || file.name || file.filename || `Pièce ${index + 1}`,
+    type: file.content_type || file.type || "application/octet-stream",
+    size: Number(file.size_bytes ?? file.size ?? 0),
+    caption: file.caption || "",
+    uploaderName: file.uploader_name || "",
+    isPublic: file.is_public !== false,
+    downloadUrl: file.download_url || file.url || "",
+    createdAt: file.created_at || null,
+  }));
+}
+
 function extractMeta(description = "") {
   const location = description.match(/(?:Localisation|Lieu)\s*:\s*([^\n]+)/i)?.[1]?.trim() || "";
   const category = description.match(/Catégorie\s*:\s*([^·\n]+)/i)?.[1]?.trim() || "";
@@ -104,34 +126,57 @@ function normalizeBase(item, labels) {
   const reference = item.reference || item.ref || item.id;
   const requestType = item.request_type || item.requestType || meta.type || "procedure";
   const timeline = normalizeTimeline(item.timeline || []);
+  const latitude = item.latitude ?? meta.latitude;
+  const longitude = item.longitude ?? meta.longitude;
+  const locationLabel = item.location_text || (typeof item.location === "string" ? item.location : item.location?.label) || meta.location || "";
+  const location = (locationLabel || latitude != null || longitude != null) ? {
+    label: locationLabel || "Position GPS transmise",
+    ...(latitude != null ? { latitude: Number(latitude) } : {}),
+    ...(longitude != null ? { longitude: Number(longitude) } : {}),
+    ...(item.location_accuracy != null || meta.accuracy != null ? { accuracy: Number(item.location_accuracy ?? meta.accuracy) } : {}),
+  } : null;
   return {
     ...item,
     id: reference,
+    numericId: item.id ?? null,
     ref: reference,
     reference,
     title: item.title || item.subject || "Demande citoyenne",
     description: item.description || item.message || "",
-    service: item.service_name || item.serviceLabel || "Service municipal",
+    service: item.service_name || item.serviceLabel || (typeof item.service === "object" ? item.service?.name : "") || "Service municipal",
     serviceId: item.service?.id ?? item.service ?? item.service_id ?? null,
     category: item.category_label || item.category || meta.category || "",
-    requestType: requestType === "report" ? "signalement" : requestType,
-    requestTypeCode: requestType,
+    requestType: requestType === "report" ? "signalement" : "procedure",
+    requestTypeCode: requestType === "signalement" ? "report" : requestType,
     reportType: item.incident_category || item.report_type || item.reportType || meta.reportType || "",
-    location: item.location_text || item.location || (meta.location || meta.latitude ? {
-      label: meta.location || "Position GPS transmise",
-      ...(meta.latitude !== null ? { latitude: meta.latitude } : {}),
-      ...(meta.longitude !== null ? { longitude: meta.longitude } : {}),
-      ...(meta.accuracy !== null ? { accuracy: meta.accuracy } : {}),
-    } : null),
-    district: item.district || meta.location || "Non précisé",
-    latitude: item.latitude ?? meta.latitude,
-    longitude: item.longitude ?? meta.longitude,
-    attachments: item.attachments || [],
+    location,
+    district: item.district || "",
+    street: item.street || "",
+    building: item.building || "",
+    landmark: item.landmark || "",
+    latitude,
+    longitude,
+    locationAccuracy: item.location_accuracy ?? meta.accuracy ?? null,
+    severityCode: item.severity || "",
+    severity: item.severity_label || item.severity || "",
+    dangerPresent: Boolean(item.danger_present),
+    peopleAffected: item.people_affected ?? null,
+    frequency: item.frequency || "",
+    allowContact: item.allow_contact !== false,
+    preferredContact: item.preferred_contact || "platform",
+    contactPhone: item.contact_phone || "",
+    attachments: normalizeAttachments(item.attachments || []),
     images: item.images || [],
     statusCode: item.statusCode || item.status,
     status: labels[item.statusCode || item.status] || item.status_label || item.status || "En attente",
     priorityCode: item.priority || "normal",
     priority: PRIORITY_LABEL[item.priority] || item.priority_label || item.priority || "Normale",
+    resolutionSummary: item.resolution_summary || "",
+    cancellationReason: item.cancellation_reason || "",
+    reopenedCount: Number(item.reopened_count || 0),
+    isClosed: item.is_closed !== undefined && item.is_closed !== null ? Boolean(item.is_closed) : ["completed","cancelled","rejected"].includes(item.status),
+    availableActions: item.available_actions || [],
+    confirmation: item.confirmation || null,
     createdAt: created,
     updatedAt: updated,
     created: formatDateTime(created),
@@ -157,7 +202,7 @@ export function normalizeRequestForAgent(item) {
     workflowLabel: WORKFLOW_LABEL[item.workflow_state] || item.workflow_state || "",
     requiresAgentAction: Boolean(item.requires_agent_action),
     requiresCitizenAction: Boolean(item.requires_citizen_action),
-    isClosed: Boolean(item.is_closed),
+    isClosed: item.is_closed !== undefined && item.is_closed !== null ? Boolean(item.is_closed) : ["completed","cancelled","rejected"].includes(item.status),
     resolutionSummary: item.resolution_summary || "",
     availableActions: item.available_actions || [],
     duplicateOf: item.duplicate_of ?? null,
@@ -165,29 +210,73 @@ export function normalizeRequestForAgent(item) {
 }
 
 async function resolveServiceId(serviceValue, category) {
-  if (Number.isFinite(Number(serviceValue))) return Number(serviceValue);
-  const services = await getServices();
+  if (serviceValue !== "" && serviceValue !== undefined && serviceValue !== null && Number.isFinite(Number(serviceValue))) return Number(serviceValue);
   const wanted = String(serviceValue || category || "").toLowerCase().trim();
-  const match = services.find((service) => [service.name, service.category, service.slug].filter(Boolean).map((value) => String(value).toLowerCase()).some((value) => value === wanted || value.includes(wanted) || wanted.includes(value)));
-  const admin = services.find((service) => String(service.slug || "").toLowerCase() === "administration") || services.find((service) => String(service.name || "").toLowerCase().includes("administr"));
-  return Number(match?.id || admin?.id || services[0]?.id || 0);
+  if (!wanted) return 0;
+  const services = await getServices();
+  const match = services.find((service) => [service.name, service.category, service.slug]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+    .some((value) => value === wanted || value.includes(wanted) || wanted.includes(value)));
+  return Number(match?.id || 0);
+}
+
+export async function getCitizenReportCategories() {
+  const { data } = await api.get("/citizen/reports/categories/");
+  return {
+    categories: Array.isArray(data?.categories) ? data.categories : [],
+    limits: data?.limits || {},
+    locationRule: data?.location_rule || "",
+    dangerGuidance: data?.danger_guidance || "",
+  };
 }
 
 export async function createCitizenRequest(payload) {
+  const requestedType = payload.request_type || payload.requestType || payload.type || "procedure";
+  const requestType = requestedType === "report" || requestedType === "signalement" ? "report" : "procedure";
   const serviceId = await resolveServiceId(payload.service, payload.category);
-  if (!serviceId) throw new Error("Aucun service municipal n’est disponible.");
-  const locationLine = payload.location?.label ? `\n\nLocalisation : ${payload.location.label}` : "";
-  const coordinateLine = payload.location?.latitude != null && payload.location?.longitude != null ? `\nCoordonnées : ${payload.location.latitude}, ${payload.location.longitude}${payload.location?.accuracy != null ? `\nPrécision GPS : ${payload.location.accuracy}` : ""}` : "";
-  const reportLine = payload.reportType ? `\nSignalement : ${payload.reportType}` : "";
-  const metaLine = `\n\nType : ${payload.type || "question"} · Catégorie : ${payload.category || "Autre"}`;
-  const attachmentLine = payload.attachments?.length ? `\nPièce jointe déclarée : ${payload.attachments.map((file) => file.name).join(", ")}` : "";
-  const { data } = await api.post("/citizen/requests/", {
-    service: serviceId,
-    title: payload.subject || payload.title || "Demande citoyenne",
-    description: `${payload.message || payload.description || ""}${locationLine}${coordinateLine}${reportLine}${metaLine}${attachmentLine}`.trim(),
-    priority: payload.priority || (payload.type === "assistance" ? "high" : "normal"),
-  });
-  return { ...normalizeCitizen(data), category: payload.category || "", requestType: payload.type || "question", reportType: payload.reportType || "", location: payload.location || null, attachments: (payload.attachments || []).map((file) => ({ name: file.name, type: file.type || "application/octet-stream", size: file.size || 0 })) };
+  const form = new FormData();
+  const citizenKind = !["procedure", "report", "signalement", "demarche"].includes(String(payload.type || "")) ? payload.type : "";
+  const baseDescription = String(payload.message || payload.description || "").trim();
+  const description = citizenKind ? `[${citizenKind}] ${baseDescription}`.trim() : baseDescription;
+
+  appendFormValue(form, "title", payload.subject || payload.title || (requestType === "report" ? "Signalement citoyen" : "Demande citoyenne"));
+  appendFormValue(form, "description", description || "Demande transmise depuis l’espace citoyen.");
+  appendFormValue(form, "request_type", requestType);
+  if (serviceId) appendFormValue(form, "service", serviceId);
+
+  const location = payload.location || {};
+  appendFormValue(form, "location_text", payload.location_text ?? location.label ?? payload.locationLabel);
+  appendFormValue(form, "latitude", payload.latitude ?? location.latitude);
+  appendFormValue(form, "longitude", payload.longitude ?? location.longitude);
+  appendFormValue(form, "location_accuracy", payload.location_accuracy ?? location.accuracy);
+  appendFormValue(form, "district", payload.district);
+  appendFormValue(form, "street", payload.street);
+  appendFormValue(form, "building", payload.building);
+  appendFormValue(form, "landmark", payload.landmark);
+
+  if (requestType === "report") {
+    appendFormValue(form, "incident_category", payload.incident_category || payload.incidentCategory || payload.reportType || payload.categoryCode);
+    appendFormValue(form, "occurred_at", payload.occurred_at || payload.occurredAt);
+    appendFormValue(form, "frequency", payload.frequency || "once");
+    appendFormValue(form, "infrastructure_id", payload.infrastructure_id || payload.infrastructureId);
+    appendFormValue(form, "severity", payload.severity || "minor");
+    appendFormValue(form, "danger_present", payload.danger_present ?? payload.dangerPresent ?? false);
+    appendFormValue(form, "people_affected", payload.people_affected ?? payload.peopleAffected);
+    appendFormValue(form, "impacts_accessibility", payload.impacts_accessibility ?? payload.impactsAccessibility ?? false);
+    appendFormValue(form, "accessibility_details", payload.accessibility_details ?? payload.accessibilityDetails);
+    appendFormValue(form, "allow_contact", payload.allow_contact ?? payload.allowContact ?? true);
+    appendFormValue(form, "preferred_contact", payload.preferred_contact ?? payload.preferredContact ?? "platform");
+    appendFormValue(form, "contact_phone", payload.contact_phone ?? payload.contactPhone);
+  }
+
+  const files = payload.images || payload.attachments || [];
+  files.forEach((file) => { if (file instanceof Blob) form.append("images", file); });
+  const captions = payload.image_captions || payload.imageCaptions || [];
+  captions.forEach((caption) => appendFormValue(form, "image_captions", caption));
+
+  const { data } = await api.post("/citizen/requests/", form);
+  return normalizeCitizen(data);
 }
 
 export async function getCitizenRequests(params = {}) {
@@ -262,15 +351,94 @@ export async function addAgentRequestTimeline(reference, payload = {}) {
   return data;
 }
 
-export async function addRequestInformation(reference, message) {
-  const [request, profile] = await Promise.all([getCitizenRequestById(reference), getProfile()]);
-  return sendContactMessage({
-    name: profile?.display_name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Citoyen",
-    email: profile?.email || "",
-    service: Number(request.serviceId) || undefined,
-    subject: `Complément — ${reference}`,
-    message: `Information complémentaire liée à la demande ${reference} :\n\n${message}`,
-  });
+export async function getCitizenRequestTimeline(reference, params = {}) {
+  const { data } = await api.get(`/citizen/requests/${encodeURIComponent(reference)}/timeline/`, { params: cleanParams(params) });
+  return unwrapList(data).map((event) => normalizeTimeline([event])[0]);
+}
+
+export async function updateCitizenReport(reference, changes = {}) {
+  const form = new FormData();
+  const keys = [
+    "title", "description", "incident_category", "service", "location_text", "latitude", "longitude",
+    "location_accuracy", "district", "street", "building", "landmark", "occurred_at", "frequency",
+    "infrastructure_id", "severity", "danger_present", "people_affected", "impacts_accessibility",
+    "accessibility_details", "allow_contact", "preferred_contact", "contact_phone",
+  ];
+  keys.forEach((key) => appendFormValue(form, key, changes[key], { allowEmpty: key === "service" }));
+  (changes.images || []).forEach((file) => { if (file instanceof Blob) form.append("images", file); });
+  (changes.image_captions || []).forEach((caption) => appendFormValue(form, "image_captions", caption));
+  const { data } = await api.patch(`/citizen/reports/${encodeURIComponent(reference)}/`, form);
+  return normalizeCitizen(data);
+}
+
+export async function cancelCitizenReport(reference, reason) {
+  const form = new FormData();
+  appendFormValue(form, "reason", reason);
+  const { data } = await api.post(`/citizen/reports/${encodeURIComponent(reference)}/cancel/`, form);
+  return normalizeCitizen(data);
+}
+
+export async function reopenCitizenReport(reference, reason) {
+  const form = new FormData();
+  appendFormValue(form, "reason", reason);
+  const { data } = await api.post(`/citizen/reports/${encodeURIComponent(reference)}/reopen/`, form);
+  return normalizeCitizen(data);
+}
+
+export async function addCitizenRequestMessage(reference, { message = "", images = [], imageCaptions = [] } = {}) {
+  const form = new FormData();
+  appendFormValue(form, "message", message);
+  images.forEach((file) => { if (file instanceof Blob) form.append("images", file); });
+  imageCaptions.forEach((caption) => appendFormValue(form, "image_captions", caption));
+  const { data } = await api.post(`/citizen/reports/${encodeURIComponent(reference)}/messages/`, form);
+  return normalizeTimeline([data])[0] || data;
+}
+
+export async function addRequestInformation(reference, message, images = []) {
+  try {
+    return await addCitizenRequestMessage(reference, { message, images });
+  } catch (error) {
+    if (![400, 404, 405].includes(error?.response?.status)) throw error;
+    const [request, profile] = await Promise.all([getCitizenRequestById(reference), getProfile()]);
+    return sendContactMessage({
+      name: profile?.display_name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Citoyen",
+      email: profile?.email || "",
+      service: Number(request.serviceId) || undefined,
+      subject: `Complément — ${reference}`,
+      message: `Information complémentaire liée à la demande ${reference} :\n\n${message}`,
+    });
+  }
+}
+
+export async function getCitizenReportAttachments(reference, params = {}) {
+  const { data } = await api.get(`/citizen/reports/${encodeURIComponent(reference)}/attachments/`, { params: cleanParams(params) });
+  return unwrapList(data).map((item, index) => normalizeAttachments([item])[0] || { ...item, id: index });
+}
+
+export async function addCitizenReportAttachments(reference, files = [], captions = []) {
+  const form = new FormData();
+  files.forEach((file) => { if (file instanceof Blob) form.append("images", file); });
+  captions.forEach((caption) => appendFormValue(form, "image_captions", caption));
+  const { data } = await api.post(`/citizen/reports/${encodeURIComponent(reference)}/attachments/`, form);
+  return data;
+}
+
+export async function downloadCitizenReportAttachment(attachment) {
+  const path = attachment?.downloadUrl || attachment?.download_url;
+  if (!path) throw new Error("Lien de téléchargement indisponible.");
+  const apiOrigin = env.apiBaseUrl.replace(/\/api\/?$/i, "");
+  const url = /^https?:/i.test(path) ? path : `${path.startsWith("/api/") ? apiOrigin : env.apiBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  const response = await fetch(url, { headers: getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {} });
+  if (!response.ok) throw new Error(`Téléchargement impossible (HTTP ${response.status}).`);
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = attachment?.name || "piece-jointe";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export async function reopenAgentReport(reference, reason) {

@@ -23,7 +23,7 @@ const COPY = {
     category:"Catégorie", subject:"Sujet", subjectPh:"Ex. Lampadaire en panne", message:"Message",
     messagePh:"Expliquez simplement votre question ou votre problème...", hideExtras:"− Masquer les détails optionnels",
     showExtras:"+ Ajouter un lieu ou une pièce jointe", location:"Lieu", optional:"optionnel",
-    locationPh:"Secteur, rue, bâtiment", attachment:"Pièce jointe", file:"+ Photo ou document",
+    locationPh:"Secteur, rue, bâtiment", attachment:"Pièce jointe", file:"+ Photo",
     destination:"Service destinataire", creating:"Création...", send:"Envoyer ma demande →",
     loadError:"Impossible de charger vos demandes.", sendError:"Impossible d’envoyer la demande.",
   },
@@ -37,7 +37,7 @@ const COPY = {
     category:"Category", subject:"Subject", subjectPh:"E.g. broken street light", message:"Message",
     messagePh:"Describe your question or problem simply...", hideExtras:"− Hide optional details",
     showExtras:"+ Add a location or attachment", location:"Location", optional:"optional",
-    locationPh:"Area, street, building", attachment:"Attachment", file:"+ Photo or document",
+    locationPh:"Area, street, building", attachment:"Attachment", file:"+ Photo",
     destination:"Destination service", creating:"Creating...", send:"Send my request →",
     loadError:"Unable to load your requests.", sendError:"Unable to send the request.",
   },
@@ -51,7 +51,7 @@ const COPY = {
     category:"Sokajy", subject:"Lohateny", subjectPh:"Ohatra: jiro an-dalambe simba", message:"Hafatra",
     messagePh:"Hazavao amin'ny fomba tsotra ny fanontanianao na ny olanao...", hideExtras:"− Afeno ny antsipiriany fanampiny",
     showExtras:"+ Ampio toerana na rakitra", location:"Toerana", optional:"tsy voatery",
-    locationPh:"Faritra, arabe, trano", attachment:"Rakitra", file:"+ Sary na antontan-taratasy",
+    locationPh:"Faritra, arabe, trano", attachment:"Rakitra", file:"+ Sary",
     destination:"Sampan-draharaha handray", creating:"Mamorona...", send:"Handefa ny fangatahana →",
     loadError:"Tsy afaka mampiseho ny fangatahana.", sendError:"Tsy afaka mandefa ny fangatahana.",
   },
@@ -108,7 +108,7 @@ export default function CitizenRequests() {
 
   async function refresh() {
     try {
-      setRequests(await getCitizenRequests());
+      setRequests(await getCitizenRequests({type:"procedure",page_size:50,ordering:"-updated_at"}));
       setError("");
     } catch (err) {
       setError(getApiErrorMessage(err, copy.loadError));
@@ -189,6 +189,7 @@ export default function CitizenRequests() {
       const request = await createCitizenRequest({
         source: "citizen",
         type: draft.type,
+        requestType: "procedure",
         category: draft.category,
         service,
         subject: draft.subject,
@@ -246,7 +247,7 @@ export default function CitizenRequests() {
                 {created ? (
                   <div className="request-studio-success" role="status" aria-live="polite">
                     <i aria-hidden="true">✓</i><span className="section-label">{copy.created}</span><h2 id="request-studio-title">{created.reference}</h2>
-                    <p>{copy.createdText}</p>
+                    <p>{created.confirmation?.message||copy.createdText}</p>
                     <div><span>{copy.service}</span><b>{created.service}</b><span>{copy.status}</span><b>{statusLabel(created.status || "En attente",locale)}</b></div>
                     <div className="request-studio-success__actions"><button type="button" className="secondary-action" onClick={close}>{copy.close}</button><button type="button" className="primary-action" onClick={() => navigate(`/citizen/requests/${encodeURIComponent(created.reference)}`)}>{copy.track}</button></div>
                   </div>
@@ -278,7 +279,7 @@ export default function CitizenRequests() {
 
                     {showExtras ? <div className="request-studio-grid request-studio-grid--extras">
                       <label><span>{copy.location} <em>{copy.optional}</em></span><input value={draft.location} onChange={(event) => patch("location", event.target.value)} placeholder={copy.locationPh} /></label>
-                      <div className="request-studio-file"><span>{copy.attachment} <em>{copy.optional}</em></span><input ref={fileRef} hidden type="file" accept="image/*,.pdf" onChange={(event) => setFile(event.target.files?.[0] || null)} /><button type="button" onClick={() => fileRef.current?.click()}>{file ? `✓ ${file.name}` : copy.file}</button></div>
+                      <div className="request-studio-file"><span>{copy.attachment} <em>{copy.optional}</em></span><input ref={fileRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] || null)} /><button type="button" onClick={() => fileRef.current?.click()}>{file ? `✓ ${file.name}` : copy.file}</button></div>
                     </div> : null}
 
                     <div className="request-studio-footer"><div><span>{copy.destination}</span><b>{service}</b></div><button className="primary-action" type="submit" disabled={sending}>{sending ? copy.creating : copy.send}</button></div>

@@ -46,7 +46,7 @@ export default function AgentRequestDetails({params}){
 
   async function notifyCitizen(updated, title, message){
     if(!updated?.citizenId)return;
-    try{await sendAgentNotification({recipient:Number(updated.citizenId),title,message,action_label:"Voir ma demande",action_url:`/citizen/requests/${encodeURIComponent(updated.ref)}`,is_important:form.status==="action_required"})}catch{/* la mise à jour principale reste valide */}
+    try{await sendAgentNotification({recipient:Number(updated.citizenId),title,message,action_label:"Voir ma demande",action_url:`/citizen/requests/${encodeURIComponent(updated.ref)}`,is_important:updated.statusCode==="action_required"})}catch{/* la mise à jour principale reste valide */}
   }
 
   async function saveChanges(overrides={}){
@@ -58,9 +58,13 @@ export default function AgentRequestDetails({params}){
     setSaving(true);setError("");setNotice("");
     try{
       const payload={status:next.status,priority:next.priority,assigned_to:next.assigned_to,service:next.service,resolution_summary:next.resolution_summary};
+      const previousStatus=request.statusCode;
       const updated=await updateAgentRequest(request.ref,payload);
-      await notifyCitizen(updated,"Mise à jour de votre demande",`La demande ${updated.ref} est maintenant : ${updated.status}. ${next.resolution_summary||""}`.trim());
-      setNotice("Dossier mis à jour et action enregistrée dans le journal d’audit.");
+      if(next.status&&next.status!==previousStatus){
+        const noun=updated.requestType==="signalement"?"signalement":"demande";
+        await notifyCitizen(updated,`Statut de votre ${noun} mis à jour`,`Le ${noun} ${updated.ref} est maintenant : ${updated.status}. ${next.resolution_summary||""}`.trim());
+      }
+      setNotice(next.status!==previousStatus?"Dossier mis à jour ; le citoyen a été notifié du changement de statut.":"Dossier mis à jour et action enregistrée dans le journal d’audit.");
       await load();
     }catch(e){setError(getApiErrorMessage(e,"Impossible de mettre à jour le dossier."))}
     finally{setSaving(false)}
@@ -94,7 +98,7 @@ export default function AgentRequestDetails({params}){
   if(!request)return <div className="portal-layout"><AgentSidebar/><div className="portal-main"><PortalTopbar eyebrow="Dossier citoyen" title={`Demande ${params.id}`}/><main className="portal-content">{error?<div className="error-card">{error}</div>:<div className="loading-card">Chargement du dossier…</div>}</main></div></div>;
 
   return <div className="portal-layout"><AgentSidebar/><div className="portal-main">
-    <PortalTopbar eyebrow="Dossier citoyen" title={`Demande ${request.ref}`} actions={<button className="secondary-action" onClick={()=>navigate(`/agent/audit?resource_type=request&resource_id=${encodeURIComponent(request.id)}`)}>Voir l’audit</button>}/>
+    <PortalTopbar eyebrow="Dossier citoyen" title={`Demande ${request.ref}`} actions={<button className="secondary-action" onClick={()=>navigate(`/agent/audit?resource_type=request&resource_id=${encodeURIComponent(request.numericId||request.ref)}`)}>Voir l’audit</button>}/>
     <main className="portal-content agent-request-detail-v50">
       <button className="back-link" onClick={()=>navigate(request.requestType==="signalement"?"/agent/signalements":"/agent/requests")}>← Retour</button>
       {error?<div className="error-card" role="alert">{error}</div>:null}{notice?<div className="success-inline" role="status">✓ {notice}</div>:null}

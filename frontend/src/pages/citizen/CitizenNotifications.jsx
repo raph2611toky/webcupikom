@@ -70,6 +70,10 @@ function targetFor(item){
   if(item.appointment_id)return "/citizen/appointments";
   if(item.contact_reference)return `/citizen/messages/${encodeURIComponent(item.contact_reference)}`;
   if(item.service_slug)return `/citizen/services/${encodeURIComponent(item.service_slug)}`;
+  if(item.action_url){
+    const target=String(item.action_url);
+    if(target.startsWith("/"))return target;
+  }
   return "";
 }
 

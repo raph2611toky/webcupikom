@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import { createCitizenRequest, getCitizenRequests } from "../../api/requests.js";
+import { createCitizenRequest, getCitizenReportCategories, getCitizenRequests } from "../../api/requests.js";
 import { REPORT_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
@@ -136,6 +136,7 @@ export default function CitizenReports(){
   const [error,setError]=useState("");
   const [items,setItems]=useState([]);
   const [step,setStep]=useState(1);
+  const [reportMeta,setReportMeta]=useState({categories:[],limits:{},locationRule:"",dangerGuidance:""});
   const fileRef=useRef(null);
 
   const selected=useMemo(
@@ -145,12 +146,15 @@ export default function CitizenReports(){
 
   async function refresh(){
     try{
-      const rows=await getCitizenRequests();
-      setItems(rows.filter(row=>row.requestType==="signalement"));
+      const rows=await getCitizenRequests({type:"report",page_size:50,ordering:"-updated_at"});
+      setItems(rows);
     }catch{}
   }
 
-  useEffect(()=>{refresh()},[]);
+  useEffect(()=>{
+    refresh();
+    getCitizenReportCategories().then(setReportMeta).catch(()=>{});
+  },[]);
 
   function usePosition(){
     setError("");
@@ -188,20 +192,28 @@ export default function CitizenReports(){
     setSending(true);
     try{
       const label=[sector.trim(),location.trim()].filter(Boolean).join(" · ") || "Position GPS transmise";
+      const normalized=(value)=>String(value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+      const backendCategory=reportMeta.categories.find(item=>{
+        const hay=[item.code,item.label].map(normalized);
+        const wanted=[selected.value,selected.label,selected.category].map(normalized);
+        return hay.some(a=>wanted.some(b=>a===b||a.includes(b)||b.includes(a)));
+      });
       const request=await createCitizenRequest({
         source:"citizen-report",
         type:"signalement",
-        reportType:selected.label,
+        requestType:"report",
+        incidentCategory:backendCategory?.code||normalized(selected.category).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,""),
         category:selected.category,
-        service:selected.service,
-        subject:subject.trim()||selected.label,
+        service:backendCategory?.suggested_service||selected.service,
+        subject:subject.trim()||backendCategory?.label||selected.label,
         message:message.trim(),
-        priority:priority==="danger"?"urgent":priority==="important"?"high":"normal",
-        location:{
-          label,
-          ...(coordinates||{}),
-        },
-        attachments:file?[file]:[],
+        district:sector.trim(),
+        severity:priority==="danger"?"critical":priority==="important"?"major":"moderate",
+        dangerPresent:priority==="danger",
+        frequency:"once",
+        location:{label,...(coordinates||{})},
+        images:file?[file]:[],
+        imageCaptions:file?[subject.trim()||selected.label]:[],
       });
       setCreated(request);
       await refresh();
@@ -254,7 +266,7 @@ export default function CitizenReports(){
               <i aria-hidden="true">✓</i>
               <span className="section-label">{copy.success}</span>
               <h2>{created.reference}</h2>
-              <p>{copy.successText}</p>
+              <p>{created.confirmation?.message||copy.successText}</p>
               <div className="report-success__facts">
                 <div><span>{copy.type}</span><b>{created.reportType||selected.label}</b></div>
                 <div><span>{copy.place}</span><b>{created.location?.label||"—"}</b></div>
@@ -318,8 +330,8 @@ export default function CitizenReports(){
                 </div>
 
                 <div className="report-file">
-                  <div><b>{copy.photo}</b><span>{copy.photoHelp}</span></div>
-                  <input ref={fileRef} hidden type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)}/>
+                  <div><b>{copy.photo}</b><span>{reportMeta.limits?.image_max_bytes?`${copy.photoHelp} · max ${Math.round(reportMeta.limits.image_max_bytes/1024/1024)} Mo`:copy.photoHelp}</span></div>
+                  <input ref={fileRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setFile(e.target.files?.[0]||null)}/>
                   <button type="button" className="secondary-action" onClick={()=>fileRef.current?.click()}>{file?`✓ ${file.name}`:"+ Ajouter"}</button>
                 </div>
               </section> : null}

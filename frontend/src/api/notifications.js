@@ -45,9 +45,18 @@ function inferEventStatus(item = {}) {
   );
 }
 
+function requestReferenceFromNotification(item = {}) {
+  if (item.request_reference || item.request_ref) return item.request_reference || item.request_ref;
+  const actionUrl = String(item.action_url || item.actionUrl || "");
+  const match = actionUrl.match(/\/citizen\/requests\/([^/?#]+)/i);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export function normalizeNotification(item = {}) {
   const id = item.id ?? item.uuid ?? item.pk ?? item.notification_id;
   const createdAt = item.created_at || item.created || item.timestamp || item.date || "";
+  const requestReference = requestReferenceFromNotification(item);
+  const category = requestReference && /^SIG-/i.test(String(requestReference)) ? "Signalement" : inferCategory(item);
   return {
     ...item,
     id,
@@ -56,9 +65,11 @@ export function normalizeNotification(item = {}) {
     is_read: Boolean(item.is_read ?? item.read ?? false),
     created_at: createdAt,
     createdLabel: item.createdLabel || formatDateTime(createdAt),
-    category: inferCategory(item),
+    category,
     event_status: inferEventStatus(item),
-    request_reference: item.request_reference || item.request_ref || item.reference || null,
+    request_reference: requestReference,
+    action_url: item.action_url || item.actionUrl || "",
+    action_label: item.action_label || item.actionLabel || "",
     appointment_id: item.appointment_id || item.appointment || null,
     contact_reference: item.contact_reference || item.contact_ref || null,
     service_slug: item.service_slug || item.service?.slug || null,
