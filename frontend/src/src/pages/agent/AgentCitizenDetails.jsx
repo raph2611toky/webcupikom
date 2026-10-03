@@ -1,0 +1,38 @@
+import { useEffect, useState } from "react";
+import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
+import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import { getCitizen, updateCitizen } from "../../api/citizens.js";
+import { sendAgentNotification } from "../../api/notifications.js";
+import { getApiErrorMessage } from "../../api/auth.js";
+import { navigate } from "../../utils/navigation.js";
+import "../../styles/app-shell.css";
+import "../../styles/pages/dashboard.css";
+
+const EDIT_FIELDS=[
+  ["first_name","Prénom"],["last_name","Nom"],["phone_number","Téléphone"],["profession","Profession"],["address","Adresse"],["habitat","Habitat"],["district","Quartier"],["sector","Secteur"],["street","Rue"],["building","Bâtiment"],["apartment","Appartement"],["locale","Langue"],
+];
+
+export default function AgentCitizenDetails({params}){
+  const [c,setCitizen]=useState(null),[form,setForm]=useState({}),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+  const [security,setSecurity]=useState({reason:"",current_password:"",mfa_code:"",recovery_code:""});
+  async function load(){const data=await getCitizen(params.id);setCitizen(data);setForm(Object.fromEntries(EDIT_FIELDS.map(([key])=>[key,data[key]??""])))}
+  useEffect(()=>{let mounted=true;load().catch(e=>mounted&&setError(getApiErrorMessage(e,"Impossible de charger le citoyen."))).finally(()=>mounted&&setLoading(false));return()=>{mounted=false}},[params.id]);
+  async function saveProfile(){setSaving(true);setError("");setNotice("");try{setCitizen(await updateCitizen(params.id,form));setNotice("Profil citoyen mis à jour. L’action est traçable dans le journal.")}catch(e){setError(getApiErrorMessage(e,"Modification impossible."))}finally{setSaving(false)}}
+  async function toggleActive(){if(!security.reason.trim()){setError("Indiquez le motif de cette action sensible.");return}setSaving(true);setError("");try{const auth=Object.fromEntries(Object.entries({current_password:security.current_password,mfa_code:security.mfa_code,recovery_code:security.recovery_code}).filter(([,value])=>String(value||"").trim()));const next=await updateCitizen(params.id,{is_active:!c.is_active,reason:security.reason,...auth});setCitizen(next);setSecurity({reason:"",current_password:"",mfa_code:"",recovery_code:""});setNotice(next.is_active?"Compte citoyen réactivé.":"Compte citoyen désactivé.")}catch(e){setError(getApiErrorMessage(e,"L’action sensible a été refusée. Si votre compte utilise Google ou une vérification e-mail, le backend doit fournir le défi de réauthentification correspondant."))}finally{setSaving(false)}}
+  async function notify(){setSaving(true);setError("");try{await sendAgentNotification({recipient:Number(c.id),title:"Message de votre mairie",message:"Un agent municipal a consulté votre dossier et souhaite attirer votre attention sur votre espace citoyen.",action_label:"Ouvrir mon espace",action_url:"/citizen",is_important:false});setNotice("Notification ciblée envoyée au citoyen.")}catch(e){setError(getApiErrorMessage(e,"Notification impossible."))}finally{setSaving(false)}}
+
+  if(loading)return <div className="portal-layout"><AgentSidebar/><div className="portal-main"><PortalTopbar eyebrow="Fiche citoyen" title="Chargement"/><main className="portal-content"><div className="loading-card">Chargement…</div></main></div></div>;
+  if(error&&!c)return <div className="portal-layout"><AgentSidebar/><div className="portal-main"><PortalTopbar eyebrow="Fiche citoyen" title="Citoyen"/><main className="portal-content"><div className="error-card">{error}</div></main></div></div>;
+  const initials=(c?.name||"C").split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
+  return <div className="portal-layout"><AgentSidebar/><div className="portal-main">
+    <PortalTopbar eyebrow="Fiche citoyen" title={c.name} actions={<button className="secondary-action" onClick={()=>navigate(`/agent/audit?resource_type=citizen&resource_id=${c.id}`)}>Historique d’audit</button>}/>
+    <main className="portal-content agent-citizen-detail-v50"><button className="back-link" onClick={()=>navigate('/agent/citizens')}>← Retour aux citoyens</button>{error?<div className="error-card" role="alert">{error}</div>:null}{notice?<div className="success-inline" role="status">✓ {notice}</div>:null}
+      <section className="profile-hero"><div className="profile-avatar">{initials}</div><div><span>Compte #{c.id}</span><h2>{c.name}</h2><p>{c.email||"E-mail non disponible"} · {c.status} · {c.email_verified?"e-mail vérifié":"e-mail non vérifié"}</p></div><div className="citizen-hero-stats"><div><b>{c.requests}</b><span>demandes</span></div><div><b>{c.appointments}</b><span>rendez-vous</span></div></div></section>
+      <section className="portal-grid portal-grid--2">
+        <article className="portal-card"><div className="portal-card__head"><div><span className="section-label">Profil</span><h3>Informations administratives</h3></div><button className="primary-action" disabled={saving} onClick={saveProfile}>Enregistrer</button></div><div className="profile-form-grid citizen-admin-form">{EDIT_FIELDS.map(([key,label])=><label key={key}><span>{label}</span><input value={form[key]??""} onChange={e=>setForm(v=>({...v,[key]:e.target.value}))}/></label>)}</div></article>
+        <article className="portal-card"><span className="section-label">Compte</span><h3>État et activité</h3><div className="detail-list"><div><span>État</span><b>{c.account_state||c.status}</b></div><div><span>Profil complété</span><b>{c.profileCompleted?"Oui":"Non"}</b></div><div><span>Inscrit le</span><b>{c.joinedLabel}</b></div><div><span>Dernière connexion</span><b>{c.lastLoginLabel}</b></div><div><span>Dernière mise à jour</span><b>{c.updatedLabel}</b></div></div><button className="secondary-action" disabled={saving} onClick={notify}>Envoyer une notification ciblée</button></article>
+        <article className="portal-card portal-card--wide citizen-security-card"><div><span className="section-label">Action sensible</span><h3>{c.is_active?"Désactiver le compte":"Réactiver le compte"}</h3><p className="detail-copy">Le compte est désactivé plutôt que supprimé. Selon votre mode de connexion, le backend peut demander une réauthentification (mot de passe, MFA, récupération, Google ou défi e-mail).</p></div><div className="citizen-security-form"><label><span>Motif obligatoire</span><input value={security.reason} onChange={e=>setSecurity(v=>({...v,reason:e.target.value}))} placeholder="Ex. compte signalé comme frauduleux"/></label><label><span>Mot de passe actuel</span><input type="password" autoComplete="current-password" value={security.current_password} onChange={e=>setSecurity(v=>({...v,current_password:e.target.value}))}/></label><label><span>Code MFA (optionnel)</span><input inputMode="numeric" value={security.mfa_code} onChange={e=>setSecurity(v=>({...v,mfa_code:e.target.value}))} placeholder="123456"/></label><label><span>Code de récupération (optionnel)</span><input value={security.recovery_code} onChange={e=>setSecurity(v=>({...v,recovery_code:e.target.value}))}/></label><button className={c.is_active?"danger-action":"primary-action"} disabled={saving} onClick={toggleActive}>{c.is_active?"Désactiver le compte":"Réactiver le compte"}</button></div></article>
+      </section>
+    </main>
+  </div></div>;
+}

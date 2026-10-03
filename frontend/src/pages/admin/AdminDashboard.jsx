@@ -26,7 +26,7 @@ export default function AdminDashboard(){
   const u=dashboard?.users||{},s=dashboard?.services||{},n=dashboard?.news||{},r=dashboard?.requests||{};
 
   return <div className="portal-layout"><AdminSidebar/><div className="portal-main">
-    <PortalTopbar eyebrow="Administration" title="Pilotage Nova Terra"/>
+    <PortalTopbar eyebrow="Administration" title="Pilotage Nova Terra" actions={<button className="topbar-cta" onClick={()=>navigate("/admin/projects?new=1")}>+ Nouveau projet</button>}/>
     <main className="portal-content">
       {loading?<div className="loading-card">Chargement…</div>:null}
       {error?<div className="error-card" role="alert">{error}</div>:null}

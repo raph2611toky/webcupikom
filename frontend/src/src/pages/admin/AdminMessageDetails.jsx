@@ -1,0 +1,15 @@
+import { useEffect, useState } from "react";
+import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
+import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import { getAdminContactMessage, updateAdminContactMessage } from "../../api/contact.js";
+import { getAssignees } from "../../api/citizens.js";
+import { getApiErrorMessage } from "../../api/auth.js";
+import { navigate } from "../../utils/navigation.js";
+import "../../styles/app-shell.css";
+import "../../styles/pages/dashboard.css";
+export default function AdminMessageDetails({params}){
+  const [item,setItem]=useState(null),[assignees,setAssignees]=useState([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
+  useEffect(()=>{let mounted=true;Promise.all([getAdminContactMessage(params.id),getAssignees()]).then(([m,a])=>{if(!mounted)return;setItem(m);setAssignees(a)}).catch(e=>mounted&&setError(getApiErrorMessage(e,"Message introuvable."))).finally(()=>mounted&&setLoading(false));return()=>{mounted=false}},[params.id]);
+  async function patch(payload){if(!item||saving)return;setSaving(true);setError('');try{setItem(await updateAdminContactMessage(item.reference,payload))}catch(e){setError(getApiErrorMessage(e,"Modification impossible."))}finally{setSaving(false)}}
+  return <div className="portal-layout"><AdminSidebar/><div className="portal-main"><PortalTopbar eyebrow="Relations citoyennes" title={item?.reference||'Message'}/><main className="portal-content"><button className="back-link" onClick={()=>navigate('/admin/messages')}>← Retour aux messages</button>{loading?<div className="loading-card">Chargement…</div>:error&&!item?<div className="error-card">{error}</div>:item?<><section className="agent-detail-head"><div><span>{item.service_name||'Mairie'}</span><h2>{item.subject}</h2><p>{item.name} · {item.email}</p></div><div className="agent-detail-controls"><label><span>Statut</span><select value={item.statusCode} disabled={saving} onChange={e=>patch({status:e.target.value})}><option value="received">Reçu</option><option value="read">Lu</option><option value="closed">Clôturé</option></select></label><label><span>Responsable</span><select value={item.assigned_to??''} disabled={saving} onChange={e=>patch({assigned_to:e.target.value?Number(e.target.value):null})}><option value="">Non assigné</option>{assignees.map(a=><option key={a.id} value={a.id}>{a.display_name} · {a.role}</option>)}</select></label></div></section><section className="portal-grid portal-grid--2"><article className="portal-card"><span className="section-label">Message</span><h3>{item.subject}</h3><p className="detail-copy">{item.message}</p></article><article className="portal-card"><span className="section-label">Suivi</span><h3>{item.statusLabel}</h3><div className="detail-list"><div><span>Citoyen lié</span><b>{item.user_name||'Visiteur'}</b></div><div><span>Responsable</span><b>{item.assigned_to_name||'Non assigné'}</b></div><div><span>Reçu</span><b>{item.createdLabel}</b></div></div></article></section></>:null}</main></div></div>;
+}

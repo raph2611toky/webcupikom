@@ -69,6 +69,10 @@ export default function AdminProjects(){
     finally{setLoading(false)}
   }
   useEffect(()=>{load()},[]);
+  useEffect(()=>{
+    const query=new URLSearchParams(window.location.search);
+    if(query.get("new")==="1")setEditor({...EMPTY});
+  },[]);
 
   const stats=useMemo(()=>({
     published:projects.filter(p=>p.isPublished!==false).length,
