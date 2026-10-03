@@ -273,3 +273,6 @@ SWAGGER_SETTINGS = {
 REDOC_SETTINGS = {
     "LAZY_RENDERING": False,
 }
+
+# Les preuves des signalements ne doivent jamais être servies sous MEDIA_URL.
+PRIVATE_REPORT_ROOT = Path(os.getenv("PRIVATE_REPORT_ROOT", str(BASE_DIR / "private_uploads")))

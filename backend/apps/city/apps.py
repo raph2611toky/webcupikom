@@ -8,4 +8,4 @@ class CityConfig(AppConfig):
 
     def ready(self):
         # Enregistre les checks de cohérence de déploiement.
-        from . import checks  # noqa: F401
+        from . import checks, report_signals  # noqa: F401

@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from .report_storage import PrivateReportStorage, report_image_path
 
 
 def make_reference(prefix):
@@ -123,6 +124,8 @@ class CitizenRequest(models.Model):
         IN_PROGRESS = "in_progress", "En traitement"
         ACTION_REQUIRED = "action_required", "Action requise"
         COMPLETED = "completed", "Terminée"
+        CANCELLED = "cancelled", "Annulée"
+        REJECTED = "rejected", "Non retenue"
 
     class Priority(models.TextChoices):
         LOW = "low", "Basse"
@@ -152,6 +155,30 @@ class CitizenRequest(models.Model):
     location_text = models.CharField(max_length=255, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    district = models.CharField(max_length=120, blank=True)
+    street = models.CharField(max_length=160, blank=True)
+    building = models.CharField(max_length=120, blank=True)
+    landmark = models.CharField(max_length=255, blank=True)
+    location_accuracy = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    occurred_at = models.DateTimeField(null=True, blank=True)
+    frequency = models.CharField(max_length=16, choices=[('once', 'Ponctuel'), ('recurring', 'Récurrent'), ('ongoing', 'En cours')], default='once')
+    infrastructure_id = models.CharField(max_length=100, blank=True)
+    severity = models.CharField(max_length=16, choices=[('minor', 'Mineur'), ('moderate', 'Modéré'), ('major', 'Majeur'), ('critical', 'Critique')], default='moderate')
+    danger_present = models.BooleanField(default=False)
+    people_affected = models.PositiveIntegerField(null=True, blank=True)
+    impacts_accessibility = models.BooleanField(default=False)
+    accessibility_details = models.TextField(blank=True)
+    allow_contact = models.BooleanField(default=True)
+    preferred_contact = models.CharField(max_length=16, choices=[('platform', 'Plateforme'), ('email', 'Email'), ('phone', 'Téléphone')], default='platform')
+    contact_phone = models.CharField(max_length=32, blank=True)
+    routing_source = models.CharField(max_length=16, default='unassigned', choices=[('unassigned', 'À orienter'), ('automatic', 'Catégorie'), ('manual', 'Choix manuel')])
+    resolution_summary = models.TextField(blank=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    cancellation_reason = models.TextField(blank=True)
+    reopened_count = models.PositiveIntegerField(default=0)
+    duplicate_of = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='duplicates')
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING)
     priority = models.CharField(max_length=12, choices=Priority.choices, default=Priority.NORMAL)
     assigned_to = models.ForeignKey(
@@ -166,6 +193,7 @@ class CitizenRequest(models.Model):
 
     class Meta:
         ordering = ("-updated_at", "-created_at")
+        indexes = [models.Index(fields=['citizen', 'request_type', 'created_at']), models.Index(fields=['request_type', 'status', 'incident_category'])]
         verbose_name = "demande citoyenne"
         verbose_name_plural = "demandes citoyennes"
 
@@ -416,3 +444,23 @@ class WebCupSyncState(models.Model):
 
     def __str__(self):
         return self.key
+
+
+class CitizenRequestAttachment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request = models.ForeignKey(CitizenRequest, on_delete=models.CASCADE, related_name='attachments')
+    event = models.ForeignKey(CitizenRequestEvent, null=True, blank=True, on_delete=models.SET_NULL, related_name='attachments')
+    uploader = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    image = models.ImageField(storage=PrivateReportStorage(), upload_to=report_image_path)
+    original_name = models.CharField(max_length=150)
+    caption = models.CharField(max_length=300, blank=True)
+    is_public = models.BooleanField(default=True)
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    size_bytes = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    content_type = models.CharField(max_length=32)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('created_at', 'id')

@@ -130,3 +130,25 @@ urlpatterns = [
     path("webcup/requests/local/", WebCupSnapshotListView.as_view(), name="webcup-request-snapshots"),
     path("webcup/status/", WebCupStatusView.as_view(), name="webcup-status"),
 ]
+
+from .report_views import (
+    ReportCategoryView, CitizenReportDetailView, CitizenReportSummaryView,
+    CitizenReportMessageView, CitizenReportCancelView, CitizenReportReopenView,
+    ReportAttachmentListView, AgentReportAttachmentListView, ReportAttachmentDetailView,
+    ReportImageDownloadView,
+)
+report_urls = [
+    path('citizen/reports/categories/', ReportCategoryView.as_view(), name='report-categories'),
+    path('citizen/reports/summary/', CitizenReportSummaryView.as_view(), name='report-summary'),
+    path('citizen/reports/attachments/<uuid:pk>/download/', ReportImageDownloadView.as_view(), name='report-image-download'),
+    path('citizen/reports/attachments/<uuid:pk>/', ReportAttachmentDetailView.as_view(), name='report-attachment-detail'),
+    path('citizen/reports/<str:reference>/messages/', CitizenReportMessageView.as_view(), name='report-messages'),
+    path('citizen/reports/<str:reference>/attachments/', ReportAttachmentListView.as_view(), name='report-attachments'),
+    path('citizen/reports/<str:reference>/cancel/', CitizenReportCancelView.as_view(), name='report-cancel'),
+    path('citizen/reports/<str:reference>/reopen/', CitizenReportReopenView.as_view(), name='report-reopen'),
+    path('citizen/reports/<str:reference>/', CitizenReportDetailView.as_view(), name='report-detail'),
+    path('agent/reports/<str:reference>/attachments/', AgentReportAttachmentListView.as_view(), name='agent-report-attachments'),
+]
+urlpatterns = report_urls + urlpatterns
+from .report_views import AgentReportReopenView
+urlpatterns += [path('agent/reports/<str:reference>/reopen/', AgentReportReopenView.as_view(), name='agent-report-reopen')]

@@ -1,4 +1,10 @@
 from django.contrib import admin
+from django import forms
+from django.db import transaction
+from django.http import FileResponse, Http404
+from django.urls import path, reverse
+from django.utils.html import format_html
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from .models import (
     CitizenAppointment,
@@ -6,6 +12,7 @@ from .models import (
     CitizenPreference,
     CitizenRequest,
     CitizenRequestEvent,
+    CitizenRequestAttachment,
     ContactMessage,
     MunicipalService,
     NewsArticle,
@@ -42,14 +49,123 @@ class ContactMessageAdmin(admin.ModelAdmin):
     readonly_fields = ("reference", "read_at", "closed_at", "created_at", "updated_at")
 
 
+class RequestProcessingForm(forms.ModelForm):
+    class Meta:
+        model = CitizenRequest
+        fields = '__all__'
+
+    def clean(self):
+        data = super().clean()
+        if not self.instance.pk or self.instance.request_type != 'report':
+            return data
+        from .serializers import AgentCitizenRequestSerializer
+        old = CitizenRequest.objects.get(pk=self.instance.pk)
+        changes = {}
+        for field in ('status', 'priority', 'assigned_to', 'service', 'resolution_summary', 'duplicate_of'):
+            if field in data:
+                value = data[field]
+                changes[field] = value.pk if hasattr(value, 'pk') else value
+        serializer = AgentCitizenRequestSerializer(old, data=changes, partial=True, context={'request': self.http_request})
+        if not serializer.is_valid():
+            raise DjangoValidationError(str(serializer.errors))
+        return data
+
+
+class ReportAttachmentInline(admin.TabularInline):
+    model = CitizenRequestAttachment
+    extra = 0
+    fields = ('secure_file', 'caption', 'is_public', 'uploader', 'created_at')
+    readonly_fields = fields
+
+    def secure_file(self, obj):
+        if not obj.pk:
+            return '—'
+        return format_html('<a href="{}" target="_blank" rel="noopener">{}</a>',
+            reverse('admin:city_report_image', kwargs={'pk':obj.pk}), obj.original_name)
+
+    secure_file.short_description = 'Photo privée'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(CitizenRequest)
 class CitizenRequestAdmin(admin.ModelAdmin):
-    list_display = (
-        "reference", "citizen", "service", "status", "priority", "assigned_to", "updated_at"
+    form = RequestProcessingForm
+    inlines = (ReportAttachmentInline,)
+    list_display = ('reference', 'request_type', 'citizen', 'incident_category', 'service', 'status', 'priority', 'assigned_to', 'updated_at')
+    list_filter = ('request_type', 'status', 'priority', 'severity', 'incident_category', 'service', 'assigned_to')
+    search_fields = ('reference', 'title', 'description', 'district', 'location_text', 'citizen__email')
+    readonly_fields = ('reference','created_at','updated_at','routing_source','acknowledged_at','resolved_at','closed_at','reopened_count','cancellation_reason')
+    fieldsets = (
+        ('Dossier', {'fields': ('reference','citizen','request_type','title','description','incident_category')}),
+        ('Localisation', {'fields': ('location_text','district','street','building','landmark','latitude','longitude','location_accuracy')}),
+        ('Observation', {'fields': ('occurred_at','frequency','infrastructure_id','severity','danger_present','people_affected','impacts_accessibility','accessibility_details')}),
+        ('Contact', {'fields': ('allow_contact','preferred_contact','contact_phone')}),
+        ('Traitement', {'fields': ('service','routing_source','assigned_to','status','priority','duplicate_of','resolution_summary')}),
+        ('Historique', {'fields': ('acknowledged_at','resolved_at','closed_at','cancellation_reason','reopened_count','created_at','updated_at')}),
     )
-    list_filter = ("status", "priority", "service", "assigned_to")
-    search_fields = ("reference", "title", "description", "citizen__email")
-    readonly_fields = ("reference", "created_at", "updated_at")
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if obj and obj.request_type == 'report':
+            fields += ['citizen','request_type','title','description','incident_category','location_text','district','street','building','landmark','latitude','longitude','location_accuracy','occurred_at','frequency','infrastructure_id','severity','danger_present','people_affected','impacts_accessibility','accessibility_details','allow_contact','preferred_contact','contact_phone']
+        return fields
+
+    def has_add_permission(self, request):
+        # A citizen dossier is created through its validated citizen API.
+        return False
+
+    def get_form(self, request, obj=None, **kwargs):
+        base = super().get_form(request, obj, **kwargs)
+        class RequestBoundForm(base):
+            http_request = request
+        return RequestBoundForm
+
+    def save_model(self, request, obj, form, change):
+        if not change or obj.request_type != 'report':
+            return super().save_model(request, obj, form, change)
+        from .serializers import AgentCitizenRequestSerializer
+        from .services.reports import event, notify_citizen
+        with transaction.atomic():
+            old = CitizenRequest.objects.select_for_update().get(pk=obj.pk)
+            previous = old.status
+            fields = ('status','priority','assigned_to','service','resolution_summary','duplicate_of')
+            changes = {field: (getattr(obj, field).pk if hasattr(getattr(obj, field), 'pk') else getattr(obj, field)) for field in fields}
+            serializer = AgentCitizenRequestSerializer(old, data=changes, partial=True, context={'request':request})
+            serializer.is_valid(raise_exception=True)
+            saved = serializer.save()
+            for field in ('acknowledged_at','resolved_at','closed_at','routing_source'):
+                setattr(obj, field, getattr(saved, field))
+            # Preserve the form object's values for admin logging and response.
+            if previous != saved.status:
+                event(saved, request.user, saved.get_status_display(), saved.resolution_summary, kind='status')
+                notify_citizen(saved, request.user, saved.resolution_summary or saved.get_status_display(), important=True)
+            else:
+                event(saved, request.user, 'Traitement mis à jour dans l’administration', public=False)
+
+    def get_urls(self):
+        return [path('report-image/<uuid:pk>/', self.admin_site.admin_view(self.report_image), name='city_report_image')] + super().get_urls()
+
+    def report_image(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        proof = get_object_or_404(CitizenRequestAttachment.objects.select_related('request'), pk=pk)
+        if not self.has_view_permission(request, proof.request):
+            raise Http404()
+        try:
+            handle = proof.image.open('rb')
+        except FileNotFoundError:
+            raise Http404('Image indisponible.')
+        response = FileResponse(handle, content_type=proof.content_type)
+        response['Cache-Control'] = 'private, no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
 
 @admin.register(CitizenRequestEvent)
@@ -58,6 +174,16 @@ class CitizenRequestEventAdmin(admin.ModelAdmin):
     list_filter = ("event_type", "status", "is_public")
     search_fields = ("request__reference", "title", "message", "actor__email")
     readonly_fields = ("created_at",)
+
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(CitizenPreference)

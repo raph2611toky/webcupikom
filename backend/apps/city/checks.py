@@ -44,3 +44,18 @@ def pending_terra_nova_migrations(app_configs, **kwargs):
             id="city.W001",
         )
     ]
+
+
+@register()
+def private_report_storage(app_configs, **kwargs):
+    from django.conf import settings
+    from django.core.checks import Error
+    from pathlib import Path
+    root = Path(settings.PRIVATE_REPORT_ROOT).resolve()
+    for configured in (settings.MEDIA_ROOT, settings.STATIC_ROOT):
+        if not configured:
+            continue
+        public = Path(configured).resolve()
+        if root == public or root.is_relative_to(public):
+            return [Error('PRIVATE_REPORT_ROOT ne peut pas être situé dans MEDIA_ROOT ou STATIC_ROOT.', id='city.E002')]
+    return []

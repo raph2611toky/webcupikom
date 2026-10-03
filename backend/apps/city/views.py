@@ -92,6 +92,9 @@ from .swagger import (
     contact_create_schema,
 )
 from .services.notifications import schedule_notification_batch, schedule_notification_email
+from .report_api import ReportMutationMixin, ReportPagination, filter_requests
+from .report_swagger import report_list_schema
+from .services.reports import attachment_transaction, CLOSED, event as report_event, notify_citizen as notify_report_citizen
 from .services.webcup import WebCupUpstreamError, get_webcup_requests
 
 
@@ -282,7 +285,9 @@ def _profile_completion(user):
 
 def _request_confirmation(instance):
     return {
-        "message": "Votre demande a bien été enregistrée et transmise aux services municipaux.",
+        "message": ("Votre signalement est enregistré et sera orienté vers le service compétent." if instance.request_type == 'report' and not instance.service_id else "Votre demande a bien été enregistrée et transmise aux services municipaux."),
+        "service": instance.service_id,
+        "needs_triage": instance.request_type == 'report' and not instance.service_id,
         "reference": instance.reference,
         "status": instance.status,
         "created_at": instance.created_at,
@@ -534,8 +539,10 @@ class CitizenOnboardingView(APIView):
         return self.get(request)
 
 
+@method_decorator(name="get", decorator=report_list_schema)
 @method_decorator(name="post", decorator=citizen_request_post_schema)
-class CitizenRequestListCreateView(generics.ListCreateAPIView):
+class CitizenRequestListCreateView(ReportMutationMixin, generics.ListCreateAPIView):
+    pagination_class = ReportPagination
     permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenRequestSerializer
 
@@ -548,21 +555,7 @@ class CitizenRequestListCreateView(generics.ListCreateAPIView):
         queryset = CitizenRequest.objects.filter(citizen=user).select_related(
             "service", "assigned_to"
         )
-        request_status = self.request.query_params.get("status")
-        request_type = self.request.query_params.get("type")
-        search = self.request.query_params.get("search")
-        if request_status:
-            queryset = queryset.filter(status=request_status)
-        if request_type:
-            queryset = queryset.filter(request_type=request_type)
-        if search:
-            queryset = queryset.filter(
-                Q(reference__icontains=search)
-                | Q(title__icontains=search)
-                | Q(description__icontains=search)
-                | Q(service__name__icontains=search)
-            )
-        return queryset
+        return filter_requests(queryset, self.request.query_params, citizen=True)
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -583,20 +576,29 @@ class CitizenRequestListCreateView(generics.ListCreateAPIView):
         )
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        response_data = dict(serializer.data)
-        response_data["confirmation"] = _request_confirmation(serializer.instance)
-        return Response(response_data, status=status.HTTP_201_CREATED)
-
+        with attachment_transaction():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            response_data = dict(serializer.data)
+            response_data["confirmation"] = _request_confirmation(serializer.instance)
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
 class CitizenRequestHistoryView(CitizenRequestListCreateView):
     http_method_names = ["get", "head", "options"]
 
 
+@method_decorator(name="get", decorator=report_list_schema)
 @method_decorator(name="post", decorator=citizen_report_post_schema)
-class CitizenIssueReportCreateView(generics.CreateAPIView):
+class CitizenIssueReportCreateView(ReportMutationMixin, generics.ListCreateAPIView):
+    pagination_class = ReportPagination
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenRequest.objects.none()
+        queryset = CitizenRequest.objects.filter(citizen=self.request.user, request_type="report").select_related("citizen", "service", "assigned_to")
+        return filter_requests(queryset, self.request.query_params, citizen=True)
+
     permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenIssueReportSerializer
 
@@ -608,7 +610,7 @@ class CitizenIssueReportCreateView(generics.CreateAPIView):
             actor=self.request.user,
             event_type=CitizenRequestEvent.EventType.CREATED,
             title="Signalement enregistré",
-            message="Votre signalement a été transmis aux services municipaux.",
+            message=("Votre signalement a été transmis au service compétent." if instance.service_id else "Votre signalement est enregistré et attend son orientation."),
         )
         CitizenNotification.objects.create(
             user=self.request.user,
@@ -619,15 +621,15 @@ class CitizenIssueReportCreateView(generics.CreateAPIView):
         )
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        response_data = dict(serializer.data)
-        response_data["confirmation"] = _request_confirmation(serializer.instance)
-        return Response(response_data, status=status.HTTP_201_CREATED)
+        with attachment_transaction():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            response_data = dict(serializer.data)
+            response_data["confirmation"] = _request_confirmation(serializer.instance)
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
-
-class CitizenRequestDetailView(generics.RetrieveAPIView):
+class CitizenRequestDetailView(ReportMutationMixin, generics.RetrieveAPIView):
     permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenRequestDetailSerializer
     lookup_field = "reference"
@@ -643,7 +645,8 @@ class CitizenRequestDetailView(generics.RetrieveAPIView):
         )
 
 
-class CitizenRequestTimelineView(generics.ListAPIView):
+class CitizenRequestTimelineView(ReportMutationMixin, generics.ListAPIView):
+    pagination_class = ReportPagination
     permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenRequestEventSerializer
 
@@ -1004,7 +1007,7 @@ class AgentDashboardView(APIView):
                     "action_required": requests.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
                     "completed": requests.filter(status=CitizenRequest.Status.COMPLETED).count(),
                     "awaiting_handling": requests.exclude(
-                        status=CitizenRequest.Status.COMPLETED
+                        status__in=CLOSED
                     ).filter(assigned_to__isnull=True).count(),
                 },
                 "citizens": User.objects.filter(role=User.Role.CITIZEN).count(),
@@ -1030,6 +1033,7 @@ class AgentDashboardView(APIView):
 
 
 class AgentRequestListView(generics.ListAPIView):
+    pagination_class = ReportPagination
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = AgentCitizenRequestSerializer
 
@@ -1047,8 +1051,13 @@ class AgentRequestListView(generics.ListAPIView):
         if request_status:
             queryset = queryset.filter(status=request_status)
         if service:
-            queryset = queryset.filter(Q(service_id=service) | Q(service__slug=service))
+            queryset = queryset.filter(service_id=int(service)) if str(service).isdigit() else queryset.filter(service__slug=service)
         if assigned_to:
+            from rest_framework.exceptions import ValidationError
+            try:
+                assigned_to = int(assigned_to)
+            except (ValueError, TypeError):
+                raise ValidationError({'assigned_to': 'Un identifiant numérique est requis.'})
             queryset = queryset.filter(assigned_to_id=assigned_to)
         if priority:
             queryset = queryset.filter(priority=priority)
@@ -1066,7 +1075,7 @@ class AgentRequestListView(generics.ListAPIView):
                 | Q(citizen__last_name__icontains=search)
                 | Q(service__name__icontains=search)
             )
-        return queryset
+        return filter_requests(queryset, self.request.query_params)
 
 
 class AgentRequestSummaryView(APIView):
@@ -1074,7 +1083,7 @@ class AgentRequestSummaryView(APIView):
 
     def get(self, request):
         queryset = CitizenRequest.objects.all()
-        open_queryset = queryset.exclude(status=CitizenRequest.Status.COMPLETED)
+        open_queryset = queryset.exclude(status__in=CLOSED)
         return Response({
             "total": queryset.count(),
             "open": open_queryset.count(),
@@ -1084,12 +1093,15 @@ class AgentRequestSummaryView(APIView):
             "in_progress": queryset.filter(status=CitizenRequest.Status.IN_PROGRESS).count(),
             "action_required": queryset.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
             "completed": queryset.filter(status=CitizenRequest.Status.COMPLETED).count(),
+            "cancelled": queryset.filter(status=CitizenRequest.Status.CANCELLED).count(),
+            "rejected": queryset.filter(status=CitizenRequest.Status.REJECTED).count(),
+            "needs_triage": open_queryset.filter(request_type="report", service__isnull=True).count(),
             "reports": queryset.filter(request_type=CitizenRequest.RequestType.REPORT).count(),
         })
 
 
 @method_decorator(name="patch", decorator=agent_request_patch_schema)
-class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
+class AgentRequestDetailView(ReportMutationMixin, generics.RetrieveUpdateAPIView):
     http_method_names = ["get", "patch", "head", "options"]
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = AgentCitizenRequestDetailSerializer
@@ -1102,11 +1114,25 @@ class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        with attachment_transaction():
+            instance = generics.get_object_or_404(self.get_queryset().select_for_update(), reference=self.kwargs['reference'])
+            self.check_object_permissions(request, instance)
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            data = serializer.data
+        return Response(data)
+
     @transaction.atomic
     def perform_update(self, serializer):
         previous_status = serializer.instance.status
         previous_priority = serializer.instance.priority
         previous_assignee = serializer.instance.assigned_to_id
+        previous_service = serializer.instance.service_id
+        previous_summary = serializer.instance.resolution_summary
+        previous_duplicate = serializer.instance.duplicate_of_id
         instance = serializer.save()
         _notify_request_status(
             instance,
@@ -1119,7 +1145,7 @@ class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
                 actor=self.request.user,
                 event_type=CitizenRequestEvent.EventType.STATUS,
                 title=instance.get_status_display(),
-                message=f"Le statut de la demande est passé à « {instance.get_status_display()} ».",
+                message=(instance.resolution_summary or f"Le statut de la demande est passé à « {instance.get_status_display()} »."),
                 is_public=True,
             )
         if previous_priority != instance.priority:
@@ -1133,9 +1159,31 @@ class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
                 message="La demande a été réassignée.", is_public=False
             )
 
+        if previous_service != instance.service_id:
+            report_event(instance, self.request.user, 'Orientation municipale mise à jour',
+                         f'Service : {instance.service.name if instance.service else "À orienter"}.')
+        if previous_duplicate != instance.duplicate_of_id:
+            report_event(instance, self.request.user, 'Lien de doublon mis à jour', public=False)
+        if previous_summary != instance.resolution_summary and previous_status == instance.status:
+            report_event(instance, self.request.user, 'Précision du traitement', instance.resolution_summary)
+            if instance.request_type == 'report':
+                notify_report_citizen(instance, self.request.user, 'Une précision de traitement est disponible.')
+
 
 @method_decorator(name="post", decorator=agent_request_event_post_schema)
-class AgentRequestTimelineView(generics.ListCreateAPIView):
+class AgentRequestTimelineView(ReportMutationMixin, generics.ListCreateAPIView):
+    pagination_class = ReportPagination
+
+    def create(self, request, *args, **kwargs):
+        with attachment_transaction():
+            item = generics.get_object_or_404(CitizenRequest.objects.select_for_update(), reference=self.kwargs["reference"])
+            serializer = self.get_serializer(data=request.data, context={"request": request, "citizen_request": item})
+            serializer.is_valid(raise_exception=True)
+            instance = serializer.save()
+            item.save(update_fields=["updated_at"])
+            data = CitizenRequestEventSerializer(instance, context={"request": request}).data
+        return Response(data, status=201)
+
     permission_classes = [AGENT_OR_ADMIN]
 
     def get_serializer_class(self):
@@ -1222,8 +1270,13 @@ class AgentContactMessageListView(generics.ListAPIView):
         if message_status:
             queryset = queryset.filter(status=message_status)
         if service:
-            queryset = queryset.filter(Q(service_id=service) | Q(service__slug=service))
+            queryset = queryset.filter(service_id=int(service)) if str(service).isdigit() else queryset.filter(service__slug=service)
         if assigned_to:
+            from rest_framework.exceptions import ValidationError
+            try:
+                assigned_to = int(assigned_to)
+            except (ValueError, TypeError):
+                raise ValidationError({'assigned_to': 'Un identifiant numérique est requis.'})
             queryset = queryset.filter(assigned_to_id=assigned_to)
         if search:
             queryset = queryset.filter(
@@ -1344,7 +1397,7 @@ class AdminDashboardView(APIView):
                     "action_required": citizen_requests.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
                     "completed": citizen_requests.filter(status=CitizenRequest.Status.COMPLETED).count(),
                     "awaiting_handling": citizen_requests.exclude(
-                        status=CitizenRequest.Status.COMPLETED
+                        status__in=CLOSED
                     ).filter(assigned_to__isnull=True).count(),
                     "reports": citizen_requests.filter(
                         request_type=CitizenRequest.RequestType.REPORT

@@ -24,6 +24,8 @@ from .serializers import (
     ContactMessageSerializer,
 )
 
+from .report_swagger import RICH_PARAMETERS, IMAGE_PARAMETERS, ReportCreatedSerializer, responses as report_responses
+
 PUBLIC_SECURITY = []
 JWT_SECURITY = [{"Bearer": []}]
 
@@ -95,6 +97,7 @@ ONBOARDING_PARAMETERS = [
 ]
 
 CITIZEN_REQUEST_PARAMETERS = [
+    *RICH_PARAMETERS,
     form_int("service", "ID du service municipal"),
     form_string("request_type", "Type : procedure ou report"),
     form_string("incident_category", "Catégorie d'incident"),
@@ -106,6 +109,7 @@ CITIZEN_REQUEST_PARAMETERS = [
 ]
 
 ISSUE_REPORT_PARAMETERS = [
+    *RICH_PARAMETERS,
     form_int("service", "ID du service municipal"),
     form_string("incident_category", "Catégorie d'incident"),
     form_string("title", "Titre", required=True),
@@ -120,12 +124,16 @@ NOTIFICATION_UPDATE_PARAMETERS = [
 ]
 
 REQUEST_AGENT_UPDATE_PARAMETERS = [
+    form_int("service", "Service municipal actif ; null pour remettre en triage"),
+    form_int("duplicate_of", "ID du signalement doublon, interne uniquement"),
+    form_string("resolution_summary", "Résultat, motif de rejet ou informations demandées. Requis lors de completed, rejected, action_required."),
     form_string("status", "Statut de la demande"),
     form_string("priority", "Priorité de la demande"),
     form_int("assigned_to", "ID de l'agent ou administrateur responsable"),
 ]
 
 REQUEST_EVENT_PARAMETERS = [
+    *IMAGE_PARAMETERS,
     form_string("title", "Titre de l'étape", required=True),
     form_string("message", "Message"),
     form_bool("is_public", "Visible par le citoyen"),
@@ -262,7 +270,7 @@ citizen_request_post_schema = swagger_auto_schema(
     operation_summary="Créer une demande citoyenne",
     security=JWT_SECURITY,
     manual_parameters=CITIZEN_REQUEST_PARAMETERS,
-    responses={201: CitizenRequestSerializer()},
+    responses=report_responses(ReportCreatedSerializer,201),
 )
 
 citizen_report_post_schema = swagger_auto_schema(
@@ -272,7 +280,7 @@ citizen_report_post_schema = swagger_auto_schema(
     operation_summary="Créer un signalement",
     security=JWT_SECURITY,
     manual_parameters=ISSUE_REPORT_PARAMETERS,
-    responses={201: CitizenRequestSerializer()},
+    responses=report_responses(ReportCreatedSerializer,201),
 )
 
 citizen_notification_patch_schema = swagger_auto_schema(
