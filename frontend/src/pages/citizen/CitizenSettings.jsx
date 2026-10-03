@@ -54,14 +54,14 @@ export default function CitizenSettings(){
 
 
         <section className="portal-card performance-settings-card">
-          <span className="section-label">Performance et connexion</span><h3>Chargement adapté au réseau</h3>
-          <p className="detail-copy">Nova Terra détecte automatiquement les connexions lentes et l’option d’économie de données du navigateur. En mode léger, les animations non essentielles sont arrêtées, les médias sont différés et la carte est chargée seulement sur demande.</p>
+          <span className="section-label">Performance · F57 à F62</span><h3>Mode léger et appareils peu puissants</h3>
+          <p className="detail-copy">Nova Terra adapte automatiquement le chargement aux connexions lentes, à l’économie de données et, lorsque le navigateur fournit l’information, aux appareils disposant de peu de mémoire ou de processeurs. Le mode léger conserve les actions essentielles avec une interface plus simple.</p>
           <div className="data-mode-buttons" role="group" aria-label="Mode de chargement">
             <button type="button" aria-pressed={dataPreference==="auto"} className={dataPreference==="auto"?"is-active":""} onClick={()=>changeDataPreference("auto")}><strong>Automatique</strong><span>S’adapte à la connexion</span></button>
-            <button type="button" aria-pressed={dataPreference==="reduced"} className={dataPreference==="reduced"?"is-active":""} onClick={()=>changeDataPreference("reduced")}><strong>Mode léger</strong><span>Moins d’animations et de médias</span></button>
+            <button type="button" aria-pressed={dataPreference==="reduced"} className={dataPreference==="reduced"?"is-active":""} onClick={()=>changeDataPreference("reduced")}><strong>Mode léger / simplifié</strong><span>Pages sobres, moins d’animations et de médias</span></button>
             <button type="button" aria-pressed={dataPreference==="full"} className={dataPreference==="full"?"is-active":""} onClick={()=>changeDataPreference("full")}><strong>Complet</strong><span>Affichage riche autorisé</span></button>
           </div>
-          <div className="data-mode-status" role="status"><span>Mode actif</span><strong>{dataProfile.reduced?"Léger":"Complet"}</strong><small>Connexion détectée : {dataProfile.effectiveType||"inconnue"}{dataProfile.saveData?" · économie de données activée":""}</small></div>
+          <div className="data-mode-status" role="status"><span>Mode actif</span><strong>{dataProfile.reduced?"Léger / simplifié":"Complet"}</strong><small>Connexion : {dataProfile.effectiveType||"inconnue"} · Appareil : {dataProfile.deviceTier==="low"?"peu puissant":dataProfile.deviceTier==="standard"?"standard":"non détecté"}{dataProfile.deviceMemory?` · ${dataProfile.deviceMemory} Go RAM estimés`:""}{dataProfile.hardwareConcurrency?` · ${dataProfile.hardwareConcurrency} threads`:""}</small><small>Décision automatique : {dataProfile.reason}</small></div>
           <div className="performance-audit-box">
             <div><strong>Diagnostic de cette page</strong><span>Mesure locale basée sur la Performance API du navigateur.</span></div>
             <button type="button" className="secondary-action" onClick={()=>setPerformanceSnapshot(getPerformanceSnapshot())}>Mesurer maintenant</button>
@@ -74,6 +74,8 @@ export default function CitizenSettings(){
               <div><strong>{performanceSnapshot.scriptTransferKb} Ko</strong><span>scripts transférés</span></div>
               <div><strong>{performanceSnapshot.styleCount}</strong><span>feuilles de style</span></div>
               <div><strong>{performanceSnapshot.styleTransferKb} Ko</strong><span>styles transférés</span></div>
+              <div><strong>{performanceSnapshot.deviceTier||"—"}</strong><span>profil appareil</span></div>
+              <div><strong>{performanceSnapshot.hardwareConcurrency||"—"}</strong><span>threads détectés</span></div>
             </div>:null}
           </div>
         </section>

@@ -4,6 +4,7 @@ import fallbackCitizen from "../assets/hero/hero-1.webp";
 import fallbackTransport from "../assets/hero/hero-travel.webp";
 import fallbackAdmin from "../assets/hero/hero-list.webp";
 import fallbackHealth from "../assets/hero/hero-phone.webp";
+import { cachedRequest, invalidateCache } from "./cache.js";
 
 const FALLBACK_IMAGES = {
   Important: fallbackCitizen,
@@ -41,24 +42,34 @@ function normalizeNews(item) {
   };
 }
 
-export async function getNews({ publishedOnly = true } = {}) {
+export async function getNews({ publishedOnly = true, force = false } = {}) {
   const endpoint = publishedOnly ? "/city/news/" : "/admin/news/";
-  const { data } = await api.get(endpoint, publishedOnly ? { skipAccessToken: true } : {});
-  return unwrapList(data).map(normalizeNews);
+  const load = async () => {
+    const { data } = await api.get(endpoint, publishedOnly ? { skipAccessToken: true } : {});
+    return unwrapList(data).map(normalizeNews);
+  };
+  if (!publishedOnly || force) return load();
+  return cachedRequest("news:list:public", load, { ttl: 60_000 });
 }
-
 
 export async function getAlerts(params = {}) {
-  const { data } = await api.get("/city/alerts/", { params, skipAccessToken: true });
-  return unwrapList(data).map(normalizeNews);
+  const key = `alerts:list:${JSON.stringify(params || {})}`;
+  return cachedRequest(key, async () => {
+    const { data } = await api.get("/city/alerts/", { params, skipAccessToken: true });
+    return unwrapList(data).map(normalizeNews);
+  }, { ttl: 20_000 });
 }
 
-export async function getNewsItem(slug, { includeDrafts = false } = {}) {
+export async function getNewsItem(slug, { includeDrafts = false, force = false } = {}) {
   const endpoint = includeDrafts
     ? `/admin/news/${encodeURIComponent(slug)}/`
     : `/city/news/${encodeURIComponent(slug)}/`;
-  const { data } = await api.get(endpoint, includeDrafts ? {} : { skipAccessToken: true });
-  return normalizeNews(data);
+  const load = async () => {
+    const { data } = await api.get(endpoint, includeDrafts ? {} : { skipAccessToken: true });
+    return normalizeNews(data);
+  };
+  if (includeDrafts || force) return load();
+  return cachedRequest(`news:item:${slug}`, load, { ttl: 60_000 });
 }
 
 function toBackendPayload(payload) {
@@ -74,6 +85,7 @@ function toBackendPayload(payload) {
 
 export async function createNews(payload) {
   const { data } = await api.post("/admin/news/", toBackendPayload(payload));
+  invalidateCache("news:");
   return normalizeNews(data);
 }
 
@@ -90,6 +102,7 @@ export async function updateNews(idOrSlug, patch) {
   if (!current) throw new Error("Publication introuvable.");
   const payload = toBackendPayload({ ...current, ...patch });
   const { data } = await api.patch(`/admin/news/${encodeURIComponent(current.slug)}/`, payload);
+  invalidateCache("news:");
   return normalizeNews(data);
 }
 
@@ -97,6 +110,7 @@ export async function deleteNews(idOrSlug) {
   const current = await resolveAdminNews(idOrSlug);
   if (!current) return false;
   await api.delete(`/admin/news/${encodeURIComponent(current.slug)}/`);
+  invalidateCache("news:");
   return true;
 }
 
@@ -121,6 +135,7 @@ export async function createAdminNews(payload) {
     is_published: payload.is_published ?? payload.published ?? true,
     ...(payload.published_at ? { published_at: payload.published_at } : {}),
   });
+  invalidateCache("news:");
   return normalizeNews(data);
 }
 
@@ -133,9 +148,11 @@ export async function updateAdminNews(slug, payload) {
     is_published: payload.is_published ?? payload.published ?? true,
     ...(payload.published_at ? { published_at: payload.published_at } : {}),
   });
+  invalidateCache("news:");
   return normalizeNews(data);
 }
 
 export async function unpublishAdminNews(slug) {
   await api.delete(`/admin/news/${encodeURIComponent(slug)}/`);
+  invalidateCache("news:");
 }

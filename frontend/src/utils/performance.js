@@ -7,6 +7,23 @@ function connection() {
   return navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
 }
 
+function deviceProfile() {
+  if (typeof navigator === "undefined") {
+    return { deviceMemory: 0, hardwareConcurrency: 0, lowPower: false, deviceTier: "unknown" };
+  }
+  const deviceMemory = Number(navigator.deviceMemory || 0);
+  const hardwareConcurrency = Number(navigator.hardwareConcurrency || 0);
+  const lowMemory = deviceMemory > 0 && deviceMemory <= 4;
+  const lowCpu = hardwareConcurrency > 0 && hardwareConcurrency <= 4;
+  const lowPower = (lowMemory && lowCpu) || deviceMemory > 0 && deviceMemory <= 2 || hardwareConcurrency > 0 && hardwareConcurrency <= 2;
+  return {
+    deviceMemory,
+    hardwareConcurrency,
+    lowPower,
+    deviceTier: lowPower ? "low" : (deviceMemory || hardwareConcurrency ? "standard" : "unknown"),
+  };
+}
+
 export function getDataModePreference() {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
@@ -18,10 +35,16 @@ export function getDataModePreference() {
 
 export function getConnectionProfile(preference = getDataModePreference()) {
   const info = connection();
+  const device = deviceProfile();
   const effectiveType = String(info?.effectiveType || "unknown").toLowerCase();
   const saveData = Boolean(info?.saveData);
   const slowConnection = saveData || SLOW_TYPES.has(effectiveType);
-  const reduced = preference === "reduced" || (preference === "auto" && slowConnection);
+  const autoReduced = slowConnection || device.lowPower;
+  const reduced = preference === "reduced" || (preference === "auto" && autoReduced);
+  const reasons = [];
+  if (saveData) reasons.push("économie de données du navigateur");
+  if (SLOW_TYPES.has(effectiveType)) reasons.push(`connexion ${effectiveType}`);
+  if (device.lowPower) reasons.push("appareil peu puissant");
 
   return {
     preference,
@@ -32,6 +55,11 @@ export function getConnectionProfile(preference = getDataModePreference()) {
     downlink: Number(info?.downlink || 0),
     rtt: Number(info?.rtt || 0),
     detectedSlow: slowConnection,
+    lowPower: device.lowPower,
+    deviceTier: device.deviceTier,
+    deviceMemory: device.deviceMemory,
+    hardwareConcurrency: device.hardwareConcurrency,
+    reason: reasons.join(" · ") || "aucune contrainte détectée",
   };
 }
 
@@ -41,6 +69,7 @@ export function applyPerformanceMode(preference = getDataModePreference()) {
     document.documentElement.dataset.dataMode = profile.mode;
     document.documentElement.dataset.connectionType = profile.effectiveType;
     document.documentElement.dataset.saveData = profile.saveData ? "true" : "false";
+    document.documentElement.dataset.deviceTier = profile.deviceTier;
   }
   return profile;
 }
@@ -71,6 +100,16 @@ export function isReducedDataMode() {
   return getConnectionProfile().reduced;
 }
 
+export function runWhenIdle(callback, timeout = 1200) {
+  if (typeof window === "undefined") return () => {};
+  if (typeof window.requestIdleCallback === "function") {
+    const id = window.requestIdleCallback(callback, { timeout });
+    return () => window.cancelIdleCallback?.(id);
+  }
+  const id = window.setTimeout(callback, Math.min(timeout, 350));
+  return () => window.clearTimeout(id);
+}
+
 export function getPerformanceSnapshot() {
   if (typeof performance === "undefined") return { supported: false };
   const resources = performance.getEntriesByType?.("resource") || [];
@@ -81,6 +120,7 @@ export function getPerformanceSnapshot() {
   const styles = resources.filter((row) => row.initiatorType === "css" || row.initiatorType === "link");
   const transferBytes = sum(resources) + Number(navigation?.transferSize || 0);
   const encodedBytes = sum(resources, "encodedBodySize") + Number(navigation?.encodedBodySize || 0);
+  const profile = getConnectionProfile();
   return {
     supported: true,
     measuredAt: new Date().toISOString(),
@@ -96,5 +136,9 @@ export function getPerformanceSnapshot() {
     styleCount: styles.length,
     styleTransferKb: Math.round(sum(styles) / 1024),
     domImages: typeof document !== "undefined" ? document.images.length : 0,
+    deviceMemory: profile.deviceMemory,
+    hardwareConcurrency: profile.hardwareConcurrency,
+    deviceTier: profile.deviceTier,
+    mode: profile.mode,
   };
 }

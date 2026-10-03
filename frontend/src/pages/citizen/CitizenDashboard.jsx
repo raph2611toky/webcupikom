@@ -7,6 +7,8 @@ import { getServices } from "../../api/services.js";
 import { getNews, getAlerts } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
+import { useDataMode } from "../../utils/useDataMode.js";
+import { runWhenIdle } from "../../utils/performance.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -20,6 +22,7 @@ export default function CitizenDashboard(){
   const { user } = useAuth();
   const [locale] = useLocale();
   const copy = DASH_COPY[locale] || DASH_COPY.fr;
+  const dataProfile = useDataMode();
   const [citizenRequests,setCitizenRequests]=useState([]);
   const [services,setServices]=useState([]);
   const [news,setNews]=useState([]);
@@ -27,16 +30,24 @@ export default function CitizenDashboard(){
   const [showStartGuide,setShowStartGuide]=useState(()=>localStorage.getItem("nova_terra_first_steps_done")!=="done");
 
   const load = async () => {
-    const [requestsData, servicesData, newsData, alertResult] = await Promise.all([
+    const [requestsData, servicesData] = await Promise.all([
       getCitizenRequests(),
       getServices(),
-      getNews(),
-      getAlerts({page_size:20}).catch(()=>[]),
     ]);
     setCitizenRequests(requestsData);
     setServices(servicesData);
-    setNews(newsData);
-    setAlerts(alertResult);
+
+    const loadSecondary = async () => {
+      const [newsData, alertResult] = await Promise.all([
+        getNews().catch(()=>[]),
+        getAlerts({page_size:20}).catch(()=>[]),
+      ]);
+      setNews(newsData);
+      setAlerts(alertResult);
+    };
+
+    if (dataProfile.reduced) runWhenIdle(loadSecondary, 1400);
+    else loadSecondary();
   };
 
   useEffect(()=>{
@@ -48,7 +59,7 @@ export default function CitizenDashboard(){
       window.removeEventListener("terra-news-updated",refresh);
       window.removeEventListener("terra-services-updated",refresh);
     };
-  },[locale]);
+  },[locale,dataProfile.reduced]);
 
   const active=useMemo(()=>citizenRequests.filter(r=>r.status!=="Terminée"),[citizenRequests]);
   const actions=useMemo(()=>citizenRequests.filter(r=>r.status==="Action requise").length,[citizenRequests]);

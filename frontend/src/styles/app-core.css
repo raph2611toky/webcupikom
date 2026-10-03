@@ -7,3 +7,38 @@ html[data-data-mode="reduced"]{scroll-behavior:auto!important}html[data-data-mod
 .landing-light-overview{width:min(1100px,calc(100% - 32px));margin:42px auto;padding:28px;border:1px solid #e4dce9;border-radius:24px;background:#fff}.landing-light-overview>span{font-size:.65rem;font-weight:850;color:#6b18df;text-transform:uppercase;letter-spacing:.08em}.landing-light-overview>h2{max-width:720px;margin:8px 0;font-size:clamp(1.8rem,4vw,3.2rem);line-height:1.02;letter-spacing:-.04em}.landing-light-overview>p{max-width:680px;color:#6f6577;line-height:1.6}.landing-light-overview>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}.landing-light-overview article{display:grid;align-content:start;gap:8px;padding:18px;border:1px solid #ece5f1;border-radius:16px;background:#fbfafc}.landing-light-overview article>strong{font-size:.62rem;color:#6b18df}.landing-light-overview article h3{margin:0;font-size:.92rem}.landing-light-overview article p{margin:0;color:#746a7c;font-size:.68rem;line-height:1.5}.landing-light-overview article a{margin-top:6px;color:#6418d7;font-size:.66rem;font-weight:800;text-decoration:none}
 .light-hero{min-height:82vh;padding:22px clamp(18px,4vw,58px) 48px;background:linear-gradient(180deg,#fbf9fd,#f4eef9);color:#241d2a}.light-hero__header{display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center}.light-hero__logo{color:#211927;font-size:1.25rem;font-weight:950;text-decoration:none}.light-hero__logo span{color:#6b18df}.light-hero__header nav{display:flex;justify-content:center;gap:24px}.light-hero__header nav a,.light-hero__login{color:#514758;font-size:.72rem;font-weight:750;text-decoration:none}.light-hero__content{max-width:850px;margin:clamp(90px,14vh,170px) auto 0;text-align:center}.light-hero__content>span{color:#6b18df;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em}.light-hero__content h1{margin:14px 0;font-size:clamp(2.8rem,7vw,6.2rem);line-height:.92;letter-spacing:-.065em}.light-hero__content p{max-width:680px;margin:20px auto;color:#6b6172;font-size:.9rem;line-height:1.65}.light-hero__content>div{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:24px}.light-hero__content>div a{padding:12px 16px;border:1px solid #d9cee3;border-radius:999px;background:#fff;color:#4b3d55;font-size:.72rem;font-weight:850;text-decoration:none}.light-hero__content>div a:first-child{border-color:#6b18df;background:#6b18df;color:#fff}
 @media(prefers-reduced-motion:reduce){.app-route-loading>span{animation:none}}@media(max-width:700px){.data-saver-indicator{left:10px;bottom:10px;right:10px;max-width:none}.landing-light-overview>div{grid-template-columns:1fr}.landing-light-overview{padding:20px}.light-hero__header{grid-template-columns:1fr auto}.light-hero__header nav{display:none}.light-hero__content{text-align:left}.light-hero__content>div{justify-content:flex-start}}@media(max-width:520px){.data-saver-indicator{grid-template-columns:1fr}.data-saver-indicator button{justify-self:start}}
+
+/* v62 — F61/F62 low-power + simplified portal */
+html[data-data-mode="reduced"] *,
+html[data-data-mode="reduced"] *::before,
+html[data-data-mode="reduced"] *::after{
+  animation-duration:.001ms!important;
+  animation-iteration-count:1!important;
+  transition-duration:.001ms!important;
+  scroll-behavior:auto!important;
+}
+html[data-data-mode="reduced"] .citizen-service-card__decor,
+html[data-data-mode="reduced"] .citizen-service-card__watermark,
+html[data-data-mode="reduced"] .welcome-banner__orb i,
+html[data-data-mode="reduced"] .notification-stat-card::after,
+html[data-data-mode="reduced"] .project-card::before,
+html[data-data-mode="reduced"] .project-card::after,
+html[data-data-mode="reduced"] .decorative-image,
+html[data-data-mode="reduced"] [data-decorative="true"]{
+  display:none!important;
+}
+html[data-data-mode="reduced"] .welcome-banner,
+html[data-data-mode="reduced"] .portal-card,
+html[data-data-mode="reduced"] .citizen-service-card,
+html[data-data-mode="reduced"] .management-row,
+html[data-data-mode="reduced"] .notification-stat-card,
+html[data-data-mode="reduced"] .notification-card,
+html[data-data-mode="reduced"] .project-card{
+  box-shadow:none!important;
+  background-image:none!important;
+}
+html[data-data-mode="reduced"] .portal-content,
+html[data-data-mode="reduced"] .portal-main{
+  background-image:none!important;
+}
+html[data-device-tier="low"] .deferred-section{contain-intrinsic-size:1px 420px}

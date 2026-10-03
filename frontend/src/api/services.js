@@ -3,6 +3,7 @@ import { services as presentationServices } from "../data/services.js";
 import { unwrapList } from "./helpers.js";
 import { SERVICE_TRANSLATIONS } from "../data/serviceTranslations.js";
 import { getLocale } from "../utils/i18n.js";
+import { cachedRequest, invalidateCache } from "./cache.js";
 
 const presentationBySlug = new Map(presentationServices.map((item) => [item.slug, item]));
 
@@ -48,18 +49,26 @@ function sortRows(items) {
   );
 }
 
-export async function getServices({ publishedOnly = true } = {}) {
+export async function getServices({ publishedOnly = true, force = false } = {}) {
   const endpoint = publishedOnly ? "/city/services/" : "/admin/services/";
-  const { data } = await api.get(endpoint, publishedOnly ? { skipAccessToken: true } : {});
-  return sortRows(unwrapList(data).map(normalizeService));
+  const load = async () => {
+    const { data } = await api.get(endpoint, publishedOnly ? { skipAccessToken: true } : {});
+    return sortRows(unwrapList(data).map(normalizeService));
+  };
+  if (!publishedOnly || force) return load();
+  return cachedRequest(`services:list:${getLocale()}`, load, { ttl: 120_000 });
 }
 
-export async function getService(slug, { includeDrafts = false } = {}) {
+export async function getService(slug, { includeDrafts = false, force = false } = {}) {
   const endpoint = includeDrafts
     ? `/admin/services/${encodeURIComponent(slug)}/`
     : `/city/services/${encodeURIComponent(slug)}/`;
-  const { data } = await api.get(endpoint, includeDrafts ? {} : { skipAccessToken: true });
-  return normalizeService(data);
+  const load = async () => {
+    const { data } = await api.get(endpoint, includeDrafts ? {} : { skipAccessToken: true });
+    return normalizeService(data);
+  };
+  if (includeDrafts || force) return load();
+  return cachedRequest(`services:item:${getLocale()}:${slug}`, load, { ttl: 120_000 });
 }
 
 function toBackendPayload(payload) {
@@ -79,6 +88,7 @@ function toBackendPayload(payload) {
 
 export async function createService(payload) {
   const { data } = await api.post("/admin/services/", toBackendPayload(payload));
+  invalidateCache("services:");
   return normalizeService(data);
 }
 
@@ -96,6 +106,7 @@ export async function updateService(idOrSlug, patch) {
 
   const payload = toBackendPayload({ ...current, ...patch });
   const { data } = await api.patch(`/admin/services/${encodeURIComponent(current.slug)}/`, payload);
+  invalidateCache("services:");
   return normalizeService(data);
 }
 
@@ -103,6 +114,7 @@ export async function deleteService(idOrSlug) {
   const current = await resolveAdminService(idOrSlug);
   if (!current) return false;
   await api.delete(`/admin/services/${encodeURIComponent(current.slug)}/`);
+  invalidateCache("services:");
   return true;
 }
 

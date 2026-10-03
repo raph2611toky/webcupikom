@@ -304,7 +304,7 @@ export default function App() {
 
     <div id="main-content" tabIndex="-1" className="app-route-content"><Suspense fallback={<RouteLoading/>}>{route}</Suspense></div>
 
-    {dataProfile.reduced?<div className="data-saver-indicator" role="status" aria-live="polite"><div><strong>Mode léger actif</strong><span>Animations et médias non essentiels réduits pour cette connexion.</span></div><button type="button" onClick={()=>setDataModePreference("full")}>Version complète</button></div>:null}
+    {dataProfile.reduced?<div className="data-saver-indicator" role="status" aria-live="polite"><div><strong>Mode léger / simplifié actif</strong><span>{dataProfile.reason}. Animations, médias et effets non essentiels sont réduits.</span></div><button type="button" onClick={()=>setDataModePreference("full")}>Version complète</button></div>:null}
 
     <div className="a11y-dock">
       {a11yOpen?<section className="a11y-panel" id="a11y-panel" role="dialog" aria-modal="false" aria-labelledby="a11y-title">
