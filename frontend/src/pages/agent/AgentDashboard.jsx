@@ -172,6 +172,7 @@ export default function AgentDashboard(){
             <button onClick={()=>navigate('/agent/citizens')}><strong>{state.citizens}</strong><span>Comptes citoyens</span><small>Administration F34</small></button>
             <button onClick={()=>navigate('/agent/appointments')}><strong>{state.upcomingAppointments}</strong><span>Rendez-vous à venir</span><small>Agenda F39</small></button>
             <button onClick={()=>navigate('/agent/audit')}><strong>{state.audit.length}</strong><span>Actions récentes</span><small>Audit F47 / F48</small></button>
+            <button onClick={()=>navigate('/agent/projects')}><strong>✦</strong><span>Projets municipaux</span><small>Participation F65–F68</small></button>
           </div>
         </article>
 

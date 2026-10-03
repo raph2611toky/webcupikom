@@ -138,3 +138,22 @@ export function projectAlert(alert={}){
     source:alert,
   };
 }
+
+export function projectReportAlert(report={}){
+  const marker=projectReport(report);
+  const severity=report.dangerPresent||report.danger_present||report.severityCode==="critical"||report.severity==="critical"?"critical":report.severityCode==="major"||report.severity==="major"?"warning":"info";
+  return {
+    ...marker,
+    id:`report-alert-${report.reference||report.id}`,
+    kind:"alert",
+    alertSource:"report",
+    reference:report.reference||report.id,
+    name:`Alerte terrain · ${report.title||"Signalement citoyen"}`,
+    category:"Alerte issue d’un signalement",
+    description:`Signalement actif : ${report.description||"un habitant a signalé un incident à la ville."}`,
+    radius:severity==="critical"?86:severity==="warning"?68:52,
+    color:severity==="critical"?"#c92f45":severity==="warning"?"#ed8b1f":"#5c6bd8",
+    severity,
+    icon:"!",
+  };
+}

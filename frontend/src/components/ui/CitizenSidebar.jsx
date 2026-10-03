@@ -17,6 +17,7 @@ export default function CitizenSidebar() {
     ["/citizen/services", "◇", t("services", locale)],
     ["/citizen/appointments", "◷", t("appointments", locale)],
     ["/citizen/news", "▤", t("news", locale)],
+    ["/citizen/projects", "✦", "Projets"],
     ["/citizen/profile", "○", t("profile", locale)],
     ["/citizen/notifications", "◌", t("notifications", locale)],
     ["/citizen/settings", "⚙", t("settings", locale)],

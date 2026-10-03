@@ -4,7 +4,7 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getCitizenRequests } from "../../api/requests.js";
 import { getServices } from "../../api/services.js";
-import { getNews } from "../../api/news.js";
+import { getNews, getAlerts } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
@@ -23,16 +23,19 @@ export default function CitizenDashboard(){
   const [citizenRequests,setCitizenRequests]=useState([]);
   const [services,setServices]=useState([]);
   const [news,setNews]=useState([]);
+  const [alerts,setAlerts]=useState([]);
 
   const load = async () => {
-    const [requestsData, servicesData, newsData] = await Promise.all([
+    const [requestsData, servicesData, newsData, alertResult] = await Promise.all([
       getCitizenRequests(),
       getServices(),
       getNews(),
+      getAlerts({page_size:20}).catch(()=>[]),
     ]);
     setCitizenRequests(requestsData);
     setServices(servicesData);
     setNews(newsData);
+    setAlerts(alertResult);
   };
 
   useEffect(()=>{
@@ -48,6 +51,11 @@ export default function CitizenDashboard(){
 
   const active=useMemo(()=>citizenRequests.filter(r=>r.status!=="Terminée"),[citizenRequests]);
   const actions=useMemo(()=>citizenRequests.filter(r=>r.status==="Action requise").length,[citizenRequests]);
+  const activeReports=useMemo(()=>citizenRequests.filter(r=>r.requestType==="signalement"&&!r.isClosed),[citizenRequests]);
+  const visibleAlerts=useMemo(()=>[
+    ...alerts.map(item=>({id:`official-${item.id||item.slug}`,kind:"official",title:item.title,detail:item.excerpt||"Information importante de la ville.",target:item.slug?`/citizen/news/${item.slug}`:"/citizen/news"})),
+    ...activeReports.map(item=>({id:`report-${item.ref}`,kind:"report",title:`Alerte terrain · ${item.title}`,detail:`Votre signalement ${item.ref} est actuellement : ${item.status}.`,target:`/citizen/requests/${encodeURIComponent(item.ref)}`})),
+  ].slice(0,4),[alerts,activeReports]);
 
   return <div className="portal-layout">
     <CitizenSidebar/>
@@ -56,6 +64,7 @@ export default function CitizenDashboard(){
         eyebrow={copy.space}
         title={`${copy.hello} ${user?.first_name || user?.display_name || (locale==="mg"?"Mponina":locale==="en"?"Citizen":"Citoyen")} 👋`}
         actions={<>
+          <button className="topbar-ghost" onClick={()=>navigate("/citizen/projects")}>Projets</button>
           <button className="topbar-ghost" onClick={()=>navigate("/citizen/news")}>{copy.news}</button>
           <button className="topbar-cta" onClick={()=>navigate('/citizen/signalements')}>{copy.newRequest}</button>
         </>}
@@ -75,6 +84,8 @@ export default function CitizenDashboard(){
           <article><span>{copy.action}</span><strong>{actions}</strong><small>{copy.complete}</small></article>
           <article><span>{copy.news}</span><strong>{news.length}</strong><small>{copy.pubs}</small></article>
         </section>
+
+        {visibleAlerts.length?<section className="portal-card citizen-live-alerts" aria-label="Alertes et signalements en cours"><div className="portal-card__head"><div><span className="section-label">À surveiller</span><h3>Alertes et signalements actifs</h3></div><button onClick={()=>navigate('/citizen/services')}>Voir la carte →</button></div><div className="citizen-live-alerts__list">{visibleAlerts.map(item=><button key={item.id} onClick={()=>navigate(item.target)}><i aria-hidden="true">!</i><div><strong>{item.title}</strong><span>{item.detail}</span></div><em>{item.kind==="report"?"Signalement":"Alerte municipale"}</em></button>)}</div></section>:null}
 
         <section className="portal-grid portal-grid--2 citizen-dashboard__main">
           <article className="portal-card">

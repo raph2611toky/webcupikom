@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getCitizenRequests } from "../../api/requests.js";
 import { getAlerts } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
-import { CITY_DISTRICTS, CITY_POIS, buildServiceLocations, projectAlert, projectReport } from "./locations.js";
+import { CITY_DISTRICTS, CITY_POIS, buildServiceLocations, projectAlert, projectReport, projectReportAlert } from "./locations.js";
 import "./NovaTerraMap.css";
 
 const WIDTH = 1000;
@@ -179,8 +179,10 @@ export default function NovaTerraMap({ services = [], visibleSlugs = null, local
     () => buildServiceLocations(services).filter((item) => !visibleSlugs || visibleSlugs.has(item.slug)),
     [services, visibleSlugs],
   );
-  const alertLocations = useMemo(() => alerts.map(projectAlert), [alerts]);
+  const officialAlertLocations = useMemo(() => alerts.map(projectAlert), [alerts]);
   const reportLocations = useMemo(() => reports.map(projectReport), [reports]);
+  const reportAlertLocations = useMemo(() => reports.map(projectReportAlert), [reports]);
+  const alertLocations = useMemo(() => [...officialAlertLocations, ...reportAlertLocations], [officialAlertLocations, reportAlertLocations]);
   const allItems = useMemo(() => ([
     ...serviceLocations,
     ...CITY_POIS,
@@ -270,12 +272,13 @@ export default function NovaTerraMap({ services = [], visibleSlugs = null, local
   function openSelected() {
     if (!selected) return;
     if (selected.kind === "report" && selected.reference) return navigate(`/citizen/requests/${encodeURIComponent(selected.reference)}`);
+    if (selected.kind === "alert" && selected.reference) return navigate(`/citizen/requests/${encodeURIComponent(selected.reference)}`);
     if (selected.kind === "alert" && selected.slug) return navigate(`/citizen/news/${encodeURIComponent(selected.slug)}`);
     if (selected.kind === "service" && selected.slug) return navigate(`/citizen/services/${encodeURIComponent(selected.slug)}`);
     if (selected.kind === "emergency") return navigate("/citizen/services");
   }
 
-  const actionLabel = selected?.kind === "report"
+  const actionLabel = selected?.kind === "report" || selected?.alertSource === "report"
     ? copy.openReport
     : selected?.kind === "alert"
       ? copy.openAlert

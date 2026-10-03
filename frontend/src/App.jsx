@@ -37,6 +37,8 @@ const CitizenDeleteAccount = lazy(() => import("./pages/citizen/CitizenDeleteAcc
 const CitizenHelp = lazy(() => import("./pages/citizen/CitizenHelp.jsx"));
 const CitizenMessages = lazy(() => import("./pages/citizen/CitizenMessages.jsx"));
 const CitizenMessageDetails = lazy(() => import("./pages/citizen/CitizenMessageDetails.jsx"));
+const CitizenProjects = lazy(() => import("./pages/citizen/CitizenProjects.jsx"));
+const CitizenProjectDetails = lazy(() => import("./pages/citizen/CitizenProjectDetails.jsx"));
 
 const AgentDashboard = lazy(() => import("./pages/agent/AgentDashboard.jsx"));
 const AgentRequests = lazy(() => import("./pages/agent/AgentRequests.jsx"));
@@ -53,6 +55,7 @@ const AgentNewsDetails = lazy(() => import("./pages/agent/AgentNewsDetails.jsx")
 const AgentMessages = lazy(() => import("./pages/agent/AgentMessages.jsx"));
 const AgentMessageDetails = lazy(() => import("./pages/agent/AgentMessageDetails.jsx"));
 const AgentAudit = lazy(() => import("./pages/agent/AgentAudit.jsx"));
+const AgentProjects = lazy(() => import("./pages/agent/AgentProjects.jsx"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.jsx"));
@@ -253,6 +256,7 @@ export default function App() {
       "/citizen/supprimer-compte":<Protected roles={["citizen"]}><CitizenDeleteAccount/></Protected>,
       "/citizen/help":<Protected roles={["citizen"]}><CitizenHelp/></Protected>,
       "/citizen/messages":<Protected roles={["citizen"]}><CitizenMessages/></Protected>,
+      "/citizen/projects":<Protected roles={["citizen"]}><CitizenProjects/></Protected>,
 
       "/agent":<Protected roles={["agent"]}><AgentDashboard/></Protected>,
       "/agent/dashboard":<Protected roles={["agent"]}><AgentDashboard/></Protected>,
@@ -265,6 +269,7 @@ export default function App() {
       "/agent/api":<Protected roles={["agent"]}><AgentApi/></Protected>,
       "/agent/messages":<Protected roles={["agent"]}><AgentMessages/></Protected>,
       "/agent/audit":<Protected roles={["agent"]}><AgentAudit/></Protected>,
+      "/agent/projects":<Protected roles={["agent"]}><AgentProjects/></Protected>,
 
       "/admin":<Protected roles={["admin"]}><AdminDashboard/></Protected>,
       "/admin/dashboard":<Protected roles={["admin"]}><AdminDashboard/></Protected>,
@@ -283,6 +288,7 @@ export default function App() {
     params=match("/citizen/requests/:id",pathname); if(params)return <Protected roles={["citizen"]}><CitizenRequestDetails params={params}/></Protected>;
     params=match("/citizen/news/:slug",pathname); if(params)return <Protected roles={["citizen"]}><CitizenNewsDetails params={params}/></Protected>;
     params=match("/citizen/messages/:id",pathname); if(params)return <Protected roles={["citizen"]}><CitizenMessageDetails params={params}/></Protected>;
+    params=match("/citizen/projects/:id",pathname); if(params)return <Protected roles={["citizen"]}><CitizenProjectDetails params={params}/></Protected>;
     params=match("/agent/services/:slug",pathname); if(params)return <Protected roles={["agent"]}><AgentServiceDetails params={params}/></Protected>;
     params=match("/agent/news/:slug",pathname); if(params)return <Protected roles={["agent"]}><AgentNewsDetails params={params}/></Protected>;
     params=match("/agent/requests/:id",pathname); if(params)return <Protected roles={["agent"]}><AgentRequestDetails params={params}/></Protected>;
