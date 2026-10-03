@@ -109,6 +109,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["helpers.permissions.IsAuthenticatedAnyRole"],
     "EXCEPTION_HANDLER": "helpers.api_exception_handler.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {
+        "auth": os.getenv("THROTTLE_AUTH", "20/min"),
+        "auth_email": os.getenv("THROTTLE_AUTH_EMAIL", "5/min"),
+        "password_reset": os.getenv("THROTTLE_PASSWORD_RESET", "5/min"),
+        "contact": os.getenv("THROTTLE_CONTACT", "10/min"),
+        "webcup": os.getenv("THROTTLE_WEBCUP", "60/min"),
+    },
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
         "rest_framework.parsers.FormParser",
@@ -143,9 +151,16 @@ AUTH_REFRESH_COOKIE_MAX_AGE = int(
 AUTH_COOKIE_REMEMBER_DEFAULT = env_bool("AUTH_COOKIE_REMEMBER_DEFAULT", True)
 
 SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
 CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = env_bool("USE_X_FORWARDED_HOST", True)
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
 
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = "Indian/Antananarivo"

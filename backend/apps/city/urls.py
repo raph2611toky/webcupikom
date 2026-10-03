@@ -1,8 +1,32 @@
 from django.urls import path
 
 from .views import (
+    AdminContactMessageDetailView,
+    AdminContactMessageListView,
+    AdminDashboardView,
+    AdminNewsDetailView,
+    AdminNewsListCreateView,
+    AdminRequestDetailView,
+    AdminRequestListView,
+    AdminServiceDetailView,
+    AdminServiceListCreateView,
+    AdminSystemView,
+    AdminUserDetailView,
+    AdminUserListCreateView,
+    AgentAssigneeListView,
+    AgentCitizenDetailView,
+    AgentCitizenListView,
+    AgentContactMessageDetailView,
+    AgentContactMessageListView,
+    AgentDashboardView,
     AgentRequestDetailView,
     AgentRequestListView,
+    CitizenContactMessageDetailView,
+    CitizenContactMessageListView,
+    CitizenDashboardView,
+    CitizenNotificationDetailView,
+    CitizenNotificationListView,
+    CitizenNotificationReadAllView,
     CitizenRequestDetailView,
     CitizenRequestListCreateView,
     ContactMessageCreateView,
@@ -11,22 +35,56 @@ from .views import (
     NewsDetailView,
     NewsListView,
     WebCupRequestsView,
+    WebCupSnapshotListView,
+    WebCupStatusView,
 )
 
 app_name = "city"
 
 urlpatterns = [
+    # Public
     path("city/services/", MunicipalServiceListView.as_view(), name="service-list"),
     path("city/services/<slug:slug>/", MunicipalServiceDetailView.as_view(), name="service-detail"),
     path("city/news/", NewsListView.as_view(), name="news-list"),
     path("city/news/<slug:slug>/", NewsDetailView.as_view(), name="news-detail"),
     path("city/contact/", ContactMessageCreateView.as_view(), name="contact"),
 
+    # Citizen
+    path("citizen/dashboard/", CitizenDashboardView.as_view(), name="citizen-dashboard"),
     path("citizen/requests/", CitizenRequestListCreateView.as_view(), name="citizen-request-list"),
     path("citizen/requests/<str:reference>/", CitizenRequestDetailView.as_view(), name="citizen-request-detail"),
+    path("citizen/contact-messages/", CitizenContactMessageListView.as_view(), name="citizen-contact-list"),
+    path("citizen/contact-messages/<str:reference>/", CitizenContactMessageDetailView.as_view(), name="citizen-contact-detail"),
+    path("citizen/notifications/", CitizenNotificationListView.as_view(), name="citizen-notification-list"),
+    path("citizen/notifications/read-all/", CitizenNotificationReadAllView.as_view(), name="citizen-notification-read-all"),
+    path("citizen/notifications/<int:pk>/", CitizenNotificationDetailView.as_view(), name="citizen-notification-detail"),
 
+    # Agent operational space
+    path("agent/dashboard/", AgentDashboardView.as_view(), name="agent-dashboard"),
     path("agent/requests/", AgentRequestListView.as_view(), name="agent-request-list"),
     path("agent/requests/<str:reference>/", AgentRequestDetailView.as_view(), name="agent-request-detail"),
+    path("agent/citizens/", AgentCitizenListView.as_view(), name="agent-citizen-list"),
+    path("agent/citizens/<int:pk>/", AgentCitizenDetailView.as_view(), name="agent-citizen-detail"),
+    path("agent/assignees/", AgentAssigneeListView.as_view(), name="agent-assignee-list"),
+    path("agent/contact-messages/", AgentContactMessageListView.as_view(), name="agent-contact-list"),
+    path("agent/contact-messages/<str:reference>/", AgentContactMessageDetailView.as_view(), name="agent-contact-detail"),
 
+    # Admin API. Deliberately separate from Django /admin/.
+    path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
+    path("admin/users/", AdminUserListCreateView.as_view(), name="admin-user-list"),
+    path("admin/users/<int:pk>/", AdminUserDetailView.as_view(), name="admin-user-detail"),
+    path("admin/services/", AdminServiceListCreateView.as_view(), name="admin-service-list"),
+    path("admin/services/<slug:slug>/", AdminServiceDetailView.as_view(), name="admin-service-detail"),
+    path("admin/news/", AdminNewsListCreateView.as_view(), name="admin-news-list"),
+    path("admin/news/<slug:slug>/", AdminNewsDetailView.as_view(), name="admin-news-detail"),
+    path("admin/contact-messages/", AdminContactMessageListView.as_view(), name="admin-contact-list"),
+    path("admin/contact-messages/<str:reference>/", AdminContactMessageDetailView.as_view(), name="admin-contact-detail"),
+    path("admin/requests/", AdminRequestListView.as_view(), name="admin-request-list"),
+    path("admin/requests/<str:reference>/", AdminRequestDetailView.as_view(), name="admin-request-detail"),
+    path("admin/system/", AdminSystemView.as_view(), name="admin-system"),
+
+    # WebCup feed: never expose the upstream API key to the frontend.
     path("webcup/requests/", WebCupRequestsView.as_view(), name="webcup-requests"),
+    path("webcup/requests/local/", WebCupSnapshotListView.as_view(), name="webcup-request-snapshots"),
+    path("webcup/status/", WebCupStatusView.as_view(), name="webcup-status"),
 ]

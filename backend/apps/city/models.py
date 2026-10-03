@@ -79,6 +79,15 @@ class ContactMessage(models.Model):
     subject = models.CharField(max_length=220)
     message = models.TextField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RECEIVED)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_contact_messages",
+    )
+    read_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -149,6 +158,48 @@ class CitizenRequest(models.Model):
 
     def __str__(self):
         return f"{self.reference} — {self.title}"
+
+
+class CitizenNotification(models.Model):
+    class Kind(models.TextChoices):
+        REQUEST = "request", "Demande"
+        CONTACT = "contact", "Contact"
+        NEWS = "news", "Actualité"
+        SYSTEM = "system", "Système"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="city_notifications",
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.SYSTEM)
+    title = models.CharField(max_length=220)
+    message = models.TextField(blank=True)
+    related_request = models.ForeignKey(
+        CitizenRequest,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+    related_contact = models.ForeignKey(
+        ContactMessage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = "notification citoyenne"
+        verbose_name_plural = "notifications citoyennes"
+
+    def __str__(self):
+        return f"{self.user_id} — {self.title}"
 
 
 class WebCupRequestSnapshot(models.Model):

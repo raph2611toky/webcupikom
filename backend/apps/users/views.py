@@ -89,6 +89,7 @@ def server_error(exc, view_name):
 class RegisterView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = "auth"
 
     def post(self, request):
         try:
@@ -140,6 +141,7 @@ class VerifyEmailView(APIView):
 class ResendVerificationView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = "auth_email"
 
     def post(self, request):
         try:
@@ -166,6 +168,7 @@ class ResendVerificationView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = "auth"
 
     def post(self, request):
         try:
@@ -208,6 +211,7 @@ class GoogleRedirectView(APIView):
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = "auth"
 
     def post(self, request):
         try:
@@ -364,6 +368,7 @@ class RefreshView(APIView):
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = "password_reset"
 
     def post(self, request):
         try:
