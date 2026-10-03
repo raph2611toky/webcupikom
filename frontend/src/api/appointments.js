@@ -193,9 +193,50 @@ function buildCandidateSlots({ date, agent, agentName, busyRows }) {
 }
 
 /* ------------------------------ Citizen ------------------------------ */
-export async function getCitizenAppointments() {
-  const { data } = await api.get("/citizen/appointments/");
-  return unwrapList(data).map(normalizeCitizenAppointment);
+export async function getCitizenAppointmentsPage(params = {}) {
+  const { data } = await api.get("/citizen/appointments/", {
+    params: cleanParams(params),
+  });
+  const rows = unwrapList(data).map(normalizeCitizenAppointment);
+  return {
+    count: Number(data?.count ?? rows.length),
+    next: data?.next || null,
+    previous: data?.previous || null,
+    results: rows,
+  };
+}
+
+export async function getCitizenAppointments(params = {}) {
+  return (await getCitizenAppointmentsPage(params)).results;
+}
+
+export async function getAllCitizenAppointments(params = {}) {
+  const pageSize = Number(params.page_size ?? 100);
+  const rows = [];
+  const seen = new Set();
+  let page = Number(params.page ?? 1);
+  let expectedCount = null;
+
+  for (let guard = 0; guard < 100; guard += 1) {
+    const result = await getCitizenAppointmentsPage({ ...params, page, page_size: pageSize });
+    if (expectedCount === null && Number.isFinite(result.count)) expectedCount = result.count;
+
+    let added = 0;
+    result.results.forEach((item, index) => {
+      const key = item.reference || item.id || `${page}-${index}-${item.startsAt || item.date || "appointment"}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push(item);
+      added += 1;
+    });
+
+    if (!result.results.length || added === 0) break;
+    if (expectedCount !== null && rows.length >= expectedCount) break;
+    if (!result.next && result.results.length < pageSize) break;
+    page += 1;
+  }
+
+  return rows;
 }
 
 export async function getCitizenAppointmentAvailability({ agent, date, agentName = "" } = {}) {

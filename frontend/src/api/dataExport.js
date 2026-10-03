@@ -1,6 +1,6 @@
 import { getProfile } from "./auth.js";
 import { getAllCitizenRequests } from "./requests.js";
-import { getCitizenAppointments } from "./appointments.js";
+import { getAllCitizenAppointments } from "./appointments.js";
 import { getAllCitizenNotifications } from "./notifications.js";
 import { getAllCitizenContactMessages } from "./contact.js";
 import { loadAccessibilityPreferences } from "../utils/accessibility.js";
@@ -19,7 +19,7 @@ export async function prepareCitizenDataExport(extraPreferences = {}) {
   const results = await Promise.allSettled([
     getProfile(),
     getAllCitizenRequests({ ordering: "-created_at" }),
-    getCitizenAppointments(),
+    getAllCitizenAppointments({ page_size: 100 }),
     getAllCitizenNotifications({ ordering: "-created_at" }),
     getAllCitizenContactMessages({ ordering: "-created_at" }),
   ]);
