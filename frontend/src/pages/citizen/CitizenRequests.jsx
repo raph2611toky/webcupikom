@@ -10,7 +10,7 @@ import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
 const filters = ["Toutes", "Envoyée", "En attente", "En traitement", "Action requise", "Terminée"];
-const emptyDraft = { type: "signalement", category: "Éclairage public", subject: "", message: "", location: "" };
+const emptyDraft = { type: "question", category: "État civil", subject: "", message: "", location: "" };
 
 const COPY = {
   fr: {
@@ -78,12 +78,12 @@ const CATEGORY_LABELS = {
   en:{
     "État civil":"Civil registry","Voirie":"Roads","Eau / assainissement":"Water / sanitation",
     "Éclairage public":"Street lighting","Transport":"Transport","Déchets":"Waste",
-    "Services numériques":"Digital services","Autre":"Other",
+    "Services numériques":"Digital services","Sécurité":"Safety","Autre":"Other",
   },
   mg:{
     "État civil":"Soram-panjakana","Voirie":"Lalana","Eau / assainissement":"Rano / fanadiovana",
     "Éclairage public":"Jiro an-dalambe","Transport":"Fitaterana","Déchets":"Fako",
-    "Services numériques":"Sampan-draharaha nomerika","Autre":"Hafa",
+    "Services numériques":"Sampan-draharaha nomerika","Sécurité":"Fiarovana","Autre":"Hafa",
   },
 };
 
@@ -123,6 +123,10 @@ export default function CitizenRequests() {
       if (params.get("new") !== "1") return;
 
       const type = params.get("type");
+      if (type === "signalement") {
+        navigate("/citizen/signalements");
+        return;
+      }
       const message = params.get("message") || "";
       const subject = params.get("subject") || "";
 
@@ -253,7 +257,13 @@ export default function CitizenRequests() {
                     <p className="request-studio__intro">{copy.intro}</p>
 
                     <div className="request-studio-types">
-                      {REQUEST_TYPES.map((item) => <button type="button" key={item.value} className={draft.type === item.value ? "is-active" : ""} aria-pressed={draft.type === item.value} onClick={() => patch("type", item.value)}><i aria-hidden="true">{item.icon}</i><span>{TYPE_LABELS[locale]?.[item.value] || item.label}</span></button>)}
+                      {REQUEST_TYPES.map((item) => <button
+                        type="button"
+                        key={item.value}
+                        className={draft.type === item.value ? "is-active" : ""}
+                        aria-pressed={draft.type === item.value}
+                        onClick={() => item.value === "signalement" ? navigate("/citizen/signalements") : patch("type", item.value)}
+                      ><i aria-hidden="true">{item.icon}</i><span>{TYPE_LABELS[locale]?.[item.value] || item.label}</span></button>)}
                     </div>
 
                     <div className="request-studio-grid">

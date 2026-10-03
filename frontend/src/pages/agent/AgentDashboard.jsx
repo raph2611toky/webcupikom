@@ -5,6 +5,7 @@ import { getAgentRequests } from "../../api/requests.js";
 import { getNews } from "../../api/news.js";
 import { getServices } from "../../api/services.js";
 import { navigate } from "../../utils/navigation.js";
+import { getAppointments } from "../../api/appointments.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -12,6 +13,7 @@ export default function AgentDashboard(){
   const [agentRequests,setAgentRequests]=useState([]);
   const [newsCount,setNewsCount]=useState(0);
   const [serviceCount,setServiceCount]=useState(0);
+  const [appointmentCount,setAppointmentCount]=useState(0);
 
   useEffect(()=>{
     Promise.all([getAgentRequests(),getNews(),getServices()])
@@ -19,11 +21,13 @@ export default function AgentDashboard(){
         setAgentRequests(requests);
         setNewsCount(publications.length);
         setServiceCount(services.length);
+        setAppointmentCount(getAppointments().filter(item=>["confirmed","checked_in"].includes(item.status)).length);
       });
   },[]);
 
   const toProcess=agentRequests.filter(r=>r.status==="À traiter").length;
   const processing=agentRequests.filter(r=>r.status==="En traitement").length;
+  const reportCount=agentRequests.filter(r=>r.requestType==="signalement" && r.status!=="Terminée").length;
 
   return <div className="portal-layout"><AgentSidebar/><div className="portal-main">
     <PortalTopbar eyebrow="Centre opérationnel" title="Tableau de bord agent" actions={<button className="topbar-cta" onClick={()=>navigate('/agent/requests')}>Voir les demandes</button>}/>
@@ -59,6 +63,12 @@ export default function AgentDashboard(){
             </button>
             <button onClick={()=>navigate('/agent/services')}>
               <i>◇</i><div><b>Services municipaux</b><span>{serviceCount} services · horaires, contacts et démarches</span></div><em>→</em>
+            </button>
+            <button onClick={()=>navigate('/agent/signalements')}>
+              <i>!</i><div><b>Signalements terrain</b><span>{reportCount} signalements à suivre</span></div><em>→</em>
+            </button>
+            <button onClick={()=>navigate('/agent/appointments')}>
+              <i>◷</i><div><b>Rendez-vous citoyens</b><span>{appointmentCount} rendez-vous à venir ou arrivés</span></div><em>→</em>
             </button>
             <button onClick={()=>navigate('/agent/api')}>
               <i>⌘</i><div><b>Flux WebCup</b><span>Suivre les nouvelles demandes du concours</span></div><em>→</em>

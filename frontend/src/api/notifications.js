@@ -1,10 +1,67 @@
 import { api } from "./api.js";
 import { formatDateTime, unwrapList } from "./helpers.js";
 
-function normalizeNotification(item) {
+function canonicalCategory(value = "") {
+  const text = String(value).trim().toLowerCase();
+  if (!text) return "";
+  if (text.includes("rendez") || text.includes("appointment")) return "Rendez-vous";
+  if (text.includes("signal") || text.includes("incident") || text.includes("report")) return "Signalement";
+  if (text.includes("service")) return "Service";
+  if (text.includes("démarche") || text.includes("demarche") || text.includes("request")) return "Démarche";
+  if (text.includes("message") || text.includes("contact")) return "Message";
+  if (text.includes("info") || text.includes("news") || text.includes("actualité")) return "Information";
+  return String(value);
+}
+
+function inferCategory(item = {}) {
+  const direct = item.category || item.notification_category || item.kind || "";
+  if (direct) return canonicalCategory(direct);
+
+  const text = [
+    item.type,
+    item.notification_type,
+    item.title,
+    item.message,
+    item.body,
+    item.event,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  if (text.includes("rendez") || text.includes("appointment")) return "Rendez-vous";
+  if (text.includes("signal") || text.includes("incident")) return "Signalement";
+  if (text.includes("service")) return "Service";
+  if (text.includes("démarche") || text.includes("demarche") || text.includes("request")) return "Démarche";
+  if (text.includes("message") || text.includes("contact")) return "Message";
+  return "Information";
+}
+
+function inferEventStatus(item = {}) {
+  return (
+    item.event_status ||
+    item.status_label ||
+    item.request_status ||
+    item.appointment_status ||
+    item.status ||
+    ""
+  );
+}
+
+export function normalizeNotification(item = {}) {
+  const id = item.id ?? item.uuid ?? item.pk ?? item.notification_id;
+  const createdAt = item.created_at || item.created || item.timestamp || item.date || "";
   return {
     ...item,
-    createdLabel: formatDateTime(item.created_at),
+    id,
+    title: item.title || item.subject || "Notification",
+    message: item.message || item.body || item.description || "",
+    is_read: Boolean(item.is_read ?? item.read ?? false),
+    created_at: createdAt,
+    createdLabel: item.createdLabel || formatDateTime(createdAt),
+    category: inferCategory(item),
+    event_status: inferEventStatus(item),
+    request_reference: item.request_reference || item.request_ref || item.reference || null,
+    appointment_id: item.appointment_id || item.appointment || null,
+    contact_reference: item.contact_reference || item.contact_ref || null,
+    service_slug: item.service_slug || item.service?.slug || null,
   };
 }
 
@@ -13,10 +70,18 @@ export async function getCitizenNotifications(params = {}) {
   return unwrapList(data).map(normalizeNotification);
 }
 
+export async function getCitizenNotification(id) {
+  const { data } = await api.get(`/citizen/notifications/${encodeURIComponent(id)}/`);
+  return normalizeNotification(data);
+}
+
 export async function setNotificationRead(id, isRead = true) {
-  const { data } = await api.patch(`/citizen/notifications/${encodeURIComponent(id)}/`, {
-    is_read: Boolean(isRead),
-  });
+  const form = new FormData();
+  form.append("is_read", String(Boolean(isRead)));
+  const { data } = await api.patch(
+    `/citizen/notifications/${encodeURIComponent(id)}/`,
+    form,
+  );
   return normalizeNotification(data);
 }
 

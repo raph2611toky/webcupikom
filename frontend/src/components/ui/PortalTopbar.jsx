@@ -2,6 +2,7 @@ import { useAuth } from "../../auth/AuthContext.jsx";
 import LanguageSwitcher from "./LanguageSwitcher.jsx";
 import VoiceControl from "./VoiceControl.jsx";
 import CitizenGuide from "./CitizenGuide.jsx";
+import NotificationBell from "./NotificationBell.jsx";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
@@ -9,17 +10,17 @@ import "../../styles/app-shell.css";
 const LABELS = {
   fr: {
     citizen:"Espace citoyen", agent:"Espace agent", admin:"Administration", dashboard:"Tableau de bord", profile:"Mon profil",
-    requests:"Mes demandes", services:"Services", news:"Actualités", notifications:"Notifications", messages:"Messages",
+    requests:"Mes demandes", reports:"Signalements", signalements:"Signalements", services:"Services", news:"Actualités", notifications:"Notifications", appointments:"Rendez-vous", messages:"Messages",
     settings:"Paramètres", "supprimer-compte":"Supprimer le compte", citizens:"Citoyens", users:"Utilisateurs", api:"Flux WebCup", help:"Nous contacter",
   },
   en: {
     citizen:"Citizen space", agent:"Agent space", admin:"Administration", dashboard:"Dashboard", profile:"My profile",
-    requests:"My requests", services:"Services", news:"News", notifications:"Notifications", messages:"Messages",
+    requests:"My requests", reports:"Reports", signalements:"Reports", services:"Services", news:"News", notifications:"Notifications", appointments:"Appointments", messages:"Messages",
     settings:"Settings", "supprimer-compte":"Delete account", citizens:"Citizens", users:"Users", api:"WebCup feed", help:"Contact us",
   },
   mg: {
     citizen:"Habaka mponina", agent:"Habaka mpiasan'ny tanàna", admin:"Fitantanana", dashboard:"Tabilao", profile:"Ny mombamomba ahy",
-    requests:"Ny fangatahako", services:"Sampan-draharaha", news:"Vaovao", notifications:"Fampahafantarana", messages:"Hafatra",
+    requests:"Ny fangatahako", reports:"Tatitra", signalements:"Tatitra", services:"Sampan-draharaha", news:"Vaovao", notifications:"Fampahafantarana", appointments:"Fotoana fihaonana", messages:"Hafatra",
     settings:"Fikirana", "supprimer-compte":"Hamafa kaonty", citizens:"Mponina", users:"Mpampiasa", api:"WebCup", help:"Hifandray aminay",
   },
 };
@@ -69,9 +70,7 @@ export default function PortalTopbar({ eyebrow, title, actions }) {
           {actions}
           {user?.role === "citizen" ? <VoiceControl /> : null}
           {user?.role === "citizen" ? <LanguageSwitcher compact /> : null}
-          {user?.role === "citizen" ? (
-            <button className="portal-topbar__icon" type="button" aria-label={t("notifications", locale)} onClick={() => navigate("/citizen/notifications")}>⌁</button>
-          ) : null}
+          {user?.role === "citizen" ? <NotificationBell label={t("notifications", locale)} /> : null}
           <div className="portal-user">
             <span className="portal-user__avatar">{initials}</span>
             <div><strong>{displayName}</strong><span>{

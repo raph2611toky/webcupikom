@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getApiErrorMessage } from "../../api/auth.js";
+import { clearGoogleFlow, getGoogleFlow, getApiErrorMessage } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate, roleHome } from "../../utils/navigation.js";
 import "../auth.css";
@@ -7,6 +7,7 @@ import "../auth.css";
 export default function GoogleCallbackPage() {
   const { completeGoogle } = useAuth();
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
+  const flow = useMemo(() => getGoogleFlow(), []);
   const [status, setStatus] = useState({ type: "info", message: "Connexion Google en cours…" });
 
   useEffect(() => {
@@ -16,6 +17,7 @@ export default function GoogleCallbackPage() {
     const state = params.get("state");
 
     if (googleError || !code || !state) {
+      clearGoogleFlow();
       setStatus({ type: "error", message: "La connexion Google a été annulée ou est incomplète." });
       return undefined;
     }
@@ -23,7 +25,32 @@ export default function GoogleCallbackPage() {
     completeGoogle({ code, state })
       .then((data) => {
         if (!mounted) return;
-        navigate(roleHome(data.user?.role), { replace: true });
+
+        if (flow?.purpose === "delete-account") {
+          clearGoogleFlow();
+          const sameAccount =
+            flow.expectedUserId === null ||
+            String(flow.expectedUserId) === String(data.user?.id);
+
+          if (!sameAccount) {
+            navigate("/citizen/supprimer-compte?google_error=account_mismatch", { replace: true });
+            return;
+          }
+
+          window.sessionStorage.setItem(
+            "nova_terra_google_delete_verified",
+            JSON.stringify({
+              userId: data.user?.id,
+              verifiedAt: Date.now(),
+            }),
+          );
+
+          navigate(flow.returnTo || "/citizen/supprimer-compte", { replace: true });
+          return;
+        }
+
+        clearGoogleFlow();
+        navigate(flow?.returnTo || roleHome(data.user?.role), { replace: true });
       })
       .catch((error) => {
         if (!mounted) return;
@@ -31,7 +58,7 @@ export default function GoogleCallbackPage() {
       });
 
     return () => { mounted = false; };
-  }, [completeGoogle, params]);
+  }, [completeGoogle, flow, params]);
 
   return (
     <main className="auth-page">

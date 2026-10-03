@@ -14,6 +14,7 @@ export const REQUEST_CATEGORIES = [
   "Transport",
   "Déchets",
   "Services numériques",
+  "Sécurité",
   "Autre",
 ];
 
@@ -25,6 +26,7 @@ export const CATEGORY_SERVICE = {
   Transport: "Transport",
   Déchets: "Infrastructure",
   "Services numériques": "Administration",
+  "Sécurité": "Sécurité",
   Autre: "Administration",
 };
 
@@ -56,3 +58,75 @@ export function getRequestSuggestion(category, subject = "", message = "") {
   }
   return null;
 }
+
+
+export const REPORT_TYPES = [
+  {
+    value: "street_light",
+    label: "Éclairage / lampadaire",
+    icon: "✦",
+    category: "Éclairage public",
+    service: "Énergie",
+    helper: "Lampadaire éteint, clignotant ou endommagé",
+  },
+  {
+    value: "road",
+    label: "Voirie / chaussée",
+    icon: "⌁",
+    category: "Voirie",
+    service: "Infrastructure",
+    helper: "Trou, obstacle, trottoir ou équipement de voirie",
+  },
+  {
+    value: "water",
+    label: "Eau / fuite",
+    icon: "◒",
+    category: "Eau / assainissement",
+    service: "Infrastructure",
+    helper: "Fuite, écoulement, canalisation ou assainissement",
+  },
+  {
+    value: "waste",
+    label: "Déchets / propreté",
+    icon: "▧",
+    category: "Déchets",
+    service: "Infrastructure",
+    helper: "Dépôt, collecte ou problème de propreté",
+  },
+  {
+    value: "transport",
+    label: "Transport",
+    icon: "↔",
+    category: "Transport",
+    service: "Transport",
+    helper: "Arrêt, ligne, équipement ou incident de mobilité",
+  },
+  {
+    value: "safety",
+    label: "Sécurité / danger",
+    icon: "!",
+    category: "Sécurité",
+    service: "Sécurité",
+    helper: "Situation dangereuse nécessitant une intervention municipale",
+  },
+  {
+    value: "public_space",
+    label: "Espace public / bâtiment",
+    icon: "◇",
+    category: "Voirie",
+    service: "Infrastructure",
+    helper: "Mobilier, bâtiment public ou équipement dégradé",
+  },
+  {
+    value: "other",
+    label: "Autre problème",
+    icon: "+",
+    category: "Autre",
+    service: "Administration",
+    helper: "Tout autre problème à signaler à la ville",
+  },
+];
+
+export const REPORT_TYPE_BY_VALUE = Object.fromEntries(
+  REPORT_TYPES.map((item) => [item.value, item]),
+);

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { deleteAccount } from "../../api/account.js";
-import { getApiErrorMessage } from "../../api/auth.js";
+import { getApiErrorMessage, startGoogleAuth } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
@@ -23,7 +23,10 @@ const COPY = {
     cancel:"Annuler", previous:"Retour", irreversible:"Cette opération est irréversible.",
     deleted:"Compte supprimé.", invalid:"Saisissez exactement DELETE pour confirmer.",
     error:"Impossible de supprimer le compte.",
-    security:"Votre mot de passe reste uniquement dans ce formulaire et est envoyé avec la confirmation au moment de la suppression."
+    security:"Votre mot de passe reste uniquement dans ce formulaire et est envoyé avec la confirmation au moment de la suppression.",
+    googleText:"Votre compte utilise Google. Avant de continuer, reconnectez-vous avec le même compte Google pour confirmer votre identité.",
+    verifyGoogle:"Vérifier avec Google", verifyingGoogle:"Redirection vers Google…",
+    googleVerified:"Identité Google vérifiée récemment.", googleMismatch:"Le compte Google choisi ne correspond pas au compte Nova Terra que vous vouliez supprimer. Recommencez avec le bon compte."
   },
   en: {
     eyebrow:"Account", title:"Delete my account", back:"Back to settings",
@@ -38,7 +41,10 @@ const COPY = {
     cancel:"Cancel", previous:"Back", irreversible:"This action cannot be undone.",
     deleted:"Account deleted.", invalid:"Type exactly DELETE to confirm.",
     error:"Unable to delete the account.",
-    security:"Your password stays only in this form and is sent with the final confirmation when the account is deleted."
+    security:"Your password stays only in this form and is sent with the final confirmation when the account is deleted.",
+    googleText:"Your account uses Google. Before continuing, sign in again with the same Google account to confirm your identity.",
+    verifyGoogle:"Verify with Google", verifyingGoogle:"Redirecting to Google…",
+    googleVerified:"Google identity verified recently.", googleMismatch:"The Google account you selected does not match the Nova Terra account you intended to delete. Try again with the correct account."
   },
   mg: {
     eyebrow:"Kaonty", title:"Hamafa ny kaontiko", back:"Hiverina amin'ny fikirana",
@@ -53,7 +59,10 @@ const COPY = {
     cancel:"Hanafoana", previous:"Hiverina", irreversible:"Tsy azo averina ity hetsika ity.",
     deleted:"Voafafa ny kaonty.", invalid:"Soraty marina hoe DELETE mba hanamafisana.",
     error:"Tsy afaka mamafa ny kaonty.",
-    security:"Mijanona ato amin'ity formulaire ity ihany ny teny miafinao ary alefa miaraka amin'ny fanamafisana rehefa tena mamafa ny kaonty."
+    security:"Mijanona ato amin'ity formulaire ity ihany ny teny miafinao ary alefa miaraka amin'ny fanamafisana rehefa tena mamafa ny kaonty.",
+    googleText:"Mampiasa Google ity kaonty ity. Alohan'ny hanohizana dia midira indray amin'ilay kaonty Google mitovy mba hanamarinana fa ianao marina.",
+    verifyGoogle:"Hamarino amin'ny Google", verifyingGoogle:"Mampifandray amin'ny Google…",
+    googleVerified:"Voamarina vao haingana ny maha-ianao anao amin'ny Google.", googleMismatch:"Tsy mifanaraka amin'ny kaonty Nova Terra hofafana ilay kaonty Google nosafidinao. Avereno amin'ilay kaonty marina."
   },
 };
 
@@ -66,11 +75,61 @@ export default function CitizenDeleteAccount() {
   const [confirmation,setConfirmation]=useState("");
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
+  const [googleVerified,setGoogleVerified]=useState(false);
+
+  const isGoogleOnly =
+    !user?.has_password &&
+    String(user?.auth_provider || "").toLowerCase().includes("google");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google_error") === "account_mismatch") {
+      setError(copy.googleMismatch);
+    }
+
+    if (!isGoogleOnly || !user?.id) return;
+
+    const raw = window.sessionStorage.getItem("nova_terra_google_delete_verified");
+    if (!raw) return;
+
+    try {
+      const proof = JSON.parse(raw);
+      const fresh = Date.now() - Number(proof.verifiedAt || 0) < 5 * 60 * 1000;
+      const sameUser = String(proof.userId) === String(user.id);
+
+      if (fresh && sameUser) {
+        setGoogleVerified(true);
+        setStep(2);
+      } else {
+        window.sessionStorage.removeItem("nova_terra_google_delete_verified");
+      }
+    } catch {
+      window.sessionStorage.removeItem("nova_terra_google_delete_verified");
+    }
+  }, [copy.googleMismatch, isGoogleOnly, user?.id]);
+
+  async function verifyWithGoogle() {
+    if (!user?.id || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await startGoogleAuth({
+        remember: true,
+        purpose: "delete-account",
+        expectedUserId: user.id,
+        returnTo: "/citizen/supprimer-compte",
+      });
+    } catch (err) {
+      setError(getApiErrorMessage(err, copy.error));
+      setBusy(false);
+    }
+  }
 
   function continueToConfirmation(event) {
     event.preventDefault();
     setError("");
     if (user?.has_password && !currentPassword) return;
+    if (isGoogleOnly && !googleVerified) return;
     setStep(2);
   }
 
@@ -89,6 +148,7 @@ export default function CitizenDeleteAccount() {
         currentPassword: user?.has_password ? currentPassword : "",
         confirmation: "DELETE",
       });
+      window.sessionStorage.removeItem("nova_terra_google_delete_verified");
       clearSession();
       navigate("/", { replace:true });
     } catch (err) {
@@ -130,7 +190,9 @@ export default function CitizenDeleteAccount() {
                 <form className="delete-account-form" onSubmit={continueToConfirmation}>
                   <span className="section-label">{copy.step1}</span>
                   <h3>{user?.has_password ? copy.currentPassword : copy.step1}</h3>
-                  <p className="detail-copy">{user?.has_password ? copy.passwordText : copy.noPassword}</p>
+                  <p className="detail-copy">
+                    {user?.has_password ? copy.passwordText : isGoogleOnly ? copy.googleText : copy.noPassword}
+                  </p>
 
                   {user?.has_password ? (
                     <label>
@@ -146,11 +208,31 @@ export default function CitizenDeleteAccount() {
                     </label>
                   ) : null}
 
+                  {isGoogleOnly ? (
+                    <div className={`delete-google-reauth ${googleVerified ? "is-verified" : ""}`}>
+                      <div>
+                        <i aria-hidden="true">G</i>
+                        <span>{googleVerified ? copy.googleVerified : copy.googleText}</span>
+                      </div>
+                      {!googleVerified ? (
+                        <button type="button" className="secondary-action" onClick={verifyWithGoogle} disabled={busy}>
+                          {busy ? copy.verifyingGoogle : copy.verifyGoogle}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {error ? <div className="error-card" role="alert">{error}</div> : null}
+
                   <p className="delete-account-security">{copy.security}</p>
 
                   <div className="delete-account-actions">
                     <button type="button" className="secondary-action" onClick={()=>navigate("/citizen/settings")}>{copy.cancel}</button>
-                    <button className="primary-action" type="submit" disabled={user?.has_password && !currentPassword}>{copy.continue} →</button>
+                    {!isGoogleOnly ? (
+                      <button className="primary-action" type="submit" disabled={user?.has_password && !currentPassword}>{copy.continue} →</button>
+                    ) : googleVerified ? (
+                      <button className="primary-action" type="submit">{copy.continue} →</button>
+                    ) : null}
                   </div>
                 </form>
               ) : (

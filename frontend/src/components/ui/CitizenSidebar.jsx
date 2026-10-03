@@ -13,7 +13,9 @@ export default function CitizenSidebar() {
   const items = [
     ["/citizen", "◫", t("dashboard", locale)],
     ["/citizen/requests", "◎", t("requests", locale)],
+    ["/citizen/signalements", "!", t("reports", locale)],
     ["/citizen/services", "◇", t("services", locale)],
+    ["/citizen/appointments", "◷", t("appointments", locale)],
     ["/citizen/news", "▤", t("news", locale)],
     ["/citizen/profile", "○", t("profile", locale)],
     ["/citizen/notifications", "◌", t("notifications", locale)],

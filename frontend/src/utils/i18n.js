@@ -9,19 +9,19 @@ export const LOCALE_NAMES = { fr: "Français", en: "English", mg: "Malagasy" };
 
 export const TEXT = {
   fr: {
-    home:"Accueil", dashboard:"Tableau de bord", requests:"Mes demandes", services:"Services", news:"Actualités",
+    home:"Accueil", dashboard:"Tableau de bord", requests:"Mes demandes", reports:"Signalements", services:"Services", appointments:"Rendez-vous", news:"Actualités",
     profile:"Mon profil", notifications:"Notifications", settings:"Paramètres", contact:"Nous contacter", logout:"Déconnexion",
     login:"Se connecter", register:"Créer un compte", mySpace:"Mon espace", language:"Langue", citizenSpace:"Espace citoyen",
     newRequest:"Nouvelle demande", allServices:"Tous les services", allRequests:"Tout voir", priorityServices:"Services prioritaires",
   },
   en: {
-    home:"Home", dashboard:"Dashboard", requests:"My requests", services:"Services", news:"News",
+    home:"Home", dashboard:"Dashboard", requests:"My requests", reports:"Reports", services:"Services", appointments:"Appointments", news:"News",
     profile:"My profile", notifications:"Notifications", settings:"Settings", contact:"Contact us", logout:"Sign out",
     login:"Sign in", register:"Create account", mySpace:"My space", language:"Language", citizenSpace:"Citizen space",
     newRequest:"New request", allServices:"All services", allRequests:"View all", priorityServices:"Priority services",
   },
   mg: {
-    home:"Fandraisana", dashboard:"Tabilao", requests:"Ny fangatahako", services:"Sampan-draharaha", news:"Vaovao",
+    home:"Fandraisana", dashboard:"Tabilao", requests:"Ny fangatahako", reports:"Tatitra", services:"Sampan-draharaha", appointments:"Fotoana fihaonana", news:"Vaovao",
     profile:"Ny mombamomba ahy", notifications:"Fampahafantarana", settings:"Fikirana", contact:"Hifandray aminay", logout:"Hivoaka",
     login:"Hiditra", register:"Hamorona kaonty", mySpace:"Ny habakako", language:"Fiteny", citizenSpace:"Habaka ho an'ny mponina",
     newRequest:"Fangatahana vaovao", allServices:"Sampan-draharaha rehetra", allRequests:"Hijery rehetra", priorityServices:"Sampan-draharaha laharam-pahamehana",

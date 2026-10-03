@@ -6,6 +6,8 @@ import "../../styles/app-shell.css";
 const items = [
   ["/agent", "◫", "Tableau de bord"],
   ["/agent/requests", "◎", "Demandes"],
+  ["/agent/signalements", "!", "Signalements"],
+  ["/agent/appointments", "◷", "Rendez-vous"],
   ["/agent/citizens", "◉", "Citoyens"],
   ["/agent/news", "▤", "Publications"],
   ["/agent/services", "◇", "Services"],

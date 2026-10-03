@@ -4,9 +4,9 @@ import { useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
 
 const COPY = {
-  fr:{button:"Mode vocal",title:"Interaction vocale",listen:"Écouter",stop:"Arrêter",read:"Lire l’aide",close:"Fermer",unsupported:"La reconnaissance vocale n’est pas disponible dans ce navigateur.",hint:"Dites par exemple « mes demandes », « services », « actualités », « nous contacter » ou « profil ».",listening:"Je vous écoute…",heard:"J’ai entendu",unknown:"Commande non reconnue."},
-  en:{button:"Voice mode",title:"Voice interaction",listen:"Listen",stop:"Stop",read:"Read help",close:"Close",unsupported:"Voice recognition is not available in this browser.",hint:"Try saying “my requests”, “services”, “news”, “contact us” or “profile”.",listening:"Listening…",heard:"I heard",unknown:"Command not recognized."},
-  mg:{button:"Fomba feo",title:"Fifandraisana amin'ny feo",listen:"Hihaino",stop:"Ajanony",read:"Vakio ny fanampiana",close:"Hakatona",unsupported:"Tsy misy fanekena feo amin'ity navigateur ity.",hint:"Azonao lazaina hoe « fangatahako », « sampan-draharaha », « vaovao », « hifandray aminay » na « profil ».",listening:"Mihaino aho…",heard:"Henoko",unknown:"Tsy fantatra ilay baiko."},
+  fr:{button:"Mode vocal",title:"Interaction vocale",listen:"Écouter",stop:"Arrêter",read:"Lire l’aide",close:"Fermer",unsupported:"La reconnaissance vocale n’est pas disponible dans ce navigateur.",hint:"Dites par exemple « mes demandes », « services », « rendez-vous », « actualités », « nous contacter » ou « profil ».",listening:"Je vous écoute…",heard:"J’ai entendu",unknown:"Commande non reconnue."},
+  en:{button:"Voice mode",title:"Voice interaction",listen:"Listen",stop:"Stop",read:"Read help",close:"Close",unsupported:"Voice recognition is not available in this browser.",hint:"Try saying “my requests”, “services”, “appointments”, “news”, “contact us” or “profile”.",listening:"Listening…",heard:"I heard",unknown:"Command not recognized."},
+  mg:{button:"Fomba feo",title:"Fifandraisana amin'ny feo",listen:"Hihaino",stop:"Ajanony",read:"Vakio ny fanampiana",close:"Hakatona",unsupported:"Tsy misy fanekena feo amin'ity navigateur ity.",hint:"Azonao lazaina hoe « fangatahako », « sampan-draharaha », « fotoana fihaonana », « vaovao », « hifandray aminay » na « profil ».",listening:"Mihaino aho…",heard:"Henoko",unknown:"Tsy fantatra ilay baiko."},
 };
 
 const PAGE_HELP = {
@@ -14,6 +14,11 @@ const PAGE_HELP = {
     fr:"Vous êtes sur votre tableau de bord. Vous pouvez suivre vos demandes, ouvrir un service prioritaire ou créer une nouvelle demande.",
     en:"You are on your dashboard. You can track requests, open a priority service or create a new request.",
     mg:"Ao amin'ny tabilao ianao. Afaka manara-maso fangatahana, manokatra sampan-draharaha na mamorona fangatahana vaovao."
+  },
+  "/citizen/signalements": {
+    fr:"Choisissez le type de problème, indiquez précisément le lieu ou utilisez votre position GPS, puis décrivez ce que vous observez.",
+    en:"Choose the problem type, enter the exact location or use your GPS position, then describe what you can see.",
+    mg:"Safidio ny karazana olana, lazao mazava ny toerana na ampiasao ny GPS, ary hazavao izay hitanao."
   },
   "/citizen/requests": {
     fr:"Ici, vous retrouvez toutes vos demandes. Utilisez Nouvelle demande pour écrire puis envoyer votre besoin.",
@@ -24,6 +29,11 @@ const PAGE_HELP = {
     fr:"Ouvrez un service pour voir ses horaires, ses coordonnées, les démarches disponibles et les documents requis.",
     en:"Open a service to see its hours, contact details, available procedures and required documents.",
     mg:"Sokafy ny sampan-draharaha iray mba hahitana ny ora fiasana, fifandraisana, dingana azo atao ary taratasy ilaina."
+  },
+  "/citizen/appointments": {
+    fr:"Choisissez un service, une date et un créneau disponible. Les créneaux réservés ou indisponibles sont clairement désactivés. Vous pouvez aussi activer un rappel.",
+    en:"Choose a service, date and available time slot. Booked or unavailable slots are clearly disabled. You can also enable a reminder.",
+    mg:"Safidio ny sampan-draharaha, daty ary ora misy. Tsy azo tsindriana ny ora efa voatokana na tsy misy. Afaka mampandeha fampahatsiahivana koa ianao."
   },
   "/citizen/news": {
     fr:"Cette page rassemble les annonces municipales, changements de service et informations pratiques.",
@@ -54,8 +64,10 @@ function getPageHelp(locale) {
 function routeFromSpeech(text) {
   const value = text.toLowerCase();
   if (/nouvelle demande|new request|fangatahana vaovao/.test(value)) return "/citizen/requests?new=1";
+  if (/signalement|signaler|report|tatitra/.test(value)) return "/citizen/signalements";
   if (/demande|request|fangata/.test(value)) return "/citizen/requests";
   if (/service|sampan/.test(value)) return "/citizen/services";
+  if (/rendez|appointment|fihaonana|fotoana/.test(value)) return "/citizen/appointments";
   if (/actualit|news|vaovao/.test(value)) return "/citizen/news";
   if (/contact|aide|help|hifandray|fanamp/.test(value)) return "/citizen/help";
   if (/profil|profile|mombamomba/.test(value)) return "/citizen/profile";

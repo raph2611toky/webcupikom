@@ -958,3 +958,38 @@ html[data-contrast="high"] .guide-dismiss {
     right:12px;
   }
 }
+
+
+/* V36 — backend notification badge */
+.portal-notification-bell{
+  position:relative;
+}
+
+.portal-notification-bell>span{
+  display:block;
+  line-height:1;
+}
+
+.portal-notification-bell>b{
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  min-width:18px;
+  height:18px;
+  display:grid;
+  place-items:center;
+  padding:0 4px;
+  border:2px solid #fff;
+  border-radius:999px;
+  background:#6b18df;
+  color:#fff;
+  font-size:.48rem;
+  font-weight:900;
+  line-height:1;
+}
+
+html[data-contrast="high"] .portal-notification-bell>b{
+  background:#4c00b8!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}

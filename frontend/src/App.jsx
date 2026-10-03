@@ -16,9 +16,11 @@ import Contact from "./pages/public/Contact.jsx";
 import CitizenDashboard from "./pages/citizen/CitizenDashboard.jsx";
 import CitizenProfile from "./pages/citizen/CitizenProfile.jsx";
 import CitizenRequests from "./pages/citizen/CitizenRequests.jsx";
+import CitizenReports from "./pages/citizen/CitizenReports.jsx";
 import CitizenRequestDetails from "./pages/citizen/CitizenRequestDetails.jsx";
 import CitizenServices from "./pages/citizen/CitizenServices.jsx";
 import CitizenServiceDetails from "./pages/citizen/CitizenServiceDetails.jsx";
+import CitizenAppointments from "./pages/citizen/CitizenAppointments.jsx";
 import CitizenNotifications from "./pages/citizen/CitizenNotifications.jsx";
 import CitizenNews from "./pages/citizen/CitizenNews.jsx";
 import CitizenNewsDetails from "./pages/citizen/CitizenNewsDetails.jsx";
@@ -29,7 +31,9 @@ import CitizenMessages from "./pages/citizen/CitizenMessages.jsx";
 import CitizenMessageDetails from "./pages/citizen/CitizenMessageDetails.jsx";
 import AgentDashboard from "./pages/agent/AgentDashboard.jsx";
 import AgentRequests from "./pages/agent/AgentRequests.jsx";
+import AgentReports from "./pages/agent/AgentReports.jsx";
 import AgentRequestDetails from "./pages/agent/AgentRequestDetails.jsx";
+import AgentAppointments from "./pages/agent/AgentAppointments.jsx";
 import AgentCitizens from "./pages/agent/AgentCitizens.jsx";
 import AgentCitizenDetails from "./pages/agent/AgentCitizenDetails.jsx";
 import AgentApi from "./pages/agent/AgentApi.jsx";
@@ -226,7 +230,9 @@ export default function App() {
       "/citizen/dashboard":<Protected roles={["citizen"]}><CitizenDashboard/></Protected>,
       "/citizen/profile":<Protected roles={["citizen"]}><CitizenProfile/></Protected>,
       "/citizen/requests":<Protected roles={["citizen"]}><CitizenRequests/></Protected>,
+      "/citizen/signalements":<Protected roles={["citizen"]}><CitizenReports/></Protected>,
       "/citizen/services":<Protected roles={["citizen"]}><CitizenServices/></Protected>,
+      "/citizen/appointments":<Protected roles={["citizen"]}><CitizenAppointments/></Protected>,
       "/citizen/news":<Protected roles={["citizen"]}><CitizenNews/></Protected>,
       "/citizen/notifications":<Protected roles={["citizen"]}><CitizenNotifications/></Protected>,
       "/citizen/settings":<Protected roles={["citizen"]}><CitizenSettings/></Protected>,
@@ -237,6 +243,8 @@ export default function App() {
       "/agent":<Protected roles={["agent"]}><AgentDashboard/></Protected>,
       "/agent/dashboard":<Protected roles={["agent"]}><AgentDashboard/></Protected>,
       "/agent/requests":<Protected roles={["agent"]}><AgentRequests/></Protected>,
+      "/agent/signalements":<Protected roles={["agent"]}><AgentReports/></Protected>,
+      "/agent/appointments":<Protected roles={["agent"]}><AgentAppointments/></Protected>,
       "/agent/citizens":<Protected roles={["agent"]}><AgentCitizens/></Protected>,
       "/agent/news":<Protected roles={["agent"]}><AgentNews/></Protected>,
       "/agent/services":<Protected roles={["agent"]}><AgentServices/></Protected>,

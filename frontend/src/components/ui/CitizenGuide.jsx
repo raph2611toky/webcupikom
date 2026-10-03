@@ -11,6 +11,13 @@ const GUIDES = {
     en:{title:"A quick start",text:"Check your profile first, then open a service or create your first request.",action:"Discover services"},
     mg:{title:"Hanombohana tsara",text:"Jereo aloha ny mombamomba anao, avy eo sokafy ny sampan-draharaha iray na mamoròna fangatahana voalohany.",action:"Hijery sampan-draharaha"},
   },
+  reports: {
+    match:(path)=>path==="/citizen/signalements",
+    action:null,
+    fr:{title:"Un bon signalement = un lieu précis",text:"Choisissez d’abord le type de problème. Ajoutez ensuite la rue, le quartier ou votre position GPS, puis une description et si possible une photo.",action:""},
+    en:{title:"A good report needs a precise location",text:"Choose the problem type first. Then add the street, district or GPS position, followed by a description and a photo if possible.",action:""},
+    mg:{title:"Mila toerana mazava ny tatitra",text:"Safidio aloha ny karazana olana. Ampio ny arabe, faritra na GPS, avy eo ny fanazavana ary sary raha misy.",action:""},
+  },
   requests: {
     match:(path)=>path==="/citizen/requests",
     action:null,
@@ -24,6 +31,13 @@ const GUIDES = {
     fr:{title:"Trouver le bon service",text:"Ouvrez une carte pour voir les horaires, coordonnées, démarches et documents requis.",action:""},
     en:{title:"Find the right service",text:"Open a card to see opening hours, contact details, procedures and required documents.",action:""},
     mg:{title:"Tadiavo ny sampan-draharaha mety",text:"Sokafy ny karatra mba hahitana ny ora, fifandraisana, dingana ary taratasy ilaina.",action:""},
+  },
+  appointments: {
+    match:(path)=>path==="/citizen/appointments",
+    action:null,
+    fr:{title:"Choisissez un créneau sans ambiguïté",text:"Sélectionnez d’abord le service et la date. Les créneaux réservés ou indisponibles sont désactivés. Vérifiez le récapitulatif avant de confirmer.",action:""},
+    en:{title:"Choose an unambiguous time slot",text:"Select the service and date first. Booked or unavailable slots are disabled. Check the summary before confirming.",action:""},
+    mg:{title:"Safidio mazava ny fotoana",text:"Safidio aloha ny sampan-draharaha sy daty. Tsy azo tsindriana ny ora efa voatokana na tsy misy. Jereo ny famintinana alohan'ny hanamafisana.",action:""},
   },
   help: {
     match:(path)=>path==="/citizen/help",

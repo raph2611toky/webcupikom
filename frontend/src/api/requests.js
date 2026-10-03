@@ -40,7 +40,18 @@ function extractMeta(description = "") {
   const location = description.match(/(?:Localisation|Lieu)\s*:\s*([^\n]+)/i)?.[1]?.trim() || "";
   const category = description.match(/Catégorie\s*:\s*([^·\n]+)/i)?.[1]?.trim() || "";
   const type = description.match(/Type\s*:\s*([^·\n]+)/i)?.[1]?.trim() || "";
-  return { location, category, type };
+  const reportType = description.match(/Signalement\s*:\s*([^\n]+)/i)?.[1]?.trim() || "";
+  const coordinates = description.match(/Coordonnées\s*:\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
+  const accuracy = description.match(/Précision GPS\s*:\s*([\d.]+)/i)?.[1];
+  return {
+    location,
+    category,
+    type,
+    reportType,
+    latitude: coordinates ? Number(coordinates[1]) : null,
+    longitude: coordinates ? Number(coordinates[2]) : null,
+    accuracy: accuracy ? Number(accuracy) : null,
+  };
 }
 
 function buildHistory(statusCode, created, updated) {
@@ -71,7 +82,13 @@ function normalizeBase(item, labels) {
     serviceId: item.service ?? item.service_id ?? null,
     category: item.category || meta.category || "",
     requestType: item.requestType || meta.type || "question",
-    location: item.location || (meta.location ? { label: meta.location } : null),
+    reportType: item.report_type || item.reportType || meta.reportType || "",
+    location: item.location || (meta.location || meta.latitude ? {
+      label: meta.location || "Position GPS transmise",
+      ...(meta.latitude !== null ? { latitude: meta.latitude } : {}),
+      ...(meta.longitude !== null ? { longitude: meta.longitude } : {}),
+      ...(meta.accuracy !== null ? { accuracy: meta.accuracy } : {}),
+    } : null),
     district: item.district || meta.location || "Non précisé",
     attachments: item.attachments || [],
     statusCode: item.statusCode || item.status,
@@ -120,6 +137,10 @@ export async function createCitizenRequest(payload) {
   if (!serviceId) throw new Error("Aucun service municipal n’est disponible.");
 
   const locationLine = payload.location?.label ? `\n\nLocalisation : ${payload.location.label}` : "";
+  const coordinateLine = payload.location?.latitude != null && payload.location?.longitude != null
+    ? `\nCoordonnées : ${payload.location.latitude}, ${payload.location.longitude}${payload.location?.accuracy != null ? `\nPrécision GPS : ${payload.location.accuracy}` : ""}`
+    : "";
+  const reportLine = payload.reportType ? `\nSignalement : ${payload.reportType}` : "";
   const metaLine = `\n\nType : ${payload.type || "question"} · Catégorie : ${payload.category || "Autre"}`;
   const attachmentLine = payload.attachments?.length
     ? `\nPièce jointe déclarée : ${payload.attachments.map((file) => file.name).join(", ")}`
@@ -128,14 +149,15 @@ export async function createCitizenRequest(payload) {
   const { data } = await api.post("/citizen/requests/", {
     service: serviceId,
     title: payload.subject || payload.title || "Demande citoyenne",
-    description: `${payload.message || payload.description || ""}${locationLine}${metaLine}${attachmentLine}`.trim(),
-    priority: payload.type === "assistance" ? "high" : "normal",
+    description: `${payload.message || payload.description || ""}${locationLine}${coordinateLine}${reportLine}${metaLine}${attachmentLine}`.trim(),
+    priority: payload.priority || (payload.type === "assistance" ? "high" : "normal"),
   });
 
   return {
     ...normalizeCitizen(data),
     category: payload.category || "",
     requestType: payload.type || "question",
+    reportType: payload.reportType || "",
     location: payload.location || null,
     attachments: (payload.attachments || []).map((file) => ({
       name: file.name,

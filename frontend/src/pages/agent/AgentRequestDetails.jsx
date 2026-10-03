@@ -49,7 +49,9 @@ export default function AgentRequestDetails({ params }) {
       <div className="portal-main">
         <PortalTopbar eyebrow="Dossier citoyen" title={`Demande ${request.ref}`} />
         <main className="portal-content">
-          <button className="back-link" onClick={() => navigate("/agent/requests")}>← Retour aux demandes</button>
+          <button className="back-link" onClick={() => navigate(request.requestType === "signalement" ? "/agent/signalements" : "/agent/requests")}>
+            ← {request.requestType === "signalement" ? "Retour aux signalements" : "Retour aux demandes"}
+          </button>
           <section className="agent-detail-head agent-detail-head--smart">
             <div><span>{request.category || request.service}</span><h2>{request.title || request.citizen}</h2><p>{request.citizen} · {request.citizenId} · créée {request.created}</p></div>
             <div className="agent-detail-controls"><label><span>Statut</span><select value={status} onChange={(event) => changeStatus(event.target.value)}><option>À traiter</option><option>En traitement</option><option>Action requise</option><option>Terminée</option></select></label><label><span>Priorité</span><select defaultValue={request.priority}><option>Normale</option><option>Haute</option></select></label></div>
@@ -59,7 +61,12 @@ export default function AgentRequestDetails({ params }) {
           <section className="portal-grid portal-grid--detail agent-smart-grid">
             <article className="portal-card">
               <span className="section-label">Besoin exprimé</span><h3>{request.requestType === "signalement" ? "Signalement citoyen" : "Demande citoyenne"}</h3><p className="detail-copy">{request.description || `Le citoyen signale un besoin lié au service ${request.service}.`}</p>
-              <div className="detail-list compact-detail-list"><div><span>Catégorie</span><b>{request.category || request.service}</b></div><div><span>Service orienté</span><b>{request.service}</b></div><div><span>Lieu</span><b>{request.location?.label || "Non précisé"}</b></div></div>
+              <div className="detail-list compact-detail-list">
+                {request.requestType === "signalement" ? <div><span>Type de signalement</span><b>{request.reportType || request.category || "Signalement"}</b></div> : null}
+                <div><span>Catégorie</span><b>{request.category || request.service}</b></div>
+                <div><span>Service orienté</span><b>{request.service}</b></div>
+                <div><span>Lieu signalé</span><b>{request.location?.label || "Non précisé"}</b></div>
+              </div>
               {request.location?.latitude ? <div className="request-location-map"><span>⌖ Localisation transmise</span><b>{request.location.latitude}, {request.location.longitude}</b><small>Précision indiquée par l’appareil : {request.location.accuracy || "—"} m</small></div> : null}
             </article>
 

@@ -1,6 +1,7 @@
 import { api, clearAccessToken, setAccessToken } from "./api.js";
 
 const GOOGLE_REMEMBER_KEY = "nova_terra_google_remember";
+const GOOGLE_FLOW_KEY = "nova_terra_google_flow";
 let bootstrapPromise = null;
 
 function rememberFromSession() {
@@ -64,13 +65,47 @@ export async function register(payload) {
   return data;
 }
 
-export async function startGoogleAuth({ remember = true } = {}) {
+export async function startGoogleAuth({
+  remember = true,
+  returnTo = "",
+  purpose = "login",
+  expectedUserId = null,
+} = {}) {
   window.sessionStorage.setItem(GOOGLE_REMEMBER_KEY, String(Boolean(remember)));
+
+  if (returnTo || purpose !== "login" || expectedUserId !== null) {
+    window.sessionStorage.setItem(
+      GOOGLE_FLOW_KEY,
+      JSON.stringify({
+        returnTo,
+        purpose,
+        expectedUserId,
+        startedAt: Date.now(),
+      }),
+    );
+  } else {
+    window.sessionStorage.removeItem(GOOGLE_FLOW_KEY);
+  }
+
   const { data } = await api.get("/auth/google/redirect/", {
     skipAuthRefresh: true,
     skipAccessToken: true,
   });
   window.location.assign(data.authorization_url);
+}
+
+export function getGoogleFlow() {
+  const raw = window.sessionStorage.getItem(GOOGLE_FLOW_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function clearGoogleFlow() {
+  window.sessionStorage.removeItem(GOOGLE_FLOW_KEY);
 }
 
 export async function completeGoogleAuth({ code, state }) {

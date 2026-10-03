@@ -76,7 +76,9 @@ export default function CitizenRequestDetails({params}){
     <div className="portal-main">
       <PortalTopbar eyebrow={copy.eyebrow} title={request.id}/>
       <main className="portal-content">
-        <button className="back-link" onClick={()=>navigate("/citizen/requests")}>← {copy.back}</button>
+        <button className="back-link" onClick={()=>navigate(request.requestType==="signalement"?"/citizen/signalements":"/citizen/requests")}>
+          ← {request.requestType==="signalement" ? (locale==="en"?"Back to my reports":locale==="mg"?"Hiverina amin'ny tatitra":"Retour à mes signalements") : copy.back}
+        </button>
         <section className="request-detail-hero">
           <div><span>{request.category||request.service}</span><h2>{request.title}</h2><p>{request.description}</p></div>
           <em className={`status-pill status-${String(request.status).replaceAll(" ","-").toLowerCase()}`}>{STATUS[locale]?.[request.status]||request.status}</em>
@@ -91,6 +93,7 @@ export default function CitizenRequestDetails({params}){
           <article className="portal-card">
             <span className="section-label">{copy.information}</span><h3>{copy.details}</h3>
             <div className="detail-list">
+              {request.requestType==="signalement"?<div><span>{locale==="en"?"Report type":locale==="mg"?"Karazana tatitra":"Type de signalement"}</span><b>{request.reportType||request.category||"Signalement"}</b></div>:null}
               <div><span>{copy.service}</span><b>{request.service}</b></div>
               <div><span>{copy.category}</span><b>{request.category||"—"}</b></div>
               <div><span>{copy.location}</span><b>{request.location?.label||request.district||copy.notSpecified}</b></div>
