@@ -326,6 +326,9 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     severity_label = serializers.CharField(source='get_severity_display', read_only=True)
     category_label = serializers.SerializerMethodField()
     is_closed = serializers.SerializerMethodField()
+    workflow_state = serializers.SerializerMethodField()
+    requires_agent_action = serializers.SerializerMethodField()
+    requires_citizen_action = serializers.SerializerMethodField()
     available_actions = serializers.SerializerMethodField()
 
     def get_category_label(self, obj) -> str:
@@ -333,6 +336,25 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
 
     def get_is_closed(self, obj) -> bool:
         return obj.status in CLOSED
+
+    def get_workflow_state(self, obj) -> str:
+        if obj.status in CLOSED:
+            return "closed"
+        if obj.status == CitizenRequest.Status.ACTION_REQUIRED:
+            return "citizen_action_required"
+        if obj.status in (CitizenRequest.Status.SUBMITTED, CitizenRequest.Status.PENDING) and not obj.acknowledged_at:
+            return "awaiting_handling"
+        return "agent_processing"
+
+    def get_requires_agent_action(self, obj) -> bool:
+        return obj.status in (
+            CitizenRequest.Status.SUBMITTED,
+            CitizenRequest.Status.PENDING,
+            CitizenRequest.Status.IN_PROGRESS,
+        )
+
+    def get_requires_citizen_action(self, obj) -> bool:
+        return obj.status == CitizenRequest.Status.ACTION_REQUIRED
 
     @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.CharField()))
     def get_available_actions(self, obj):
@@ -382,7 +404,7 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     class Meta:
         model = CitizenRequest
         fields = (
-            "id", "reference", "status_label", "priority_label", "severity_label", "category_label", "is_closed", "available_actions", "citizen", "citizen_name", "citizen_email",
+            "id", "reference", "status_label", "priority_label", "severity_label", "category_label", "is_closed", "workflow_state", "requires_agent_action", "requires_citizen_action", "available_actions", "citizen", "citizen_name", "citizen_email",
             "service", "service_name", "request_type", "incident_category", "title",
             "description", "location_text", "latitude", "longitude", "status", "priority",
             "assigned_to", "assigned_to_name", "created_at", "updated_at",
@@ -547,12 +569,15 @@ class AgentCitizenRequestSerializer(CitizenRequestSerializer):
         if 'service' in validated_data:
             validated_data['routing_source'] = 'manual' if validated_data['service'] else 'unassigned'
         status_value = validated_data.get('status', previous)
-        if instance.request_type == 'report' and status_value != previous:
-            if status_value == 'in_progress' and not instance.acknowledged_at:
+        if status_value != previous:
+            if (
+                not instance.acknowledged_at
+                and status_value not in (CitizenRequest.Status.SUBMITTED, CitizenRequest.Status.PENDING)
+            ):
                 validated_data['acknowledged_at'] = timezone.now()
             if status_value in CLOSED:
                 validated_data['closed_at'] = timezone.now()
-                validated_data['resolved_at'] = timezone.now() if status_value == 'completed' else None
+                validated_data['resolved_at'] = timezone.now() if status_value == CitizenRequest.Status.COMPLETED else None
         # Do not invoke citizen edit/routing logic on agent updates.
         return serializers.ModelSerializer.update(self, instance, validated_data)
 

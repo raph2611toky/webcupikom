@@ -9,6 +9,7 @@ from django.db.models import Count, F, Q
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -72,6 +73,7 @@ from .swagger import (
     admin_news_patch_schema,
     admin_news_post_schema,
     admin_request_event_post_schema,
+    admin_request_list_schema,
     admin_request_patch_schema,
     admin_service_delete_schema,
     admin_service_patch_schema,
@@ -82,6 +84,7 @@ from .swagger import (
     agent_appointment_patch_schema,
     agent_notification_post_schema,
     agent_request_event_post_schema,
+    agent_request_list_schema,
     agent_request_patch_schema,
     citizen_notification_patch_schema,
     citizen_notification_read_all_schema,
@@ -105,6 +108,72 @@ ACTIVE_APPOINTMENT_STATUSES = (
     CitizenAppointment.Status.REQUESTED,
     CitizenAppointment.Status.CONFIRMED,
 )
+AGENT_ACTION_STATUSES = (
+    CitizenRequest.Status.SUBMITTED,
+    CitizenRequest.Status.PENDING,
+    CitizenRequest.Status.IN_PROGRESS,
+)
+AWAITING_HANDLING_STATUSES = (
+    CitizenRequest.Status.SUBMITTED,
+    CitizenRequest.Status.PENDING,
+)
+
+
+def _query_bool(params, name):
+    raw = params.get(name)
+    if raw is None or raw == "":
+        return None
+    value = str(raw).strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    raise ValidationError({name: "Utilisez true ou false."})
+
+
+def _filter_agent_workflow(queryset, params):
+    awaiting = _query_bool(params, "awaiting_handling")
+    if awaiting is True:
+        queryset = queryset.filter(
+            status__in=AWAITING_HANDLING_STATUSES,
+            acknowledged_at__isnull=True,
+        )
+    elif awaiting is False:
+        queryset = queryset.exclude(
+            status__in=AWAITING_HANDLING_STATUSES,
+            acknowledged_at__isnull=True,
+        )
+
+    needs_action = _query_bool(params, "needs_action")
+    if needs_action is True:
+        queryset = queryset.filter(status__in=AGENT_ACTION_STATUSES)
+    elif needs_action is False:
+        queryset = queryset.exclude(status__in=AGENT_ACTION_STATUSES)
+
+    workflow_state = str(params.get("workflow_state", "")).strip().lower()
+    if workflow_state:
+        if workflow_state == "awaiting_handling":
+            queryset = queryset.filter(
+                status__in=AWAITING_HANDLING_STATUSES,
+                acknowledged_at__isnull=True,
+            )
+        elif workflow_state == "agent_processing":
+            queryset = queryset.filter(status__in=AGENT_ACTION_STATUSES).exclude(
+                status__in=AWAITING_HANDLING_STATUSES,
+                acknowledged_at__isnull=True,
+            )
+        elif workflow_state == "citizen_action_required":
+            queryset = queryset.filter(status=CitizenRequest.Status.ACTION_REQUIRED)
+        elif workflow_state == "closed":
+            queryset = queryset.filter(status__in=CLOSED)
+        else:
+            raise ValidationError({
+                "workflow_state": (
+                    "Valeurs autorisées : awaiting_handling, agent_processing, "
+                    "citizen_action_required, closed."
+                )
+            })
+    return queryset
 
 
 def _appointment_frontend_url(appointment):
@@ -286,10 +355,17 @@ def _profile_completion(user):
 
 
 def _request_confirmation(instance):
+    needs_triage = instance.request_type == CitizenRequest.RequestType.REPORT and not instance.service_id
     return {
-        "message": ("Votre signalement est enregistré et sera orienté vers le service compétent." if instance.request_type == 'report' and not instance.service_id else "Votre demande a bien été enregistrée et transmise aux services municipaux."),
+        "received": True,
+        "message": (
+            "Votre signalement est enregistré et sera orienté vers le service compétent."
+            if needs_triage
+            else "Votre demande a bien été enregistrée et transmise aux services municipaux."
+        ),
+        "next_step": "triage" if needs_triage else "processing",
         "service": instance.service_id,
-        "needs_triage": instance.request_type == 'report' and not instance.service_id,
+        "needs_triage": needs_triage,
         "reference": instance.reference,
         "status": instance.status,
         "created_at": instance.created_at,
@@ -978,9 +1054,12 @@ class AgentDashboardView(APIView):
                     "in_progress": requests.filter(status=CitizenRequest.Status.IN_PROGRESS).count(),
                     "action_required": requests.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
                     "completed": requests.filter(status=CitizenRequest.Status.COMPLETED).count(),
-                    "awaiting_handling": requests.exclude(
-                        status__in=CLOSED
-                    ).filter(assigned_to__isnull=True).count(),
+                    "awaiting_handling": requests.filter(
+                        status__in=AWAITING_HANDLING_STATUSES, acknowledged_at__isnull=True
+                    ).count(),
+                    "needs_agent_action": requests.filter(status__in=AGENT_ACTION_STATUSES).count(),
+                    "waiting_citizen": requests.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
+                    "unassigned_open": requests.exclude(status__in=CLOSED).filter(assigned_to__isnull=True).count(),
                 },
                 "citizens": User.objects.filter(role=User.Role.CITIZEN).count(),
                 "contacts_unread": ContactMessage.objects.filter(
@@ -1009,6 +1088,10 @@ class AgentRequestListView(generics.ListAPIView):
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = AgentCitizenRequestSerializer
 
+    @agent_request_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return CitizenRequest.objects.none()
@@ -1025,7 +1108,6 @@ class AgentRequestListView(generics.ListAPIView):
         if service:
             queryset = queryset.filter(service_id=int(service)) if str(service).isdigit() else queryset.filter(service__slug=service)
         if assigned_to:
-            from rest_framework.exceptions import ValidationError
             try:
                 assigned_to = int(assigned_to)
             except (ValueError, TypeError):
@@ -1047,6 +1129,7 @@ class AgentRequestListView(generics.ListAPIView):
                 | Q(citizen__last_name__icontains=search)
                 | Q(service__name__icontains=search)
             )
+        queryset = _filter_agent_workflow(queryset, self.request.query_params)
         return filter_requests(queryset, self.request.query_params)
 
 
@@ -1059,7 +1142,12 @@ class AgentRequestSummaryView(APIView):
         return Response({
             "total": queryset.count(),
             "open": open_queryset.count(),
-            "awaiting_handling": open_queryset.filter(assigned_to__isnull=True).count(),
+            "awaiting_handling": queryset.filter(
+                status__in=AWAITING_HANDLING_STATUSES, acknowledged_at__isnull=True
+            ).count(),
+            "needs_agent_action": queryset.filter(status__in=AGENT_ACTION_STATUSES).count(),
+            "waiting_citizen": queryset.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
+            "unassigned_open": open_queryset.filter(assigned_to__isnull=True).count(),
             "pending": queryset.filter(status=CitizenRequest.Status.PENDING).count(),
             "submitted": queryset.filter(status=CitizenRequest.Status.SUBMITTED).count(),
             "in_progress": queryset.filter(status=CitizenRequest.Status.IN_PROGRESS).count(),
@@ -1521,6 +1609,10 @@ class AdminContactMessageDetailView(AgentContactMessageDetailView):
 
 class AdminRequestListView(AgentRequestListView):
     permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_request_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class AdminRequestSummaryView(AgentRequestSummaryView):

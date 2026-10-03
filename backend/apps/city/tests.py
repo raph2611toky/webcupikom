@@ -434,6 +434,8 @@ class Wave2FeatureTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("confirmation", response.data)
+        self.assertTrue(response.data["confirmation"]["received"])
+        self.assertEqual(response.data["confirmation"]["next_step"], "processing")
         request_obj = CitizenRequest.objects.get(reference=response.data["reference"])
         self.assertTrue(request_obj.timeline_events.filter(is_public=True).exists())
 
@@ -485,16 +487,35 @@ class Wave2FeatureTests(APITestCase):
         self.assertEqual(response.data["step"], "done")
 
     def test_agent_summary_counts_requests_waiting_for_handling(self):
-        CitizenRequest.objects.create(
+        item = CitizenRequest.objects.create(
             citizen=self.citizen,
             service=self.service,
+            assigned_to=self.agent,
             title="À prendre en charge",
             description="Test",
         )
         self.client.force_authenticate(self.agent)
         response = self.client.get(reverse("city:agent-request-summary"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(response.data["awaiting_handling"], 1)
+        self.assertEqual(response.data["awaiting_handling"], 1)
+        self.assertEqual(response.data["needs_agent_action"], 1)
+        self.assertEqual(response.data["waiting_citizen"], 0)
+        self.assertEqual(response.data["unassigned_open"], 0)
+
+        detail = self.client.patch(
+            reverse("city:agent-request-detail", kwargs={"reference": item.reference}),
+            {"status": CitizenRequest.Status.IN_PROGRESS},
+            format="json",
+        )
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail.data["workflow_state"], "agent_processing")
+        self.assertTrue(detail.data["requires_agent_action"])
+        item.refresh_from_db()
+        self.assertIsNotNone(item.acknowledged_at)
+
+        response = self.client.get(reverse("city:agent-request-summary"))
+        self.assertEqual(response.data["awaiting_handling"], 0)
+        self.assertEqual(response.data["needs_agent_action"], 1)
 
     def test_service_can_be_returned_in_english(self):
         response = self.client.get(

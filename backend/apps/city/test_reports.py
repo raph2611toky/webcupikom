@@ -126,6 +126,8 @@ class ReportTests(APITestCase):
         item, response = self.create(incident_category='custom problem')
         self.assertIsNone(item.service)
         self.assertTrue(response.data['needs_triage'])
+        self.assertTrue(response.data['confirmation']['received'])
+        self.assertEqual(response.data['confirmation']['next_step'], 'triage')
         self.assertIn('orienté', response.data['confirmation']['message'])
         self.energy.is_active = False
         self.energy.save()
@@ -302,8 +304,36 @@ class ReportTests(APITestCase):
         response = self.client.get(reverse('city:agent-request-list'), {'service':'energie','type':'report'})
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['workflow_state'], 'awaiting_handling')
+        self.assertTrue(response.data['results'][0]['requires_agent_action'])
+        self.assertFalse(response.data['results'][0]['requires_citizen_action'])
+
+        awaiting = self.client.get(reverse('city:agent-request-list'), {'awaiting_handling':'true'})
+        self.assertEqual(awaiting.status_code, 200, awaiting.data)
+        self.assertEqual(awaiting.data['count'], 1)
+        needs_action = self.client.get(reverse('city:agent-request-list'), {'needs_action':'true'})
+        self.assertEqual(needs_action.data['count'], 1)
+        workflow = self.client.get(reverse('city:agent-request-list'), {'workflow_state':'awaiting_handling'})
+        self.assertEqual(workflow.data['count'], 1)
+
+        updated = self.client.patch(
+            reverse('city:agent-request-detail', kwargs={'reference':item.reference}),
+            {'status':'action_required','resolution_summary':'Merci de confirmer le numéro du lampadaire.'},
+            format='json',
+        )
+        self.assertEqual(updated.status_code, 200, updated.data)
+        self.assertEqual(updated.data['workflow_state'], 'citizen_action_required')
+        self.assertFalse(updated.data['requires_agent_action'])
+        self.assertTrue(updated.data['requires_citizen_action'])
+        self.assertEqual(self.client.get(reverse('city:agent-request-list'), {'needs_action':'true'}).data['count'], 0)
+        self.assertEqual(self.client.get(reverse('city:agent-request-list'), {'workflow_state':'citizen_action_required'}).data['count'], 1)
+
         invalid = self.client.get(reverse('city:agent-request-list'), {'assigned_to':'invalid'})
         self.assertEqual(invalid.status_code, 400)
+        invalid_bool = self.client.get(reverse('city:agent-request-list'), {'awaiting_handling':'maybe'})
+        self.assertEqual(invalid_bool.status_code, 400)
+        invalid_state = self.client.get(reverse('city:agent-request-list'), {'workflow_state':'unknown'})
+        self.assertEqual(invalid_state.status_code, 400)
 
     def test_category_options_and_temporal_filters(self):
         response = self.client.get(reverse('city:report-categories'))

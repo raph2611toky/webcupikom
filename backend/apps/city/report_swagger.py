@@ -15,7 +15,9 @@ class ReportErrorSerializer(serializers.Serializer):
 
 
 class ReportConfirmationSerializer(serializers.Serializer):
+    received = serializers.BooleanField()
     message = serializers.CharField()
+    next_step = serializers.ChoiceField(choices=["triage", "processing"])
     reference = serializers.CharField()
     status = serializers.CharField()
     created_at = serializers.DateTimeField()

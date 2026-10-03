@@ -7,6 +7,7 @@ manuels champ par champ et sans body Swagger automatique.
 
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework import serializers
 
 from helpers.swagger import ManualFormAutoSchema, NoBodyAutoSchema
 
@@ -16,6 +17,7 @@ from .serializers import (
     AdminUserSerializer,
     AgentAppointmentSerializer,
     AgentCitizenRequestDetailSerializer,
+    AgentCitizenRequestSerializer,
     AgentRequestEventCreateSerializer,
     CitizenAppointmentSerializer,
     CitizenNotificationSerializer,
@@ -131,6 +133,38 @@ REQUEST_AGENT_UPDATE_PARAMETERS = [
     form_string("priority", "Priorité de la demande"),
     form_int("assigned_to", "ID de l'agent ou administrateur responsable"),
 ]
+
+REQUEST_AGENT_LIST_PARAMETERS = [
+    query_string("status", "Filtrer par statut"),
+    query_string("service", "ID ou slug du service municipal"),
+    query_string("assigned_to", "ID de l'agent responsable"),
+    query_string("priority", "low, normal, high ou urgent"),
+    query_string("type", "procedure ou report"),
+    query_string("incident_category", "Catégorie d'incident"),
+    query_string("search", "Référence, titre, description, citoyen ou service"),
+    openapi.Parameter(
+        "awaiting_handling", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, required=False,
+        description="true : demandes envoyées/à traiter qui n'ont pas encore été prises en charge.",
+    ),
+    openapi.Parameter(
+        "needs_action", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, required=False,
+        description="true : demandes nécessitant actuellement une action côté agent.",
+    ),
+    query_string(
+        "workflow_state",
+        "awaiting_handling, agent_processing, citizen_action_required ou closed",
+    ),
+    query_string("page", "Numéro de page"),
+    query_string("page_size", "Taille de page, 100 maximum"),
+]
+
+
+class AgentRequestPageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    results = AgentCitizenRequestSerializer(many=True)
+
 
 REQUEST_EVENT_PARAMETERS = [
     *IMAGE_PARAMETERS,
@@ -344,6 +378,14 @@ agent_appointment_patch_schema = swagger_auto_schema(
     responses={200: AgentAppointmentSerializer()},
 )
 
+agent_request_list_schema = swagger_auto_schema(
+    tags=["Agent - Demandes"],
+    operation_summary="Lister et filtrer la file de demandes citoyennes",
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_AGENT_LIST_PARAMETERS,
+    responses={200: AgentRequestPageSerializer()},
+)
+
 agent_request_patch_schema = swagger_auto_schema(
     auto_schema=ManualFormAutoSchema,
     tags=["Agent - Demandes"],
@@ -482,6 +524,14 @@ admin_contact_patch_schema = swagger_auto_schema(
     security=JWT_SECURITY,
     manual_parameters=CONTACT_UPDATE_PARAMETERS,
     responses={200: ContactMessageSerializer()},
+)
+
+admin_request_list_schema = swagger_auto_schema(
+    tags=["Administration - Demandes"],
+    operation_summary="Lister et filtrer la file de demandes citoyennes",
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_AGENT_LIST_PARAMETERS,
+    responses={200: AgentRequestPageSerializer()},
 )
 
 admin_request_patch_schema = swagger_auto_schema(
