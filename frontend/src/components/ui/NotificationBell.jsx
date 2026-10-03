@@ -37,7 +37,7 @@ export default function NotificationBell({ label = "Notifications" }) {
       aria-label={count ? `${label} · ${count} non lue${count>1?"s":""}` : label}
       onClick={()=>navigate("/citizen/notifications")}
     >
-      <span aria-hidden="true">⌁</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20h4"/></svg>
       {count>0?<b aria-hidden="true">{count>9?"9+":count}</b>:null}
     </button>
   );

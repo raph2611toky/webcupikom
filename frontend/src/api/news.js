@@ -47,6 +47,12 @@ export async function getNews({ publishedOnly = true } = {}) {
   return unwrapList(data).map(normalizeNews);
 }
 
+
+export async function getAlerts(params = {}) {
+  const { data } = await api.get("/city/alerts/", { params, skipAccessToken: true });
+  return unwrapList(data).map(normalizeNews);
+}
+
 export async function getNewsItem(slug, { includeDrafts = false } = {}) {
   const endpoint = includeDrafts
     ? `/admin/news/${encodeURIComponent(slug)}/`

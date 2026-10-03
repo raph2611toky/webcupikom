@@ -3,6 +3,7 @@ import LanguageSwitcher from "./LanguageSwitcher.jsx";
 import VoiceControl from "./VoiceControl.jsx";
 import CitizenGuide from "./CitizenGuide.jsx";
 import NotificationBell from "./NotificationBell.jsx";
+import ReportShortcut from "./ReportShortcut.jsx";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
@@ -70,6 +71,7 @@ export default function PortalTopbar({ eyebrow, title, actions }) {
           {actions}
           {user?.role === "citizen" ? <VoiceControl /> : null}
           {user?.role === "citizen" ? <LanguageSwitcher compact /> : null}
+          {user?.role === "citizen" ? <ReportShortcut label={LABELS[locale]?.reports || "Signalements"} /> : null}
           {user?.role === "citizen" ? <NotificationBell label={t("notifications", locale)} /> : null}
           <div className="portal-user">
             <span className="portal-user__avatar">{initials}</span>

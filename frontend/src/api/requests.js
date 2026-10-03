@@ -423,22 +423,29 @@ export async function addCitizenReportAttachments(reference, files = [], caption
   return data;
 }
 
-export async function downloadCitizenReportAttachment(attachment) {
+export async function downloadRequestAttachment(attachment) {
   const path = attachment?.downloadUrl || attachment?.download_url;
   if (!path) throw new Error("Lien de téléchargement indisponible.");
   const apiOrigin = env.apiBaseUrl.replace(/\/api\/?$/i, "");
   const url = /^https?:/i.test(path) ? path : `${path.startsWith("/api/") ? apiOrigin : env.apiBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
   const response = await fetch(url, { headers: getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {} });
-  if (!response.ok) throw new Error(`Téléchargement impossible (HTTP ${response.status}).`);
+  if (!response.ok) {
+    if (response.status === 403) throw new Error("Le fichier existe mais le backend n’autorise pas ce compte à le télécharger.");
+    throw new Error(`Téléchargement impossible (HTTP ${response.status}).`);
+  }
   const blob = await response.blob();
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = objectUrl;
-  anchor.download = attachment?.name || "piece-jointe";
+  anchor.download = attachment?.name || attachment?.original_name || "piece-jointe";
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(objectUrl);
+}
+
+export async function downloadCitizenReportAttachment(attachment) {
+  return downloadRequestAttachment(attachment);
 }
 
 export async function reopenAgentReport(reference, reason) {

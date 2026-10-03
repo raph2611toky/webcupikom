@@ -1,466 +1,212 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buildServiceLocations } from "./locations.js";
+import { getCitizenRequests } from "../../api/requests.js";
+import { getAlerts } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
+import { CITY_DISTRICTS, CITY_POIS, buildServiceLocations, projectAlert, projectReport } from "./locations.js";
 import "./NovaTerraMap.css";
 
-const THREE_URL="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+const WIDTH=1000;
+const HEIGHT=680;
 
-function cssColor(name,fallback){
-  const value=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value||fallback;
-}
+const DISTRICT_SHAPES={
+  aster:"70,62 325,58 350,235 84,246",
+  orion:"350,48 650,52 656,250 344,236",
+  helios:"660,70 940,92 930,286 664,252",
+  aurore:"300,250 630,250 660,450 300,442",
+  solaris:"666,292 940,294 930,502 665,486",
+  azura:"70,282 293,260 295,585 64,610",
+  nexus:"304,454 655,457 650,628 305,624",
+  lyra:"662,500 936,510 920,640 666,634",
+};
 
-function categoryKey(text=""){
-  return String(text).trim().toLowerCase().replaceAll("é","e").replaceAll("è","e").replaceAll("ê","e");
-}
+const ROADS=[
+  {d:"M 40 270 C 230 250, 390 280, 590 265 S 820 240, 960 275",name:"Boulevard des Pionniers",x:510,y:260},
+  {d:"M 330 20 C 340 170, 325 320, 330 660",name:"Avenue Aster",x:340,y:330},
+  {d:"M 650 25 C 650 180, 650 380, 655 660",name:"Avenue des Comètes",x:660,y:345},
+  {d:"M 90 455 C 260 430, 430 450, 620 440 S 820 430, 955 445",name:"Rue Nébula",x:500,y:435},
+  {d:"M 90 605 C 260 570, 450 595, 610 580 S 810 565, 930 590",name:"Quai d’Azura",x:485,y:583},
+  {d:"M 730 70 C 760 210, 770 365, 810 620",name:"Allée Solstice",x:775,y:350},
+];
 
-function createFallbackPositions(locations){
-  const minX=-6,maxX=6,minZ=-6,maxZ=6;
-  return locations.map(item=>({
-    ...item,
-    left:`${((item.position[0]-minX)/(maxX-minX))*100}%`,
-    top:`${((item.position[2]-minZ)/(maxZ-minZ))*100}%`,
-  }));
+const LAYER_COPY={services:"Services",emergency:"Urgences",alerts:"Alertes",reports:"Signalements"};
+
+function clamp(value,min,max){return Math.max(min,Math.min(max,value))}
+
+function markerLabel(item){
+  if(item.kind==="report")return `${item.name}. ${item.statusLabel||"Signalement"}. ${item.district}`;
+  if(item.kind==="alert")return `${item.name}. ${item.category}. ${item.district}`;
+  return `${item.name}. ${item.category}. ${item.address}`;
 }
 
 export default function NovaTerraMap({services=[],visibleSlugs=null,locale="fr"}){
-  const mountRef=useRef(null);
-  const rendererRef=useRef(null);
-  const cameraRef=useRef(null);
-  const focusRef=useRef({x:0,z:0,angle:Math.PI/4,zoom:1});
-  const animationRef=useRef(null);
-  const meshMapRef=useRef(new Map());
-  const selectedSlugRef=useRef("");
-  const [engine,setEngine]=useState("loading");
-  const [selectedSlug,setSelectedSlug]=useState(()=>services[0]?.slug||"");
-  const [a11yVersion,setA11yVersion]=useState(0);
-
-  const locations=useMemo(()=>buildServiceLocations(services),[services]);
-  const fallbackPositions=useMemo(()=>createFallbackPositions(locations),[locations]);
-  const selected=useMemo(
-    ()=>locations.find(item=>item.slug===selectedSlug&&(!visibleSlugs||visibleSlugs.has(item.slug)))
-      || locations.find(item=>!visibleSlugs||visibleSlugs.has(item.slug))
-      || null,
-    [locations,selectedSlug,visibleSlugs]
-  );
-
-  useEffect(()=>{
-    if(selected&&selected.slug!==selectedSlug)setSelectedSlug(selected.slug);
-  },[selected,selectedSlug]);
-
-  useEffect(()=>{
-    selectedSlugRef.current=selectedSlug;
-  },[selectedSlug]);
-
-  useEffect(()=>{
-    const onA11y=()=>setA11yVersion(value=>value+1);
-    window.addEventListener("nova-accessibility-change",onA11y);
-    return()=>window.removeEventListener("nova-accessibility-change",onA11y);
-  },[]);
-
-  useEffect(()=>{
-    let disposed=false;
-    let renderer=null;
-    let resizeObserver=null;
-    let cleanupEvents=()=>{};
-
-    async function start(){
-      const host=mountRef.current;
-      if(!host)return;
-      host.innerHTML="";
-      setEngine("loading");
-
-      try{
-        const THREE=await import(/* @vite-ignore */ THREE_URL);
-        if(disposed||!mountRef.current)return;
-
-        const scene=new THREE.Scene();
-        scene.background=null;
-
-        const width=Math.max(host.clientWidth,320);
-        const height=Math.max(host.clientHeight,320);
-        const aspect=width/height;
-        const frustum=8.8;
-        const camera=new THREE.OrthographicCamera(
-          -frustum*aspect,
-          frustum*aspect,
-          frustum,
-          -frustum,
-          .1,
-          100
-        );
-        cameraRef.current=camera;
-
-        renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:"high-performance"});
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
-        renderer.setSize(width,height,false);
-        renderer.outputColorSpace=THREE.SRGBColorSpace;
-        renderer.domElement.className="nova-city-map__canvas";
-        renderer.domElement.setAttribute("aria-hidden","true");
-        host.appendChild(renderer.domElement);
-        rendererRef.current=renderer;
-
-        const cityGroup=new THREE.Group();
-        scene.add(cityGroup);
-
-        const baseColor=cssColor("--tn-card","#ffffff");
-        const lineColor=cssColor("--tn-line","#ded8e6");
-        const accentColor=cssColor("--tn-purple","#6b18df");
-        const highContrast=document.documentElement.dataset.contrast==="high";
-
-        const hemi=new THREE.HemisphereLight(
-          highContrast?0xffffff:0xf7f2ff,
-          highContrast?0x111111:0xbac4d8,
-          1.35
-        );
-        scene.add(hemi);
-        const sun=new THREE.DirectionalLight(0xffffff,1.55);
-        sun.position.set(7,14,9);
-        scene.add(sun);
-
-        const groundMat=new THREE.MeshStandardMaterial({
-          color:new THREE.Color(baseColor),
-          roughness:.96,
-          metalness:0,
-        });
-        const ground=new THREE.Mesh(new THREE.BoxGeometry(15,.22,13),groundMat);
-        ground.position.y=-.17;
-        cityGroup.add(ground);
-
-        const roadColor=highContrast?0x2b2b2b:0xcbd0dc;
-        const roadMat=new THREE.MeshStandardMaterial({color:roadColor,roughness:1});
-        const addRoad=(x,z,w,d,rotation=0)=>{
-          const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,.045,d),roadMat);
-          mesh.position.set(x,.005,z);
-          mesh.rotation.y=rotation;
-          cityGroup.add(mesh);
-        };
-        addRoad(0,0,14,.78,0);
-        addRoad(0,0,.78,12,0);
-        addRoad(0,0,10,.62,Math.PI/4);
-        addRoad(0,0,10,.62,-Math.PI/4);
-
-        const parkMat=new THREE.MeshStandardMaterial({color:highContrast?0x151515:0xcfe8d6,roughness:1});
-        const park=new THREE.Mesh(new THREE.BoxGeometry(3.2,.055,2.1),parkMat);
-        park.position.set(-.2,.02,1.2);
-        park.rotation.y=.14;
-        cityGroup.add(park);
-
-        const trunkMat=new THREE.MeshStandardMaterial({color:highContrast?0x777777:0x9b7257,roughness:1});
-        const leafMat=new THREE.MeshStandardMaterial({color:highContrast?0xf2d34b:0x68b27b,roughness:.85});
-        [[-1.15,1.55],[.7,1.5],[-.1,.65],[1.1,.7],[-.8,.25]].forEach(([x,z])=>{
-          const tree=new THREE.Group();
-          const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,.55,8),trunkMat);
-          trunk.position.y=.29;
-          const leaves=new THREE.Mesh(new THREE.SphereGeometry(.32,12,10),leafMat);
-          leaves.position.y=.73;
-          tree.add(trunk,leaves);
-          tree.position.set(x,0,z);
-          cityGroup.add(tree);
-        });
-
-        const meshes=[];
-        const meshMap=new Map();
-        meshMapRef.current=meshMap;
-
-        locations.forEach((location,index)=>{
-          const [x,,z]=location.position;
-          const [w,h,d]=location.size;
-          const isVisible=!visibleSlugs||visibleSlugs.has(location.slug);
-          const color=highContrast?new THREE.Color(accentColor):new THREE.Color(location.color);
-          const material=new THREE.MeshStandardMaterial({
-            color,
-            roughness:.62,
-            metalness:.03,
-            transparent:true,
-            opacity:isVisible?1:.18,
-          });
-
-          const group=new THREE.Group();
-          group.position.set(x,0,z);
-          group.userData={location};
-
-          const building=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
-          building.position.y=h/2;
-          building.userData={location,isBuilding:true};
-          group.add(building);
-          meshes.push(building);
-
-          const roofMaterial=new THREE.MeshStandardMaterial({
-            color:highContrast?0xffffff:new THREE.Color(location.color).offsetHSL(0,0,.12),
-            roughness:.7,
-            transparent:true,
-            opacity:isVisible?1:.18,
-          });
-          const roof=new THREE.Mesh(new THREE.BoxGeometry(w*.62,.18,d*.62),roofMaterial);
-          roof.position.y=h+.1;
-          roof.userData={location,isBuilding:true};
-          group.add(roof);
-          meshes.push(roof);
-
-          const markerMat=new THREE.MeshBasicMaterial({
-            color:highContrast?0xf2d34b:0xffffff,
-            transparent:true,
-            opacity:isVisible?1:.18,
-          });
-          const marker=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,18),markerMat);
-          marker.position.y=h+.35;
-          marker.rotation.x=Math.PI/2;
-          marker.userData={location,isBuilding:true};
-          group.add(marker);
-          meshes.push(marker);
-
-          cityGroup.add(group);
-          meshMap.set(location.slug,{group,building,roof,marker,material,roofMaterial,markerMat,index});
-        });
-
-        const plazaMat=new THREE.MeshStandardMaterial({color:highContrast?0x111111:0xe9e5f1,roughness:1});
-        const plaza=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,.08,36),plazaMat);
-        plaza.position.set(0,.04,0);
-        cityGroup.add(plaza);
-
-        const focus=focusRef.current;
-        function updateCamera(){
-          const radius=15;
-          camera.position.set(
-            focus.x+Math.cos(focus.angle)*radius,
-            12.5,
-            focus.z+Math.sin(focus.angle)*radius
-          );
-          camera.lookAt(focus.x,0,focus.z);
-          camera.zoom=focus.zoom;
-          camera.updateProjectionMatrix();
-        }
-        updateCamera();
-
-        const raycaster=new THREE.Raycaster();
-        const pointer=new THREE.Vector2();
-        let hovered=null;
-        let dragging=false;
-        let dragStartX=0;
-        let dragStartAngle=focus.angle;
-        let moved=false;
-
-        function pointerFromEvent(event){
-          const rect=renderer.domElement.getBoundingClientRect();
-          pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
-          pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
-        }
-
-        function restoreHover(){
-          if(!hovered)return;
-          const item=meshMap.get(hovered.userData.location.slug);
-          if(item){
-            const selectedNow=hovered.userData.location.slug===selectedSlugRef.current;
-            item.group.scale.setScalar(selectedNow?1.055:1);
-          }
-          hovered=null;
-          renderer.domElement.style.cursor=dragging?"grabbing":"grab";
-        }
-
-        function onMove(event){
-          if(dragging){
-            const delta=event.clientX-dragStartX;
-            if(Math.abs(delta)>3)moved=true;
-            focus.angle=dragStartAngle-delta*.0085;
-            updateCamera();
-            return;
-          }
-          pointerFromEvent(event);
-          raycaster.setFromCamera(pointer,camera);
-          const hit=raycaster.intersectObjects(meshes,false)[0]?.object||null;
-          if(hit!==hovered){
-            restoreHover();
-            if(hit){
-              hovered=hit;
-              const item=meshMap.get(hit.userData.location.slug);
-              if(item)item.group.scale.setScalar(1.055);
-              renderer.domElement.style.cursor="pointer";
-            }
-          }
-        }
-
-        function onPointerDown(event){
-          dragging=true;
-          moved=false;
-          dragStartX=event.clientX;
-          dragStartAngle=focus.angle;
-          renderer.domElement.setPointerCapture?.(event.pointerId);
-          renderer.domElement.style.cursor="grabbing";
-        }
-
-        function onPointerUp(event){
-          dragging=false;
-          renderer.domElement.releasePointerCapture?.(event.pointerId);
-          renderer.domElement.style.cursor="grab";
-          if(moved)return;
-          pointerFromEvent(event);
-          raycaster.setFromCamera(pointer,camera);
-          const hit=raycaster.intersectObjects(meshes,false)[0]?.object;
-          if(hit?.userData?.location)setSelectedSlug(hit.userData.location.slug);
-        }
-
-        function onWheel(event){
-          event.preventDefault();
-          focus.zoom=Math.min(1.65,Math.max(.72,focus.zoom-(event.deltaY*.0011)));
-          updateCamera();
-        }
-
-        renderer.domElement.style.cursor="grab";
-        renderer.domElement.addEventListener("pointermove",onMove);
-        renderer.domElement.addEventListener("pointerdown",onPointerDown);
-        renderer.domElement.addEventListener("pointerup",onPointerUp);
-        renderer.domElement.addEventListener("pointerleave",restoreHover);
-        renderer.domElement.addEventListener("wheel",onWheel,{passive:false});
-
-        cleanupEvents=()=>{
-          renderer?.domElement.removeEventListener("pointermove",onMove);
-          renderer?.domElement.removeEventListener("pointerdown",onPointerDown);
-          renderer?.domElement.removeEventListener("pointerup",onPointerUp);
-          renderer?.domElement.removeEventListener("pointerleave",restoreHover);
-          renderer?.domElement.removeEventListener("wheel",onWheel);
-        };
-
-        resizeObserver=new ResizeObserver(()=>{
-          if(!host||!renderer)return;
-          const nextW=Math.max(host.clientWidth,320);
-          const nextH=Math.max(host.clientHeight,320);
-          const nextAspect=nextW/nextH;
-          camera.left=-frustum*nextAspect;
-          camera.right=frustum*nextAspect;
-          camera.top=frustum;
-          camera.bottom=-frustum;
-          camera.updateProjectionMatrix();
-          renderer.setSize(nextW,nextH,false);
-        });
-        resizeObserver.observe(host);
-
-        function animate(){
-          if(disposed)return;
-          locations.forEach(location=>{
-            const item=meshMap.get(location.slug);
-            if(!item)return;
-            const selectedNow=location.slug===selectedSlugRef.current;
-            const visibleNow=!visibleSlugs||visibleSlugs.has(location.slug);
-            const targetScale=selectedNow?1.075:1;
-            item.group.scale.lerp(new THREE.Vector3(targetScale,targetScale,targetScale),.14);
-            const targetOpacity=visibleNow?1:.16;
-            item.material.opacity+=(targetOpacity-item.material.opacity)*.15;
-            item.roofMaterial.opacity+=(targetOpacity-item.roofMaterial.opacity)*.15;
-            item.markerMat.opacity+=(targetOpacity-item.markerMat.opacity)*.15;
-          });
-          renderer.render(scene,camera);
-          animationRef.current=requestAnimationFrame(animate);
-        }
-        animate();
-        setEngine("ready");
-      }catch(error){
-        console.warn("Nova Terra 3D map fallback:",error);
-        if(!disposed)setEngine("fallback");
-      }
-    }
-
-    start();
-    return()=>{
-      disposed=true;
-      if(animationRef.current)cancelAnimationFrame(animationRef.current);
-      cleanupEvents();
-      resizeObserver?.disconnect();
-      renderer?.dispose();
-      if(mountRef.current)mountRef.current.innerHTML="";
-      rendererRef.current=null;
-      cameraRef.current=null;
-      meshMapRef.current.clear();
-    };
-  },[locations,visibleSlugs,a11yVersion]);
-
-  useEffect(()=>{
-    if(!selected)return;
-    const focus=focusRef.current;
-    focus.x=selected.position[0];
-    focus.z=selected.position[2];
-    const camera=cameraRef.current;
-    if(camera){
-      const radius=15;
-      camera.position.set(
-        focus.x+Math.cos(focus.angle)*radius,
-        12.5,
-        focus.z+Math.sin(focus.angle)*radius
-      );
-      camera.lookAt(focus.x,0,focus.z);
-      camera.updateProjectionMatrix();
-    }
-  },[selected]);
+  const svgRef=useRef(null);
+  const dragRef=useRef(null);
+  const [alerts,setAlerts]=useState([]);
+  const [reports,setReports]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [selectedId,setSelectedId]=useState("");
+  const [zoom,setZoom]=useState(1);
+  const [pan,setPan]=useState({x:0,y:0});
+  const [layers,setLayers]=useState({services:true,emergency:true,alerts:true,reports:true});
 
   const copy={
-    fr:{
-      title:"Plan 3D de Nova Terra",hint:"Glissez pour tourner · molette pour zoomer",list:"Lieux accessibles",details:"Informations du lieu",open:"Ouvrir le service",locate:"Localiser",fallback:"Vue 3D indisponible : navigation accessible activée.",empty:"Aucun service dans ce filtre.",hours:"Horaires",address:"Adresse"
-    },
-    en:{
-      title:"Nova Terra 3D map",hint:"Drag to rotate · wheel to zoom",list:"Accessible locations",details:"Location information",open:"Open service",locate:"Locate",fallback:"3D view unavailable: accessible map mode enabled.",empty:"No service matches this filter.",hours:"Opening hours",address:"Address"
-    },
-    mg:{
-      title:"Sarintany 3D Nova Terra",hint:"Sintomy hampihodina · kodiarana hanakaiky",list:"Toerana azo isafidianana",details:"Mombamomba ny toerana",open:"Hijery ny sampan-draharaha",locate:"Hampifantoka",fallback:"Tsy mandeha ny 3D: alefa ny sarintany mora idirana.",empty:"Tsy misy sampan-draharaha amin'ity sivana ity.",hours:"Ora fisokafana",address:"Adiresy"
-    }
+    fr:{title:"Carte 2D de Nova Terra",hint:"Plan fictif · zoomez, déplacez et filtrez les couches",list:"Lieux et événements visibles",details:"Informations",openService:"Ouvrir le service",openReport:"Voir le signalement",openAlert:"Voir l’alerte",empty:"Aucun élément visible avec ces filtres.",hours:"Horaires",address:"Emplacement",reset:"Recentrer",zoomIn:"Zoom avant",zoomOut:"Zoom arrière",fiction:"Les noms et emplacements de cette carte sont fictifs et appartiennent à Nova Terra."},
+    en:{title:"Nova Terra 2D map",hint:"Fictional plan · zoom, pan and filter layers",list:"Visible places and events",details:"Information",openService:"Open service",openReport:"View report",openAlert:"View alert",empty:"No visible item with these filters.",hours:"Hours",address:"Location",reset:"Reset map",zoomIn:"Zoom in",zoomOut:"Zoom out",fiction:"Names and locations on this map are fictional and belong to Nova Terra."},
+    mg:{title:"Sarintany 2D Nova Terra",hint:"Sarintany foronina · ampitomboy, afindra ary sivano",list:"Toerana sy zava-mitranga hita",details:"Fanazavana",openService:"Hijery serivisy",openReport:"Hijery tatitra",openAlert:"Hijery fanairana",empty:"Tsy misy zavatra hita.",hours:"Ora",address:"Toerana",reset:"Avereno afovoany",zoomIn:"Ampitomboy",zoomOut:"Ahena",fiction:"Foronina ho an'i Nova Terra ireo anarana sy toerana eto amin'ny sarintany."},
   }[locale]||null;
 
-  const visibleLocations=locations.filter(item=>!visibleSlugs||visibleSlugs.has(item.slug));
+  useEffect(()=>{
+    let active=true;
+    setLoading(true);
+    Promise.allSettled([
+      getAlerts({page_size:50}),
+      getCitizenRequests({type:"report",page_size:100,ordering:"-created_at"}),
+    ]).then(results=>{
+      if(!active)return;
+      const alertRows=results[0].status==="fulfilled"?results[0].value:[];
+      const reportRows=results[1].status==="fulfilled"?results[1].value:[];
+      setAlerts(alertRows.filter(item=>item.publication_state!=="expired").slice(0,20));
+      setReports(reportRows.filter(item=>!item.isClosed).slice(0,40));
+      setLoading(false);
+    });
+    return()=>{active=false};
+  },[]);
 
-  return <section className="nova-city-map" aria-label={copy.title}>
+  const serviceLocations=useMemo(()=>buildServiceLocations(services).filter(item=>!visibleSlugs||visibleSlugs.has(item.slug)),[services,visibleSlugs]);
+  const alertLocations=useMemo(()=>alerts.map(projectAlert),[alerts]);
+  const reportLocations=useMemo(()=>reports.map(projectReport),[reports]);
+  const allItems=useMemo(()=>[
+    ...serviceLocations,
+    ...CITY_POIS,
+    ...alertLocations,
+    ...reportLocations,
+  ],[serviceLocations,alertLocations,reportLocations]);
+
+  const visibleItems=useMemo(()=>allItems.filter(item=>{
+    if(item.kind==="service")return layers.services;
+    if(item.kind==="emergency")return layers.emergency;
+    if(item.kind==="alert")return layers.alerts;
+    if(item.kind==="report")return layers.reports;
+    return true;
+  }),[allItems,layers]);
+
+  const selected=visibleItems.find(item=>item.id===selectedId)||visibleItems[0]||null;
+  useEffect(()=>{if(selected&&!selectedId)setSelectedId(selected.id)},[selected,selectedId]);
+  useEffect(()=>{if(selectedId&&!visibleItems.some(item=>item.id===selectedId))setSelectedId(visibleItems[0]?.id||"")},[visibleItems,selectedId]);
+
+  const viewWidth=WIDTH/zoom;
+  const viewHeight=HEIGHT/zoom;
+  const viewX=clamp(pan.x,0,WIDTH-viewWidth);
+  const viewY=clamp(pan.y,0,HEIGHT-viewHeight);
+
+  function setZoomSafe(next){
+    const value=clamp(next,1,2.5);
+    setZoom(value);
+    setPan(current=>({x:clamp(current.x,0,WIDTH-WIDTH/value),y:clamp(current.y,0,HEIGHT-HEIGHT/value)}));
+  }
+
+  function resetView(){setZoom(1);setPan({x:0,y:0})}
+
+  function onPointerDown(event){
+    if(event.button!==0)return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dragRef.current={clientX:event.clientX,clientY:event.clientY,panX:viewX,panY:viewY};
+  }
+  function onPointerMove(event){
+    const drag=dragRef.current;if(!drag)return;
+    const rect=svgRef.current?.getBoundingClientRect();if(!rect)return;
+    const scaleX=viewWidth/rect.width;const scaleY=viewHeight/rect.height;
+    setPan({x:clamp(drag.panX-(event.clientX-drag.clientX)*scaleX,0,WIDTH-viewWidth),y:clamp(drag.panY-(event.clientY-drag.clientY)*scaleY,0,HEIGHT-viewHeight)});
+  }
+  function onPointerUp(event){event.currentTarget.releasePointerCapture?.(event.pointerId);dragRef.current=null}
+  function onWheel(event){event.preventDefault();setZoomSafe(zoom+(event.deltaY<0?.18:-.18))}
+
+  function selectItem(item){setSelectedId(item.id)}
+  function activateItem(event,item){if(event.key==="Enter"||event.key===" "){event.preventDefault();selectItem(item)}}
+
+  function openSelected(){
+    if(!selected)return;
+    if(selected.kind==="report"&&selected.reference)return navigate(`/citizen/requests/${encodeURIComponent(selected.reference)}`);
+    if(selected.kind==="alert"&&selected.slug)return navigate(`/citizen/news/${encodeURIComponent(selected.slug)}`);
+    if(selected.kind==="service"&&selected.slug)return navigate(`/citizen/services/${encodeURIComponent(selected.slug)}`);
+    if(selected.kind==="emergency")return navigate("/citizen/services");
+  }
+
+  const actionLabel=selected?.kind==="report"?copy.openReport:selected?.kind==="alert"?copy.openAlert:copy.openService;
+
+  return <section className="nova-city-map nova-city-map--2d" aria-label={copy.title}>
     <header className="nova-city-map__header">
-      <div><span className="section-label">Nova Terra</span><h3>{copy.title}</h3></div>
+      <div><span className="section-label">Nova Terra</span><h3>{copy.title}</h3><small>{copy.fiction}</small></div>
       <span>{copy.hint}</span>
     </header>
 
+    <div className="nova-map-layerbar" aria-label="Couches de la carte">
+      {Object.entries(LAYER_COPY).map(([key,label])=><button type="button" key={key} aria-pressed={layers[key]} className={layers[key]?`is-active layer-${key}`:""} onClick={()=>setLayers(current=>({...current,[key]:!current[key]}))}><i aria-hidden="true"/>{label}<b>{key==="services"?serviceLocations.length:key==="emergency"?CITY_POIS.length:key==="alerts"?alertLocations.length:reportLocations.length}</b></button>)}
+    </div>
+
     <div className="nova-city-map__layout">
       <div className="nova-city-map__scene-card">
-        <div className="nova-city-map__scene">
-          <div className="nova-city-map__webgl" ref={mountRef}/>
-          {engine==="loading"?<div className="nova-city-map__loading"><i/><span>Chargement de la ville 3D…</span></div>:null}
-          {engine==="fallback"?<div className="nova-city-map__fallback" aria-hidden="true">
-            <div className="nova-city-map__fallback-roads"/>
-            {fallbackPositions.map(location=>{
-              const visible=!visibleSlugs||visibleSlugs.has(location.slug);
-              return <button
-                type="button"
-                key={location.slug}
-                className={`nova-city-map__fallback-building ${selectedSlug===location.slug?"is-selected":""}`}
-                style={{left:location.left,top:location.top,"--building":location.color,opacity:visible?1:.18}}
-                tabIndex="-1"
-                aria-hidden="true"
-                onClick={()=>setSelectedSlug(location.slug)}
-              ><span>{location.icon}</span></button>;
-            })}
-          </div>:null}
+        <div className="nova-map-controls" aria-label="Contrôles de la carte">
+          <button type="button" onClick={()=>setZoomSafe(zoom+.2)} aria-label={copy.zoomIn}>+</button>
+          <button type="button" onClick={()=>setZoomSafe(zoom-.2)} aria-label={copy.zoomOut}>−</button>
+          <button type="button" onClick={resetView} aria-label={copy.reset}>⌂</button>
         </div>
-        {engine==="fallback"?<p className="nova-city-map__fallback-note">{copy.fallback}</p>:null}
+        <svg ref={svgRef} className="nova-map-svg" viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`} role="img" aria-label={`${copy.title}. ${visibleItems.length} éléments visibles.`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel}>
+          <defs>
+            <pattern id="nova-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="currentColor" strokeOpacity=".06" strokeWidth="1"/></pattern>
+            <filter id="nova-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity=".18"/></filter>
+          </defs>
+          <rect width={WIDTH} height={HEIGHT} className="nova-map-bg"/>
+          <rect width={WIDTH} height={HEIGHT} fill="url(#nova-grid)" className="nova-map-grid"/>
+
+          {CITY_DISTRICTS.map(district=><g key={district.id} className="nova-map-district">
+            <polygon points={DISTRICT_SHAPES[district.id]} style={{"--district":district.color}}/>
+            <text x={district.center[0]} y={district.center[1]-8} textAnchor="middle" className="nova-map-district__name">{district.name}</text>
+            <text x={district.center[0]} y={district.center[1]+11} textAnchor="middle" className="nova-map-district__subtitle">{district.subtitle}</text>
+          </g>)}
+
+          <g className="nova-map-roads">
+            {ROADS.map(road=><g key={road.name}><path d={road.d}/><text x={road.x} y={road.y}>{road.name}</text></g>)}
+          </g>
+
+          {layers.alerts?alertLocations.map(item=><g key={`${item.id}-zone`} className={`nova-alert-zone severity-${item.severity}`} aria-hidden="true"><circle cx={item.x} cy={item.y} r={item.radius} style={{"--marker":item.color}}/><circle cx={item.x} cy={item.y} r={Math.max(28,item.radius*.48)} style={{"--marker":item.color}}/></g>):null}
+
+          <g className="nova-map-markers">
+            {visibleItems.map(item=>{
+              const selectedNow=selected?.id===item.id;
+              return <g key={item.id} transform={`translate(${item.x} ${item.y})`} className={`nova-map-marker marker-${item.kind} ${selectedNow?"is-selected":""}`} style={{"--marker":item.color}} role="button" tabIndex="0" aria-label={markerLabel(item)} aria-pressed={selectedNow} onClick={(event)=>{event.stopPropagation();selectItem(item)}} onKeyDown={event=>activateItem(event,item)}>
+                <circle r={item.kind==="alert"?17:item.kind==="report"?15:18} className="nova-map-marker__halo"/>
+                <circle r={item.kind==="alert"?11:item.kind==="report"?10:13} className="nova-map-marker__pin" filter="url(#nova-shadow)"/>
+                <text y="4" textAnchor="middle" className="nova-map-marker__icon">{item.icon}</text>
+                {selectedNow?<text y="-24" textAnchor="middle" className="nova-map-marker__label">{item.name}</text>:null}
+              </g>;
+            })}
+          </g>
+        </svg>
+        {loading?<div className="nova-map-loading" role="status">Synchronisation des alertes et signalements…</div>:null}
+        <div className="nova-map-legend" aria-label="Légende"><span><i className="service"/>Service</span><span><i className="emergency"/>Urgence</span><span><i className="alert"/>Alerte</span><span><i className="report"/>Signalement</span></div>
       </div>
 
       <aside className="nova-city-map__panel">
         {selected?<div className="nova-city-map__selected">
-          <div className="nova-city-map__selected-icon" style={{"--location-color":selected.color}} aria-hidden="true">{selected.icon}</div>
+          <div className={`nova-city-map__selected-icon kind-${selected.kind}`} style={{"--location-color":selected.color}} aria-hidden="true">{selected.icon}</div>
           <span>{selected.category}</span>
           <h3>{selected.name}</h3>
           <p>{selected.description}</p>
           <dl>
             <div><dt>{copy.address}</dt><dd>{selected.address||selected.district}</dd></div>
             {selected.openingHours?<div><dt>{copy.hours}</dt><dd>{selected.openingHours}</dd></div>:null}
+            {selected.kind==="report"?<div><dt>Statut</dt><dd>{selected.statusLabel}</dd></div>:null}
           </dl>
-          <button type="button" className="primary-action" onClick={()=>navigate(`/citizen/services/${selected.slug}`)}>{copy.open} →</button>
+          <button type="button" className="primary-action" onClick={openSelected}>{actionLabel} →</button>
         </div>:<div className="nova-city-map__empty">{copy.empty}</div>}
 
         <div className="nova-city-map__accessible-list">
           <span className="section-label">{copy.list}</span>
-          {visibleLocations.length?visibleLocations.map(location=><button
-            type="button"
-            key={location.slug}
-            className={selectedSlug===location.slug?"is-active":""}
-            aria-pressed={selectedSlug===location.slug}
-            onClick={()=>setSelectedSlug(location.slug)}
-          >
-            <i style={{"--location-color":location.color}} aria-hidden="true">{location.icon}</i>
-            <span><b>{location.name}</b><small>{location.category}</small></span>
-            <em>{copy.locate}</em>
+          {visibleItems.length?visibleItems.map(item=><button type="button" key={item.id} className={`${selected?.id===item.id?"is-active":""} list-${item.kind}`} aria-pressed={selected?.id===item.id} onClick={()=>selectItem(item)}>
+            <i style={{"--location-color":item.color}} aria-hidden="true">{item.icon}</i>
+            <span><b>{item.name}</b><small>{item.category} · {item.district}</small></span>
+            <em>Localiser</em>
           </button>):<p>{copy.empty}</p>}
         </div>
       </aside>

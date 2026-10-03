@@ -7535,3 +7535,27 @@ html[data-contrast="high"] .metric-grid .metric-action,html[data-contrast="high"
 .report-agent-tools{display:grid;grid-template-columns:minmax(220px,1fr) auto auto auto;gap:10px;align-items:end;margin-top:16px;padding-top:14px;border-top:1px solid #eee9f1}.report-agent-tools>label:first-child{display:grid;gap:6px}.report-agent-tools>label:first-child>span{font-size:.56rem;font-weight:800;color:#786f80}.report-agent-tools input[type=file]{font-size:.6rem}.citizen-security-form{grid-template-columns:1.1fr 1fr .8fr .9fr auto}
 @media(max-width:1100px){.report-agent-tools{grid-template-columns:1fr 1fr}.citizen-security-form{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.report-agent-tools,.citizen-security-form{grid-template-columns:1fr}.report-agent-tools button,.citizen-security-form button{grid-column:auto}}
+
+/* V52 — F50 + D17 : dashboard agent consolidé */
+.agent-dashboard-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
+.agent-dashboard-kpis .metric-action{min-height:116px;}
+.agent-dashboard-kpis .metric-action--attention{border-color:#dbc7ff;background:linear-gradient(180deg,#fff 0%,#fbf7ff 100%);}
+.dashboard-source-note{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 11px;border:1px solid #ece6f0;border-radius:11px;background:#fbfafd;color:#756d7c;font-size:.6875rem;line-height:1.35;}
+.dashboard-source-note>span{color:var(--tn-purple);font-size:.625rem;}
+.agent-dashboard-grid-v52{grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);}
+.recent-request-list{display:grid;}
+.recent-request-list>button{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:11px 0;border:0;border-top:1px solid #f0ecf3;background:transparent;text-align:left;}
+.recent-request-list>button:first-child{border-top:0;}
+.recent-request-list>button>div{min-width:0;display:grid;gap:2px;}
+.recent-request-list .mono{color:#8f8597;font-size:.625rem;}
+.recent-request-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8125rem;color:#241d29;}
+.recent-request-list small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8b8291;font-size:.6875rem;}
+.recent-request-list em{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;color:#6d6374;font-size:.625rem;font-weight:800;}
+@media(max-width:1100px){.agent-dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.agent-dashboard-grid-v52{grid-template-columns:1fr;}}
+@media(max-width:700px){.agent-dashboard-kpis{grid-template-columns:1fr 1fr;}.dashboard-source-note{align-items:flex-start;}.recent-request-list>button{grid-template-columns:1fr}.recent-request-list em{max-width:none;}}
+.document-row--download{grid-template-columns:auto minmax(0,1fr) auto;align-items:center;}
+.document-row--download .secondary-action{min-height:30px;padding:6px 9px;font-size:.625rem;}
+@media(max-width:700px){.document-row--download{grid-template-columns:auto minmax(0,1fr)}.document-row--download .secondary-action{grid-column:2;justify-self:start;}}
+
+/* V53 — F40 : rappel rendez-vous réellement optionnel */
+.appointment-reminder-toggle{cursor:pointer;grid-template-columns:auto minmax(0,1fr) auto!important}.appointment-reminder-toggle input{position:absolute;opacity:0;pointer-events:none}.appointment-reminder-toggle>i{position:relative;width:34px;height:20px;border-radius:999px;background:#d9d4de;border:1px solid #cbc4d0;transition:.18s ease}.appointment-reminder-toggle>i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18);transition:.18s ease}.appointment-reminder-toggle input:checked+i{background:var(--tn-purple);border-color:var(--tn-purple)}.appointment-reminder-toggle input:checked+i::after{transform:translateX(14px)}.appointment-reminder-toggle:focus-within{outline:3px solid #6b13fc;outline-offset:3px;border-radius:12px}

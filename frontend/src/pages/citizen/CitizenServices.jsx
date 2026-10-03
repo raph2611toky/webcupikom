@@ -16,7 +16,7 @@ const COPY={
     search:"Rechercher un service",
     all:"Tous",
     cards:"Cartes",
-    map:"Vue carte 3D",
+    map:"Carte 2D",
     result:"service",
     results:"services",
     empty:"Aucun service ne correspond à votre recherche.",
@@ -28,7 +28,7 @@ const COPY={
     search:"Search for a service",
     all:"All",
     cards:"Cards",
-    map:"3D map view",
+    map:"2D map",
     result:"service",
     results:"services",
     empty:"No service matches your search.",
@@ -40,7 +40,7 @@ const COPY={
     search:"Hitady sampan-draharaha",
     all:"Rehetra",
     cards:"Karatra",
-    map:"Sarintany 3D",
+    map:"Sarintany 2D",
     result:"sampan-draharaha",
     results:"sampan-draharaha",
     empty:"Tsy misy sampan-draharaha mifanaraka amin'ny fikarohanao.",
@@ -67,7 +67,7 @@ export default function CitizenServices(){
   const [services,setServices]=useState([]);
   const [query,setQuery]=useState("");
   const [category,setCategory]=useState("all");
-  const [view,setView]=useState(()=>localStorage.getItem("nova_terra_services_view")||"cards");
+  const [view,setView]=useState(()=>localStorage.getItem("nova_terra_services_view")||"map");
 
   useEffect(()=>{getServices().then(setServices).catch(()=>setServices([]))},[locale]);
 

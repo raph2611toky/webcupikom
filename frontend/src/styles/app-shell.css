@@ -1055,3 +1055,6 @@ body[data-route-group="portal"] .portal-sidebar--agent nav{overflow-y:auto;scrol
   body[data-route-group="portal"] .portal-sidebar--agent nav button:nth-child(n+5){display:flex}
   body[data-route-group="portal"] .portal-sidebar--agent nav button{flex:0 0 58px;width:58px}
 }
+
+/* V53 — raccourcis header Signalements + Notifications */
+.portal-report-shortcut,.portal-notification-bell{position:relative;display:grid;place-items:center}.portal-report-shortcut svg,.portal-notification-bell svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.portal-report-shortcut>b,.portal-notification-bell>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#6b18df;color:#fff;font-size:.48rem;font-weight:900;line-height:1}.portal-report-shortcut{color:#8b3b23}.portal-report-shortcut:hover,.portal-notification-bell:hover{border-color:color-mix(in srgb,var(--tn-purple) 38%,var(--tn-line));background:var(--tn-purple-soft);color:var(--tn-purple)}html[data-contrast="high"] .portal-report-shortcut>b,html[data-contrast="high"] .portal-notification-bell>b{background:#fff!important;color:#000!important;border-color:#000!important}
