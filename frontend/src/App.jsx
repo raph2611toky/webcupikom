@@ -13,6 +13,8 @@ import CitizenRequests from "./pages/citizen/CitizenRequests.jsx";
 import CitizenRequestDetails from "./pages/citizen/CitizenRequestDetails.jsx";
 import CitizenServices from "./pages/citizen/CitizenServices.jsx";
 import CitizenNotifications from "./pages/citizen/CitizenNotifications.jsx";
+import CitizenNews from "./pages/citizen/CitizenNews.jsx";
+import CitizenNewsDetails from "./pages/citizen/CitizenNewsDetails.jsx";
 import CitizenSettings from "./pages/citizen/CitizenSettings.jsx";
 import AgentDashboard from "./pages/agent/AgentDashboard.jsx";
 import AgentRequests from "./pages/agent/AgentRequests.jsx";
@@ -28,6 +30,7 @@ import AdminServices from "./pages/admin/AdminServices.jsx";
 import AdminNews from "./pages/admin/AdminNews.jsx";
 import AdminSettings from "./pages/admin/AdminSettings.jsx";
 import { getSession, navigate, roleHome } from "./utils/navigation.js";
+import { loadAccessibilityPreferences, saveAccessibilityPreferences, resetAccessibilityPreferences } from "./utils/accessibility.js";
 import "./styles/app-shell.css";
 
 function normalizePath(pathname) {
@@ -73,6 +76,19 @@ function Protected({ roles, children }) {
 
 export default function App() {
   const pathname = useLocationPath();
+  const [a11yOpen, setA11yOpen] = useState(false);
+  const [a11y, setA11y] = useState(() => loadAccessibilityPreferences());
+
+  function updateAccessibility(patch) {
+    const next = { ...a11y, ...patch };
+    setA11y(next);
+    saveAccessibilityPreferences(next);
+  }
+
+  function resetAccessibility() {
+    const next = resetAccessibilityPreferences();
+    setA11y(next);
+  }
 
   useEffect(() => {
     const updateViewport = () => {
@@ -111,6 +127,7 @@ export default function App() {
       "/citizen/profile": <Protected roles={["citizen"]}><CitizenProfile /></Protected>,
       "/citizen/requests": <Protected roles={["citizen"]}><CitizenRequests /></Protected>,
       "/citizen/services": <Protected roles={["citizen"]}><CitizenServices /></Protected>,
+      "/citizen/news": <Protected roles={["citizen"]}><CitizenNews /></Protected>,
       "/citizen/notifications": <Protected roles={["citizen"]}><CitizenNotifications /></Protected>,
       "/citizen/settings": <Protected roles={["citizen"]}><CitizenSettings /></Protected>,
       "/agent": <Protected roles={["agent"]}><AgentDashboard /></Protected>,
@@ -131,6 +148,7 @@ export default function App() {
     let params = match("/services/:slug", pathname); if (params) return <ServiceDetails params={params} />;
     params = match("/news/:slug", pathname); if (params) return <NewsDetails params={params} />;
     params = match("/citizen/requests/:id", pathname); if (params) return <Protected roles={["citizen"]}><CitizenRequestDetails params={params} /></Protected>;
+    params = match("/citizen/news/:slug", pathname); if (params) return <Protected roles={["citizen"]}><CitizenNewsDetails params={params} /></Protected>;
     params = match("/agent/requests/:id", pathname); if (params) return <Protected roles={["agent"]}><AgentRequestDetails params={params} /></Protected>;
     params = match("/agent/citizens/:id", pathname); if (params) return <Protected roles={["agent"]}><AgentCitizenDetails params={params} /></Protected>;
     if (pathname === "/app") {
@@ -140,5 +158,62 @@ export default function App() {
     }
     return <LandingPage />;
   }, [pathname]);
-  return route;
+  return (
+    <>
+      <a className="skip-link" href="#main-content">Aller au contenu principal</a>
+
+      <div id="main-content" tabIndex="-1" className="app-route-content">
+        {route}
+      </div>
+
+      <div className="a11y-dock">
+        {a11yOpen ? (
+          <section className="a11y-panel" id="a11y-panel" role="dialog" aria-modal="false" aria-labelledby="a11y-title">
+            <div className="a11y-panel__head">
+              <div>
+                <strong id="a11y-title">Accessibilité</strong>
+                <span>Affichage adapté à vos besoins</span>
+              </div>
+              <button className="a11y-panel__close" type="button" aria-label="Fermer les réglages d’accessibilité" onClick={() => setA11yOpen(false)}>×</button>
+            </div>
+
+            <div className="a11y-setting">
+              <span className="a11y-setting__label">Taille du texte</span>
+              <div className="a11y-size-buttons" role="group" aria-label="Taille du texte">
+                <button type="button" aria-pressed={a11y.fontSize === "normal"} onClick={() => updateAccessibility({ fontSize: "normal" })}>A</button>
+                <button type="button" aria-pressed={a11y.fontSize === "large"} onClick={() => updateAccessibility({ fontSize: "large" })}>A+</button>
+                <button type="button" aria-pressed={a11y.fontSize === "xlarge"} onClick={() => updateAccessibility({ fontSize: "xlarge" })}>A++</button>
+              </div>
+            </div>
+
+            <div className="a11y-setting">
+              <span className="a11y-setting__label">Contraste</span>
+              <button
+                className="a11y-contrast-button"
+                type="button"
+                aria-pressed={a11y.contrast === "high"}
+                onClick={() => updateAccessibility({ contrast: a11y.contrast === "high" ? "normal" : "high" })}
+              >
+                <span>Contraste renforcé</span>
+                <strong>{a11y.contrast === "high" ? "Activé" : "Désactivé"}</strong>
+              </button>
+            </div>
+
+            <button className="a11y-reset" type="button" onClick={resetAccessibility}>Réinitialiser</button>
+          </section>
+        ) : null}
+
+        <button
+          className="a11y-trigger"
+          type="button"
+          aria-expanded={a11yOpen}
+          aria-controls="a11y-panel"
+          onClick={() => setA11yOpen((value) => !value)}
+        >
+          <span className="a11y-trigger__icon" aria-hidden="true">♿</span>
+          <span className="a11y-trigger__label">Accessibilité</span>
+        </button>
+      </div>
+    </>
+  );
 }

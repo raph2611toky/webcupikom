@@ -171,7 +171,7 @@ export default function InscriptionPage() {
                   ))}
                 </div>
                 <button className="auth-primary-button" type="submit"><span>Vérifier mon e-mail</span><span className="auth-button-arrow">→</span></button>
-                {status ? <p className="auth-feedback">{status}</p> : null}
+                {status ? <p className="auth-feedback" role="status" aria-live="polite">{status}</p> : null}
               </form>
 
               <p className="verify-help">Vous n’avez pas reçu le code ? <button type="button">Renvoyer le code</button></p>
@@ -217,7 +217,7 @@ export default function InscriptionPage() {
                 <label className="auth-modern-field"><span>Numéro de téléphone</span><div className="auth-phone-field"><span>+261</span><input name="phone" defaultValue={profile.phone} placeholder="Votre numéro" inputMode="tel" /></div></label>
 
                 <button className="auth-primary-button" type="submit" disabled={loading}><span>{loading ? "Enregistrement…" : "Enregistrer et terminer"}</span><span className="auth-button-arrow">✓</span></button>
-                {status ? <p className="auth-feedback">{status}</p> : null}
+                {status ? <p className="auth-feedback" role="status" aria-live="polite">{status}</p> : null}
                 <div className="profile-actions"><button type="button" onClick={() => setStage("profile-one")}>Retour</button><button type="button" onClick={() => finishRegistration()}>Passer pour le moment</button></div>
                 <small>Vous pourrez modifier ces informations plus tard.</small>
               </form>

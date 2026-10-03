@@ -29,15 +29,51 @@ export default function AgentRequests() {
       <div className="portal-main">
         <PortalTopbar eyebrow="Traitement" title="Demandes citoyennes" />
         <main className="portal-content">
-          <section className="toolbar-card toolbar-card--stack">
-            <div className="toolbar-line"><label className="portal-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Référence, citoyen, catégorie..." /></label><select value={service} onChange={(event) => setService(event.target.value)}>{serviceOptions.map((item) => <option key={item}>{item}</option>)}</select></div>
-            <div className="filter-row filter-row--portal">{filters.map((item) => <button key={item} className={filter === item ? "is-active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div>
+          <section className="toolbar-card toolbar-card--stack" aria-label="Filtres des demandes">
+            <div className="toolbar-line">
+              <label className="portal-search">
+                <span aria-hidden="true">⌕</span>
+                <input aria-label="Rechercher une demande citoyenne" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Référence, citoyen, catégorie..." />
+              </label>
+              <label>
+                <span className="sr-only">Filtrer par service</span>
+                <select aria-label="Filtrer par service" value={service} onChange={(event) => setService(event.target.value)}>
+                  {serviceOptions.map((item) => <option key={item}>{item}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="filter-row filter-row--portal" role="group" aria-label="Filtrer par statut">
+              {filters.map((item) => <button type="button" aria-pressed={filter === item} key={item} className={filter === item ? "is-active" : ""} onClick={() => setFilter(item)}>{item}</button>)}
+            </div>
           </section>
 
-          <section className="portal-card agent-request-board">
-            <div className="portal-table portal-table--agent portal-table--agent-smart">
-              <div className="portal-table__head"><span>Référence</span><span>Citoyen / demande</span><span>Service</span><span>Lieu</span><span>Statut</span><span /></div>
-              {rows.map((row) => <button className="portal-table__row" key={row.ref} onClick={() => navigate(`/agent/requests/${row.ref}`)}><span className="mono">{row.ref}</span><span><strong>{row.citizen}</strong><small>{row.title || row.category || "Demande citoyenne"}</small></span><span>{row.service}</span><span>{row.location?.label || "—"}</span><span><em className={`status-pill status-${row.status.replaceAll(" ", "-").toLowerCase()}`}>{row.status}</em></span><span>→</span></button>)}
+          <section className="portal-card">
+            <div className="accessible-table-wrap">
+              <table className="accessible-table">
+                <caption className="sr-only">Liste des demandes citoyennes</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Référence</th>
+                    <th scope="col">Citoyen / demande</th>
+                    <th scope="col">Service</th>
+                    <th scope="col">Lieu</th>
+                    <th scope="col">Statut</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.ref}>
+                      <td className="mono">{row.ref}</td>
+                      <td><strong>{row.citizen}</strong><small>{row.title || row.category || "Demande citoyenne"}</small></td>
+                      <td>{row.service}</td>
+                      <td>{row.location?.label || "—"}</td>
+                      <td><span className={`status-pill status-${row.status.replaceAll(" ", "-").toLowerCase()}`}>{row.status}</span></td>
+                      <td><button className="accessible-table__action" type="button" onClick={() => navigate(`/agent/requests/${row.ref}`)} aria-label={`Ouvrir la demande ${row.ref}`}>Ouvrir <span aria-hidden="true">→</span></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         </main>

@@ -129,8 +129,8 @@ export default function Contact() {
         <section className="public-content smart-request-layout smart-request-layout--single">
           <div className="contact-form-panel smart-request-panel smart-request-panel--single">
             {sent ? (
-              <div className="smart-request-success">
-                <div className="smart-request-success__check">✓</div>
+              <div className="smart-request-success" role="status" aria-live="polite">
+                <div className="smart-request-success__check" aria-hidden="true">✓</div>
                 <div>
                   <span className="section-label">Demande transmise</span>
                   <h2>{sent.reference}</h2>

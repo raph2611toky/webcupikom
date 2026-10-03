@@ -1,6 +1,22 @@
 import { news as seedNews } from "../data/news.js";
+import fallbackCitizen from "../assets/hero/hero-1.webp";
+import fallbackTransport from "../assets/hero/hero-travel.webp";
+import fallbackAdmin from "../assets/hero/hero-list.webp";
+import fallbackHealth from "../assets/hero/hero-phone.webp";
 
 const STORAGE_KEY = "terra_nova_news_v1";
+
+const FALLBACK_IMAGES = {
+  Important: fallbackCitizen,
+  Transport: fallbackTransport,
+  Administration: fallbackAdmin,
+  Santé: fallbackHealth,
+  Information: fallbackCitizen,
+};
+
+function withImage(item) {
+  return { ...item, image: item.image || FALLBACK_IMAGES[item.category] || fallbackCitizen };
+}
 
 function slugify(value = "") {
   return value
@@ -15,9 +31,9 @@ function slugify(value = "") {
 function readNews() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return JSON.parse(raw).map(withImage);
   } catch {}
-  const seeded = seedNews.map((item, index) => ({
+  const seeded = seedNews.map((item, index) => withImage({
     id: item.id || `NEWS-${index + 1}`,
     ...item,
     kind: item.kind || "Information pratique",
@@ -65,6 +81,7 @@ export async function createNews(payload) {
     title: payload.title?.trim() || "Nouvelle publication",
     excerpt: payload.excerpt?.trim() || "",
     body: payload.body?.trim() || "",
+    image: payload.image || FALLBACK_IMAGES[payload.category] || fallbackCitizen,
     date: payload.date || new Intl.DateTimeFormat("fr-FR", { day:"2-digit", month:"long", year:"numeric" }).format(new Date()),
     published: payload.published !== false,
     createdAt: now,

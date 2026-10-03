@@ -13,7 +13,6 @@ export default function CitizenDashboard(){
   const [citizenRequests,setCitizenRequests]=useState([]);
   const [services,setServices]=useState([]);
   const [news,setNews]=useState([]);
-  const [newsOpen,setNewsOpen]=useState(false);
 
   const load = async () => {
     const [requestsData, servicesData, newsData] = await Promise.all([
@@ -47,8 +46,8 @@ export default function CitizenDashboard(){
         eyebrow="Espace citoyen"
         title={`Bonjour ${currentCitizen.firstName} 👋`}
         actions={<>
-          <button className="topbar-ghost" onClick={()=>setNewsOpen(v=>!v)}>Actualités</button>
-          <button className="topbar-cta" onClick={()=>navigate('/citizen/requests')}>Nouvelle demande</button>
+          <button className="topbar-ghost" onClick={()=>navigate("/citizen/news")}>Actualités</button>
+          <button className="topbar-cta" onClick={()=>navigate('/citizen/requests?new=1&type=signalement')}>Nouvelle demande</button>
         </>}
       />
       <main className="portal-content citizen-dashboard">
@@ -95,21 +94,6 @@ export default function CitizenDashboard(){
           </article>
         </section>
       </main>
-
-      {newsOpen ? <div className="portal-popover-backdrop" onMouseDown={()=>setNewsOpen(false)}>
-        <section className="news-popover" onMouseDown={(e)=>e.stopPropagation()}>
-          <div className="news-popover__head">
-            <div><span className="section-label">Actualités</span><h2>Ce qui change dans la ville</h2></div>
-            <button onClick={()=>setNewsOpen(false)}>×</button>
-          </div>
-          <div className="news-popover__list">
-            {news.slice(0,4).map(item=><button key={item.slug} onClick={()=>navigate(`/news/${item.slug}`)}>
-              <span>{item.category}</span><strong>{item.title}</strong><small>{item.date}</small>
-            </button>)}
-          </div>
-          <button className="primary-action news-popover__all" onClick={()=>navigate('/news')}>Voir toutes les publications</button>
-        </section>
-      </div> : null}
     </div>
   </div>;
 }

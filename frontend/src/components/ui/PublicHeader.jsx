@@ -8,15 +8,16 @@ function go(event, to) {
 }
 
 export default function PublicHeader() {
+  const path = window.location.pathname;
   return (
     <header className="public-header">
-      <a className="public-header__brand" href="/" onClick={(e) => go(e, "/")}>
+      <a className="public-header__brand" aria-label="Nova Terra, accueil" href="/" onClick={(e) => go(e, "/")}>
         Nova<span>Terra</span>
       </a>
       <nav className="public-header__nav" aria-label="Navigation principale">
-        <a href="/services" onClick={(e) => go(e, "/services")}>Services</a>
-        <a href="/news" onClick={(e) => go(e, "/news")}>Actualités</a>
-        <a href="/contact" onClick={(e) => go(e, "/contact")}>Contact</a>
+        <a href="/services" aria-current={path.startsWith("/services") ? "page" : undefined} onClick={(e) => go(e, "/services")}>Services</a>
+        <a href="/news" aria-current={path.startsWith("/news") ? "page" : undefined} onClick={(e) => go(e, "/news")}>Actualités</a>
+        <a href="/contact" aria-current={path === "/contact" ? "page" : undefined} onClick={(e) => go(e, "/contact")}>Contact</a>
       </nav>
       <div className="public-header__actions">
         <a className="public-header__login" href="/login" onClick={(e) => go(e, "/login")}>Se connecter</a>

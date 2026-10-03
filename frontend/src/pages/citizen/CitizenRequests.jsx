@@ -27,7 +27,31 @@ export default function CitizenRequests() {
     setRequests(await getCitizenRequests());
   }
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+
+    const applyIntent = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("new") !== "1") return;
+
+      const type = params.get("type");
+      const message = params.get("message") || "";
+      const subject = params.get("subject") || "";
+
+      setDraft((current) => ({
+        ...current,
+        type: REQUEST_TYPES.some((item) => item.value === type) ? type : current.type,
+        message: message || current.message,
+        subject: subject || current.subject,
+      }));
+      setShowForm(true);
+      window.history.replaceState({}, "", "/citizen/requests");
+    };
+
+    applyIntent();
+    window.addEventListener("popstate", applyIntent);
+    return () => window.removeEventListener("popstate", applyIntent);
+  }, []);
 
   const rows = useMemo(() => requests.filter((row) =>
     (filter === "Toutes" || row.status === filter) &&
@@ -76,32 +100,38 @@ export default function CitizenRequests() {
         <PortalTopbar eyebrow="Démarches" title="Mes demandes" actions={<button className="topbar-cta" onClick={() => setShowForm(true)}>+ Nouvelle demande</button>} />
         <main className="portal-content">
           <section className="toolbar-card">
-            <label className="portal-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une demande..." /></label>
-            <div className="filter-row filter-row--portal">{filters.map((item) => <button className={item === filter ? "is-active" : ""} key={item} onClick={() => setFilter(item)}>{item}</button>)}</div>
+            <label className="portal-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Rechercher une demande" placeholder="Rechercher une demande..." /></label>
+            <div className="filter-row filter-row--portal">{filters.map((item) => <button className={item === filter ? "is-active" : ""} aria-pressed={item === filter} key={item} onClick={() => setFilter(item)}>{item}</button>)}</div>
           </section>
 
           <section className="portal-card">
-            <div className="portal-table portal-table--requests">
-              <div className="portal-table__head"><span>Référence</span><span>Demande</span><span>Service</span><span>Statut</span><span>Mise à jour</span><span /></div>
-              {rows.map((row) => (
-                <button className="portal-table__row" key={row.id} onClick={() => navigate(`/citizen/requests/${row.id}`)}>
-                  <span className="mono">{row.id}</span>
-                  <strong>{row.title}</strong>
-                  <span>{row.service}</span>
-                  <span><em className={`status-pill status-${row.status.replaceAll(" ", "-").toLowerCase()}`}>{row.status}</em></span>
-                  <span>{row.updated}</span><span>→</span>
-                </button>
-              ))}
+            <div className="accessible-table-wrap">
+              <table className="accessible-table">
+                <caption className="sr-only">Mes demandes citoyennes</caption>
+                <thead><tr><th scope="col">Référence</th><th scope="col">Demande</th><th scope="col">Service</th><th scope="col">Statut</th><th scope="col">Mise à jour</th><th scope="col">Action</th></tr></thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="mono">{row.id}</td>
+                      <td><strong>{row.title}</strong></td>
+                      <td>{row.service}</td>
+                      <td><span className={`status-pill status-${row.status.replaceAll(" ", "-").toLowerCase()}`}>{row.status}</span></td>
+                      <td>{row.updated}</td>
+                      <td><button className="accessible-table__action" type="button" onClick={() => navigate(`/citizen/requests/${row.id}`)} aria-label={`Ouvrir la demande ${row.id}`}>Ouvrir <span aria-hidden="true">→</span></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
 
           {showForm ? (
             <div className="modal-backdrop request-studio-backdrop" onClick={close}>
-              <form className="portal-modal request-studio" onClick={(event) => event.stopPropagation()} onSubmit={submit}>
+              <form className="portal-modal request-studio" role="dialog" aria-modal="true" aria-labelledby="request-studio-title" onClick={(event) => event.stopPropagation()} onSubmit={submit}>
                 <button type="button" className="modal-close" onClick={close}>×</button>
                 {created ? (
-                  <div className="request-studio-success">
-                    <i>✓</i><span className="section-label">Demande créée</span><h2>{created.reference}</h2>
+                  <div className="request-studio-success" role="status" aria-live="polite">
+                    <i aria-hidden="true">✓</i><span className="section-label">Demande créée</span><h2 id="request-studio-title">{created.reference}</h2>
                     <p>Votre signalement est enregistré et apparaît déjà dans votre suivi citoyen.</p>
                     <div><span>Service</span><b>{created.service}</b><span>Statut</span><b>En attente</b></div>
                     <div className="request-studio-success__actions"><button type="button" className="secondary-action" onClick={close}>Fermer</button><button type="button" className="primary-action" onClick={() => navigate(`/citizen/requests/${created.reference}`)}>Suivre maintenant →</button></div>
@@ -109,11 +139,11 @@ export default function CitizenRequests() {
                 ) : (
                   <>
                     <span className="section-label">Demander de l’aide</span>
-                    <h2>Comment pouvons-nous vous aider ?</h2>
+                    <h2 id="request-studio-title">Comment pouvons-nous vous aider ?</h2>
                     <p className="request-studio__intro">Choisissez votre besoin puis écrivez votre message.</p>
 
                     <div className="request-studio-types">
-                      {REQUEST_TYPES.map((item) => <button type="button" key={item.value} className={draft.type === item.value ? "is-active" : ""} onClick={() => patch("type", item.value)}><i>{item.icon}</i><span>{item.label}</span></button>)}
+                      {REQUEST_TYPES.map((item) => <button type="button" key={item.value} className={draft.type === item.value ? "is-active" : ""} aria-pressed={draft.type === item.value} onClick={() => patch("type", item.value)}><i>{item.icon}</i><span>{item.label}</span></button>)}
                     </div>
 
                     <div className="request-studio-grid">

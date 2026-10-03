@@ -7,6 +7,7 @@ import "../../styles/pages/dashboard.css";
 
 const EMPTY = {
   title:"",
+  image:"",
   category:"Information",
   kind:"Information pratique",
   audience:"Tous les habitants",
@@ -39,6 +40,7 @@ export default function AgentNews(){
   },[items,query,viewFilter]);
 
   const openCreate=()=>{setEditing("new");setForm(EMPTY)};
+  const readImage=(file)=>{if(!file)return;const reader=new FileReader();reader.onload=()=>setForm(current=>({...current,image:String(reader.result||"")}));reader.readAsDataURL(file)};
   const openEdit=(item)=>{setEditing(item.id);setForm({...item})};
   const save=async(e)=>{
     e.preventDefault();
@@ -66,8 +68,8 @@ export default function AgentNews(){
       </section>
       <section className="portal-card management-list">
         {filtered.map(item=><article key={item.id} className="management-row">
-          <div className="management-row__main">
-            <div className="management-badge">{item.kind==="Annonce municipale"?"!":"▤"}</div>
+          <div className="management-row__main management-row__main--news">
+            <div className="management-news-thumb">{item.image ? <img src={item.image} alt="" /> : <span>{item.kind==="Annonce municipale"?"!":"▤"}</span>}</div>
             <div><span>{item.category} · {item.audience}</span><h3>{item.title}</h3><p>{item.excerpt}</p></div>
           </div>
           <div className="management-row__actions">
@@ -87,6 +89,14 @@ export default function AgentNews(){
         <div><span className="section-label">{editing==="new"?"Créer":"Modifier"}</span><h2>{editing==="new"?"Nouvelle publication":"Modifier la publication"}</h2></div>
         <div className="management-form-grid">
           <label className="span-2"><span>Titre</span><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} required /></label>
+          <div className="span-2 management-image-field">
+            <span>Image de la publication</span>
+            <div className="management-image-upload">
+              {form.image ? <img src={form.image} alt="" /> : <div>▧</div>}
+              <label className="secondary-action"><input hidden type="file" accept="image/*" onChange={e=>readImage(e.target.files?.[0])}/>{form.image ? "Changer l’image" : "Ajouter une image"}</label>
+              {form.image ? <button type="button" className="text-danger" onClick={()=>setForm({...form,image:""})}>Retirer</button> : null}
+            </div>
+          </div>
           <label><span>Type</span><select value={form.kind} onChange={e=>setForm({...form,kind:e.target.value})}><option>Annonce municipale</option><option>Changement de service</option><option>Information pratique</option></select></label>
           <label><span>Catégorie</span><select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}><option>Important</option><option>Administration</option><option>Transport</option><option>Énergie</option><option>Santé</option><option>Information</option></select></label>
           <label className="span-2"><span>Public concerné</span><select value={form.audience} onChange={e=>setForm({...form,audience:e.target.value})}><option>Tous les habitants</option><option>Citoyens connectés</option><option>Agents municipaux</option></select></label>

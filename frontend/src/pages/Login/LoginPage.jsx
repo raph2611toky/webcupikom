@@ -151,7 +151,7 @@ export default function LoginPage() {
                 <span className="auth-button-arrow">→</span>
               </button>
 
-              {status ? <p className="auth-feedback">{status}</p> : null}
+              {status ? <p className="auth-feedback" role="status" aria-live="polite">{status}</p> : null}
             </form>
 
             <p className="auth-switch-line">Pas encore de compte ? <a href="/inscription" onClick={(e)=>{e.preventDefault();navigate('/inscription')}}>Créer un compte</a></p>
