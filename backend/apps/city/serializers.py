@@ -158,41 +158,7 @@ class AdminMunicipalServiceSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class NewsArticleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NewsArticle
-        fields = (
-            "id", "title", "slug", "category", "excerpt", "content", "published_at",
-        )
-
-
-class AdminNewsArticleSerializer(serializers.ModelSerializer):
-    slug = serializers.SlugField(required=False, allow_blank=True)
-
-    class Meta:
-        model = NewsArticle
-        fields = (
-            "id", "title", "slug", "category", "excerpt", "content", "is_published",
-            "published_at", "created_at", "updated_at",
-        )
-        read_only_fields = ("id", "created_at", "updated_at")
-
-    def validate(self, attrs):
-        slug = attrs.get("slug")
-        if slug:
-            queryset = NewsArticle.objects.filter(slug=slug)
-            if self.instance:
-                queryset = queryset.exclude(pk=self.instance.pk)
-            if queryset.exists():
-                raise serializers.ValidationError({"slug": "Ce slug est déjà utilisé."})
-        return attrs
-
-    def create(self, validated_data):
-        if not validated_data.get("slug"):
-            validated_data["slug"] = _unique_slug(
-                NewsArticle, validated_data.get("title", "actualite"), max_length=240
-            )
-        return super().create(validated_data)
+from .news_serializers import PublicationSerializer as NewsArticleSerializer, PublicationAdminSerializer as AdminNewsArticleSerializer
 
 
 class ContactMessageCreateSerializer(serializers.ModelSerializer):
@@ -839,6 +805,7 @@ class NotificationCreateSerializer(serializers.Serializer):
 
 
 class CitizenNotificationSerializer(serializers.ModelSerializer):
+    news_slug = serializers.CharField(source="related_news.slug", read_only=True)
     request_reference = serializers.CharField(source="related_request.reference", read_only=True)
     contact_reference = serializers.CharField(source="related_contact.reference", read_only=True)
     appointment_reference = serializers.CharField(source="related_appointment.reference", read_only=True)
@@ -849,12 +816,12 @@ class CitizenNotificationSerializer(serializers.ModelSerializer):
         fields = (
             "id", "kind", "scope", "title", "message", "sender", "sender_name",
             "action_label", "action_url", "request_reference", "contact_reference",
-            "appointment_reference", "visible_from", "is_important", "is_read", "read_at", "created_at",
+            "appointment_reference", "news_slug", "visible_from", "is_important", "is_read", "read_at", "created_at",
         )
         read_only_fields = (
             "id", "kind", "scope", "title", "message", "sender", "sender_name",
             "action_label", "action_url", "request_reference", "contact_reference",
-            "appointment_reference", "visible_from", "is_important", "read_at", "created_at",
+            "appointment_reference", "news_slug", "visible_from", "is_important", "read_at", "created_at",
         )
 
     def get_sender_name(self, obj):

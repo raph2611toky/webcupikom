@@ -1,3 +1,4 @@
+from .news_views import ActiveAlertListView, NewsCoverView, AdminNewsCoverView, AdminNewsDeliveryView
 from django.urls import path
 
 from .views import (
@@ -63,6 +64,10 @@ from .views import (
 app_name = "city"
 
 urlpatterns = [
+    path("city/alerts/", ActiveAlertListView.as_view(), name="active-alert-list"),
+    path("city/news/<slug:slug>/cover/", NewsCoverView.as_view(), name="news-cover"),
+    path("admin/news/<slug:slug>/cover/", AdminNewsCoverView.as_view(), name="admin-news-cover"),
+    path("admin/news/<slug:slug>/delivery/", AdminNewsDeliveryView.as_view(), name="admin-news-delivery"),
     # Public
     path("city/languages/", CityLanguageListView.as_view(), name="language-list"),
     path("city/services/", MunicipalServiceListView.as_view(), name="service-list"),

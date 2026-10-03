@@ -30,13 +30,43 @@ class MunicipalServiceAdmin(admin.ModelAdmin):
     ordering = ("sort_order", "name")
 
 
+class PublicationAdminForm(forms.ModelForm):
+    class Meta:
+        model = NewsArticle
+        exclude = ('cover_image',)
+
+    def clean(self):
+        values = super().clean()
+        from .news_serializers import PublicationAdminSerializer
+        fields = PublicationAdminSerializer().fields
+        data = {k: (v.pk if hasattr(v, 'pk') else v) for k, v in values.items() if k in fields and not fields[k].read_only}
+        for key in ('target_districts', 'audience_guidance'):
+            if data.get(key) is None:
+                data[key] = []
+        serializer = PublicationAdminSerializer(instance=self.instance if self.instance.pk else None, data=data)
+        if not serializer.is_valid():
+            raise forms.ValidationError(str(serializer.errors))
+        for key in ('target_districts', 'audience_guidance'):
+            if key in serializer.validated_data:
+                values[key] = serializer.validated_data[key]
+        return values
+
+
 @admin.register(NewsArticle)
 class NewsArticleAdmin(admin.ModelAdmin):
-    list_display = ("title", "category", "is_published", "published_at")
-    list_filter = ("category", "is_published")
-    search_fields = ("title", "excerpt", "content")
-    prepopulated_fields = {"slug": ("title",)}
-    ordering = ("-published_at",)
+    form = PublicationAdminForm
+    list_display = ('title', 'publication_type', 'severity', 'is_published', 'published_at', 'expires_at')
+    list_filter = ('publication_type', 'severity', 'is_published', 'is_important')
+    search_fields = ('title', 'excerpt', 'content', 'affected_areas')
+    prepopulated_fields = {'slug': ('title',)}
+    ordering = ('-published_at',)
+    readonly_fields = ('author', 'delivery_started_at', 'delivery_completed_at')
+    exclude = ('cover_image',)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.author = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(ContactMessage)

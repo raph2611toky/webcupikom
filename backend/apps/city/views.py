@@ -1,3 +1,5 @@
+from .news_views import NewsListView, NewsDetailView, AdminNewsListCreateView, AdminNewsDetailView
+from .services.news import visible_notifications, active_news
 import uuid
 from datetime import date, datetime, time, timedelta
 
@@ -364,36 +366,6 @@ class MunicipalServiceDetailView(generics.RetrieveAPIView):
     queryset = MunicipalService.objects.filter(is_active=True)
 
 
-class NewsListView(generics.ListAPIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
-    serializer_class = NewsArticleSerializer
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):
-            return NewsArticle.objects.none()
-        queryset = NewsArticle.objects.filter(is_published=True)
-        category = self.request.query_params.get("category")
-        search = self.request.query_params.get("search")
-        if category:
-            queryset = queryset.filter(category__iexact=category.strip())
-        if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search)
-                | Q(excerpt__icontains=search)
-                | Q(content__icontains=search)
-            )
-        return queryset
-
-
-class NewsDetailView(generics.RetrieveAPIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
-    serializer_class = NewsArticleSerializer
-    lookup_field = "slug"
-    queryset = NewsArticle.objects.filter(is_published=True)
-
-
 @method_decorator(name="post", decorator=contact_create_schema)
 class ContactMessageCreateView(generics.CreateAPIView):
     permission_classes = [AllowAny]
@@ -448,7 +420,7 @@ class CitizenDashboardView(APIView):
                 },
                 "notifications_unread": CitizenNotification.objects.filter(
                     user=request.user, is_read=False, visible_from__lte=now
-                ).count(),
+                ).filter(visible_notifications()).count(),
                 "appointments": {
                     "total": appointments.count(),
                     "upcoming": appointments.filter(
@@ -699,8 +671,8 @@ class CitizenNotificationListView(generics.ListAPIView):
             return CitizenNotification.objects.none()
         queryset = CitizenNotification.objects.filter(
             user=user, visible_from__lte=timezone.now()
-        ).select_related(
-            "sender", "related_request", "related_contact", "related_appointment"
+        ).filter(visible_notifications()).select_related(
+            "sender", "related_request", "related_contact", "related_appointment", "related_news"
         ).order_by("-visible_from", "-created_at")
         unread = self.request.query_params.get("unread", "").strip().lower()
         if unread in {"1", "true", "yes"}:
@@ -722,8 +694,8 @@ class CitizenNotificationDetailView(generics.RetrieveUpdateAPIView):
             return CitizenNotification.objects.none()
         return CitizenNotification.objects.filter(
             user=user, visible_from__lte=timezone.now()
-        ).select_related(
-            "sender", "related_request", "related_contact", "related_appointment"
+        ).filter(visible_notifications()).select_related(
+            "sender", "related_request", "related_contact", "related_appointment", "related_news"
         ).order_by("-visible_from", "-created_at")
 
     def put(self, request, *args, **kwargs):
@@ -741,7 +713,7 @@ class CitizenNotificationReadAllView(APIView):
         now = timezone.now()
         updated = CitizenNotification.objects.filter(
             user=request.user, is_read=False, visible_from__lte=now
-        ).update(is_read=True, read_at=now)
+        ).filter(visible_notifications()).update(is_read=True, read_at=now)
         return Response({"updated": updated})
 
 
@@ -1388,7 +1360,9 @@ class AdminDashboardView(APIView):
                 },
                 "news": {
                     "total": NewsArticle.objects.count(),
-                    "published": NewsArticle.objects.filter(is_published=True).count(),
+                    "published": NewsArticle.objects.filter(active_news()).count(),
+                    "scheduled": NewsArticle.objects.filter(is_published=True, published_at__gt=timezone.now()).count(),
+                    "drafts": NewsArticle.objects.filter(is_published=False).count(),
                 },
                 "requests": {
                     "total": citizen_requests.count(),
@@ -1531,65 +1505,6 @@ class AdminServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
-
-
-@method_decorator(name="post", decorator=admin_news_post_schema)
-class AdminNewsListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticatedAdmin]
-    serializer_class = AdminNewsArticleSerializer
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):
-            return NewsArticle.objects.none()
-        queryset = NewsArticle.objects.all()
-        published = self.request.query_params.get("published")
-        search = self.request.query_params.get("search")
-        if published in {"1", "true", "yes"}:
-            queryset = queryset.filter(is_published=True)
-        if published in {"0", "false", "no"}:
-            queryset = queryset.filter(is_published=False)
-        if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search)
-                | Q(category__icontains=search)
-                | Q(content__icontains=search)
-            )
-        return queryset
-
-    def perform_create(self, serializer):
-        article = serializer.save()
-        if article.is_published:
-            # Une seule notification par publication créée. Pas de fan-out sur les mises à jour.
-            notifications = [
-                CitizenNotification(
-                    user=user,
-                    sender=self.request.user,
-                    scope=CitizenNotification.Scope.GLOBAL,
-                    kind=CitizenNotification.Kind.NEWS,
-                    title=article.title,
-                    message=article.excerpt or "Nouvelle information municipale disponible.",
-                    action_label="Lire l'actualité",
-                    action_url=f"/news/{article.slug}",
-                    notification_code=f"news:{article.pk}",
-                )
-                for user in User.objects.filter(role=User.Role.CITIZEN, is_active=True).only("id")
-            ]
-            if notifications:
-                CitizenNotification.objects.bulk_create(notifications, batch_size=500)
-
-
-@method_decorator(name="patch", decorator=admin_news_patch_schema)
-@method_decorator(name="delete", decorator=admin_news_delete_schema)
-class AdminNewsDetailView(generics.RetrieveUpdateDestroyAPIView):
-    http_method_names = ["get", "patch", "delete", "head", "options"]
-    permission_classes = [IsAuthenticatedAdmin]
-    serializer_class = AdminNewsArticleSerializer
-    lookup_field = "slug"
-    queryset = NewsArticle.objects.all()
-
-    def perform_destroy(self, instance):
-        instance.is_published = False
-        instance.save(update_fields=["is_published", "updated_at"])
 
 
 class AdminContactMessageListView(AgentContactMessageListView):

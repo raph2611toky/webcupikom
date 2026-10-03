@@ -47,10 +47,33 @@ class NewsArticle(models.Model):
     category = models.CharField(max_length=100, blank=True)
     excerpt = models.CharField(max_length=320, blank=True)
     content = models.TextField()
-    is_published = models.BooleanField(default=True)
+    is_published = models.BooleanField(default=False)
     published_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    publication_type = models.CharField(max_length=20, choices=[('news', 'Actualité'), ('announcement', 'Annonce'), ('alert', 'Alerte')], default='news')
+    severity = models.CharField(max_length=20, choices=[('info', 'Information'), ('warning', 'Vigilance'), ('critical', 'Critique')], default='info')
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_pinned = models.BooleanField(default=False)
+    is_important = models.BooleanField(default=False)
+    notify_residents = models.BooleanField(default=True)
+    target_districts = models.JSONField(default=list, blank=True)
+    affected_areas = models.TextField(blank=True)
+    instructions = models.TextField(blank=True)
+    audience_guidance = models.JSONField(default=list, blank=True)
+    source_name = models.CharField(max_length=160, blank=True)
+    source_url = models.URLField(max_length=500, blank=True)
+    contact_phone = models.CharField(max_length=50, blank=True)
+    action_label = models.CharField(max_length=120, blank=True)
+    action_url = models.URLField(max_length=500, blank=True)
+    service = models.ForeignKey(MunicipalService, null=True, blank=True, on_delete=models.SET_NULL, related_name='publications')
+    cover_image = models.ImageField(storage=PrivateReportStorage(), upload_to='news/%Y/%m/', blank=True)
+    cover_alt = models.CharField(max_length=300, blank=True)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='authored_publications')
+    delivery_cursor = models.PositiveBigIntegerField(default=0, editable=False)
+    delivery_started_at = models.DateTimeField(null=True, blank=True, editable=False)
+    delivery_completed_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ("-published_at",)
@@ -361,6 +384,7 @@ class CitizenNotification(models.Model):
     is_important = models.BooleanField(default=False, db_index=True)
     email_sent_at = models.DateTimeField(null=True, blank=True)
     email_last_error = models.TextField(blank=True)
+    related_news = models.ForeignKey(NewsArticle, null=True, blank=True, on_delete=models.CASCADE, related_name="notifications")
     related_request = models.ForeignKey(
         CitizenRequest,
         on_delete=models.SET_NULL,
@@ -388,6 +412,7 @@ class CitizenNotification(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+        constraints = [models.UniqueConstraint(fields=["user", "related_news"], name="unique_news_notification_user")]
         verbose_name = "notification citoyenne"
         verbose_name_plural = "notifications citoyennes"
 
@@ -464,3 +489,11 @@ class CitizenRequestAttachment(models.Model):
 
     class Meta:
         ordering = ('created_at', 'id')
+
+
+class NewsDistrict(models.Model):
+    article = models.ForeignKey(NewsArticle, on_delete=models.CASCADE, related_name='district_targets')
+    district = models.CharField(max_length=120, db_index=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['article', 'district'], name='unique_news_district')]

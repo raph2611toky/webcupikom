@@ -8,6 +8,7 @@ from django.utils import timezone
 from helpers.services.emails import send_templated_email
 
 from ..models import CitizenNotification
+from .news import visible_notifications
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,8 @@ def notification_email_is_due(notification, *, now=None):
         and notification.visible_from <= now
         and notification.user_id
         and notification.user.email
+        and notification.user.is_active
+        and CitizenNotification.objects.filter(pk=notification.pk).filter(visible_notifications(now)).exists()
     )
 
 
@@ -98,7 +101,7 @@ def dispatch_due_notification_emails(*, notification_code=None, limit=500):
         email_sent_at__isnull=True,
         visible_from__lte=timezone.now(),
         user__email__gt="",
-    ).order_by("visible_from", "id")
+    ).filter(visible_notifications(), user__is_active=True).order_by("visible_from", "id")
     if notification_code:
         queryset = queryset.filter(notification_code=notification_code)
 

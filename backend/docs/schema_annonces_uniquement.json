@@ -1,0 +1,1308 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "IKOM API",
+    "description": "Documentation sécurisée de l’API IKOM / Terra Nova : authentification, rôles, services municipaux, actualités, contact, demandes citoyennes et flux WebCup. Les endpoints protégés utilisent un JWT Bearer.",
+    "contact": {
+      "email": "tokynandrasana2611@gmail.com"
+    },
+    "version": "v1"
+  },
+  "host": "127.0.0.1",
+  "schemes": [
+    "http"
+  ],
+  "basePath": "/",
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT au format: Bearer <access_token>"
+    }
+  },
+  "security": [
+    {
+      "Bearer": []
+    }
+  ],
+  "paths": {
+    "/api/admin/news/": {
+      "get": {
+        "operationId": "api_admin_news_list",
+        "description": "",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Un numéro de page de l'ensemble des résultats.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Nombre de résultats à retourner par page.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1
+          },
+          {
+            "name": "publication_type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "news",
+              "announcement",
+              "alert"
+            ]
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ]
+          },
+          {
+            "name": "important",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "published",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "draft",
+              "scheduled",
+              "published",
+              "expired"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "required": [
+                "count",
+                "results"
+              ],
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "next": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "previous": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/PublicationAdmin"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "post": {
+        "operationId": "api_admin_news_create",
+        "description": "",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PublicationAdmin"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/PublicationAdmin"
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": []
+    },
+    "/api/admin/news/{slug}/": {
+      "get": {
+        "operationId": "api_admin_news_read",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/PublicationAdmin"
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "patch": {
+        "operationId": "api_admin_news_partial_update",
+        "description": "",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PublicationAdmin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/PublicationAdmin"
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "delete": {
+        "operationId": "api_admin_news_delete",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "slug",
+          "in": "path",
+          "required": true,
+          "type": "string",
+          "format": "slug",
+          "pattern": "^[-a-zA-Z0-9_]+$"
+        }
+      ]
+    },
+    "/api/admin/news/{slug}/cover/": {
+      "get": {
+        "operationId": "api_admin_news_cover_list",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "api"
+        ]
+      },
+      "post": {
+        "operationId": "api_admin_news_cover_create",
+        "description": "",
+        "parameters": [
+          {
+            "name": "image",
+            "in": "formData",
+            "required": true,
+            "type": "file"
+          },
+          {
+            "name": "cover_alt",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/PublicationAdmin"
+            }
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "api"
+        ]
+      },
+      "delete": {
+        "operationId": "api_admin_news_cover_delete",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "slug",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/api/admin/news/{slug}/delivery/": {
+      "get": {
+        "operationId": "api_admin_news_delivery_list",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/NewsDeliveryStatus"
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "slug",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/api/citizen/notifications/": {
+      "get": {
+        "operationId": "api_citizen_notifications_list",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/CitizenNotification"
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": []
+    },
+    "/api/citizen/notifications/read-all/": {
+      "post": {
+        "operationId": "citizen_notification_read_all",
+        "summary": "Marquer toutes les notifications comme lues",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Nombre de notifications mises à jour"
+          }
+        },
+        "tags": [
+          "Citoyen - Notifications"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "parameters": []
+    },
+    "/api/citizen/notifications/{id}/": {
+      "get": {
+        "operationId": "api_citizen_notifications_read",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/CitizenNotification"
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "patch": {
+        "operationId": "citizen_notification_update",
+        "summary": "Modifier l'état de lecture d'une notification",
+        "description": "",
+        "parameters": [
+          {
+            "name": "is_read",
+            "in": "formData",
+            "description": "État de lecture",
+            "required": true,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/CitizenNotification"
+            }
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "Citoyen - Notifications"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/api/city/alerts/": {
+      "get": {
+        "operationId": "api_city_alerts_list",
+        "description": "",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Un numéro de page de l'ensemble des résultats.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Nombre de résultats à retourner par page.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1
+          },
+          {
+            "name": "publication_type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "news",
+              "announcement",
+              "alert"
+            ]
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ]
+          },
+          {
+            "name": "important",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "published",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "draft",
+              "scheduled",
+              "published",
+              "expired"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "required": [
+                "count",
+                "results"
+              ],
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "next": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "previous": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Publication"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": []
+    },
+    "/api/city/news/": {
+      "get": {
+        "operationId": "api_city_news_list",
+        "description": "",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Un numéro de page de l'ensemble des résultats.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Nombre de résultats à retourner par page.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1
+          },
+          {
+            "name": "publication_type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "news",
+              "announcement",
+              "alert"
+            ]
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ]
+          },
+          {
+            "name": "important",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "published",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "draft",
+              "scheduled",
+              "published",
+              "expired"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "required": [
+                "count",
+                "results"
+              ],
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "next": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "previous": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Publication"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": []
+    },
+    "/api/city/news/{slug}/": {
+      "get": {
+        "operationId": "api_city_news_read",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/Publication"
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "slug",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/api/city/news/{slug}/cover/": {
+      "get": {
+        "operationId": "api_city_news_cover_list",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Image normalisée",
+            "schema": {
+              "type": "file"
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "slug",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "AudienceGuidance": {
+      "required": [
+        "audience",
+        "instructions"
+      ],
+      "type": "object",
+      "properties": {
+        "audience": {
+          "title": "Audience",
+          "type": "string",
+          "maxLength": 120,
+          "minLength": 1
+        },
+        "instructions": {
+          "title": "Instructions",
+          "type": "string",
+          "maxLength": 5000,
+          "minLength": 1
+        }
+      }
+    },
+    "CitizenNotification": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "ID",
+          "type": "integer",
+          "readOnly": true
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string",
+          "enum": [
+            "request",
+            "contact",
+            "news",
+            "appointment",
+            "system"
+          ],
+          "readOnly": true
+        },
+        "scope": {
+          "title": "Scope",
+          "type": "string",
+          "enum": [
+            "global",
+            "targeted",
+            "automated"
+          ],
+          "readOnly": true
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "message": {
+          "title": "Message",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "sender": {
+          "title": "Sender",
+          "type": "integer",
+          "readOnly": true,
+          "x-nullable": true
+        },
+        "sender_name": {
+          "title": "Sender name",
+          "type": "string",
+          "readOnly": true
+        },
+        "action_label": {
+          "title": "Action label",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "action_url": {
+          "title": "Action url",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "request_reference": {
+          "title": "Request reference",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "contact_reference": {
+          "title": "Contact reference",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "appointment_reference": {
+          "title": "Appointment reference",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "news_slug": {
+          "title": "News slug",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "visible_from": {
+          "title": "Visible from",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "is_important": {
+          "title": "Is important",
+          "type": "boolean",
+          "readOnly": true
+        },
+        "is_read": {
+          "title": "Is read",
+          "type": "boolean"
+        },
+        "read_at": {
+          "title": "Read at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "x-nullable": true
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        }
+      }
+    },
+    "NewsDeliveryStatus": {
+      "required": [
+        "started_at",
+        "completed_at",
+        "recipients",
+        "read",
+        "emails_sent",
+        "emails_pending",
+        "emails_failed"
+      ],
+      "type": "object",
+      "properties": {
+        "started_at": {
+          "title": "Started at",
+          "type": "string",
+          "format": "date-time",
+          "x-nullable": true
+        },
+        "completed_at": {
+          "title": "Completed at",
+          "type": "string",
+          "format": "date-time",
+          "x-nullable": true
+        },
+        "recipients": {
+          "title": "Recipients",
+          "type": "integer"
+        },
+        "read": {
+          "title": "Read",
+          "type": "integer"
+        },
+        "emails_sent": {
+          "title": "Emails sent",
+          "type": "integer"
+        },
+        "emails_pending": {
+          "title": "Emails pending",
+          "type": "integer"
+        },
+        "emails_failed": {
+          "title": "Emails failed",
+          "type": "integer"
+        }
+      }
+    },
+    "Publication": {
+      "required": [
+        "title",
+        "slug",
+        "content"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "ID",
+          "type": "integer",
+          "readOnly": true
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "maxLength": 220,
+          "minLength": 1
+        },
+        "slug": {
+          "title": "Slug",
+          "type": "string",
+          "format": "slug",
+          "pattern": "^[-a-zA-Z0-9_]+$",
+          "maxLength": 240,
+          "minLength": 1
+        },
+        "category": {
+          "title": "Category",
+          "type": "string",
+          "maxLength": 100
+        },
+        "excerpt": {
+          "title": "Excerpt",
+          "type": "string",
+          "maxLength": 320
+        },
+        "content": {
+          "title": "Content",
+          "type": "string",
+          "minLength": 1
+        },
+        "publication_type": {
+          "title": "Publication type",
+          "type": "string",
+          "enum": [
+            "news",
+            "announcement",
+            "alert"
+          ]
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "critical"
+          ]
+        },
+        "published_at": {
+          "title": "Published at",
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "title": "Expires at",
+          "type": "string",
+          "format": "date-time",
+          "x-nullable": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "is_pinned": {
+          "title": "Is pinned",
+          "type": "boolean"
+        },
+        "is_important": {
+          "title": "Is important",
+          "type": "boolean"
+        },
+        "target_districts": {
+          "title": "Target districts",
+          "type": "object"
+        },
+        "affected_areas": {
+          "title": "Affected areas",
+          "type": "string"
+        },
+        "instructions": {
+          "title": "Instructions",
+          "type": "string"
+        },
+        "audience_guidance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AudienceGuidance"
+          },
+          "readOnly": true
+        },
+        "source_name": {
+          "title": "Source name",
+          "type": "string",
+          "maxLength": 160
+        },
+        "source_url": {
+          "title": "Source url",
+          "type": "string",
+          "format": "uri",
+          "maxLength": 500
+        },
+        "contact_phone": {
+          "title": "Contact phone",
+          "type": "string",
+          "maxLength": 50
+        },
+        "action_label": {
+          "title": "Action label",
+          "type": "string",
+          "maxLength": 120
+        },
+        "action_url": {
+          "title": "Action url",
+          "type": "string",
+          "format": "uri",
+          "maxLength": 500
+        },
+        "service": {
+          "title": "Service",
+          "type": "integer",
+          "x-nullable": true
+        },
+        "cover_alt": {
+          "title": "Cover alt",
+          "type": "string",
+          "maxLength": 300
+        },
+        "cover_url": {
+          "title": "Cover url",
+          "type": "string",
+          "readOnly": true
+        },
+        "publication_state": {
+          "title": "Publication state",
+          "type": "string",
+          "readOnly": true
+        }
+      }
+    },
+    "PublicationAdmin": {
+      "required": [
+        "title",
+        "content"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "ID",
+          "type": "integer",
+          "readOnly": true
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "maxLength": 220,
+          "minLength": 1
+        },
+        "slug": {
+          "title": "Slug",
+          "type": "string",
+          "format": "slug",
+          "pattern": "^[-a-zA-Z0-9_]+$",
+          "maxLength": 240
+        },
+        "category": {
+          "title": "Category",
+          "type": "string",
+          "maxLength": 100
+        },
+        "excerpt": {
+          "title": "Excerpt",
+          "type": "string",
+          "maxLength": 320
+        },
+        "content": {
+          "title": "Content",
+          "type": "string",
+          "minLength": 1
+        },
+        "publication_type": {
+          "title": "Publication type",
+          "type": "string",
+          "enum": [
+            "news",
+            "announcement",
+            "alert"
+          ]
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "critical"
+          ]
+        },
+        "published_at": {
+          "title": "Published at",
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "title": "Expires at",
+          "type": "string",
+          "format": "date-time",
+          "x-nullable": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "is_pinned": {
+          "title": "Is pinned",
+          "type": "boolean"
+        },
+        "is_important": {
+          "title": "Is important",
+          "type": "boolean"
+        },
+        "target_districts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1
+          },
+          "maxItems": 50
+        },
+        "affected_areas": {
+          "title": "Affected areas",
+          "type": "string"
+        },
+        "instructions": {
+          "title": "Instructions",
+          "type": "string"
+        },
+        "audience_guidance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AudienceGuidance"
+          }
+        },
+        "source_name": {
+          "title": "Source name",
+          "type": "string",
+          "maxLength": 160
+        },
+        "source_url": {
+          "title": "Source url",
+          "type": "string",
+          "format": "uri",
+          "maxLength": 500
+        },
+        "contact_phone": {
+          "title": "Contact phone",
+          "type": "string",
+          "maxLength": 50
+        },
+        "action_label": {
+          "title": "Action label",
+          "type": "string",
+          "maxLength": 120
+        },
+        "action_url": {
+          "title": "Action url",
+          "type": "string",
+          "format": "uri",
+          "maxLength": 500
+        },
+        "service": {
+          "title": "Service",
+          "type": "integer",
+          "x-nullable": true
+        },
+        "cover_alt": {
+          "title": "Cover alt",
+          "type": "string",
+          "maxLength": 300
+        },
+        "cover_url": {
+          "title": "Cover url",
+          "type": "string",
+          "readOnly": true
+        },
+        "publication_state": {
+          "title": "Publication state",
+          "type": "string",
+          "readOnly": true
+        },
+        "is_published": {
+          "title": "Is published",
+          "type": "boolean",
+          "default": false
+        },
+        "notify_residents": {
+          "title": "Notify residents",
+          "type": "boolean",
+          "default": true
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "author": {
+          "title": "Author",
+          "type": "integer",
+          "readOnly": true,
+          "x-nullable": true
+        },
+        "delivery_started_at": {
+          "title": "Delivery started at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "x-nullable": true
+        },
+        "delivery_completed_at": {
+          "title": "Delivery completed at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "x-nullable": true
+        }
+      }
+    }
+  }
+}
