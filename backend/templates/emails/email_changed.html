@@ -1,0 +1,8 @@
+{% extends "emails/base.html" %}
+{% block title %}Adresse email modifiée{% endblock %}
+{% block content %}
+  <p style="margin:0 0 12px;color:#64748b;font-size:15px;">Bonjour {{ display_name }},</p>
+  <h1 style="margin:0 0 14px;font-size:26px;color:#111827;">Votre adresse email a changé</h1>
+  <p style="margin:0;color:#64748b;line-height:1.7;">L'adresse principale du compte est désormais <strong style="color:#111827;">{{ new_email }}</strong>.</p>
+  <p style="margin:22px 0 0;padding:14px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#9a3412;font-size:13px;line-height:1.6;">Si vous n'avez pas demandé ce changement, contactez l'administration sans attendre.</p>
+{% endblock %}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>IKOM API</title>
+  <link rel="stylesheet" href="/static/css/swagger-login.css">
+</head>
+<body>
+  <main class="swagger-auth-shell">
+    <div class="ambient ambient--one" aria-hidden="true"></div>
+    <div class="ambient ambient--two" aria-hidden="true"></div>
+
+    <section class="swagger-auth-card" aria-labelledby="swagger-auth-title">
+      <div class="brand-mark" aria-hidden="true">IK</div>
+      <h1 id="swagger-auth-title">IKOM API</h1>
+      <p class="subtitle">Connexion Swagger</p>
+
+      {% if error %}
+        <div class="alert {% if configuration_error %}alert--warning{% else %}alert--error{% endif %}" role="alert">
+          {{ error }}
+        </div>
+      {% endif %}
+
+      <form method="post" class="swagger-auth-form" novalidate>
+        {% csrf_token %}
+        <div class="password-field">
+          <input
+            id="swagger-password"
+            name="password"
+            type="password"
+            placeholder="Mot de passe"
+            autocomplete="current-password"
+            required
+            autofocus
+            {% if configuration_error %}disabled{% endif %}
+          >
+          <button
+            class="password-toggle"
+            type="button"
+            aria-label="Afficher le mot de passe"
+            aria-pressed="false"
+            data-password-toggle
+            {% if configuration_error %}disabled{% endif %}
+          >
+            <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5c5.25 0 8.77 4.37 9.72 5.72a2.17 2.17 0 0 1 0 2.56C20.77 14.63 17.25 19 12 19s-8.77-4.37-9.72-5.72a2.17 2.17 0 0 1 0-2.56C3.23 9.37 6.75 5 12 5Zm0 2c-4.15 0-7.13 3.53-8.08 5 .95 1.47 3.93 5 8.08 5s7.13-3.53 8.08-5C19.13 10.53 16.15 7 12 7Zm0 1.8A3.2 3.2 0 1 1 12 15.2 3.2 3.2 0 0 1 12 8.8Zm0 2A1.2 1.2 0 1 0 12 13.2 1.2 1.2 0 0 0 12 10.8Z"/>
+            </svg>
+            <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m4.27 3 16.73 16.73-1.27 1.27-3.02-3.02A10.9 10.9 0 0 1 12 19c-5.25 0-8.77-4.37-9.72-5.72a2.17 2.17 0 0 1 0-2.56 18.33 18.33 0 0 1 2.44-2.82L3 4.27 4.27 3ZM6.15 9.33A15.43 15.43 0 0 0 3.92 12c.95 1.47 3.93 5 8.08 5 1.1 0 2.1-.25 3-.65l-1.56-1.56a3.2 3.2 0 0 1-4.23-4.23L6.15 9.33Zm5.54 1.48 1.5 1.5a1.2 1.2 0 0 0-1.5-1.5ZM12 5c5.25 0 8.77 4.37 9.72 5.72a2.17 2.17 0 0 1 0 2.56 17.2 17.2 0 0 1-2.12 2.51l-1.42-1.42A15.02 15.02 0 0 0 20.08 12c-.95-1.47-3.93-5-8.08-5-.77 0-1.5.12-2.18.32L8.25 5.75A10.9 10.9 0 0 1 12 5Z"/>
+            </svg>
+          </button>
+        </div>
+
+        <button class="submit-button" type="submit" {% if configuration_error %}disabled{% endif %}>
+          Valider
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <script src="/static/js/swagger-login.js" defer></script>
+</body>
+</html>

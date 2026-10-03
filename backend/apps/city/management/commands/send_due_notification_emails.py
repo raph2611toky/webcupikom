@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from backend.apps.city.services.notifications import dispatch_due_notification_emails
+from apps.city.services.notifications import dispatch_due_notification_emails
 
 
 class Command(BaseCommand):

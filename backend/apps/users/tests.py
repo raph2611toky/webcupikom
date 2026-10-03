@@ -398,7 +398,7 @@ class AccountApiTests(APITestCase):
 
 class BackendStructureTests(APITestCase):
     def test_user_urls_reference_views_module_not_swagger_module(self):
-        from ....apps.users import urls as user_urls
+        from . import urls as user_urls
 
         for pattern in user_urls.urlpatterns:
             callback = pattern.callback

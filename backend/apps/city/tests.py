@@ -357,7 +357,7 @@ class SchemaGenerationSafetyTests(APITestCase):
         from django.contrib.auth.models import AnonymousUser
         from rest_framework.generics import GenericAPIView
 
-        from ....apps.city import views as city_views
+        from . import views as city_views
 
         checked = []
         for _, view_class in inspect.getmembers(city_views, inspect.isclass):
