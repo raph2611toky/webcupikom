@@ -1,60 +1,67 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./auth/AuthContext.jsx";
-import LandingPage from "./pages/Landing/LandingPage.jsx";
-import LoginPage from "./pages/Login/LoginPage.jsx";
-import InscriptionPage from "./pages/Inscription/InscriptionPage.jsx";
-import ForgotPasswordPage from "./pages/ForgotPassword/ForgotPasswordPage.jsx";
-import ResetPasswordPage from "./pages/ResetPassword/ResetPasswordPage.jsx";
-import VerifyEmailPage from "./pages/VerifyEmail/VerifyEmailPage.jsx";
-import GoogleCallbackPage from "./pages/GoogleCallback/GoogleCallbackPage.jsx";
-import ConfirmEmailChangePage from "./pages/ConfirmEmailChange/ConfirmEmailChangePage.jsx";
-import Services from "./pages/public/Services.jsx";
-import ServiceDetails from "./pages/public/ServiceDetails.jsx";
-import News from "./pages/public/News.jsx";
-import NewsDetails from "./pages/public/NewsDetails.jsx";
-import Contact from "./pages/public/Contact.jsx";
-import CitizenDashboard from "./pages/citizen/CitizenDashboard.jsx";
-import CitizenProfile from "./pages/citizen/CitizenProfile.jsx";
-import CitizenRequests from "./pages/citizen/CitizenRequests.jsx";
-import CitizenReports from "./pages/citizen/CitizenReports.jsx";
-import CitizenRequestDetails from "./pages/citizen/CitizenRequestDetails.jsx";
-import CitizenServices from "./pages/citizen/CitizenServices.jsx";
-import CitizenServiceDetails from "./pages/citizen/CitizenServiceDetails.jsx";
-import CitizenAppointments from "./pages/citizen/CitizenAppointments.jsx";
-import CitizenNotifications from "./pages/citizen/CitizenNotifications.jsx";
-import CitizenNews from "./pages/citizen/CitizenNews.jsx";
-import CitizenNewsDetails from "./pages/citizen/CitizenNewsDetails.jsx";
-import CitizenSettings from "./pages/citizen/CitizenSettings.jsx";
-import CitizenDeleteAccount from "./pages/citizen/CitizenDeleteAccount.jsx";
-import CitizenHelp from "./pages/citizen/CitizenHelp.jsx";
-import CitizenMessages from "./pages/citizen/CitizenMessages.jsx";
-import CitizenMessageDetails from "./pages/citizen/CitizenMessageDetails.jsx";
-import AgentDashboard from "./pages/agent/AgentDashboard.jsx";
-import AgentRequests from "./pages/agent/AgentRequests.jsx";
-import AgentReports from "./pages/agent/AgentReports.jsx";
-import AgentRequestDetails from "./pages/agent/AgentRequestDetails.jsx";
-import AgentAppointments from "./pages/agent/AgentAppointments.jsx";
-import AgentCitizens from "./pages/agent/AgentCitizens.jsx";
-import AgentCitizenDetails from "./pages/agent/AgentCitizenDetails.jsx";
-import AgentApi from "./pages/agent/AgentApi.jsx";
-import AgentNews from "./pages/agent/AgentNews.jsx";
-import AgentServices from "./pages/agent/AgentServices.jsx";
-import AgentServiceDetails from "./pages/agent/AgentServiceDetails.jsx";
-import AgentNewsDetails from "./pages/agent/AgentNewsDetails.jsx";
-import AgentMessages from "./pages/agent/AgentMessages.jsx";
-import AgentMessageDetails from "./pages/agent/AgentMessageDetails.jsx";
-import AgentAudit from "./pages/agent/AgentAudit.jsx";
-import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
-import AdminUsers from "./pages/admin/AdminUsers.jsx";
-import AdminServices from "./pages/admin/AdminServices.jsx";
-import AdminAppointments from "./pages/admin/AdminAppointments.jsx";
-import AdminNews from "./pages/admin/AdminNews.jsx";
-import AdminSettings from "./pages/admin/AdminSettings.jsx";
-import AdminMessages from "./pages/admin/AdminMessages.jsx";
-import AdminMessageDetails from "./pages/admin/AdminMessageDetails.jsx";
 import { navigate, normalizePath, roleHome } from "./utils/navigation.js";
 import { loadAccessibilityPreferences, saveAccessibilityPreferences, resetAccessibilityPreferences } from "./utils/accessibility.js";
-import "./styles/app-shell.css";
+import { useDataMode } from "./utils/useDataMode.js";
+import { setDataModePreference } from "./utils/performance.js";
+import "./styles/app-core.css";
+
+const LandingPage = lazy(() => import("./pages/Landing/LandingPage.jsx"));
+const LoginPage = lazy(() => import("./pages/Login/LoginPage.jsx"));
+const InscriptionPage = lazy(() => import("./pages/Inscription/InscriptionPage.jsx"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPassword/ForgotPasswordPage.jsx"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPassword/ResetPasswordPage.jsx"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmail/VerifyEmailPage.jsx"));
+const GoogleCallbackPage = lazy(() => import("./pages/GoogleCallback/GoogleCallbackPage.jsx"));
+const ConfirmEmailChangePage = lazy(() => import("./pages/ConfirmEmailChange/ConfirmEmailChangePage.jsx"));
+
+const Services = lazy(() => import("./pages/public/Services.jsx"));
+const ServiceDetails = lazy(() => import("./pages/public/ServiceDetails.jsx"));
+const News = lazy(() => import("./pages/public/News.jsx"));
+const NewsDetails = lazy(() => import("./pages/public/NewsDetails.jsx"));
+const Contact = lazy(() => import("./pages/public/Contact.jsx"));
+
+const CitizenDashboard = lazy(() => import("./pages/citizen/CitizenDashboard.jsx"));
+const CitizenProfile = lazy(() => import("./pages/citizen/CitizenProfile.jsx"));
+const CitizenRequests = lazy(() => import("./pages/citizen/CitizenRequests.jsx"));
+const CitizenReports = lazy(() => import("./pages/citizen/CitizenReports.jsx"));
+const CitizenRequestDetails = lazy(() => import("./pages/citizen/CitizenRequestDetails.jsx"));
+const CitizenServices = lazy(() => import("./pages/citizen/CitizenServices.jsx"));
+const CitizenServiceDetails = lazy(() => import("./pages/citizen/CitizenServiceDetails.jsx"));
+const CitizenAppointments = lazy(() => import("./pages/citizen/CitizenAppointments.jsx"));
+const CitizenNotifications = lazy(() => import("./pages/citizen/CitizenNotifications.jsx"));
+const CitizenNews = lazy(() => import("./pages/citizen/CitizenNews.jsx"));
+const CitizenNewsDetails = lazy(() => import("./pages/citizen/CitizenNewsDetails.jsx"));
+const CitizenSettings = lazy(() => import("./pages/citizen/CitizenSettings.jsx"));
+const CitizenDeleteAccount = lazy(() => import("./pages/citizen/CitizenDeleteAccount.jsx"));
+const CitizenHelp = lazy(() => import("./pages/citizen/CitizenHelp.jsx"));
+const CitizenMessages = lazy(() => import("./pages/citizen/CitizenMessages.jsx"));
+const CitizenMessageDetails = lazy(() => import("./pages/citizen/CitizenMessageDetails.jsx"));
+
+const AgentDashboard = lazy(() => import("./pages/agent/AgentDashboard.jsx"));
+const AgentRequests = lazy(() => import("./pages/agent/AgentRequests.jsx"));
+const AgentReports = lazy(() => import("./pages/agent/AgentReports.jsx"));
+const AgentRequestDetails = lazy(() => import("./pages/agent/AgentRequestDetails.jsx"));
+const AgentAppointments = lazy(() => import("./pages/agent/AgentAppointments.jsx"));
+const AgentCitizens = lazy(() => import("./pages/agent/AgentCitizens.jsx"));
+const AgentCitizenDetails = lazy(() => import("./pages/agent/AgentCitizenDetails.jsx"));
+const AgentApi = lazy(() => import("./pages/agent/AgentApi.jsx"));
+const AgentNews = lazy(() => import("./pages/agent/AgentNews.jsx"));
+const AgentServices = lazy(() => import("./pages/agent/AgentServices.jsx"));
+const AgentServiceDetails = lazy(() => import("./pages/agent/AgentServiceDetails.jsx"));
+const AgentNewsDetails = lazy(() => import("./pages/agent/AgentNewsDetails.jsx"));
+const AgentMessages = lazy(() => import("./pages/agent/AgentMessages.jsx"));
+const AgentMessageDetails = lazy(() => import("./pages/agent/AgentMessageDetails.jsx"));
+const AgentAudit = lazy(() => import("./pages/agent/AgentAudit.jsx"));
+
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.jsx"));
+const AdminServices = lazy(() => import("./pages/admin/AdminServices.jsx"));
+const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments.jsx"));
+const AdminNews = lazy(() => import("./pages/admin/AdminNews.jsx"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings.jsx"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages.jsx"));
+const AdminMessageDetails = lazy(() => import("./pages/admin/AdminMessageDetails.jsx"));
 
 function useLocationPath() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname));
@@ -85,6 +92,10 @@ function Redirect({to}) {
 
 function AuthLoading(){
   return <main className="app-auth-loading" aria-label="Chargement de la session"><span/></main>;
+}
+
+function RouteLoading(){
+  return <main className="app-route-loading" role="status" aria-live="polite"><span aria-hidden="true"/><p>Chargement de cette page…</p></main>;
 }
 
 function Protected({roles,children}) {
@@ -172,6 +183,7 @@ export default function App() {
   const pathname=useLocationPath();
   const [a11yOpen,setA11yOpen]=useState(false);
   const [a11y,setA11y]=useState(()=>loadAccessibilityPreferences());
+  const dataProfile=useDataMode();
 
   function updateAccessibility(patch){
     const next={...a11y,...patch};
@@ -284,7 +296,9 @@ export default function App() {
   return <>
     <a className="skip-link" href="#main-content">Aller au contenu principal</a>
 
-    <div id="main-content" tabIndex="-1" className="app-route-content">{route}</div>
+    <div id="main-content" tabIndex="-1" className="app-route-content"><Suspense fallback={<RouteLoading/>}>{route}</Suspense></div>
+
+    {dataProfile.reduced?<div className="data-saver-indicator" role="status" aria-live="polite"><div><strong>Mode léger actif</strong><span>Animations et médias non essentiels réduits pour cette connexion.</span></div><button type="button" onClick={()=>setDataModePreference("full")}>Version complète</button></div>:null}
 
     <div className="a11y-dock">
       {a11yOpen?<section className="a11y-panel" id="a11y-panel" role="dialog" aria-modal="false" aria-labelledby="a11y-title">

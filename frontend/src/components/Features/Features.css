@@ -973,3 +973,4 @@ html[data-contrast="high"] .feature-arrow-circle{
   border:2px solid var(--tn-purple,#f2d34b)!important;
   box-shadow:none!important;
 }
+.features-avatars--light{display:flex;align-items:center}.features-avatars--light span{width:30px;height:30px;display:grid;place-items:center;margin-left:-5px;border:2px solid #fff;border-radius:50%;background:#ede6f7;color:#6b18df;font-size:.55rem;font-weight:900}.features-avatars--light span:first-child{margin-left:0}

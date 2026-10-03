@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import NovaTerraMap from "../../components/NovaTerraMap/NovaTerraMap.jsx";
 import { getServices } from "../../api/services.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import { isReducedDataMode } from "../../utils/performance.js";
+import { useDataMode } from "../../utils/useDataMode.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -47,6 +48,8 @@ const COPY={
   },
 };
 
+const NovaTerraMap=lazy(()=>import("../../components/NovaTerraMap/NovaTerraMap.jsx"));
+
 const TONES=["blue","orange","green","pink","purple","cyan","teal","violet"];
 
 function serviceTone(service,index){
@@ -63,13 +66,17 @@ function serviceTone(service,index){
 
 export default function CitizenServices(){
   const [locale]=useLocale();
+  const dataProfile=useDataMode();
   const copy=COPY[locale]||COPY.fr;
   const [services,setServices]=useState([]);
   const [query,setQuery]=useState("");
   const [category,setCategory]=useState("all");
-  const [view,setView]=useState(()=>localStorage.getItem("nova_terra_services_view")||"map");
+  const [view,setView]=useState(()=>localStorage.getItem("nova_terra_services_view")||(isReducedDataMode()?"cards":"map"));
 
   useEffect(()=>{getServices().then(setServices).catch(()=>setServices([]))},[locale]);
+  useEffect(()=>{
+    if(dataProfile.reduced&&!localStorage.getItem("nova_terra_services_view"))setView("cards");
+  },[dataProfile.reduced]);
 
   const prepared=useMemo(()=>services.map((service,index)=>({
     ...service,
@@ -121,7 +128,7 @@ export default function CitizenServices(){
           {(query||category!=="all")?<button type="button" onClick={()=>{setQuery("");setCategory("all")}}>Réinitialiser</button>:null}
         </div>
 
-        {view==="map"?<NovaTerraMap services={prepared} visibleSlugs={visibleSlugs} locale={locale}/>:filtered.length?<section className="citizen-service-grid citizen-service-grid--v39">
+        {view==="map"?<Suspense fallback={<div className="map-lazy-fallback" role="status">Chargement de la carte 2D…</div>}><NovaTerraMap services={prepared} visibleSlugs={visibleSlugs} locale={locale}/></Suspense>:filtered.length?<section className="citizen-service-grid citizen-service-grid--v39">
           {filtered.map(service=><article
             key={service.slug}
             className={`citizen-service-card service-tone-${service.tone}`}

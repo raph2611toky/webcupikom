@@ -5,8 +5,10 @@ import { getNewsItem } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
+import { useDataMode } from "../../utils/useDataMode.js";
 
 export default function AgentNewsDetails({params}) {
+  const dataProfile=useDataMode();
   const [item,setItem]=useState(undefined);
 
   useEffect(()=>{
@@ -23,7 +25,7 @@ export default function AgentNewsDetails({params}) {
         <button className="back-link" onClick={()=>navigate("/agent/news")}>← Retour aux publications</button>
         {!item ? <section className="portal-card portal-empty-centered"><h2>{item===undefined?"Chargement…":"Publication introuvable"}</h2></section> :
         <article className="portal-news-detail">
-          <div className="portal-news-detail__media"><img src={item.image} alt="" /></div>
+          <div className="portal-news-detail__media">{dataProfile.reduced?<span className="media-light-placeholder" aria-label="Image différée en mode léger">Image différée</span>:<img src={item.image} alt="" decoding="async" width="960" height="540" />}</div>
           <div className="portal-news-detail__content">
             <div className="news-meta"><span>{item.kind||item.category}</span><time>{item.date}</time></div>
             <h2>{item.title}</h2>

@@ -600,3 +600,6 @@ html[data-contrast="high"] .kamo-hero .start-button{
 html[data-contrast="high"] .kamo-hero .hero-photo{
   border:2px solid #fff!important;
 }
+.hero-low-data-note{position:absolute;z-index:18;left:50%;bottom:8.5%;transform:translateX(-50%);padding:7px 11px;border:1px solid rgba(102,0,252,.14);border-radius:999px;background:rgba(255,255,255,.84);color:#6f6477;font-size:.64rem;font-weight:700;backdrop-filter:blur(6px)}
+html[data-data-mode="reduced"] .kamo-hero__glow{display:none!important}
+@media(max-width:700px){.hero-low-data-note{bottom:5%;white-space:nowrap;font-size:.58rem}}

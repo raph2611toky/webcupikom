@@ -1,12 +1,14 @@
+import { lazy, Suspense } from "react";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import LanguageSwitcher from "./LanguageSwitcher.jsx";
-import VoiceControl from "./VoiceControl.jsx";
-import CitizenGuide from "./CitizenGuide.jsx";
-import NotificationBell from "./NotificationBell.jsx";
-import ReportShortcut from "./ReportShortcut.jsx";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
+
+const LanguageSwitcher = lazy(() => import("./LanguageSwitcher.jsx"));
+const VoiceControl = lazy(() => import("./VoiceControl.jsx"));
+const CitizenGuide = lazy(() => import("./CitizenGuide.jsx"));
+const NotificationBell = lazy(() => import("./NotificationBell.jsx"));
+const ReportShortcut = lazy(() => import("./ReportShortcut.jsx"));
 
 const LABELS = {
   fr: {
@@ -69,10 +71,10 @@ export default function PortalTopbar({ eyebrow, title, actions }) {
         </div>
         <div className="portal-topbar__right">
           {actions}
-          {user?.role === "citizen" ? <VoiceControl /> : null}
-          {user?.role === "citizen" ? <LanguageSwitcher compact /> : null}
-          {user?.role === "citizen" ? <ReportShortcut label={LABELS[locale]?.reports || "Signalements"} /> : null}
-          {user?.role === "citizen" ? <NotificationBell label={t("notifications", locale)} /> : null}
+          {user?.role === "citizen" ? <Suspense fallback={null}><VoiceControl /></Suspense> : null}
+          {user?.role === "citizen" ? <Suspense fallback={null}><LanguageSwitcher compact /></Suspense> : null}
+          {user?.role === "citizen" ? <Suspense fallback={null}><ReportShortcut label={LABELS[locale]?.reports || "Signalements"} /></Suspense> : null}
+          {user?.role === "citizen" ? <Suspense fallback={null}><NotificationBell label={t("notifications", locale)} /></Suspense> : null}
           <div className="portal-user">
             <span className="portal-user__avatar">{initials}</span>
             <div><strong>{displayName}</strong><span>{
@@ -83,7 +85,7 @@ export default function PortalTopbar({ eyebrow, title, actions }) {
           </div>
         </div>
       </header>
-      {user?.role === "citizen" ? <CitizenGuide /> : null}
+      {user?.role === "citizen" ? <Suspense fallback={null}><CitizenGuide /></Suspense> : null}
     </>
   );
 }

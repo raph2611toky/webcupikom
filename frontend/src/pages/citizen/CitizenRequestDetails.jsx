@@ -12,7 +12,6 @@ import {
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import { buildSingleRequestHtml, downloadJson, openPrintWindow } from "../../utils/dataExport.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -82,12 +81,13 @@ export default function CitizenRequestDetails({params}){
   async function download(file){
     setError("");try{await downloadCitizenReportAttachment(file)}catch(e){setError(getApiErrorMessage(e,"Téléchargement impossible."))}
   }
-  function printRequest(){
+  async function printRequest(){
     setError("");
-    try{openPrintWindow(buildSingleRequestHtml(request))}catch(e){setError(e?.message||"Export impossible.")}
+    try{const {buildSingleRequestHtml,openPrintWindow}=await import("../../utils/dataExport.js");openPrintWindow(buildSingleRequestHtml(request))}catch(e){setError(e?.message||"Export impossible.")}
   }
-  function exportRequestJson(){
+  async function exportRequestJson(){
     const reference=request.reference||request.ref||"demande";
+    const {downloadJson}=await import("../../utils/dataExport.js");
     downloadJson(`nova-terra-${String(reference).toLowerCase()}.json`,request);
   }
 

@@ -9,6 +9,7 @@ import "./Hero.css";
 import CoreEffect from "./CoreEffect.jsx";
 import LanguageSwitcher from "../ui/LanguageSwitcher.jsx";
 import { useLocale } from "../../utils/i18n.js";
+import { useDataMode } from "../../utils/useDataMode.js";
 
 import heroPhone from "../../assets/hero/hero-phone.webp";
 import hero1 from "../../assets/hero/hero-1.webp";
@@ -38,7 +39,7 @@ const HERO_TEXT = {
   },
 };
 
-function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 5600, active = true }) {
+function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 5600, active = true, priority = false }) {
   const [index, setIndex] = useState(start);
   const reduceMotion = useReducedMotion();
 
@@ -72,7 +73,11 @@ function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 56
               : { opacity: 0, scale: 0.997 }
           }
           transition={{ duration: 0.52, ease: EASE }}
+          loading={priority ? "eager" : "lazy"}
           decoding="async"
+          fetchPriority={priority ? "high" : "low"}
+          width="960"
+          height="720"
         />
       </AnimatePresence>
     </div>
@@ -198,17 +203,19 @@ function AnimatedWords({ words, delay = 0 }) {
 
 export default function Hero() {
   const reduceMotion = useReducedMotion();
+  const dataProfile = useDataMode();
   const [locale] = useLocale();
   const copy = HERO_TEXT[locale] || HERO_TEXT.fr;
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { amount: 0.2, initial: true });
+  const richMotionActive = heroInView && !dataProfile.reduced;
   return (
     <main ref={heroRef} className="kamo-hero">
       <div className="kamo-hero__glow kamo-hero__glow--tl" />
       <div className="kamo-hero__glow kamo-hero__glow--right" />
       <div className="kamo-hero__glow kamo-hero__glow--br" />
 
-      <CoreEffect active={heroInView} />
+      <CoreEffect active={richMotionActive} />
 
       <motion.header
         className="kamo-header"
@@ -234,42 +241,45 @@ export default function Hero() {
         <LanguageSwitcher className="hero-language-switcher" compact />
       </motion.header>
 
-      <motion.div
-        className="hero-photo-motion hero-photo-motion--left"
-        initial={reduceMotion ? false : { opacity: 0, x: -45 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.95, delay: reduceMotion ? 0 : 3.42, ease: EASE }}
-      >
-        <RotatingImage
-          className="hero-photo hero-photo--left"
-          images={LEFT_IMAGES}
-          start={0}
-          alt={copy.altLeft}
-          intervalMs={IMAGE_INTERVAL_LEFT}
-          active={heroInView}
-        />
-      </motion.div>
-
-      <motion.div
-        className="hero-top-right-motion"
-        initial={reduceMotion ? false : { opacity: 0, x: 45, y: -20 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        transition={{ duration: 1.0, delay: reduceMotion ? 0 : 3.58, ease: EASE }}
-      >
-        <div className="hero-top-right" aria-hidden="true">
-          <OrbitText active={heroInView} />
+      {!dataProfile.reduced ? <>
+        <motion.div
+          className="hero-photo-motion hero-photo-motion--left"
+          initial={reduceMotion ? false : { opacity: 0, x: -45 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.95, delay: reduceMotion ? 0 : 3.42, ease: EASE }}
+        >
           <RotatingImage
-            className="hero-photo hero-photo--right"
-            images={RIGHT_IMAGES}
+            className="hero-photo hero-photo--left"
+            images={LEFT_IMAGES}
             start={0}
-            alt={copy.altRight}
-            intervalMs={IMAGE_INTERVAL_RIGHT}
-            active={heroInView}
+            alt={copy.altLeft}
+            intervalMs={IMAGE_INTERVAL_LEFT}
+            active={richMotionActive}
+            priority
           />
-        </div>
-      </motion.div>
+        </motion.div>
 
-      <Scribbles />
+        <motion.div
+          className="hero-top-right-motion"
+          initial={reduceMotion ? false : { opacity: 0, x: 45, y: -20 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          transition={{ duration: 1.0, delay: reduceMotion ? 0 : 3.58, ease: EASE }}
+        >
+          <div className="hero-top-right" aria-hidden="true">
+            <OrbitText active={richMotionActive} />
+            <RotatingImage
+              className="hero-photo hero-photo--right"
+              images={RIGHT_IMAGES}
+              start={0}
+              alt={copy.altRight}
+              intervalMs={IMAGE_INTERVAL_RIGHT}
+              active={richMotionActive}
+            />
+          </div>
+        </motion.div>
+
+        <Scribbles />
+      </> : <div className="hero-low-data-note" role="status">Mode léger : visuels décoratifs différés.</div>}
 
       <section className="hero-copy" id="home" aria-labelledby="hero-title">
         <h1 className="hero-title" id="hero-title">
@@ -361,7 +371,7 @@ export default function Hero() {
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
       >
         <span>{copy.discover}</span>
-        <Sparkles active={heroInView} />
+        <Sparkles active={richMotionActive} />
       </motion.a>
 
       <motion.a

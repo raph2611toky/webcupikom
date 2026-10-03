@@ -513,7 +513,7 @@ export default function AccountSettingsCard({ allowDelete = false }) {
               <p className="detail-copy">Scannez le QR Code avec votre application d’authentification puis saisissez le code à 6 chiffres.</p>
 
               <div className="mfa-qr-panel">
-                {setupData.qr_code_data_url ? <img src={setupData.qr_code_data_url} alt="QR Code d’activation MFA" /> : null}
+                {setupData.qr_code_data_url ? <img src={setupData.qr_code_data_url} alt="QR Code d’activation MFA" decoding="async" width="240" height="240" /> : null}
                 <div>
                   <span>Clé manuelle</span>
                   <code>{setupData.secret}</code>

@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "../../utils/i18n.js";
+import { useDataMode } from "../../utils/useDataMode.js";
 import "./Features.css";
 
 import avatarOne from "../../assets/hero/hero-1.webp";
@@ -156,7 +157,9 @@ function HeaderSparkles() {
 }
 
 export default function Features() {
-  const reduceMotion = useReducedMotion();
+  const systemReduceMotion = useReducedMotion();
+  const dataProfile = useDataMode();
+  const reduceMotion = systemReduceMotion || dataProfile.reduced;
   const [locale] = useLocale();
   const copy = FEATURES_TEXT[locale] || FEATURES_TEXT.fr;
 
@@ -177,7 +180,7 @@ export default function Features() {
         <p className="features-lead features-lead--soft">{copy.leadSoft}</p>
       </motion.div>
 
-      <HeaderSparkles />
+      {!dataProfile.reduced ? <HeaderSparkles /> : null}
 
       <motion.div
         className="features-stage"
@@ -273,11 +276,11 @@ export default function Features() {
           transition={{ duration: 0.7, delay: 0.55, ease: EASE }}
         >
           <div className="features-stats__top">
-            <div className="features-avatars" aria-hidden="true">
-              <img src={avatarOne} alt="" />
-              <img src={avatarTwo} alt="" />
-              <img src={avatarThree} alt="" />
-            </div>
+            {dataProfile.reduced ? <div className="features-avatars features-avatars--light" aria-hidden="true"><span>NT</span><span>+</span></div> : <div className="features-avatars" aria-hidden="true">
+              <img src={avatarOne} alt="" loading="lazy" decoding="async" width="960" height="720" fetchPriority="low" />
+              <img src={avatarTwo} alt="" loading="lazy" decoding="async" width="960" height="720" fetchPriority="low" />
+              <img src={avatarThree} alt="" loading="lazy" decoding="async" width="960" height="720" fetchPriority="low" />
+            </div>}
             <p><strong>Nova Terra</strong><span>{copy.stat}</span></p>
           </div>
           <p className="features-stats__tasks"><i /> {copy.flow}</p>

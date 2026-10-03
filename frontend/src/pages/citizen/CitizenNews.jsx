@@ -6,6 +6,7 @@ import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
+import { useDataMode } from "../../utils/useDataMode.js";
 
 const COPY={
   fr:{eyebrow:"Informations municipales",title:"Actualités",kicker:"Nova Terra aujourd’hui",headline:<>Les informations utiles,<br/>au même endroit.</>,intro:"Annonces municipales, changements de service et informations pratiques publiés pour les habitants.",all:"Toutes",read:"Lire",loading:"Chargement…",error:"Impossible de charger les actualités."},
@@ -14,6 +15,7 @@ const COPY={
 };
 
 export default function CitizenNews(){
+  const dataProfile=useDataMode();
   const [locale]=useLocale(); const copy=COPY[locale]||COPY.fr;
   const [items,setItems]=useState([]);
   const [filter,setFilter]=useState("Toutes");
@@ -50,7 +52,7 @@ export default function CitizenNews(){
         <section className="citizen-news-grid">
           {visible.map((item,index)=><article className={index===0?"citizen-news-card is-featured":"citizen-news-card"} key={item.slug}>
             <button className="citizen-news-card__image" onClick={()=>navigate(`/citizen/news/${item.slug}`)} aria-label={`${copy.read} ${item.title}`}>
-              <img src={item.image} alt={`Illustration : ${item.title}`} />
+              {dataProfile.reduced?<span className="media-light-placeholder" aria-label={`Illustration différée : ${item.title}`}>Image différée</span>:<img src={item.image} alt={`Illustration : ${item.title}`} loading={index===0?"eager":"lazy"} decoding="async" fetchPriority={index===0?"high":"low"} width="960" height="540" />}
               <span>{item.kind || item.category}</span>
             </button>
             <div>

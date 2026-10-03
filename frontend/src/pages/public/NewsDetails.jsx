@@ -5,6 +5,7 @@ import { getNewsItem } from "../../api/news.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/public-pages.css";
+import { useDataMode } from "../../utils/useDataMode.js";
 
 const COPY={
   fr:{back:"Toutes les actualités",missing:"Actualité introuvable",official:"Publication officielle de Nova Terra."},
@@ -13,6 +14,7 @@ const COPY={
 };
 
 export default function NewsDetails({params}){
+  const dataProfile=useDataMode();
   const [locale]=useLocale(); const copy=COPY[locale]||COPY.fr;
   const [item,setItem]=useState(undefined);
   useEffect(()=>{getNewsItem(params.slug).then(setItem).catch(()=>setItem(null))},[params.slug]);
@@ -25,7 +27,7 @@ export default function NewsDetails({params}){
     <main className="article-visual-shell">
       <button className="text-link article-visual-back" onClick={()=>navigate("/news")}>← {copy.back}</button>
       <article className="article-visual">
-        <div className="article-visual__image"><img src={item.image} alt={`Illustration : ${item.title}`} /></div>
+        <div className="article-visual__image">{dataProfile.reduced?<span className="media-light-placeholder" aria-label={`Illustration différée : ${item.title}`}>Image différée</span>:<img src={item.image} alt={`Illustration : ${item.title}`} decoding="async" width="960" height="540" />}</div>
         <div className="article-visual__content">
           <div className="news-meta"><span>{item.kind||item.category}</span><time>{item.date}</time></div>
           <h1>{item.title}</h1><p className="article-lead">{item.excerpt}</p>

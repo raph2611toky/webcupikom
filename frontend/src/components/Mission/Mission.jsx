@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "../../utils/i18n.js";
+import { useDataMode } from "../../utils/useDataMode.js";
 import "./Mission.css";
 
 const EASE = [0.16, 1, 0.3, 1];
@@ -38,7 +39,9 @@ const COPY = {
 };
 
 export default function Mission() {
-  const reduceMotion = useReducedMotion();
+  const systemReduceMotion = useReducedMotion();
+  const dataProfile = useDataMode();
+  const reduceMotion = systemReduceMotion || dataProfile.reduced;
   const [locale] = useLocale();
   const copy = COPY[locale] || COPY.fr;
 

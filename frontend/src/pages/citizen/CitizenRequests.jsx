@@ -6,7 +6,6 @@ import { getApiErrorMessage } from "../../api/auth.js";
 import { CATEGORY_SERVICE, REQUEST_CATEGORIES, REQUEST_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import { buildRequestsHtml, downloadRequestsCsv, openPrintWindow } from "../../utils/dataExport.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -174,6 +173,7 @@ export default function CitizenRequests() {
     setExporting(true);setError("");
     try{
       const all=await getAllCitizenRequests({type:"procedure",ordering:"-updated_at"});
+      const {buildRequestsHtml,downloadRequestsCsv,openPrintWindow}=await import("../../utils/dataExport.js");
       if(format==="print") openPrintWindow(buildRequestsHtml(all));
       else downloadRequestsCsv(all,"nova-terra-mes-demandes.csv");
     }catch(err){setError(getApiErrorMessage(err,"Impossible d’exporter vos demandes."))}finally{setExporting(false)}
