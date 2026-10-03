@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import { env } from "../../config/env.js";
-import { navigate } from "../../router/navigation.js";
+import { navigate, roleHome } from "../../utils/navigation.js";
 import "../auth.css";
 
 export default function GoogleCallbackPage() {
@@ -22,9 +21,9 @@ export default function GoogleCallbackPage() {
     }
 
     completeGoogle({ code, state })
-      .then(() => {
+      .then((data) => {
         if (!mounted) return;
-        navigate(env.authAfterLogin, { replace: true });
+        navigate(roleHome(data.user?.role), { replace: true });
       })
       .catch((error) => {
         if (!mounted) return;
@@ -37,7 +36,7 @@ export default function GoogleCallbackPage() {
   return (
     <main className="auth-page">
       <section className="auth-shell auth-shell--compact auth-shell--center" aria-labelledby="google-title">
-        <a className="auth-brand" href="/">Kam<span>o</span></a>
+        <a className="auth-brand" href="/">Terra<span>Nova</span></a>
         <div className="auth-intro">
           <span className="auth-kicker">Google</span>
           <h1 id="google-title">Authentification</h1>

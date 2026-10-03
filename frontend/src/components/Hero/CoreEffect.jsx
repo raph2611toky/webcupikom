@@ -268,19 +268,21 @@ function drawPlatform(ctx, cx, cy, radius, alpha, time, beamVisibility = 1) {
   ctx.restore();
 }
 
-export default function CoreEffect() {
+export default function CoreEffect({ active = true }) {
   const canvasRef = useRef(null);
   const pointerRef = useRef({ x: 0, y: 0, tx: 0, ty: 0 });
+  const elapsedRef = useRef(0);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (!active) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-    const ctx = canvas.getContext("2d", { alpha: true });
+    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     if (!ctx) return undefined;
 
     const random = seededRandom(11427);
-    const fragments = Array.from({ length: 24 }, (_, index) => {
+    const fragments = Array.from({ length: 20 }, (_, index) => {
       const angle = random() * TAU;
       return {
         angle,
@@ -298,7 +300,7 @@ export default function CoreEffect() {
       };
     });
 
-    const particles = Array.from({ length: 86 }, () => {
+    const particles = Array.from({ length: 64 }, () => {
       const angle = random() * TAU;
       return {
         angle,
@@ -322,16 +324,33 @@ export default function CoreEffect() {
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let startedAt = performance.now();
+    let startedAt = performance.now() - elapsedRef.current * 1000;
+    let lastDrawAt = 0;
+    let resizeRaf = 0;
+    let scrollingUntil = 0;
 
     const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      width = Math.max(1, rect.width);
-      height = Math.max(1, rect.height);
-      dpr = Math.min(window.devicePixelRatio || 1, 1.75);
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      window.cancelAnimationFrame(resizeRaf);
+      resizeRaf = window.requestAnimationFrame(() => {
+        const rect = canvas.getBoundingClientRect();
+        const nextWidth = Math.max(1, rect.width);
+        const nextHeight = Math.max(1, rect.height);
+        const dprCap = nextWidth < 800 ? 1.1 : 1.3;
+        const nextDpr = Math.min(window.devicePixelRatio || 1, dprCap);
+
+        if (
+          Math.abs(nextWidth - width) < 0.5 &&
+          Math.abs(nextHeight - height) < 0.5 &&
+          Math.abs(nextDpr - dpr) < 0.01
+        ) return;
+
+        width = nextWidth;
+        height = nextHeight;
+        dpr = nextDpr;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      });
     };
 
     const onPointerMove = (event) => {
@@ -341,14 +360,29 @@ export default function CoreEffect() {
       pointerRef.current.ty = y;
     };
 
+    const onScroll = () => {
+      scrollingUntil = performance.now() + 180;
+    };
+
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
     window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     resize();
 
     const draw = (now) => {
-      raf = window.requestAnimationFrame(draw);
+      if (!reduceMotion) raf = window.requestAnimationFrame(draw);
+
       const rawTime = (now - startedAt) / 1000;
+      const isScrolling = now < scrollingUntil;
+      const frameInterval = isScrolling
+        ? 1000 / 18
+        : rawTime < 4.8
+          ? 1000 / 60
+          : 1000 / 30;
+      if (!reduceMotion && now - lastDrawAt < frameInterval) return;
+      lastDrawAt = now;
+
       const time = reduceMotion ? 5.2 : rawTime;
 
       const assemble = reduceMotion ? 1 : smooth((time - 0.14) / 1.95);
@@ -703,21 +737,23 @@ export default function CoreEffect() {
       // A blurred destination-out ellipse softly erases anything that still drifts
       // behind the headline/subtitle, while keeping the two edge clusters alive.
       if (centerClear > 0.001) {
+        const clearRadiusX = Math.min(width * 0.285, coreSize * 1.86);
+        const clearRadiusY = Math.min(height * 0.235, coreSize * 0.98);
+
+        // Soft clear zone without ctx.filter blur. A scaled radial gradient is much
+        // cheaper to composite while preserving the same feathered ellipse.
         ctx.save();
         ctx.globalCompositeOperation = "destination-out";
         ctx.globalAlpha = 0.985 * centerClear;
-        ctx.filter = `blur(${Math.max(22, coreSize * 0.14)}px)`;
-        ctx.fillStyle = "rgba(0,0,0,1)";
+        ctx.translate(cx, cy + height * 0.008);
+        ctx.scale(clearRadiusX, clearRadiusY);
+        const clearGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        clearGradient.addColorStop(0, "rgba(0,0,0,1)");
+        clearGradient.addColorStop(0.74, "rgba(0,0,0,.96)");
+        clearGradient.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = clearGradient;
         ctx.beginPath();
-        ctx.ellipse(
-          cx,
-          cy + height * 0.008,
-          Math.min(width * 0.285, coreSize * 1.86),
-          Math.min(height * 0.235, coreSize * 0.98),
-          0,
-          0,
-          TAU,
-        );
+        ctx.arc(0, 0, 1, 0, TAU);
         ctx.fill();
         ctx.restore();
       }
@@ -727,11 +763,14 @@ export default function CoreEffect() {
     raf = window.requestAnimationFrame(draw);
 
     return () => {
+      elapsedRef.current = Math.max(0, (performance.now() - startedAt) / 1000);
       window.cancelAnimationFrame(raf);
+      window.cancelAnimationFrame(resizeRaf);
       observer.disconnect();
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("scroll", onScroll);
     };
-  }, [reduceMotion]);
+  }, [active, reduceMotion]);
 
   return (
     <div className="core-effect" aria-hidden="true">

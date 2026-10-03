@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Unbounded:wght@900&display=swap');
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 16px;
+}
+
 html,
 body,
 #root {
@@ -34,6 +39,7 @@ body {
   min-height: 650px;
   overflow: hidden;
   isolation: isolate;
+  contain: layout paint style;
   background: var(--kamo-bg);
 }
 
@@ -41,7 +47,7 @@ body {
   position: absolute;
   z-index: -6;
   border-radius: 50%;
-  filter: blur(84px);
+  filter: blur(72px);
   pointer-events: none;
 }
 
@@ -247,7 +253,8 @@ body {
   height: 100%;
   display: block;
   object-fit: cover;
-  will-change: opacity, transform, filter;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
 }
 
 .hero-photo--left {
@@ -447,6 +454,7 @@ body {
 .hero-title__line-motion {
   display: block;
   will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .hero-word {
@@ -459,6 +467,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
   .kamo-hero *,
   .kamo-hero *::before,
   .kamo-hero *::after {
@@ -500,4 +510,25 @@ body {
     max-width: 96vw;
     overflow: visible;
   }
+}
+
+
+/* Terra Nova wordmark/content adjustments — hero geometry preserved */
+.kamo-logo {
+  font-size: clamp(32px, min(2.55vw, 4.55svh), 46px);
+  letter-spacing: -0.065em;
+}
+
+.kamo-logo span {
+  margin-left: .12em;
+}
+
+.start-button {
+  width: min(16.4vw, 29.1svh);
+  min-width: 230px;
+}
+
+@media (max-width: 760px) {
+  .kamo-logo { font-size: 36px; }
+  .start-button { width: 210px; min-width: 0; font-size: 17px; }
 }

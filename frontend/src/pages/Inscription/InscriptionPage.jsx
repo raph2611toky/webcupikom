@@ -72,14 +72,14 @@ export default function InscriptionPage() {
   return (
     <main className="auth-page auth-page--register">
       <section className="auth-shell auth-shell--register" aria-labelledby="register-title">
-        <a className="auth-brand" href="/" aria-label="Kamo, retour à l’accueil">
-          Kam<span>o</span>
+        <a className="auth-brand" href="/" aria-label="Terra Nova, retour à l’accueil">
+          Terra<span>Nova</span>
         </a>
 
         <div className="auth-intro">
-          <span className="auth-kicker">Créer votre espace</span>
+          <span className="auth-kicker">Créer votre espace citoyen</span>
           <h1 id="register-title">Inscription</h1>
-          <p>Créez votre compte Kamo.</p>
+          <p>Un seul compte pour accéder aux services de Terra Nova.</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>

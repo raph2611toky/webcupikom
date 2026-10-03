@@ -1,12 +1,14 @@
 import { motion, useReducedMotion } from "framer-motion";
 import "./Features.css";
 
-import parisTemplateThumb from "../../assets/hero/paris-template-thumb.png";
-import avatarOne from "../../assets/hero/hero-1.png";
-import avatarTwo from "../../assets/hero/hero-2.png";
-import avatarThree from "../../assets/hero/hero-3.png";
+import avatarOne from "../../assets/hero/hero-1.webp";
+import avatarTwo from "../../assets/hero/hero-2.webp";
+import avatarThree from "../../assets/hero/hero-3.webp";
 
 const EASE = [0.16, 1, 0.3, 1];
+
+/* Inclinaison des cartes, calée sur la maquette */
+const CARD_ROTATE = { calendar: -14, travel: 0, mail: 14 };
 
 function CalendarIcon() {
   return (
@@ -23,34 +25,22 @@ function CalendarIcon() {
   );
 }
 
-function PlaneIcon() {
+function CouncilIcon() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        d="M41.5 8.8c-1.8-1.8-4.6-1.8-6.4 0L27 16.9 11.8 12.8 8.4 16.2l12.2 7.2-7.5 7.5-5.8-1.4-2.9 2.9 7.2 4.3 4.3 7.2 2.9-2.9-1.4-5.8 7.5-7.5 7.2 12.2 3.4-3.4-4.1-15.2 8.1-8.1c1.8-1.8 1.8-4.6 0-6.4Z"
-        fill="currentColor"
-      />
+      <path d="M8 20 24 9l16 11" fill="none" stroke="currentColor" strokeWidth="3.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11 21h26v4H11zM14 25h4v13h-4zm8 0h4v13h-4zm8 0h4v13h-4zM9 39h30v4H9z" fill="currentColor" />
     </svg>
   );
 }
 
-function MailIcon() {
+function RequestIcon() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true">
-      <rect x="5" y="10" width="38" height="28" rx="6" fill="currentColor" />
-      <path d="M9 15.5 24 27l15-11.5" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" opacity=".96" />
-    </svg>
-  );
-}
-
-function GmailIcon() {
-  return (
-    <svg viewBox="0 0 48 36" aria-hidden="true">
-      <path d="M5 31V9.5L10.5 5 24 15.2 37.5 5 43 9.5V31a3 3 0 0 1-3 3h-5V14.8L24 23.1 13 14.8V34H8a3 3 0 0 1-3-3Z" fill="#4285F4" />
-      <path d="M5 9.5 10.5 5 24 15.2v7.9L5 9.5Z" fill="#EA4335" />
-      <path d="m43 9.5-5.5-4.5L24 15.2v7.9L43 9.5Z" fill="#FBBC04" />
-      <path d="M5 31V9.5l8 5.7V34H8a3 3 0 0 1-3-3Z" fill="#34A853" />
-      <path d="M43 31V9.5l-8 5.7V34h5a3 3 0 0 0 3-3Z" fill="#C5221F" />
+      <path d="M24 6c9.4 0 17 6.6 17 14.8 0 8.1-7.6 14.8-17 14.8-1.9 0-3.8-.3-5.5-.8L10 41l2.4-9C9 29.4 7 25.5 7 20.8 7 12.6 14.6 6 24 6Z" fill="currentColor" />
+      <circle cx="17" cy="21" r="2.1" fill="#fff" />
+      <circle cx="24" cy="21" r="2.1" fill="#fff" />
+      <circle cx="31" cy="21" r="2.1" fill="#fff" />
     </svg>
   );
 }
@@ -59,7 +49,14 @@ function ArrowCircle() {
   return (
     <span className="feature-arrow-circle" aria-hidden="true">
       <svg viewBox="0 0 24 24">
-        <path d="M6 12h11M13 7l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M7.25 12h8.35M12.85 8.4 16.45 12l-3.6 3.6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </span>
   );
@@ -71,9 +68,13 @@ function AutomationSeal() {
       <svg viewBox="0 0 170 170">
         <defs>
           <path id="seal-top" d="M85,85 m-56,0 a56,56 0 1,1 112,0 a56,56 0 1,1 -112,0" />
+          <path id="seal-bottom" d="M85,85 m-66,0 a66,66 0 1,0 132,0 a66,66 0 1,0 -132,0" />
         </defs>
         <text>
-          <textPath href="#seal-top" startOffset="2%">AUTOMATISATION IA · KAMO · </textPath>
+          <textPath href="#seal-top" startOffset="25%" textAnchor="middle">TERRA NOVA</textPath>
+        </text>
+        <text>
+          <textPath href="#seal-bottom" startOffset="25%" textAnchor="middle">VILLE · CITOYENS</textPath>
         </text>
       </svg>
       <span className="automation-seal__star">✦</span>
@@ -85,15 +86,13 @@ function AutomationSeal() {
 
 function FeatureCard({ type, icon, title, description, children, delay = 0 }) {
   const reduceMotion = useReducedMotion();
+  const rotate = CARD_ROTATE[type] ?? 0;
 
   return (
     <motion.article
       className={`feature-card feature-card--${type}`}
-      initial={reduceMotion ? false : { opacity: 0, rotate: type === "calendar" ? -10.5 : type === "mail" ? 9.2 : 0 }}
-      whileInView={{
-        opacity: 1,
-        rotate: type === "calendar" ? -10.5 : type === "mail" ? 9.2 : 0,
-      }}
+      initial={reduceMotion ? false : { opacity: 0, rotate }}
+      whileInView={{ opacity: 1, rotate }}
       viewport={{ once: true, amount: 0.26 }}
       transition={{ duration: 0.55, delay, ease: EASE }}
       whileHover={undefined}
@@ -135,12 +134,12 @@ export default function Features() {
         viewport={{ once: true, amount: 0.55 }}
         transition={{ duration: 0.8, ease: EASE }}
       >
-        <span className="features-kicker">Fonctionnalités</span>
+        <span className="features-kicker">Services</span>
         <h2 id="features-title">
-          Ce que Kamo <span>automatise</span>
+          Une ville <span>qui évolue</span>
         </h2>
-        <p className="features-lead">Kamo organise, recherche, réserve et communique pour vous.</p>
-        <p className="features-lead features-lead--soft">Déléguez vos tâches quotidiennes à des agents IA autonomes.</p>
+        <p className="features-lead">Terra Nova centralise les services, l’information et les besoins de ses habitants.</p>
+        <p className="features-lead features-lead--soft">Un espace numérique qui accompagne la ville à mesure qu’elle grandit.</p>
       </motion.div>
 
       <HeaderSparkles />
@@ -153,19 +152,27 @@ export default function Features() {
         transition={{ duration: 0.85, delay: 0.12, ease: EASE }}
       >
         <div className="features-stage__intro">
-          <span>VOTRE QUOTIDIEN, EN PILOTE AUTOMATIQUE</span>
+          <span>TERRA NOVA, AU PLUS PRÈS DU QUOTIDIEN</span>
           <h3 className="features-stage__title">
-            <span>Des agents IA</span>
+            <span>Des services</span>
             <span>pour chaque</span>
-            <span>tâche</span>
-            <span>importante</span>
+            <span>besoin</span>
+            <span>de la ville</span>
           </h3>
           <i aria-hidden="true" />
         </div>
 
         <svg className="features-stage__wave" viewBox="0 0 430 140" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="features-wave-gradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#4b14f5" />
+              <stop offset="55%" stopColor="#8a18f0" />
+              <stop offset="100%" stopColor="#ff1fd0" />
+            </linearGradient>
+          </defs>
           <motion.path
-            d="M-18 97 C 72 34, 145 31, 204 77 C 252 115, 307 148, 364 101 C 393 77, 421 55, 453 64"
+            d="M-12 86 C 70 50, 150 12, 230 20 C 285 26, 300 84, 335 108 C 355 120, 375 118, 400 112"
+            stroke="url(#features-wave-gradient)"
             initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
             whileInView={{ pathLength: 1, opacity: 1 }}
             viewport={{ once: true }}
@@ -173,32 +180,32 @@ export default function Features() {
           />
         </svg>
 
-        <div className="features-cards" aria-label="Exemples de tâches automatisées">
+        <div className="features-cards" aria-label="Exemples de services de Terra Nova">
           <FeatureCard
             type="calendar"
             icon={<CalendarIcon />}
-            title="Planifier ma semaine"
-            description={<>Organise vos rendez-vous,<br />réunions et tâches<br />automatiquement.</>}
+            title="Services de la ville"
+            description={<>Accédez aux services,<br />informations utiles et<br />contenus de la ville.</>}
             delay={0.18}
           >
             <div className="calendar-preview">
-              <div><strong>09:00</strong><span className="calendar-preview__dot" />Réunion équipe</div>
-              <div><strong>11:00</strong><span className="calendar-preview__dot" />Focus travail</div>
+              <div><strong>01</strong><span className="calendar-preview__dot" />Informations locales</div>
+              <div><strong>02</strong><span className="calendar-preview__dot" />Services de la ville</div>
             </div>
           </FeatureCard>
 
           <FeatureCard
             type="travel"
-            icon={<PlaneIcon />}
-            title="Réserver mes voyages"
-            description={<>Trouvez et réservez vos vols,<br />hôtels et déplacements en<br />quelques secondes.</>}
+            icon={<RequestIcon />}
+            title="Exprimer un besoin"
+            description={<>Faites remonter un besoin,<br />communiquez ou signalez<br />un problème simplement.</>}
             delay={0.31}
           >
             <div className="travel-preview">
-              <img src={parisTemplateThumb} alt="Paris, France" />
+              <span className="terra-request-thumb" aria-hidden="true"><RequestIcon /></span>
               <div>
-                <strong>Paris, France</strong>
-                <span>12 – 15 Oct.</span>
+                <strong>Besoin citoyen</strong>
+                <span>Envoyer une demande</span>
               </div>
               <ArrowCircle />
             </div>
@@ -207,15 +214,15 @@ export default function Features() {
 
           <FeatureCard
             type="mail"
-            icon={<MailIcon />}
-            title="Répondre à mes e-mails"
-            description={<>Analyse, rédige et répond<br />à vos e-mails dans votre ton.</>}
+            icon={<CouncilIcon />}
+            title="Rester informé"
+            description={<>Suivez les informations<br />et les nouveaux services<br />de Terra Nova.</>}
             delay={0.44}
           >
             <div className="mail-preview">
-              <span className="gmail-mark" aria-hidden="true"><GmailIcon /></span>
+              <span className="gmail-mark" aria-hidden="true"><CouncilIcon /></span>
               <div>
-                <strong>Re: Proposition de partenariat</strong>
+                <strong>Haut Conseil · Information</strong>
                 <span />
                 <span />
               </div>
@@ -239,22 +246,22 @@ export default function Features() {
               <img src={avatarTwo} alt="" />
               <img src={avatarThree} alt="" />
             </div>
-            <p><strong>12K</strong><span>utilisateurs actifs</span></p>
+            <p><strong>Terra Nova</strong><span>ville en évolution</span></p>
           </div>
-          <p className="features-stats__tasks"><i /> +150K tâches automatisées</p>
+          <p className="features-stats__tasks"><i /> Flux vivant de besoins</p>
         </motion.div>
 
         <motion.div
           className="features-note"
-          initial={reduceMotion ? false : { opacity: 0, rotate: -8, scale: 0.9 }}
-          whileInView={{ opacity: 1, rotate: -7, scale: 1 }}
+          initial={reduceMotion ? false : { opacity: 0, rotate: -18, scale: 0.9 }}
+          whileInView={{ opacity: 1, rotate: -14, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.66, ease: EASE }}
         >
-          <span>Plus de temps<br />pour l’essentiel</span>
-          <svg viewBox="0 0 160 112" aria-hidden="true">
-            <path d="M141 17c-8 34-32 49-67 53-28 4-45 1-61-10" />
-            <path d="M20 50 10 61l14 7" />
+          <span>Plus simple<br />pour vivre la ville</span>
+          <svg viewBox="0 0 90 70" aria-hidden="true">
+            <path d="M80 4C76 38 50 62 10 58" />
+            <path d="M24 46 9 58l15 9" />
           </svg>
           <i />
         </motion.div>

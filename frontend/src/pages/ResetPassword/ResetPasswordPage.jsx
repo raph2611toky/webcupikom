@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
   return (
     <main className="auth-page">
       <section className="auth-shell auth-shell--compact" aria-labelledby="reset-title">
-        <a className="auth-brand" href="/">Kam<span>o</span></a>
+        <a className="auth-brand" href="/">Terra<span>Nova</span></a>
         <div className="auth-intro">
           <span className="auth-kicker">Sécurité</span>
           <h1 id="reset-title">Nouveau mot de passe</h1>

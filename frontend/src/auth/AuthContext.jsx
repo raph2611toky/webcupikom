@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import {
   bootstrapSession,
   completeGoogleAuth,
+  getProfile,
   invalidateSessionBootstrap,
   login as loginRequest,
   logout as logoutRequest,
@@ -61,6 +62,16 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const profile = await getProfile();
+    setUser(profile);
+    return profile;
+  }, []);
+
+  const replaceUser = useCallback((nextUser) => {
+    setUser(nextUser || null);
+  }, []);
+
   const logout = useCallback(async () => {
     await logoutRequest();
     setUser(null);
@@ -74,9 +85,11 @@ export function AuthProvider({ children }) {
       login,
       completeGoogle,
       verifyEmail,
+      refreshUser,
+      replaceUser,
       logout,
     }),
-    [completeGoogle, login, logout, ready, user, verifyEmail],
+    [completeGoogle, login, logout, ready, refreshUser, replaceUser, user, verifyEmail],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { getApiErrorMessage, isEmailNotVerifiedError, resendVerification, startGoogleAuth } from "../../api/auth.js";
-import { env } from "../../config/env.js";
+import {
+  getApiErrorMessage,
+  isEmailNotVerifiedError,
+  resendVerification,
+  startGoogleAuth,
+} from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import { getSafeNextPath, navigate } from "../../router/navigation.js";
+import { getRoleSafeNextPath, navigate } from "../../utils/navigation.js";
 import "../auth.css";
 
 function GoogleIcon() {
@@ -33,8 +37,8 @@ export default function LoginPage() {
     setCanResend(false);
 
     try {
-      await login({ email, password, remember });
-      navigate(getSafeNextPath(env.authAfterLogin), { replace: true });
+      const data = await login({ email, password, remember });
+      navigate(getRoleSafeNextPath(data.user?.role), { replace: true });
     } catch (error) {
       setCanResend(isEmailNotVerifiedError(error));
       setStatus({ type: "error", message: getApiErrorMessage(error, "Connexion impossible.") });
@@ -70,14 +74,14 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-shell" aria-labelledby="login-title">
-        <a className="auth-brand" href="/" aria-label="Kamo, retour à l’accueil">
-          Kam<span>o</span>
+        <a className="auth-brand" href="/" aria-label="Terra Nova, retour à l’accueil">
+          Terra<span>Nova</span>
         </a>
 
         <div className="auth-intro">
-          <span className="auth-kicker">Bienvenue</span>
+          <span className="auth-kicker">Portail municipal</span>
           <h1 id="login-title">Se connecter</h1>
-          <p>Accédez à votre espace Kamo.</p>
+          <p>Accédez à votre espace Terra Nova.</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
