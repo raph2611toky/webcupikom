@@ -97,7 +97,17 @@ export function getApiErrorMessage(error, fallback = "Une erreur est survenue.")
     }
   }
 
-  return candidates.find(Boolean) || data.detail || fallback;
+  // DRF renvoie souvent les erreurs de serializer directement par champ
+  // (ex. { agent: ["Ce champ est obligatoire."] }) sans clé `errors`.
+  if (data && typeof data === "object") {
+    for (const [key, value] of Object.entries(data)) {
+      if (["detail", "message", "errors"].includes(key)) continue;
+      if (Array.isArray(value)) candidates.push(...value.map(String));
+      else if (typeof value === "string") candidates.push(value);
+    }
+  }
+
+  return candidates.find(Boolean) || data.detail || data.message || fallback;
 }
 
 export function isEmailNotVerifiedError(error) {

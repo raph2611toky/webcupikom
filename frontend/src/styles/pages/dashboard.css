@@ -7460,3 +7460,19 @@ html[data-font-size="xlarge"] .profile-page--one-screen .profile-sections {
   align-items:start;
 }
 
+
+/* V49 — Rendez-vous: service + agent + motif alignés sur l'API réelle */
+.appointment-redesign-page .appointment-service-row{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+}
+.appointment-redesign-page .appointment-modern-field--reason{
+  grid-column:1 / -1;
+}
+@media(max-width:700px){
+  .appointment-redesign-page .appointment-service-row{
+    grid-template-columns:1fr;
+  }
+  .appointment-redesign-page .appointment-modern-field--reason{
+    grid-column:auto;
+  }
+}

@@ -3,7 +3,7 @@ import { unwrapList } from "./helpers.js";
 
 function toFormData(payload = {}) {
   const form = new FormData();
-  Object.entries(payload).forEach(([key,value]) => {
+  Object.entries(payload).forEach(([key, value]) => {
     if (value === undefined || value === null || value === "") return;
     form.append(key, typeof value === "boolean" ? String(value) : value);
   });
@@ -11,58 +11,73 @@ function toFormData(payload = {}) {
 }
 
 function cleanParams(params = {}) {
-  return Object.fromEntries(Object.entries(params).filter(([,value]) => value !== undefined && value !== null && value !== ""));
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ""),
+  );
 }
 
-export function normalizeAppointmentSlot(item = {}) {
-  const remaining = Number(item.remaining_capacity ?? Math.max(0, Number(item.capacity ?? 1) - Number(item.booked_count ?? 0)));
-  const active = item.is_active !== false;
-  const available = active && item.is_available !== false && remaining > 0;
-  return {
-    ...item,
-    id: item.id,
-    serviceId: item.service,
-    serviceName: item.service_name || "Service municipal",
-    agentId: item.agent ?? null,
-    agentName: item.agent_name || "",
-    date: item.date,
-    startTime: String(item.start_time || "").slice(0,5),
-    endTime: String(item.end_time || "").slice(0,5),
-    time: String(item.start_time || "").slice(0,5),
-    capacity: Number(item.capacity ?? 1),
-    bookedCount: Number(item.booked_count ?? 0),
-    remainingCapacity: remaining,
-    isAvailable: available,
-    isActive: active,
-    state: !active ? "unavailable" : available ? "available" : "full",
-    key: String(item.id ?? `${item.service}|${item.date}|${item.start_time}`),
-  };
+function pad(value) { return String(value).padStart(2, "0"); }
+function localDateKey(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+function localTimeKey(date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}`; }
+
+function parseDateTime(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function resolveList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.appointments)) return data.appointments;
+  if (Array.isArray(data?.busy)) return data.busy;
+  if (Array.isArray(data?.busy_times)) return data.busy_times;
+  if (Array.isArray(data?.booked)) return data.booked;
+  if (Array.isArray(data?.unavailable)) return data.unavailable;
+  if (Array.isArray(data?.unavailable_times)) return data.unavailable_times;
+  if (Array.isArray(data?.slots)) return data.slots;
+  if (Array.isArray(data?.times)) return data.times;
+  return [];
+}
+
+function resolveAppointment(data) {
+  if (data?.appointment && typeof data.appointment === "object") return data.appointment;
+  if (data?.data && !Array.isArray(data.data) && typeof data.data === "object") return data.data;
+  return data || {};
 }
 
 export function normalizeCitizenAppointment(item = {}) {
+  const start = parseDateTime(item.starts_at || item.start_at || item.start);
+  const end = parseDateTime(item.ends_at || item.end_at || item.end);
   return {
     ...item,
     id: item.id,
     reference: item.reference || String(item.id || ""),
-    serviceId: item.service,
-    serviceName: item.service_name || "Service municipal",
-    serviceAddress: item.service_address || "",
-    agentId: item.agent ?? null,
-    agentName: item.agent_name || "Agent municipal",
-    slotId: item.slot ?? null,
-    date: item.date,
-    startTime: String(item.start_time || "").slice(0,5),
-    endTime: String(item.end_time || "").slice(0,5),
-    time: String(item.start_time || "").slice(0,5),
+    serviceId: item.service?.id ?? item.service ?? null,
+    serviceName: item.service_name || item.service?.name || "Service municipal",
+    serviceAddress: item.location || item.service_address || "",
+    agentId: item.agent?.id ?? item.agent ?? null,
+    agentName: item.agent_name || item.agent?.display_name || item.agent?.name || "Agent municipal",
+    startsAt: item.starts_at || "",
+    endsAt: item.ends_at || "",
+    date: start ? localDateKey(start) : "",
+    startTime: start ? localTimeKey(start) : "",
+    endTime: end ? localTimeKey(end) : "",
+    time: start ? localTimeKey(start) : "",
     reason: item.reason || "",
-    notes: item.notes || "",
-    preferredLanguage: item.preferred_language || "",
-    accessibilityNeeds: item.accessibility_needs || "",
-    contactPhone: item.contact_phone || "",
-    status: item.status || "pending",
-    cancellationReason: item.cancellation_reason || "",
-    canCancel: item.can_cancel !== false,
-    canReschedule: item.can_reschedule !== false,
+    notes: item.details || item.notes || "",
+    details: item.details || "",
+    location: item.location || "",
+    preparationInstructions: item.preparation_instructions || "",
+    preparationDocuments: item.preparation_documents || "",
+    reminderEnabled: item.reminder_enabled !== false,
+    reminderMinutesBefore: Number(item.reminder_minutes_before ?? 60),
+    status: item.status || "requested",
+    statusLabel: item.status_label || "",
+    canCancel: ["requested", "confirmed"].includes(item.status || "requested"),
+    canReschedule: false,
     createdAt: item.created_at || "",
     updatedAt: item.updated_at || "",
   };
@@ -71,14 +86,9 @@ export function normalizeCitizenAppointment(item = {}) {
 export function normalizeAgentAppointment(item = {}) {
   return {
     ...normalizeCitizenAppointment(item),
-    citizenId: item.citizen,
-    citizenName: item.citizen_name || "Citoyen",
+    citizenId: item.citizen?.id ?? item.citizen ?? null,
+    citizenName: item.citizen_name || item.citizen?.display_name || "Citoyen",
     citizenEmail: item.citizen_email || "",
-    citizenPhone: item.citizen_phone || "",
-    citizenAddress: item.citizen_address || "",
-    assignedTo: item.assigned_to ?? null,
-    assignedToName: item.assigned_to_name || "",
-    internalNotes: item.internal_notes || "",
   };
 }
 
@@ -90,264 +100,242 @@ export function normalizeAppointmentEvent(item = {}) {
     message: item.message || "",
     eventType: item.event_type || "note",
     isPublic: item.is_public !== false,
-    createdBy: item.created_by ?? null,
-    createdByName: item.created_by_name || "",
     createdAt: item.created_at || "",
   };
 }
 
+export async function getCitizenAppointmentAgents() {
+  const { data } = await api.get("/citizen/appointments/agents/");
+  return unwrapList(data).map((item) => ({
+    ...item,
+    id: item.id,
+    name: item.display_name || item.name || `Agent ${item.id}`,
+  }));
+}
+
+function busyInterval(entry, date) {
+  if (!entry) return null;
+  if (typeof entry === "string") {
+    if (/^\d{2}:\d{2}/.test(entry)) {
+      const start = new Date(`${date}T${entry.slice(0, 5)}:00`);
+      const end = new Date(start.getTime() + 30 * 60 * 1000);
+      return { start, end };
+    }
+    const start = parseDateTime(entry);
+    return start ? { start, end: new Date(start.getTime() + 30 * 60 * 1000) } : null;
+  }
+  const startValue = entry.starts_at || entry.start_at || entry.start || entry.from || entry.datetime;
+  const endValue = entry.ends_at || entry.end_at || entry.end || entry.to;
+  let start = parseDateTime(startValue);
+  let end = parseDateTime(endValue);
+  if (!start && typeof entry.time === "string") start = new Date(`${date}T${entry.time.slice(0, 5)}:00`);
+  if (!start && typeof entry.start_time === "string") start = new Date(`${date}T${entry.start_time.slice(0, 5)}:00`);
+  if (!end && typeof entry.end_time === "string") end = new Date(`${date}T${entry.end_time.slice(0, 5)}:00`);
+  if (start && !end) end = new Date(start.getTime() + 30 * 60 * 1000);
+  return start && end ? { start, end } : null;
+}
+
+function buildCandidateSlots({ date, agent, agentName, busyRows }) {
+  const busy = resolveList(busyRows).map((row) => busyInterval(row, date)).filter(Boolean);
+  const now = new Date();
+  const slots = [];
+  const ranges = [[8, 12], [13, 17]];
+  for (const [from, to] of ranges) {
+    for (let minutes = from * 60; minutes < to * 60; minutes += 30) {
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      const start = new Date(`${date}T${pad(hour)}:${pad(minute)}:00`);
+      const end = new Date(start.getTime() + 30 * 60 * 1000);
+      const isPast = end <= now;
+      const isBusy = busy.some((row) => start < row.end && end > row.start);
+      slots.push({
+        id: `${agent}|${date}|${pad(hour)}:${pad(minute)}`,
+        agentId: agent,
+        agentName: agentName || "Agent municipal",
+        date,
+        startTime: localTimeKey(start),
+        endTime: localTimeKey(end),
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+        isAvailable: !isPast && !isBusy,
+        state: !isPast && !isBusy ? "available" : "full",
+      });
+    }
+  }
+  return slots;
+}
+
 /* ------------------------------ Citizen ------------------------------ */
-export async function getCitizenAppointments(params = {}) {
-  const { data } = await api.get("/citizen/appointments/", { params: cleanParams(params) });
+export async function getCitizenAppointments() {
+  const { data } = await api.get("/citizen/appointments/");
   return unwrapList(data).map(normalizeCitizenAppointment);
 }
 
-export async function getCitizenAppointmentAvailability(params = {}) {
-  const { data } = await api.get("/citizen/appointments/availability/", { params: cleanParams(params) });
-  return unwrapList(data).map(normalizeAppointmentSlot);
+export async function getCitizenAppointmentAvailability({ agent, date, agentName = "" } = {}) {
+  if (!agent || !date) return [];
+  const { data } = await api.get("/citizen/appointments/availability/", {
+    params: cleanParams({ agent, date }),
+  });
+  return buildCandidateSlots({ date, agent, agentName, busyRows: data });
 }
 
 export async function getCitizenUpcomingAppointments() {
-  const { data } = await api.get("/citizen/appointments/upcoming/");
-  return unwrapList(data).map(normalizeCitizenAppointment);
+  const rows = await getCitizenAppointments();
+  const now = Date.now();
+  return rows
+    .filter((item) => {
+      const start = parseDateTime(item.startsAt)?.getTime() ?? 0;
+      return start >= now && !["cancelled", "declined", "completed"].includes(item.status);
+    })
+    .sort((a, b) => String(a.startsAt).localeCompare(String(b.startsAt)));
 }
 
 export async function getCitizenAppointmentHistory() {
-  const { data } = await api.get("/citizen/appointments/history/");
-  return unwrapList(data).map(normalizeCitizenAppointment);
+  const rows = await getCitizenAppointments();
+  const now = Date.now();
+  return rows
+    .filter((item) => {
+      const start = parseDateTime(item.startsAt)?.getTime() ?? 0;
+      return start < now || ["cancelled", "declined", "completed"].includes(item.status);
+    })
+    .sort((a, b) => String(b.startsAt).localeCompare(String(a.startsAt)));
 }
 
 export async function getCitizenAppointment(reference) {
   const { data } = await api.get(`/citizen/appointments/${encodeURIComponent(reference)}/`);
-  return normalizeCitizenAppointment(data);
+  return normalizeCitizenAppointment(resolveAppointment(data));
 }
 
-export async function createCitizenAppointment(payload) {
+export async function createCitizenAppointment(payload = {}) {
   const { data } = await api.post("/citizen/appointments/", toFormData({
+    agent: payload.agent ?? payload.agentId,
     service: payload.service ?? payload.serviceId,
-    slot: payload.slot ?? payload.slotId,
+    starts_at: payload.starts_at ?? payload.startsAt,
+    ends_at: payload.ends_at ?? payload.endsAt,
     reason: payload.reason,
-    notes: payload.notes,
-    preferred_language: payload.preferred_language ?? payload.preferredLanguage,
-    accessibility_needs: payload.accessibility_needs ?? payload.accessibilityNeeds,
-    contact_phone: payload.contact_phone ?? payload.contactPhone,
+    details: payload.details ?? payload.notes,
+    reminder_enabled: payload.reminder_enabled ?? payload.reminderEnabled ?? true,
+    reminder_minutes_before: payload.reminder_minutes_before ?? payload.reminderMinutesBefore ?? 60,
   }));
-  return normalizeCitizenAppointment(data);
+  return normalizeCitizenAppointment(resolveAppointment(data));
 }
 
 export async function updateCitizenAppointment(reference, payload = {}) {
   const { data } = await api.patch(`/citizen/appointments/${encodeURIComponent(reference)}/`, toFormData({
-    slot: payload.slot ?? payload.slotId,
-    reason: payload.reason,
-    notes: payload.notes,
-    preferred_language: payload.preferred_language ?? payload.preferredLanguage,
-    accessibility_needs: payload.accessibility_needs ?? payload.accessibilityNeeds,
-    contact_phone: payload.contact_phone ?? payload.contactPhone,
+    status: payload.status,
+    reminder_enabled: payload.reminder_enabled ?? payload.reminderEnabled,
+    reminder_minutes_before: payload.reminder_minutes_before ?? payload.reminderMinutesBefore,
   }));
-  return normalizeCitizenAppointment(data);
+  return normalizeCitizenAppointment(resolveAppointment(data));
 }
 
-export async function cancelCitizenAppointment(reference, reason = "") {
-  const config = reason ? { data: toFormData({ reason }) } : undefined;
-  await api.delete(`/citizen/appointments/${encodeURIComponent(reference)}/`, config);
+export async function cancelCitizenAppointment(reference) {
+  await updateCitizenAppointment(reference, { status: "cancelled" });
   return true;
 }
 
-export async function getCitizenAppointmentTimeline(reference) {
-  const { data } = await api.get(`/citizen/appointments/${encodeURIComponent(reference)}/timeline/`);
-  return unwrapList(data).map(normalizeAppointmentEvent);
+export async function getCitizenAppointmentTimeline() {
+  return [];
 }
 
 /* ------------------------------- Agent ------------------------------- */
-export async function getAgentAppointments(params = {}) {
-  const { data } = await api.get("/agent/appointments/", { params: cleanParams(params) });
+export async function getAgentAppointments() {
+  const { data } = await api.get("/agent/appointments/");
   return unwrapList(data).map(normalizeAgentAppointment);
 }
 
 export async function getAgentAppointmentSummary() {
-  const { data } = await api.get("/agent/appointments/summary/");
-  return data || {};
+  const rows = await getAgentAppointments();
+  const today = localDateKey(new Date());
+  return {
+    total: rows.length,
+    today: rows.filter((item) => item.date === today).length,
+    requested: rows.filter((item) => item.status === "requested").length,
+    pending: rows.filter((item) => item.status === "requested").length,
+    confirmed: rows.filter((item) => item.status === "confirmed").length,
+    completed: rows.filter((item) => item.status === "completed").length,
+    cancelled: rows.filter((item) => item.status === "cancelled").length,
+    declined: rows.filter((item) => item.status === "declined").length,
+    upcoming: rows.filter((item) => ["requested", "confirmed"].includes(item.status) && (parseDateTime(item.startsAt)?.getTime() ?? 0) >= Date.now()).length,
+  };
 }
 
 export async function getAgentAppointment(reference) {
   const { data } = await api.get(`/agent/appointments/${encodeURIComponent(reference)}/`);
-  return normalizeAgentAppointment(data);
+  return normalizeAgentAppointment(resolveAppointment(data));
 }
 
 export async function updateAgentAppointment(reference, payload = {}) {
   const { data } = await api.patch(`/agent/appointments/${encodeURIComponent(reference)}/`, toFormData({
     status: payload.status,
-    slot: payload.slot ?? payload.slotId,
-    assigned_to: payload.assigned_to ?? payload.assignedTo,
-    internal_notes: payload.internal_notes ?? payload.internalNotes,
-    public_message: payload.public_message ?? payload.publicMessage,
-    cancellation_reason: payload.cancellation_reason ?? payload.cancellationReason,
+    starts_at: payload.starts_at ?? payload.startsAt,
+    ends_at: payload.ends_at ?? payload.endsAt,
+    location: payload.location,
+    preparation_instructions: payload.preparation_instructions ?? payload.preparationInstructions,
   }));
-  return normalizeAgentAppointment(data);
+  return normalizeAgentAppointment(resolveAppointment(data));
 }
 
-export async function getAgentAppointmentTimeline(reference) {
-  const { data } = await api.get(`/agent/appointments/${encodeURIComponent(reference)}/timeline/`);
-  return unwrapList(data).map(normalizeAppointmentEvent);
-}
-
-export async function addAgentAppointmentEvent(reference, payload = {}) {
-  const { data } = await api.post(`/agent/appointments/${encodeURIComponent(reference)}/timeline/`, toFormData({
-    title: payload.title,
-    message: payload.message,
-    is_public: payload.is_public ?? payload.isPublic,
-  }));
-  return normalizeAppointmentEvent(data);
-}
-
-export async function getAgentAppointmentSlots(params = {}) {
-  const { data } = await api.get("/agent/appointment-slots/", { params: cleanParams(params) });
-  return unwrapList(data).map(normalizeAppointmentSlot);
-}
-
-export async function createAgentAppointmentSlot(payload = {}) {
-  const { data } = await api.post("/agent/appointment-slots/", toFormData({
-    service: payload.service ?? payload.serviceId,
-    date: payload.date,
-    start_time: payload.start_time ?? payload.startTime,
-    end_time: payload.end_time ?? payload.endTime,
-    capacity: payload.capacity,
-  }));
-  return normalizeAppointmentSlot(data);
-}
-
-export async function getAgentAppointmentSlot(id) {
-  const { data } = await api.get(`/agent/appointment-slots/${encodeURIComponent(id)}/`);
-  return normalizeAppointmentSlot(data);
-}
-
-export async function updateAgentAppointmentSlot(id, payload = {}) {
-  const { data } = await api.patch(`/agent/appointment-slots/${encodeURIComponent(id)}/`, toFormData({
-    date: payload.date,
-    start_time: payload.start_time ?? payload.startTime,
-    end_time: payload.end_time ?? payload.endTime,
-    capacity: payload.capacity,
-    is_active: payload.is_active ?? payload.isActive,
-  }));
-  return normalizeAppointmentSlot(data);
-}
-
-export async function disableAgentAppointmentSlot(id) {
-  await api.delete(`/agent/appointment-slots/${encodeURIComponent(id)}/`);
-  return true;
+export async function getAgentAppointmentTimeline() { return []; }
+export async function addAgentAppointmentEvent() {
+  throw new Error("Le backend actuel ne fournit pas de timeline dédiée aux rendez-vous.");
 }
 
 /* ------------------------------- Admin ------------------------------- */
-export async function getAdminAppointments(params = {}) {
-  const { data } = await api.get("/admin/appointments/", { params: cleanParams(params) });
+export async function getAdminAppointments() {
+  const { data } = await api.get("/admin/appointments/");
   return unwrapList(data).map(normalizeAgentAppointment);
 }
 
-export async function createAdminAppointment(payload = {}) {
-  const { data } = await api.post("/admin/appointments/", toFormData({
-    citizen: payload.citizen ?? payload.citizenId,
-    service: payload.service ?? payload.serviceId,
-    slot: payload.slot ?? payload.slotId,
-    assigned_to: payload.assigned_to ?? payload.assignedTo,
-    reason: payload.reason,
-    notes: payload.notes,
-  }));
-  return normalizeAgentAppointment(data);
-}
-
 export async function getAdminAppointmentSummary() {
-  const { data } = await api.get("/admin/appointments/summary/");
-  return data || {};
+  const rows = await getAdminAppointments();
+  const today = localDateKey(new Date());
+  return {
+    total: rows.length,
+    today: rows.filter((item) => item.date === today).length,
+    requested: rows.filter((item) => item.status === "requested").length,
+    pending: rows.filter((item) => item.status === "requested").length,
+    confirmed: rows.filter((item) => item.status === "confirmed").length,
+    completed: rows.filter((item) => item.status === "completed").length,
+    cancelled: rows.filter((item) => item.status === "cancelled").length,
+    declined: rows.filter((item) => item.status === "declined").length,
+    upcoming: rows.filter((item) => ["requested", "confirmed"].includes(item.status) && (parseDateTime(item.startsAt)?.getTime() ?? 0) >= Date.now()).length,
+  };
 }
 
 export async function getAdminAppointment(reference) {
   const { data } = await api.get(`/admin/appointments/${encodeURIComponent(reference)}/`);
-  return normalizeAgentAppointment(data);
+  return normalizeAgentAppointment(resolveAppointment(data));
 }
 
 export async function updateAdminAppointment(reference, payload = {}) {
   const { data } = await api.patch(`/admin/appointments/${encodeURIComponent(reference)}/`, toFormData({
     status: payload.status,
-    slot: payload.slot ?? payload.slotId,
-    assigned_to: payload.assigned_to ?? payload.assignedTo,
-    reason: payload.reason,
-    internal_notes: payload.internal_notes ?? payload.internalNotes,
-    public_message: payload.public_message ?? payload.publicMessage,
-    cancellation_reason: payload.cancellation_reason ?? payload.cancellationReason,
+    starts_at: payload.starts_at ?? payload.startsAt,
+    ends_at: payload.ends_at ?? payload.endsAt,
+    location: payload.location,
+    preparation_instructions: payload.preparation_instructions ?? payload.preparationInstructions,
   }));
-  return normalizeAgentAppointment(data);
+  return normalizeAgentAppointment(resolveAppointment(data));
 }
 
-export async function getAdminAppointmentTimeline(reference) {
-  const { data } = await api.get(`/admin/appointments/${encodeURIComponent(reference)}/timeline/`);
-  return unwrapList(data).map(normalizeAppointmentEvent);
-}
-
-export async function addAdminAppointmentEvent(reference, payload = {}) {
-  const { data } = await api.post(`/admin/appointments/${encodeURIComponent(reference)}/timeline/`, toFormData({
-    title: payload.title,
-    message: payload.message,
-    is_public: payload.is_public ?? payload.isPublic,
-  }));
-  return normalizeAppointmentEvent(data);
-}
-
-export async function getAdminAppointmentSlots(params = {}) {
-  const { data } = await api.get("/admin/appointment-slots/", { params: cleanParams(params) });
-  return unwrapList(data).map(normalizeAppointmentSlot);
-}
-
-export async function createAdminAppointmentSlot(payload = {}) {
-  const { data } = await api.post("/admin/appointment-slots/", toFormData({
-    service: payload.service ?? payload.serviceId,
-    agent: payload.agent ?? payload.agentId,
-    date: payload.date,
-    start_time: payload.start_time ?? payload.startTime,
-    end_time: payload.end_time ?? payload.endTime,
-    capacity: payload.capacity,
-    is_active: payload.is_active ?? payload.isActive,
-  }));
-  return normalizeAppointmentSlot(data);
-}
-
-export async function getAdminAppointmentSlot(id) {
-  const { data } = await api.get(`/admin/appointment-slots/${encodeURIComponent(id)}/`);
-  return normalizeAppointmentSlot(data);
-}
-
-export async function updateAdminAppointmentSlot(id, payload = {}) {
-  const { data } = await api.patch(`/admin/appointment-slots/${encodeURIComponent(id)}/`, toFormData({
-    service: payload.service ?? payload.serviceId,
-    agent: payload.agent ?? payload.agentId,
-    date: payload.date,
-    start_time: payload.start_time ?? payload.startTime,
-    end_time: payload.end_time ?? payload.endTime,
-    capacity: payload.capacity,
-    is_active: payload.is_active ?? payload.isActive,
-  }));
-  return normalizeAppointmentSlot(data);
-}
-
-export async function disableAdminAppointmentSlot(id) {
-  await api.delete(`/admin/appointment-slots/${encodeURIComponent(id)}/`);
-  return true;
+export async function getAdminAppointmentTimeline() { return []; }
+export async function addAdminAppointmentEvent() {
+  throw new Error("Le backend actuel ne fournit pas de timeline dédiée aux rendez-vous.");
 }
 
 export function getAppointmentStatusLabel(status) {
   return ({
-    pending:"En attente",
-    confirmed:"Confirmé",
-    completed:"Terminé",
-    cancelled:"Annulé",
-    rejected:"Refusé",
-    no_show:"Absent",
+    requested: "En attente",
+    confirmed: "Confirmé",
+    completed: "Terminé",
+    cancelled: "Annulé",
+    declined: "Refusé",
+    pending: "En attente",
+    rejected: "Refusé",
   })[status] || status || "—";
 }
 
 export function getSlotStatusLabel(state) {
-  return ({
-    available:"Disponible",
-    full:"Complet",
-    unavailable:"Indisponible",
-  })[state] || state || "—";
+  return ({ available: "Disponible", full: "Occupé", unavailable: "Indisponible" })[state] || state || "—";
 }
