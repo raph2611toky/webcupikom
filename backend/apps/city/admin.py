@@ -4,6 +4,7 @@ from django.db import transaction
 from django.http import FileResponse, Http404
 from django.urls import path, reverse
 from django.utils.html import format_html
+from django.utils import timezone
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 from .models import (
@@ -292,3 +293,143 @@ class StaffAuditEventAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+# Administration Django du module "Projets municipaux". Les modèles restent
+# séparés des demandes citoyennes existantes afin de ne pas mélanger les deux
+# flux métiers.
+from .models import MunicipalIdea, MunicipalProject, ProjectContribution, ProjectSupport
+from .services.audit import record_staff_audit
+
+
+class ProjectContributionInline(admin.TabularInline):
+    model = ProjectContribution
+    extra = 0
+    fields = ("reference", "citizen", "contribution_type", "question_snapshot", "choice", "choice_label_snapshot", "comment", "created_at")
+    readonly_fields = fields
+    can_delete = False
+    show_change_link = True
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class ProjectSupportInline(admin.TabularInline):
+    model = ProjectSupport
+    extra = 0
+    fields = ("citizen", "created_at")
+    readonly_fields = fields
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(MunicipalProject)
+class MunicipalProjectAdmin(admin.ModelAdmin):
+    list_display = (
+        "title", "district", "status", "progress", "participation_type",
+        "support_enabled", "is_published", "updated_at",
+    )
+    list_filter = ("status", "participation_type", "support_enabled", "is_published", "district")
+    search_fields = ("title", "short_description", "description", "district", "slug")
+    prepopulated_fields = {"slug": ("title",)}
+    readonly_fields = ("created_by", "published_at", "created_at", "updated_at")
+    inlines = (ProjectContributionInline, ProjectSupportInline)
+    fieldsets = (
+        ("Projet", {"fields": ("title", "slug", "short_description", "description", "district")}),
+        ("Avancement", {"fields": ("status", "progress", "start_date", "expected_end_date", "actual_end_date", "objectives", "milestones")}),
+        ("Participation", {"fields": ("participation_type", "participation_question", "participation_options", "participation_opens_at", "participation_closes_at", "support_enabled")}),
+        ("Publication", {"fields": ("is_published", "published_at", "created_by", "created_at", "updated_at")}),
+    )
+
+    def has_delete_permission(self, request, obj=None):
+        # Pour conserver l'historique des participations, on retire un projet
+        # de la publication au lieu de le supprimer avec ses traces.
+        return False
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by_id:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+        record_staff_audit(
+            actor=request.user,
+            action="project.update" if change else "project.create",
+            resource_type="municipal_project",
+            resource_id=obj.pk,
+            resource_reference=obj.slug,
+            summary="Projet municipal modifié" if change else "Projet municipal créé",
+            changes={"fields": list(form.changed_data)},
+            request=request,
+        )
+
+
+@admin.register(ProjectContribution)
+class ProjectContributionAdmin(admin.ModelAdmin):
+    list_display = ("reference", "project", "citizen", "contribution_type", "choice", "created_at")
+    list_filter = ("contribution_type", "project", "created_at")
+    search_fields = ("reference", "project__title", "project__slug", "citizen__email", "comment")
+    readonly_fields = ("reference", "project", "citizen", "contribution_type", "question_snapshot", "choice", "choice_label_snapshot", "comment", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ProjectSupport)
+class ProjectSupportAdmin(admin.ModelAdmin):
+    list_display = ("project", "citizen", "created_at")
+    list_filter = ("project", "created_at")
+    search_fields = ("project__title", "project__slug", "citizen__email")
+    readonly_fields = ("project", "citizen", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(MunicipalIdea)
+class MunicipalIdeaAdmin(admin.ModelAdmin):
+    list_display = ("reference", "title", "citizen", "project", "category", "district", "status", "created_at")
+    list_filter = ("status", "category", "district", "project", "created_at")
+    search_fields = ("reference", "title", "description", "citizen__email", "project__title")
+    readonly_fields = ("reference", "citizen", "project", "title", "category", "district", "description", "created_at", "updated_at")
+    fields = (
+        "reference", "citizen", "project", "title", "category", "district", "description",
+        "status", "staff_note", "reviewed_by", "reviewed_at", "created_at", "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # La proposition est une trace citoyenne : elle n'est pas supprimée depuis l'admin.
+        return False
+
+    def save_model(self, request, obj, form, change):
+        review_change = change and ("status" in form.changed_data or "staff_note" in form.changed_data)
+        if review_change:
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+        if review_change:
+            record_staff_audit(
+                actor=request.user,
+                action="idea.review",
+                resource_type="municipal_idea",
+                resource_id=obj.pk,
+                resource_reference=obj.reference,
+                subject_user=obj.citizen,
+                summary="Proposition citoyenne examinée",
+                changes={"fields": list(form.changed_data)},
+                request=request,
+            )

@@ -161,3 +161,62 @@ report_urls = [
 urlpatterns = report_urls + urlpatterns
 from .report_views import AgentReportReopenView
 urlpatterns += [path('agent/reports/<str:reference>/reopen/', AgentReportReopenView.as_view(), name='agent-report-reopen')]
+
+# Projets municipaux & participation citoyenne (F65-F68).
+# Ce bloc reste volontairement séparé des CitizenRequest existantes.
+from .project_views import (
+    AdminMunicipalIdeaDetailView,
+    AdminMunicipalIdeaListView,
+    AdminProjectContributionListView,
+    AdminProjectDetailView,
+    AdminProjectListCreateView,
+    CitizenIdeaDetailView,
+    CitizenIdeaListCreateView,
+    CitizenProjectParticipationView,
+    CitizenProjectSupportView,
+    MunicipalProjectDetailView,
+    MunicipalProjectListView,
+)
+
+urlpatterns += [
+    # Consultation publique des projets (F67)
+    path("city/projects/", MunicipalProjectListView.as_view(), name="project-list"),
+    path("city/projects/<slug:slug>/", MunicipalProjectDetailView.as_view(), name="project-detail"),
+
+    # Participation citoyenne : avis/décision, soutien et idées/solutions (F65/F66/F68)
+    path(
+        "citizen/projects/<slug:slug>/participation/",
+        CitizenProjectParticipationView.as_view(),
+        name="citizen-project-participation",
+    ),
+    path(
+        "citizen/projects/<slug:slug>/support/",
+        CitizenProjectSupportView.as_view(),
+        name="citizen-project-support",
+    ),
+    path("citizen/ideas/", CitizenIdeaListCreateView.as_view(), name="citizen-idea-list"),
+    path(
+        "citizen/ideas/<str:reference>/",
+        CitizenIdeaDetailView.as_view(),
+        name="citizen-idea-detail",
+    ),
+
+    # Administration du même module, sans dupliquer l'architecture agent/admin existante.
+    path("admin/projects/", AdminProjectListCreateView.as_view(), name="admin-project-list"),
+    path(
+        "admin/projects/<slug:slug>/",
+        AdminProjectDetailView.as_view(),
+        name="admin-project-detail",
+    ),
+    path(
+        "admin/project-participations/",
+        AdminProjectContributionListView.as_view(),
+        name="admin-project-participation-list",
+    ),
+    path("admin/ideas/", AdminMunicipalIdeaListView.as_view(), name="admin-idea-list"),
+    path(
+        "admin/ideas/<str:reference>/",
+        AdminMunicipalIdeaDetailView.as_view(),
+        name="admin-idea-detail",
+    ),
+]

@@ -1,0 +1,19 @@
+Terra Nova — Correctif Projets municipaux & participation citoyenne (F65-F68)
+Base requise : backend transmis le 03/10/2026 (backend(20261003-201723).zip).
+Extraire à la racine du backend contenant manage.py.
+Puis exécuter : python manage.py migrate
+Option démo : python manage.py seed_municipal_projects
+Tests ajoutés : python manage.py test apps.city.test_projects
+Guide : docs/PROJETS_MUNICIPAUX_API.md
+
+9 fichiers ajoutés ou modifiés ; aucun fichier inchangé.
+SHA-256  Chemin
+d740b01d8b604c07622e94923fe09466958c0277186fc7f8160434335df45991  apps/city/admin.py
+5a951bc58ffd63a7a0aed058c924160a0b4e730d7bf13d9edd1a2fc5bd276be0  apps/city/models.py
+debd63b9bee14eb564689b0ee50a8987e651f8154b913f65577768764b61c422  apps/city/urls.py
+f73fe20bd0eeba3d12e92c73c7963a2b863c02fae717f526c33293e20807ab5c  apps/city/project_serializers.py
+1ade21ad309362b5197afd24e9a7179f02e77f22b924337b24fbb0f7a7c4716e  apps/city/project_views.py
+52112d316d0d17a1ab13859ea09de016b501902c64ea2e6a91287912c66bda31  apps/city/migrations/0012_municipal_projects_participation.py
+ec64ad336971adf2a85d7367842488046c49db332277cd3ea72144866ea8c8e6  apps/city/test_projects.py
+9afe9b9871da059a1ded1769846630e87468ee905a86df4cf3bfdf7ffa0869ae  apps/city/management/commands/seed_municipal_projects.py
+0b1e16aa95cada96dab6ab17fc02dc765c666a9b49598cc48bf2a943eca981e5  docs/PROJETS_MUNICIPAUX_API.md

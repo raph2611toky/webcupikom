@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from .report_storage import PrivateReportStorage, report_image_path
@@ -543,3 +544,279 @@ class NewsDistrict(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['article', 'district'], name='unique_news_district')]
+
+class MunicipalProject(models.Model):
+    """Projet municipal publié aux citoyens.
+
+    Le même objet porte l'information F67 et, lorsqu'elle est activée, la
+    configuration de participation utilisée par F66/F65. Les contributions
+    restent dans un modèle séparé afin de conserver une trace personnelle et
+    immuable de chaque participation.
+    """
+
+    class Status(models.TextChoices):
+        PLANNED = "planned", "Planifié"
+        IN_PROGRESS = "in_progress", "En cours"
+        PAUSED = "paused", "En pause"
+        COMPLETED = "completed", "Terminé"
+        CANCELLED = "cancelled", "Annulé"
+
+    class ParticipationType(models.TextChoices):
+        NONE = "none", "Aucune"
+        CONSULTATION = "consultation", "Consultation"
+        DECISION = "decision", "Décision citoyenne"
+
+    title = models.CharField(max_length=220)
+    slug = models.SlugField(max_length=240, unique=True)
+    short_description = models.CharField(max_length=320, blank=True)
+    description = models.TextField()
+    district = models.CharField(max_length=120, blank=True, db_index=True)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PLANNED, db_index=True
+    )
+    progress = models.PositiveSmallIntegerField(default=0)
+    start_date = models.DateField(null=True, blank=True)
+    expected_end_date = models.DateField(null=True, blank=True)
+    actual_end_date = models.DateField(null=True, blank=True)
+    objectives = models.JSONField(default=list, blank=True)
+    milestones = models.JSONField(default=list, blank=True)
+
+    participation_type = models.CharField(
+        max_length=20,
+        choices=ParticipationType.choices,
+        default=ParticipationType.NONE,
+        db_index=True,
+    )
+    participation_question = models.CharField(max_length=320, blank=True)
+    participation_options = models.JSONField(default=list, blank=True)
+    participation_opens_at = models.DateTimeField(null=True, blank=True)
+    participation_closes_at = models.DateTimeField(null=True, blank=True)
+
+    support_enabled = models.BooleanField(default=True)
+    is_published = models.BooleanField(default=False, db_index=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_municipal_projects",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-is_published", "-updated_at", "title")
+        indexes = [
+            models.Index(fields=("is_published", "status"), name="city_proj_pub_status_idx"),
+            models.Index(fields=("participation_type", "participation_closes_at"), name="city_proj_part_close_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(progress__gte=0, progress__lte=100),
+                name="city_project_progress_0_100",
+            ),
+        ]
+        verbose_name = "projet municipal"
+        verbose_name_plural = "projets municipaux"
+
+    def clean(self):
+        errors = {}
+        if self.progress is not None and not 0 <= self.progress <= 100:
+            errors["progress"] = "La progression doit être comprise entre 0 et 100."
+        if self.start_date and self.expected_end_date and self.expected_end_date < self.start_date:
+            errors["expected_end_date"] = "La date de fin estimée doit être postérieure au début."
+        if (
+            self.participation_opens_at
+            and self.participation_closes_at
+            and self.participation_closes_at <= self.participation_opens_at
+        ):
+            errors["participation_closes_at"] = "La clôture doit être postérieure à l'ouverture."
+        if self.participation_type == self.ParticipationType.DECISION and not self.participation_question:
+            errors["participation_question"] = "Une question est requise pour une décision citoyenne."
+        if not isinstance(self.objectives or [], list) or any(
+            not isinstance(item, str) or not item.strip() for item in (self.objectives or [])
+        ):
+            errors["objectives"] = "Les objectifs doivent être une liste de textes non vides."
+        milestones = self.milestones or []
+        if not isinstance(milestones, list) or any(
+            not isinstance(item, dict)
+            or not str(item.get("title", "")).strip()
+            or str(item.get("status", "pending")).strip().lower() not in {"completed", "current", "pending"}
+            for item in milestones
+        ):
+            errors["milestones"] = "Chaque étape doit avoir un titre et un statut completed, current ou pending."
+        if self.participation_type != self.ParticipationType.NONE:
+            options = self.participation_options or []
+            valid_options = isinstance(options, list) and len(options) >= 2
+            values = set()
+            if valid_options:
+                for item in options:
+                    if not isinstance(item, dict):
+                        valid_options = False
+                        break
+                    value = str(item.get("value", "")).strip()
+                    label = str(item.get("label", "")).strip()
+                    if (
+                        not value
+                        or not label
+                        or len(value) > 80
+                        or len(label) > 160
+                        or value in values
+                    ):
+                        valid_options = False
+                        break
+                    values.add(value)
+            if not valid_options:
+                errors["participation_options"] = (
+                    "Au moins deux choix uniques avec value et label sont requis pour une participation."
+                )
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def participation_is_open(self):
+        if not self.is_published or self.participation_type == self.ParticipationType.NONE:
+            return False
+        now = timezone.now()
+        if self.participation_opens_at and now < self.participation_opens_at:
+            return False
+        if self.participation_closes_at and now >= self.participation_closes_at:
+            return False
+        return True
+
+    def save(self, *args, **kwargs):
+        if self.is_published and not self.published_at:
+            self.published_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+class ProjectContribution(models.Model):
+    class ContributionType(models.TextChoices):
+        CONSULTATION = "consultation", "Consultation"
+        DECISION = "decision", "Décision citoyenne"
+
+    reference = models.CharField(max_length=40, unique=True, editable=False)
+    project = models.ForeignKey(
+        MunicipalProject, on_delete=models.CASCADE, related_name="contributions"
+    )
+    citizen = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="municipal_project_contributions",
+    )
+    contribution_type = models.CharField(max_length=20, choices=ContributionType.choices)
+    question_snapshot = models.CharField(max_length=320, blank=True)
+    choice = models.CharField(max_length=80)
+    choice_label_snapshot = models.CharField(max_length=160, blank=True)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "citizen", "contribution_type"),
+                name="unique_project_citizen_contribution_type",
+            )
+        ]
+        indexes = [
+            models.Index(fields=("project", "contribution_type", "created_at"), name="city_proj_contrib_idx")
+        ]
+        verbose_name = "participation à un projet"
+        verbose_name_plural = "participations aux projets"
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            self.reference = make_reference("NT-PART")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.reference} — {self.project_id} / {self.citizen_id}"
+
+
+class ProjectSupport(models.Model):
+    project = models.ForeignKey(
+        MunicipalProject, on_delete=models.CASCADE, related_name="supports"
+    )
+    citizen = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="municipal_project_supports",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "citizen"), name="unique_project_citizen_support"
+            )
+        ]
+        verbose_name = "soutien à un projet"
+        verbose_name_plural = "soutiens aux projets"
+
+    def __str__(self):
+        return f"{self.project_id} — {self.citizen_id}"
+
+
+class MunicipalIdea(models.Model):
+    class Status(models.TextChoices):
+        SUBMITTED = "submitted", "Envoyée"
+        UNDER_REVIEW = "under_review", "À l'étude"
+        ACCEPTED = "accepted", "Retenue"
+        REJECTED = "rejected", "Non retenue"
+        IMPLEMENTED = "implemented", "Mise en œuvre"
+
+    reference = models.CharField(max_length=32, unique=True, editable=False)
+    citizen = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="municipal_ideas",
+    )
+    project = models.ForeignKey(
+        MunicipalProject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="citizen_ideas",
+    )
+    title = models.CharField(max_length=220)
+    category = models.CharField(max_length=100)
+    district = models.CharField(max_length=120, blank=True, db_index=True)
+    description = models.TextField()
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.SUBMITTED, db_index=True
+    )
+    staff_note = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_municipal_ideas",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        indexes = [
+            models.Index(fields=("status", "created_at"), name="city_idea_status_idx"),
+            models.Index(fields=("project", "created_at"), name="city_idea_project_idx"),
+        ]
+        verbose_name = "idée citoyenne"
+        verbose_name_plural = "idées citoyennes"
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            self.reference = make_reference("IDEA")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.reference} — {self.title}"
+
