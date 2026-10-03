@@ -243,6 +243,9 @@ def mark_mfa_enabled(user, *, secret: str) -> list[str]:
         "auth_token_version",
         "updated_at",
     ])
+    from ..models import AccountSession
+    AccountSession.objects.filter(user=user, revoked_at__isnull=True).update(
+        revoked_at=timezone.now(), revoke_reason='mfa_change')
     revoke_user_refresh_tokens(user)
     return recovery_codes
 
@@ -265,4 +268,7 @@ def clear_mfa(user) -> None:
         "auth_token_version",
         "updated_at",
     ])
+    from ..models import AccountSession
+    AccountSession.objects.filter(user=user, revoked_at__isnull=True).update(
+        revoked_at=timezone.now(), revoke_reason='mfa_change')
     revoke_user_refresh_tokens(user)

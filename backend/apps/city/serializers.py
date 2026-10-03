@@ -865,6 +865,19 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         return attrs
 
 
+    def update(self, instance, validated_data):
+        from django.db import transaction
+        from apps.users.services.sessions import revoke_all
+        with transaction.atomic():
+            instance = User.objects.select_for_update().get(pk=instance.pk)
+            security_change = any(field in validated_data and validated_data[field] != getattr(instance, field)
+                                  for field in ('is_active', 'role', 'email_verified'))
+            instance = super().update(instance, validated_data)
+            if security_change:
+                revoke_all(instance, 'admin_account_change')
+            return instance
+
+
 class WebCupRequestSnapshotSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebCupRequestSnapshot

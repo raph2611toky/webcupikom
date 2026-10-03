@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import uuid
 
 from .managers import UserManager
 
@@ -79,3 +80,53 @@ class User(AbstractUser):
             self.role = self.Role.ADMIN
         self.is_staff = self.role == self.Role.ADMIN
         super().save(*args, **kwargs)
+
+
+class AccountSession(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="account_sessions")
+    security_version = models.PositiveIntegerField(default=0)
+    refresh_jti = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoke_reason = models.CharField(max_length=80, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=["user", "revoked_at"])]
+
+
+class SecurityOTP(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    purpose = models.CharField(max_length=24)
+    binding = models.CharField(max_length=255)
+    email = models.EmailField()
+    security_version = models.PositiveIntegerField()
+    code_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+
+class SecurityRateBucket(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    started_at = models.DateTimeField()
+    count = models.PositiveIntegerField(default=0)
+
+
+class SecurityEvent(models.Model):
+    actor = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name='security_actions')
+    subject = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name='security_events')
+    kind = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    session_id = models.UUIDField(null=True)
+    details = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ('-created_at',)

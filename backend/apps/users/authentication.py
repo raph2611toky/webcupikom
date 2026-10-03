@@ -21,4 +21,10 @@ class VersionedJWTAuthentication(JWTAuthentication):
                 "Cette session a été révoquée après une modification de sécurité du compte.",
                 code="token_revoked",
             )
+        from .services.sessions import get_active_session
+        from .models import AccountSession
+        from django.utils import timezone
+        from datetime import timedelta
+        session = get_active_session(user, validated_token)
+        AccountSession.objects.filter(pk=session.pk, last_seen_at__lt=timezone.now()-timedelta(minutes=1)).update(last_seen_at=timezone.now())
         return user

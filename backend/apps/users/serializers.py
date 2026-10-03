@@ -292,7 +292,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError({"new_password_confirm": "Les mots de passe ne correspondent pas."})
         try:
             user_id = force_str(urlsafe_base64_decode(attrs["uid"]))
-            user = User.objects.get(pk=user_id, is_active=True)
+            user = User.objects.select_for_update().get(pk=user_id, is_active=True)
         except (ValueError, TypeError, OverflowError, User.DoesNotExist):
             raise serializers.ValidationError("Lien de réinitialisation invalide.")
         if not default_token_generator.check_token(user, attrs["token"]):
@@ -309,6 +309,9 @@ class SensitiveActionAuthSerializer(serializers.Serializer):
     pour un compte lié à Google, fournir soit un credential Google Identity
     Services, soit le couple code + state du flux OAuth déjà existant.
     """
+
+    email_challenge_id = serializers.UUIDField(required=False, write_only=True)
+    email_code = serializers.RegexField(r"^[0-9]{6}$", required=False, write_only=True)
 
     current_password = serializers.CharField(
         write_only=True, trim_whitespace=False, required=False, allow_blank=False
@@ -330,6 +333,13 @@ class SensitiveActionAuthSerializer(serializers.Serializer):
     )
 
     def validate_authentication_fields(self, attrs):
+        if bool(attrs.get('email_code')) != bool(attrs.get('email_challenge_id')):
+            raise serializers.ValidationError('Fournissez email_code et email_challenge_id ensemble.')
+        if sum(bool(attrs.get(k)) for k in ('email_code', 'mfa_code', 'recovery_code')) > 1:
+            raise serializers.ValidationError('Utilisez une seule preuve MFA.')
+        request = self.context.get('request')
+        if request is not None:
+            attrs['_security_binding'] = str(request.auth.get('sid', '')) + ':' + request.path
         current_password = attrs.get("current_password")
         credential = attrs.get("credential")
         code = attrs.get("code")
@@ -379,9 +389,8 @@ class SetPasswordSerializer(SensitiveActionAuthSerializer):
         return attrs
 
 
-class ChangeEmailRequestSerializer(serializers.Serializer):
+class ChangeEmailRequestSerializer(SensitiveActionAuthSerializer):
     new_email = serializers.EmailField()
-    current_password = serializers.CharField(write_only=True, trim_whitespace=False, required=False, allow_blank=True)
 
     def validate_new_email(self, value):
         email = value.strip().lower()
@@ -393,10 +402,7 @@ class ChangeEmailRequestSerializer(serializers.Serializer):
         return email
 
     def validate(self, attrs):
-        user = self.context["request"].user
-        if user.has_usable_password() and not user.check_password(attrs.get("current_password", "")):
-            raise serializers.ValidationError({"current_password": "Mot de passe actuel incorrect."})
-        return attrs
+        return self.validate_authentication_fields(attrs)
 
 
 class ChangeEmailConfirmSerializer(serializers.Serializer):
@@ -409,10 +415,12 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
                 salt=CHANGE_EMAIL_SALT,
                 max_age=60 * 60 * 24,
             )
-            user = User.objects.get(pk=data["user_id"], is_active=True)
+            user = User.objects.select_for_update().get(pk=data["user_id"], is_active=True)
             new_email = data["new_email"].strip().lower()
         except (signing.BadSignature, signing.SignatureExpired, KeyError, User.DoesNotExist):
             raise serializers.ValidationError("Lien de changement d'email invalide ou expiré.")
+        if data.get('old_email') != user.email or data.get('security_version') != user.auth_token_version:
+            raise serializers.ValidationError('Ce lien de changement email n’est plus valide.')
         if User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists():
             raise serializers.ValidationError("Cette adresse email est déjà utilisée.")
         attrs["user"] = user
@@ -440,25 +448,25 @@ class MFAConfirmSetupSerializer(serializers.Serializer):
 
 
 class MFAVerifyLoginSerializer(serializers.Serializer):
-    mfa_token = serializers.CharField(trim_whitespace=False)
-    mfa_code = serializers.CharField(required=False, trim_whitespace=True, allow_blank=False, max_length=12)
-    recovery_code = serializers.CharField(required=False, trim_whitespace=True, allow_blank=False, max_length=32)
+    mfa_token = serializers.CharField(trim_whitespace=False, max_length=2048)
+    mfa_code = serializers.CharField(required=False, max_length=12)
+    recovery_code = serializers.CharField(required=False, max_length=32)
+    email_challenge_id = serializers.UUIDField(required=False)
+    email_code = serializers.RegexField(r"^[0-9]{6}$", required=False)
 
     def validate(self, attrs):
-        if bool(attrs.get("mfa_code")) == bool(attrs.get("recovery_code")):
-            raise serializers.ValidationError(
-                "Fournissez soit mfa_code, soit recovery_code, mais pas les deux."
-            )
+        if sum(bool(attrs.get(k)) for k in ('mfa_code', 'recovery_code', 'email_code')) != 1:
+            raise serializers.ValidationError('Fournissez exactement une preuve MFA.')
+        if bool(attrs.get('email_code')) != bool(attrs.get('email_challenge_id')):
+            raise serializers.ValidationError('Fournissez email_code et email_challenge_id ensemble.')
         return attrs
 
 
 class MFADisableSerializer(SensitiveActionAuthSerializer):
     def validate(self, attrs):
         attrs = self.validate_authentication_fields(attrs)
-        if bool(attrs.get("mfa_code")) == bool(attrs.get("recovery_code")):
-            raise serializers.ValidationError(
-                "Fournissez soit mfa_code, soit recovery_code pour confirmer le MFA."
-            )
+        if sum(bool(attrs.get(k)) for k in ('mfa_code', 'recovery_code', 'email_code')) != 1:
+            raise serializers.ValidationError('Une preuve MFA est requise.')
         return attrs
 
 

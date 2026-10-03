@@ -61,7 +61,7 @@ def send_password_changed_email(user):
 
 
 def build_change_email_token(user, new_email):
-    return signing.dumps({"user_id": user.pk, "new_email": new_email.lower()}, salt=CHANGE_EMAIL_SALT)
+    return signing.dumps({"user_id": user.pk, "new_email": new_email.lower(), "old_email": user.email, "security_version": user.auth_token_version}, salt=CHANGE_EMAIL_SALT)
 
 
 def send_change_email_confirmation(user, new_email):

@@ -7,11 +7,13 @@ from django.db import transaction
 from django.core import signing
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import APIException, ValidationError, AuthenticationFailed
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from .security_api import SecurityAPIView as APIView
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -120,7 +122,12 @@ def auth_response(user, request, *, remember=None, extra=None, status_code=statu
     if remember is None:
         remember = settings.AUTH_COOKIE_REMEMBER_DEFAULT
 
-    refresh = build_refresh_token(user, remember=remember)
+    with transaction.atomic():
+        fresh = User.objects.select_for_update().get(pk=user.pk, is_active=True)
+        if fresh.auth_token_version != user.auth_token_version:
+            raise ValidationError('La sécurité du compte a changé. Reconnectez-vous.')
+        user = fresh
+        refresh = build_refresh_token(user, remember=remember, request=request)
     payload = {"access": str(refresh.access_token), "user": user_payload(user, request)}
     if extra:
         payload = {**extra, **payload}
@@ -175,6 +182,12 @@ def verify_sensitive_action_identity(user, validated_data, *, require_mfa=True):
                 "google": "Une ré-authentification Google est requise pour confirmer cette action."
             })
         raise ValidationError({"current_password": "Le mot de passe actuel est requis."})
+
+    if require_mfa and user.mfa_enabled and validated_data.get('email_code'):
+        from .services.security_otp import consume_otp
+        consume_otp(user, validated_data['email_challenge_id'], validated_data['email_code'],
+                    'sensitive', validated_data.get('_security_binding', ''))
+        return auth_method
 
     if require_mfa and user.mfa_enabled:
         try:
@@ -356,6 +369,7 @@ class ResendVerificationView(APIView):
             return server_error(exc, self.__class__.__name__)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class LoginView(APIView):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
@@ -378,7 +392,7 @@ class LoginView(APIView):
                 return no_store(Response({
                     "mfa_required": True,
                     "mfa_token": mfa_token,
-                    "methods": ["totp", "recovery_code"],
+                    "methods": ["totp", "email", "recovery_code"],
                     "expires_in": settings.MFA_LOGIN_CHALLENGE_MAX_AGE,
                 }))
 
@@ -413,6 +427,7 @@ class GoogleRedirectView(APIView):
             return server_error(exc, self.__class__.__name__)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class GoogleLoginView(APIView):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
@@ -505,7 +520,7 @@ class GoogleLoginView(APIView):
                     "created": False,
                     "mfa_required": True,
                     "mfa_token": mfa_token,
-                    "methods": ["totp", "recovery_code"],
+                    "methods": ["totp", "email", "recovery_code"],
                     "expires_in": settings.MFA_LOGIN_CHALLENGE_MAX_AGE,
                 }))
 
@@ -522,6 +537,7 @@ class GoogleLoginView(APIView):
             return server_error(exc, self.__class__.__name__)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class MFAVerifyLoginView(APIView):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
@@ -554,11 +570,17 @@ class MFAVerifyLoginView(APIView):
                     raise ValidationError({"mfa_token": "Ce challenge MFA n'est plus actif."})
 
                 try:
-                    method = verify_user_mfa(
-                        user,
-                        mfa_code=serializer.validated_data.get("mfa_code"),
-                        recovery_code=serializer.validated_data.get("recovery_code"),
-                    )
+                    if serializer.validated_data.get('email_code'):
+                        from .services.security_otp import consume_otp
+                        consume_otp(user, serializer.validated_data['email_challenge_id'],
+                            serializer.validated_data['email_code'], 'login', challenge['nonce'])
+                        method = 'email'
+                    else:
+                        method = verify_user_mfa(
+                            user,
+                            mfa_code=serializer.validated_data.get("mfa_code"),
+                            recovery_code=serializer.validated_data.get("recovery_code"),
+                        )
                 except MFAError as exc:
                     raise ValidationError({"mfa": str(exc)}) from exc
 
@@ -566,7 +588,7 @@ class MFAVerifyLoginView(APIView):
                 fields = ["mfa_login_nonce", "last_login", "updated_at"]
                 if method == "totp":
                     fields.append("mfa_last_used_counter")
-                else:
+                elif method == 'recovery':
                     fields.append("mfa_recovery_codes")
                     transaction.on_commit(
                         lambda: send_security_alert(
@@ -578,15 +600,15 @@ class MFAVerifyLoginView(APIView):
                 user.last_login = timezone.now()
                 user.save(update_fields=fields)
 
-            extra = {"mfa_verified": True}
-            if challenge.get("auth_source") == "google":
-                extra["created"] = False
-            return auth_response(
-                user,
-                request,
-                remember=bool(challenge.get("remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT)),
-                extra=extra,
-            )
+                extra = {"mfa_verified": True}
+                if challenge.get("auth_source") == "google":
+                    extra["created"] = False
+                return auth_response(
+                    user,
+                    request,
+                    remember=bool(challenge.get("remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT)),
+                    extra=extra,
+                )
         except APIException:
             raise
         except Exception as exc:
@@ -604,6 +626,7 @@ class MFAStatusView(APIView):
             "confirmed_at": user.mfa_confirmed_at,
             "recovery_codes_remaining": len(user.mfa_recovery_codes or []) if user.mfa_enabled else 0,
             "authenticator": "TOTP / Google Authenticator",
+            "methods": ["totp", "email", "recovery_code"] if user.mfa_enabled else [],
         })
 
 
@@ -616,30 +639,31 @@ class MFASetupView(APIView):
         try:
             serializer = MFASetupSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
-            user = request.user
-            if user.mfa_enabled:
-                raise ValidationError({"mfa": "Le MFA est déjà activé sur ce compte."})
-            verify_sensitive_action_identity(user, serializer.validated_data, require_mfa=False)
-
-            secret = generate_totp_secret()
-            user.mfa_secret_encrypted = encrypt_secret(secret)
-            user.mfa_last_used_counter = None
-            user.mfa_recovery_codes = []
-            user.mfa_confirmed_at = None
-            user.save(update_fields=[
-                "mfa_secret_encrypted", "mfa_last_used_counter",
-                "mfa_recovery_codes", "mfa_confirmed_at", "updated_at",
-            ])
-            uri = build_otpauth_uri(user, secret)
-            return Response({
-                "message": "Scannez le QR code avec Google Authenticator puis confirmez avec un code à 6 chiffres.",
-                "secret": secret,
-                "otpauth_uri": uri,
-                "qr_code_data_url": qr_code_data_url(uri),
-                "algorithm": "SHA1",
-                "digits": 6,
-                "period": 30,
-            })
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=request.user.pk)
+                if user.mfa_enabled:
+                    raise ValidationError({"mfa": "Le MFA est déjà activé sur ce compte."})
+                verify_sensitive_action_identity(user, serializer.validated_data, require_mfa=False)
+    
+                secret = generate_totp_secret()
+                user.mfa_secret_encrypted = encrypt_secret(secret)
+                user.mfa_last_used_counter = None
+                user.mfa_recovery_codes = []
+                user.mfa_confirmed_at = None
+                user.save(update_fields=[
+                    "mfa_secret_encrypted", "mfa_last_used_counter",
+                    "mfa_recovery_codes", "mfa_confirmed_at", "updated_at",
+                ])
+                uri = build_otpauth_uri(user, secret)
+                return Response({
+                    "message": "Scannez le QR code avec Google Authenticator puis confirmez avec un code à 6 chiffres.",
+                    "secret": secret,
+                    "otpauth_uri": uri,
+                    "qr_code_data_url": qr_code_data_url(uri),
+                    "algorithm": "SHA1",
+                    "digits": 6,
+                    "period": 30,
+                })
         except APIException:
             raise
         except Exception as exc:
@@ -762,6 +786,11 @@ class MFARecoveryCodesRegenerateView(APIView):
             return server_error(exc, self.__class__.__name__)
 
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+
+
+@method_decorator(csrf_protect, name="dispatch")
 class LogoutView(APIView):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
@@ -773,7 +802,13 @@ class LogoutView(APIView):
             refresh_value = get_refresh_cookie(request)
             if refresh_value:
                 try:
-                    RefreshToken(refresh_value).blacklist()
+                    token = RefreshToken(refresh_value)
+                    from .models import AccountSession
+                    from .services.sessions import revoke_session
+                    session = AccountSession.objects.filter(pk=token.get('sid'), user_id=token['user_id']).first() if token.get('sid') else None
+                    if session:
+                        revoke_session(session, 'logout')
+                    token.blacklist()
                 except TokenError:
                     # Même si le token est expiré/invalide, la déconnexion locale
                     # doit toujours supprimer le cookie navigateur.
@@ -788,6 +823,7 @@ class LogoutView(APIView):
             return server_error(exc, self.__class__.__name__)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class RefreshView(APIView):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
@@ -805,9 +841,9 @@ class RefreshView(APIView):
 
             try:
                 remember = remember_from_refresh(refresh_value)
-                serializer = TokenRefreshSerializer(data={"refresh": refresh_value})
-                serializer.is_valid(raise_exception=True)
-            except TokenError:
+                from .services.sessions import rotate_refresh
+                refresh_data = rotate_refresh(refresh_value)
+            except (TokenError, AuthenticationFailed):
                 response = Response(
                     {"detail": "Session expirée. Reconnectez-vous."},
                     status=status.HTTP_401_UNAUTHORIZED,
@@ -815,9 +851,9 @@ class RefreshView(APIView):
                 clear_refresh_cookie(response)
                 return no_store(response)
 
-            rotated_refresh = serializer.validated_data.get("refresh", refresh_value)
+            rotated_refresh = refresh_data.get("refresh", refresh_value)
             response = Response(
-                {"access": serializer.validated_data["access"]},
+                {"access": refresh_data["access"]},
                 status=status.HTTP_200_OK,
             )
             set_refresh_cookie(response, rotated_refresh, remember=remember)
@@ -875,6 +911,8 @@ class PasswordResetConfirmView(APIView):
                 else:
                     user.auth_provider = User.AuthProvider.LOCAL
                 user.save(update_fields=["password", "auth_provider", "updated_at"])
+                from .services.sessions import revoke_all
+                revoke_all(user, "password_change")
                 transaction.on_commit(lambda: send_password_changed_email(user), robust=True)
             return Response({
                 "message": "Mot de passe réinitialisé. Vous pouvez maintenant vous connecter."
@@ -932,6 +970,8 @@ class ChangePasswordView(APIView):
                 if user.google_sub:
                     user.auth_provider = User.AuthProvider.HYBRID
                 user.save(update_fields=["password", "auth_provider", "updated_at"])
+                from .services.sessions import revoke_all
+                revoke_all(user, "password_change")
                 update_session_auth_hash(request, user)
                 transaction.on_commit(
                     lambda: send_password_changed_email(user), robust=True
@@ -958,6 +998,8 @@ class SetPasswordView(APIView):
                 user.set_password(serializer.validated_data["new_password"])
                 user.auth_provider = User.AuthProvider.HYBRID if user.google_sub else User.AuthProvider.LOCAL
                 user.save(update_fields=["password", "auth_provider", "updated_at"])
+                from .services.sessions import revoke_all
+                revoke_all(user, "password_change")
                 transaction.on_commit(
                     lambda: send_password_changed_email(user), robust=True
                 )
@@ -977,6 +1019,9 @@ class ChangeEmailRequestView(APIView):
         try:
             serializer = ChangeEmailRequestSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=request.user.pk)
+                verify_sensitive_action_identity(user, serializer.validated_data)
             new_email = serializer.validated_data["new_email"]
             send_change_email_confirmation(request.user, new_email)
             send_security_alert(
@@ -1006,6 +1051,8 @@ class ChangeEmailConfirmView(APIView):
                 user.email = serializer.validated_data["new_email"]
                 user.email_verified = True
                 user.save(update_fields=["email", "email_verified", "updated_at"])
+                from .services.sessions import revoke_all
+                revoke_all(user, 'email_change')
                 transaction.on_commit(
                     lambda: send_email_changed_notice(old_email=old_email, user=user),
                     robust=True,

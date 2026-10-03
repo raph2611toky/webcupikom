@@ -3,11 +3,13 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-def build_refresh_token(user, *, remember: bool) -> RefreshToken:
+def build_refresh_token(user, *, remember: bool, request=None) -> RefreshToken:
     """Create a signed refresh token and persist the remember preference as a JWT claim."""
     refresh = RefreshToken.for_user(user)
     refresh["remember"] = bool(remember)
     refresh["security_version"] = int(user.auth_token_version)
+    from .services.sessions import create_session
+    create_session(user, refresh, request)
     return refresh
 
 

@@ -1,4 +1,6 @@
 from unittest.mock import patch
+from types import SimpleNamespace
+from .auth_cookies import build_refresh_token
 
 from django.conf import settings
 from django.core import mail
@@ -18,20 +20,25 @@ from django.utils.http import urlsafe_base64_encode
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class AccountApiTests(APITestCase):
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
     def create_verified_user(self, email="user@example.com", password="StrongPass!2026"):
         return User.objects.create_user(email=email, password=password, email_verified=True)
 
     def auth(self, user):
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(user).access_token}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {build_refresh_token(user, remember=False).access_token}")
 
     def test_register_verify_and_login(self):
-        response = self.client.post(reverse("users:register"), {
-            "email": "New@Example.com",
-            "password": "StrongPass!2026",
-            "password_confirm": "StrongPass!2026",
-            "first_name": "Ada",
-            "last_name": "Lovelace",
-        }, format="json")
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(reverse("users:register"), {
+                "email": "New@Example.com",
+                "password": "StrongPass!2026",
+                "password_confirm": "StrongPass!2026",
+                "first_name": "Ada",
+                "last_name": "Lovelace",
+            }, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(email="new@example.com")
         self.assertFalse(user.email_verified)
@@ -103,14 +110,15 @@ class AccountApiTests(APITestCase):
         )
         self.auth(admin)
 
-        response = self.client.post(reverse("users:register-agent"), {
-            "email": "agent@example.com",
-            "password": "StrongPass!2026",
-            "password_confirm": "StrongPass!2026",
-            "first_name": "Alex",
-            "last_name": "Agent",
-        }, format="json")
-
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(reverse("users:register-agent"), {
+                "email": "agent@example.com",
+                "password": "StrongPass!2026",
+                "password_confirm": "StrongPass!2026",
+                "first_name": "Alex",
+                "last_name": "Agent",
+            }, format="json")
+    
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         agent = User.objects.get(email="agent@example.com")
         self.assertEqual(agent.role, User.Role.AGENT)
@@ -335,7 +343,7 @@ class AccountApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(User.objects.filter(pk=user.pk).exists())
-        self.assertIn("google", response.data)
+        self.assertIn("google", response.data["errors"])
 
     def test_google_only_user_cannot_delete_without_google_reauthentication(self):
         user = self.create_google_user(email="no-reauth@example.com", sub="no-reauth-sub")
@@ -349,7 +357,7 @@ class AccountApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(User.objects.filter(pk=user.pk).exists())
-        self.assertIn("google", response.data)
+        self.assertIn("google", response.data["errors"])
 
     def test_profile_update(self):
         user = self.create_verified_user()
@@ -410,7 +418,7 @@ class AccountApiTests(APITestCase):
         self.assertTrue(setup.data["qr_code_data_url"].startswith("data:image/png;base64,"))
         secret = setup.data["secret"]
 
-        with patch("apps.users.services.mfa.time.time", return_value=1_800_000_000):
+        with patch("apps.users.services.mfa.time", SimpleNamespace(time=lambda: 1_800_000_000)):
             code = totp_for_counter(secret, int(1_800_000_000 // 30))
             confirm = self.client.post(
                 reverse("users:mfa-confirm"), {"code": code}, format="json"
@@ -432,7 +440,7 @@ class AccountApiTests(APITestCase):
         self.assertTrue(login.data["mfa_required"])
         self.assertNotIn("access", login.data)
 
-        with patch("apps.users.services.mfa.time.time", return_value=1_800_000_030):
+        with patch("apps.users.services.mfa.time", SimpleNamespace(time=lambda: 1_800_000_030)):
             next_code = totp_for_counter(secret, int(1_800_000_030 // 30))
             verify = self.client.post(
                 reverse("users:mfa-verify-login"),
@@ -497,9 +505,9 @@ class AccountApiTests(APITestCase):
             format="json",
         )
         self.assertEqual(missing.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("mfa", missing.data)
+        self.assertIn("mfa", missing.data["errors"])
 
-        with patch("apps.users.services.mfa.time.time", return_value=1_800_000_000):
+        with patch("apps.users.services.mfa.time", SimpleNamespace(time=lambda: 1_800_000_000)):
             code = totp_for_counter(secret, int(1_800_000_000 // 30))
             accepted = self.client.post(
                 reverse("users:change-password"),
@@ -532,7 +540,7 @@ class AccountApiTests(APITestCase):
 
     def test_security_version_immediately_revokes_old_access_token(self):
         user = self.create_verified_user(email="revoked-token@example.com")
-        old_access = str(RefreshToken.for_user(user).access_token)
+        old_access = str(build_refresh_token(user, remember=False).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {old_access}")
         before = self.client.get(reverse("users:profile"))
         self.assertEqual(before.status_code, status.HTTP_200_OK)
@@ -552,7 +560,7 @@ class BackendStructureTests(APITestCase):
             callback = pattern.callback
             view_class = getattr(callback, "view_class", None)
             if view_class is not None:
-                self.assertEqual(view_class.__module__, "apps.users.views")
+                self.assertIn(view_class.__module__, {"apps.users.views", "apps.users.security_views"})
 
     def test_profile_supports_json_form_and_multipart_parsers(self):
         from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
