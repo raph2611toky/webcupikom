@@ -73,6 +73,8 @@ class MunicipalServiceListView(generics.ListAPIView):
     serializer_class = MunicipalServiceSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return MunicipalService.objects.none()
         queryset = MunicipalService.objects.filter(is_active=True)
         category = self.request.query_params.get("category")
         search = self.request.query_params.get("search")
@@ -101,6 +103,8 @@ class NewsListView(generics.ListAPIView):
     serializer_class = NewsArticleSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return NewsArticle.objects.none()
         queryset = NewsArticle.objects.filter(is_published=True)
         category = self.request.query_params.get("category")
         search = self.request.query_params.get("search")
@@ -184,7 +188,12 @@ class CitizenRequestListCreateView(generics.ListCreateAPIView):
     serializer_class = CitizenRequestSerializer
 
     def get_queryset(self):
-        queryset = CitizenRequest.objects.filter(citizen=self.request.user).select_related(
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenRequest.objects.none()
+        user = getattr(self.request, "user", None)
+        if not user or not user.is_authenticated:
+            return CitizenRequest.objects.none()
+        queryset = CitizenRequest.objects.filter(citizen=user).select_related(
             "service", "assigned_to"
         )
         request_status = self.request.query_params.get("status")
@@ -217,7 +226,12 @@ class CitizenRequestDetailView(generics.RetrieveAPIView):
     lookup_field = "reference"
 
     def get_queryset(self):
-        return CitizenRequest.objects.filter(citizen=self.request.user).select_related(
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenRequest.objects.none()
+        user = getattr(self.request, "user", None)
+        if not user or not user.is_authenticated:
+            return CitizenRequest.objects.none()
+        return CitizenRequest.objects.filter(citizen=user).select_related(
             "service", "assigned_to"
         )
 
@@ -227,7 +241,12 @@ class CitizenContactMessageListView(generics.ListAPIView):
     serializer_class = CitizenContactMessageSerializer
 
     def get_queryset(self):
-        return ContactMessage.objects.filter(user=self.request.user).select_related("service")
+        if getattr(self, "swagger_fake_view", False):
+            return ContactMessage.objects.none()
+        user = getattr(self.request, "user", None)
+        if not user or not user.is_authenticated:
+            return ContactMessage.objects.none()
+        return ContactMessage.objects.filter(user=user).select_related("service")
 
 
 class CitizenContactMessageDetailView(generics.RetrieveAPIView):
@@ -236,7 +255,12 @@ class CitizenContactMessageDetailView(generics.RetrieveAPIView):
     lookup_field = "reference"
 
     def get_queryset(self):
-        return ContactMessage.objects.filter(user=self.request.user).select_related("service")
+        if getattr(self, "swagger_fake_view", False):
+            return ContactMessage.objects.none()
+        user = getattr(self.request, "user", None)
+        if not user or not user.is_authenticated:
+            return ContactMessage.objects.none()
+        return ContactMessage.objects.filter(user=user).select_related("service")
 
 
 class CitizenNotificationListView(generics.ListAPIView):
@@ -244,7 +268,12 @@ class CitizenNotificationListView(generics.ListAPIView):
     serializer_class = CitizenNotificationSerializer
 
     def get_queryset(self):
-        queryset = CitizenNotification.objects.filter(user=self.request.user).select_related(
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenNotification.objects.none()
+        user = getattr(self.request, "user", None)
+        if not user or not user.is_authenticated:
+            return CitizenNotification.objects.none()
+        queryset = CitizenNotification.objects.filter(user=user).select_related(
             "related_request", "related_contact"
         )
         unread = self.request.query_params.get("unread", "").strip().lower()
@@ -258,7 +287,12 @@ class CitizenNotificationDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = CitizenNotificationSerializer
 
     def get_queryset(self):
-        return CitizenNotification.objects.filter(user=self.request.user).select_related(
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenNotification.objects.none()
+        user = getattr(self.request, "user", None)
+        if not user or not user.is_authenticated:
+            return CitizenNotification.objects.none()
+        return CitizenNotification.objects.filter(user=user).select_related(
             "related_request", "related_contact"
         )
 
@@ -322,6 +356,8 @@ class AgentRequestListView(generics.ListAPIView):
     serializer_class = AgentCitizenRequestSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenRequest.objects.none()
         queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to")
         request_status = self.request.query_params.get("status")
         service = self.request.query_params.get("service")
@@ -373,6 +409,8 @@ class AgentCitizenListView(generics.ListAPIView):
     serializer_class = AgentCitizenListSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
         queryset = User.objects.filter(role=User.Role.CITIZEN).annotate(
             request_count=Count("citizen_requests", distinct=True)
         )
@@ -396,6 +434,8 @@ class AgentCitizenDetailView(generics.RetrieveAPIView):
     serializer_class = AgentCitizenDetailSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
         return User.objects.filter(role=User.Role.CITIZEN).annotate(
             request_count=Count("citizen_requests", distinct=True)
         )
@@ -406,6 +446,8 @@ class AgentAssigneeListView(generics.ListAPIView):
     serializer_class = AssigneeSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
         return User.objects.filter(
             Q(role=User.Role.AGENT) | Q(role=User.Role.ADMIN), is_active=True
         ).order_by("role", "first_name", "last_name", "email")
@@ -416,6 +458,8 @@ class AgentContactMessageListView(generics.ListAPIView):
     serializer_class = ContactMessageSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ContactMessage.objects.none()
         queryset = ContactMessage.objects.select_related("user", "service", "assigned_to")
         message_status = self.request.query_params.get("status")
         service = self.request.query_params.get("service")
@@ -468,6 +512,8 @@ class WebCupSnapshotListView(generics.ListAPIView):
     serializer_class = WebCupRequestSnapshotSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return WebCupRequestSnapshot.objects.none()
         queryset = WebCupRequestSnapshot.objects.all()
         visible = self.request.query_params.get("visible")
         wave = self.request.query_params.get("wave")
@@ -563,6 +609,8 @@ class AdminUserListCreateView(generics.ListCreateAPIView):
         return AdminUserSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
         queryset = User.objects.annotate(
             request_count=Count("citizen_requests", distinct=True),
             contact_count=Count("contact_messages", distinct=True),
@@ -616,6 +664,8 @@ class AdminServiceListCreateView(generics.ListCreateAPIView):
     serializer_class = AdminMunicipalServiceSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return MunicipalService.objects.none()
         queryset = MunicipalService.objects.all()
         active = self.request.query_params.get("active")
         search = self.request.query_params.get("search")
@@ -646,6 +696,8 @@ class AdminNewsListCreateView(generics.ListCreateAPIView):
     serializer_class = AdminNewsArticleSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return NewsArticle.objects.none()
         queryset = NewsArticle.objects.all()
         published = self.request.query_params.get("published")
         search = self.request.query_params.get("search")

@@ -5,16 +5,16 @@ import { unwrapList } from "./helpers.js";
 const presentationBySlug = new Map(presentationServices.map((item) => [item.slug, item]));
 
 export function normalizeService(item) {
-  const presentation = presentationBySlug.get(item.slug) || {};
+  const presentation = presentationBySlug.get(item.slug);
   return {
     ...presentation,
     ...item,
-    shortDescription: item.short_description ?? presentation.shortDescription ?? "",
-    openingHours: item.opening_hours ?? presentation.openingHours ?? "",
-    icon: presentation.icon || "◇",
-    actions: presentation.actions || [],
-    requiredDocuments: presentation.requiredDocuments || [],
-    faq: presentation.faq || [],
+    shortDescription: item.short_description ?? presentation?.shortDescription ?? "",
+    openingHours: item.opening_hours ?? presentation?.openingHours ?? "",
+    icon: presentation?.icon || "◇",
+    actions: presentation?.actions || [],
+    requiredDocuments: presentation?.requiredDocuments || [],
+    faq: presentation?.faq || [],
   };
 }
 
@@ -35,6 +35,11 @@ export function getServiceCategories(items = []) {
 export async function getAdminServices(params = {}) {
   const { data } = await api.get("/admin/services/", { params });
   return unwrapList(data).map(normalizeService);
+}
+
+export async function getAdminService(slug) {
+  const { data } = await api.get(`/admin/services/${encodeURIComponent(slug)}/`);
+  return normalizeService(data);
 }
 
 export async function createAdminService(payload) {

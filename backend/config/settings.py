@@ -88,7 +88,12 @@ if os.getenv("DB_NAME"):
             "PASSWORD": os.getenv("DB_PASSWORD"),
             "HOST": os.getenv("DB_HOST", "localhost"),
             "PORT": os.getenv("DB_PORT", "3306"),
-            "OPTIONS": {"charset": "utf8mb4"},
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                # Mode strict côté connexion Django pour éviter les insertions
+                # tronquées/silencieuses et supprimer mysql.W002.
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
         }
     }
 else:

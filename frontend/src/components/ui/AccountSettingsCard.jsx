@@ -11,6 +11,11 @@ import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/pages/dashboard.css";
 
+function formText(form, name, fallback = "") {
+  const value = form.get(name);
+  return typeof value === "string" ? value : fallback;
+}
+
 export default function AccountSettingsCard({ allowDelete = false }) {
   const { user, refreshUser, clearSession } = useAuth();
   const [mode, setMode] = useState(null);
@@ -28,10 +33,10 @@ export default function AccountSettingsCard({ allowDelete = false }) {
     const form = new FormData(event.currentTarget);
     try {
       await updateProfile({
-        first_name: form.get("first_name"),
-        last_name: form.get("last_name"),
-        phone_number: form.get("phone_number"),
-        locale: form.get("locale") || "fr",
+        first_name: formText(form, "first_name"),
+        last_name: formText(form, "last_name"),
+        phone_number: formText(form, "phone_number"),
+        locale: formText(form, "locale", "fr") || "fr",
       });
       await refreshUser();
       setStatus({ type: "success", message: "Profil mis à jour." });
@@ -49,12 +54,12 @@ export default function AccountSettingsCard({ allowDelete = false }) {
     setStatus(null);
     const form = new FormData(event.currentTarget);
     const payload = {
-      newPassword: form.get("new_password"),
-      confirmation: form.get("confirmation"),
+      newPassword: formText(form, "new_password"),
+      confirmation: formText(form, "confirmation"),
     };
     try {
       const data = user?.has_password
-        ? await changePassword({ ...payload, currentPassword: form.get("current_password") })
+        ? await changePassword({ ...payload, currentPassword: formText(form, "current_password") })
         : await setPassword(payload);
       await refreshUser();
       setStatus({ type: "success", message: data.message });
@@ -73,8 +78,8 @@ export default function AccountSettingsCard({ allowDelete = false }) {
     const form = new FormData(event.currentTarget);
     try {
       const data = await requestEmailChange({
-        newEmail: form.get("new_email"),
-        currentPassword: form.get("current_password") || "",
+        newEmail: formText(form, "new_email"),
+        currentPassword: formText(form, "current_password") || "",
       });
       setStatus({ type: "success", message: data.message });
       setMode(null);
@@ -92,8 +97,8 @@ export default function AccountSettingsCard({ allowDelete = false }) {
     const form = new FormData(event.currentTarget);
     try {
       await deleteAccount({
-        currentPassword: form.get("current_password") || "",
-        confirmation: form.get("confirmation"),
+        currentPassword: formText(form, "current_password") || "",
+        confirmation: formText(form, "confirmation"),
       });
       clearSession();
       navigate("/", { replace: true });

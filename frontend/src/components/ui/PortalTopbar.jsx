@@ -9,7 +9,7 @@ const ROLE_SHORTCUT = Object.freeze({
   admin: { to: "/admin/messages", label: "Messages citoyens", icon: "✉" },
 });
 
-export default function PortalTopbar({ eyebrow, title, actions }) {
+export default function PortalTopbar({ eyebrow, title, actions = null }) {
   const { user } = useAuth();
   const displayName = user?.display_name || `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || user?.email || "Terra Nova";
   const initials = (displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2) || "TN").toUpperCase();
