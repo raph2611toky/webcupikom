@@ -62,6 +62,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.jsx"));
 const AdminServices = lazy(() => import("./pages/admin/AdminServices.jsx"));
 const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments.jsx"));
 const AdminNews = lazy(() => import("./pages/admin/AdminNews.jsx"));
+const AdminProjects = lazy(() => import("./pages/admin/AdminProjects.jsx"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings.jsx"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages.jsx"));
 const AdminMessageDetails = lazy(() => import("./pages/admin/AdminMessageDetails.jsx"));
@@ -277,6 +278,7 @@ export default function App() {
       "/admin/services":<Protected roles={["admin"]}><AdminServices/></Protected>,
       "/admin/appointments":<Protected roles={["admin"]}><AdminAppointments/></Protected>,
       "/admin/news":<Protected roles={["admin"]}><AdminNews/></Protected>,
+      "/admin/projects":<Protected roles={["admin"]}><AdminProjects/></Protected>,
       "/admin/settings":<Protected roles={["admin"]}><AdminSettings/></Protected>,
       "/admin/messages":<Protected roles={["admin"]}><AdminMessages/></Protected>,
     };

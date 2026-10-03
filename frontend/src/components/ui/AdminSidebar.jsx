@@ -9,6 +9,7 @@ const items = [
   ["/admin/services", "◇", "Services"],
   ["/admin/appointments", "◷", "Rendez-vous"],
   ["/admin/news", "▤", "Actualités"],
+  ["/admin/projects", "✦", "Projets municipaux"],
   ["/admin/settings", "⚙", "Paramètres"],
 ];
 

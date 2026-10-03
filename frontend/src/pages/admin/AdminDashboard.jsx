@@ -54,6 +54,7 @@ export default function AdminDashboard(){
               <button onClick={()=>navigate("/admin/services")}><i>◇</i><div><b>Services municipaux</b><span>{s.active||0} actifs</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/appointments")}><i>◷</i><div><b>Rendez-vous</b><span>Agenda et créneaux municipaux</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/news")}><i>▤</i><div><b>Actualités</b><span>{n.published||0} publications</span></div><em>→</em></button>
+              <button onClick={()=>navigate("/admin/projects")}><i>✦</i><div><b>Projets municipaux</b><span>Projets, participations et idées</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/settings")}><i>⚙</i><div><b>Paramètres</b><span>Configuration plateforme</span></div><em>→</em></button>
             </div>
           </article>

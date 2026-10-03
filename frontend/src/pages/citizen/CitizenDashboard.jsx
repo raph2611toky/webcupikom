@@ -67,7 +67,7 @@ export default function CitizenDashboard(){
   const visibleAlerts=useMemo(()=>[
     ...alerts.map(item=>({id:`official-${item.id||item.slug}`,kind:"official",title:item.title,detail:item.excerpt||"Information importante de la ville.",target:item.slug?`/citizen/news/${item.slug}`:"/citizen/news"})),
     ...activeReports.map(item=>({id:`report-${item.ref}`,kind:"report",title:`Alerte terrain · ${item.title}`,detail:`Votre signalement ${item.ref} est actuellement : ${item.status}.`,target:`/citizen/requests/${encodeURIComponent(item.ref)}`})),
-  ].slice(0,4),[alerts,activeReports]);
+  ].slice(0,2),[alerts,activeReports]);
 
   return <div className="portal-layout">
     <CitizenSidebar/>

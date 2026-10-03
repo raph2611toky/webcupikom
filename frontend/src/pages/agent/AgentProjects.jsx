@@ -1,29 +1,41 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { getAllCitizenIdeas, getAllProjectContributions, getMunicipalProjects, saveMunicipalProject } from "../../api/projects.js";
+import { getMunicipalProjects } from "../../api/projects.js";
+import { getApiErrorMessage } from "../../api/auth.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/projects.css";
 
-const EMPTY={id:"",title:"",summary:"",description:"",district:"Nova Centre",status:"planned",progress:0,start_date:"",expected_end_date:"",participation_type:"none",participation_question:"",decision_closes_at:""};
-const STATUS={planned:"Planifié",in_progress:"En cours",consultation:"Consultation",completed:"Terminé"};
-const CHOICE_LABEL={very_favorable:"Très favorable",favorable:"Favorable",neutral:"Neutre",unfavorable:"Défavorable",yes:"Oui",no:"Non",no_opinion:"Sans avis"};
+const STATUS={planned:"Planifié",in_progress:"En cours",paused:"En pause",completed:"Terminé",cancelled:"Annulé"};
 
 export default function AgentProjects(){
-  const [projects,setProjects]=useState([]),[contributions,setContributions]=useState([]),[ideas,setIdeas]=useState([]);
-  const [editor,setEditor]=useState(null),[saving,setSaving]=useState(false),[notice,setNotice]=useState(""),[error,setError]=useState("");
-  async function load(){const [p,c,i]=await Promise.all([getMunicipalProjects(),getAllProjectContributions(),getAllCitizenIdeas()]);setProjects(p);setContributions(c);setIdeas(i)}
-  useEffect(()=>{load().catch(()=>setError("Impossible de charger les projets."))},[]);
-  const stats=useMemo(()=>({active:projects.filter(p=>p.status!=="completed").length,consultations:projects.filter(p=>p.participation_type==="consultation").length,decisions:projects.filter(p=>p.participation_type==="decision").length,ideas:ideas.length}),[projects,ideas]);
-  async function save(event){event.preventDefault();if(!editor?.title?.trim()){setError("Le nom du projet est obligatoire.");return}setSaving(true);setError("");try{await saveMunicipalProject(editor);setNotice("Projet enregistré. Les citoyens voient immédiatement cette version sur ce navigateur de démonstration.");setEditor(null);await load()}catch{setError("Impossible d’enregistrer le projet.")}finally{setSaving(false)}}
+  const [projects,setProjects]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
+
+  useEffect(()=>{
+    let active=true;
+    getMunicipalProjects({force:true})
+      .then(rows=>active&&setProjects(rows))
+      .catch(e=>active&&setError(getApiErrorMessage(e,"Impossible de charger les projets municipaux.")))
+      .finally(()=>active&&setLoading(false));
+    return()=>{active=false};
+  },[]);
+
+  const stats=useMemo(()=>({
+    active:projects.filter(p=>!["completed","cancelled"].includes(p.status)).length,
+    consultations:projects.filter(p=>p.participation_type==="consultation"&&p.participationIsOpen).length,
+    decisions:projects.filter(p=>p.participation_type==="decision"&&p.participationIsOpen).length,
+    supports:projects.reduce((sum,p)=>sum+Number(p.supportCount||0),0),
+  }),[projects]);
+
   return <div className="portal-layout"><AgentSidebar/><div className="portal-main">
-    <PortalTopbar eyebrow="Participation et ville" title="Projets municipaux" actions={<button className="primary-action" onClick={()=>setEditor({...EMPTY})}>+ Nouveau projet</button>}/>
+    <PortalTopbar eyebrow="Participation citoyenne" title="Projets municipaux"/>
     <main className="portal-content agent-projects-page">
-      {error?<div className="error-card" role="alert">{error}</div>:null}{notice?<div className="success-inline" role="status">✓ {notice}</div>:null}
-      <section className="metric-grid metric-grid--4"><article><span>Actifs</span><strong>{stats.active}</strong><small>projets municipaux</small></article><article><span>Consultations</span><strong>{stats.consultations}</strong><small>avis citoyens</small></article><article><span>Décisions</span><strong>{stats.decisions}</strong><small>participations tracées</small></article><article><span>Idées reçues</span><strong>{stats.ideas}</strong><small>propositions citoyennes</small></article></section>
-      <section className="portal-card agent-project-list"><div className="portal-card__head"><div><span className="section-label">F67 · F66 · F65</span><h3>Projets publiés</h3></div></div>{projects.map(project=><article key={project.id} className="agent-project-row"><div><span className={`project-status status-${project.status}`}>{STATUS[project.status]||project.status}</span><h4>{project.title}</h4><p>{project.district} · {project.progress}% · {project.participation_type==="none"?"Sans participation":project.participation_type==="decision"?"Décision citoyenne":"Consultation"}</p></div><button className="secondary-action" onClick={()=>setEditor({...project})}>Modifier</button></article>)}</section>
-      <section className="portal-grid portal-grid--2 agent-project-bottom"><article className="portal-card"><span className="section-label">Contributions</span><h3>Dernières participations</h3><div className="agent-project-feed">{contributions.slice(0,12).map(item=><div key={item.id}><b>{item.citizen_name}</b><span>{item.project_title}</span><em>{CHOICE_LABEL[item.choice]||item.choice} · {new Date(item.updated_at||item.created_at).toLocaleString("fr-FR")}</em></div>)}{!contributions.length?<p className="detail-copy">Aucune participation enregistrée pour le moment.</p>:null}</div></article><article className="portal-card"><span className="section-label">F68</span><h3>Idées proposées</h3><div className="agent-project-feed">{ideas.slice(0,12).map(item=><div key={item.id}><b>{item.title}</b><span>{item.category} · {item.district}</span><em>{item.reference} · {item.citizen_name}</em><p>{item.description}</p></div>)}{!ideas.length?<p className="detail-copy">Aucune idée citoyenne enregistrée.</p>:null}</div></article></section>
-      {editor?<div className="project-modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setEditor(null)}}><section className="project-modal project-modal--wide" role="dialog" aria-modal="true" aria-labelledby="agent-project-editor"><div className="project-modal__head"><div><span className="section-label">Administration</span><h3 id="agent-project-editor">{editor.id?"Modifier le projet":"Nouveau projet"}</h3></div><button aria-label="Fermer" onClick={()=>setEditor(null)}>×</button></div><form className="project-form" onSubmit={save}><label><span>Nom du projet</span><input value={editor.title} onChange={e=>setEditor(v=>({...v,title:e.target.value}))} required/></label><label><span>Résumé</span><input value={editor.summary} onChange={e=>setEditor(v=>({...v,summary:e.target.value}))}/></label><label><span>Description</span><textarea value={editor.description} onChange={e=>setEditor(v=>({...v,description:e.target.value}))}/></label><div className="project-form__row"><label><span>Quartier</span><input value={editor.district} onChange={e=>setEditor(v=>({...v,district:e.target.value}))}/></label><label><span>Progression %</span><input type="number" min="0" max="100" value={editor.progress} onChange={e=>setEditor(v=>({...v,progress:Number(e.target.value)}))}/></label></div><div className="project-form__row"><label><span>Statut</span><select value={editor.status} onChange={e=>setEditor(v=>({...v,status:e.target.value}))}><option value="planned">Planifié</option><option value="in_progress">En cours</option><option value="consultation">Consultation</option><option value="completed">Terminé</option></select></label><label><span>Participation</span><select value={editor.participation_type} onChange={e=>setEditor(v=>({...v,participation_type:e.target.value}))}><option value="none">Aucune</option><option value="consultation">Consultation</option><option value="decision">Décision citoyenne</option></select></label></div><div className="project-form__row"><label><span>Date de début</span><input type="date" value={editor.start_date} onChange={e=>setEditor(v=>({...v,start_date:e.target.value}))}/></label><label><span>Fin estimée</span><input type="date" value={editor.expected_end_date} onChange={e=>setEditor(v=>({...v,expected_end_date:e.target.value}))}/></label></div>{editor.participation_type!=="none"?<label><span>Question de participation</span><textarea value={editor.participation_question} onChange={e=>setEditor(v=>({...v,participation_question:e.target.value}))}/></label>:null}{editor.participation_type==="decision"?<label><span>Clôture de la décision</span><input type="datetime-local" value={String(editor.decision_closes_at||"").slice(0,16)} onChange={e=>setEditor(v=>({...v,decision_closes_at:e.target.value}))}/></label>:null}<div className="project-form__actions"><button type="button" className="secondary-action" onClick={()=>setEditor(null)}>Annuler</button><button type="submit" className="primary-action" disabled={saving}>{saving?"Enregistrement…":"Publier / enregistrer"}</button></div></form></section></div>:null}
+      {error?<div className="error-card" role="alert">{error}</div>:null}
+      <section className="project-agent-note portal-card"><div><strong>Vue agent en lecture seule</strong><p>Les projets affichés sont les projets publiés par Nova Terra. La création, la publication et le traitement des idées sont gérés dans l’espace Administration.</p></div><span>Backend connecté</span></section>
+      <section className="metric-grid metric-grid--4"><article><span>Actifs</span><strong>{stats.active}</strong><small>projets publiés</small></article><article><span>Consultations</span><strong>{stats.consultations}</strong><small>ouvertes</small></article><article><span>Décisions</span><strong>{stats.decisions}</strong><small>ouvertes</small></article><article><span>Soutiens</span><strong>{stats.supports}</strong><small>citoyens</small></article></section>
+      <section className="portal-card agent-project-list"><div className="portal-card__head"><div><h3>Projets visibles par les citoyens</h3></div></div>{loading?<div className="loading-card">Chargement…</div>:projects.map(project=><article key={project.id||project.slug} className="agent-project-row"><div><span className={`project-status status-${project.status}`}>{project.statusLabel||STATUS[project.status]||project.status}</span><h4>{project.title}</h4><p>{project.district||"Nova Terra"} · {project.progress}% · {project.participation_type==="none"?"Information":project.participation_type==="decision"?"Décision citoyenne":"Consultation"}</p></div><div className="agent-project-row__numbers"><span><b>{project.participationCount||0}</b> participations</span><span><b>{project.ideaCount||0}</b> idées</span></div></article>)}{!loading&&!projects.length?<p className="detail-copy">Aucun projet publié actuellement.</p>:null}</section>
     </main>
   </div></div>;
 }

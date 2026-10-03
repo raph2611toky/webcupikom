@@ -1,226 +1,369 @@
-const PROJECTS_KEY = "nova-terra:projects:v1";
-const CONTRIBUTIONS_KEY = "nova-terra:project-contributions:v1";
-const IDEAS_KEY = "nova-terra:citizen-ideas:v1";
+import { api } from "./api.js";
+import { unwrapList } from "./helpers.js";
+import { cachedRequest, invalidateCache } from "./cache.js";
 
-const SEED_PROJECTS = [
-  {
-    id: "PRJ-001",
-    slug: "parc-urbain-nova-centre",
-    title: "Parc urbain Nova Centre",
-    summary: "Création d’un nouvel espace vert et d’une zone piétonne au cœur de Nova Terra.",
-    description: "Le projet transforme le secteur central en un espace plus végétalisé, accessible et agréable à parcourir à pied. Il prévoit des zones ombragées, des espaces de rencontre et de nouveaux cheminements piétons.",
-    district: "Nova Centre",
-    status: "in_progress",
-    progress: 70,
-    start_date: "2026-03-01",
-    expected_end_date: "2026-11-30",
-    participation_type: "consultation",
-    participation_question: "Que pensez-vous de l’aménagement proposé pour le parc urbain Nova Centre ?",
-    objectives: ["Créer un espace vert de proximité", "Améliorer les déplacements piétons", "Créer des espaces de rencontre accessibles"],
-    milestones: [
-      { title: "Étude et concertation initiale", status: "completed" },
-      { title: "Travaux préparatoires", status: "completed" },
-      { title: "Aménagement des espaces verts", status: "current" },
-      { title: "Installation du mobilier urbain", status: "upcoming" },
-    ],
-    updated_at: "2026-10-03T18:00:00+03:00",
-  },
-  {
-    id: "PRJ-002",
-    slug: "mobilite-corridor-est",
-    title: "Mobilité du Corridor Est",
-    summary: "Réorganisation des déplacements entre les quartiers Est et le centre avec une piste cyclable continue.",
-    description: "Nova Terra étudie une liaison cyclable protégée et de nouveaux points de traversée afin de réduire les conflits entre véhicules, piétons et cyclistes.",
-    district: "District Orion",
-    status: "consultation",
-    progress: 42,
-    start_date: "2026-06-15",
-    expected_end_date: "2027-02-28",
-    participation_type: "decision",
-    participation_question: "Faut-il intégrer une piste cyclable protégée sur toute la longueur du Corridor Est ?",
-    decision_closes_at: "2026-10-08T20:00:00+03:00",
-    objectives: ["Sécuriser les déplacements actifs", "Réduire les temps de trajet courts", "Améliorer les connexions entre quartiers"],
-    milestones: [
-      { title: "Diagnostic de circulation", status: "completed" },
-      { title: "Scénarios techniques", status: "completed" },
-      { title: "Décision citoyenne", status: "current" },
-      { title: "Conception détaillée", status: "upcoming" },
-    ],
-    updated_at: "2026-10-03T19:20:00+03:00",
-  },
-  {
-    id: "PRJ-003",
-    slug: "centre-sante-aster",
-    title: "Centre de santé Aster",
-    summary: "Extension du centre de santé de proximité et amélioration de l’accueil des urgences légères.",
-    description: "Le projet augmente la capacité d’accueil du quartier Aster et améliore l’accessibilité des espaces de consultation.",
-    district: "Quartier Aster",
-    status: "in_progress",
-    progress: 58,
-    start_date: "2026-01-20",
-    expected_end_date: "2026-12-18",
-    participation_type: "none",
-    participation_question: "",
-    objectives: ["Augmenter la capacité d’accueil", "Améliorer l’accessibilité", "Créer un parcours d’orientation plus simple"],
-    milestones: [
-      { title: "Études techniques", status: "completed" },
-      { title: "Extension du bâtiment", status: "current" },
-      { title: "Équipement des salles", status: "upcoming" },
-      { title: "Ouverture au public", status: "upcoming" },
-    ],
-    updated_at: "2026-10-02T16:45:00+03:00",
-  },
+const DEFAULT_CONSULTATION_OPTIONS = [
+  { value: "very_favorable", label: "Très favorable" },
+  { value: "favorable", label: "Favorable" },
+  { value: "neutral", label: "Neutre" },
+  { value: "unfavorable", label: "Défavorable" },
 ];
 
-function readJson(key, fallback) {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return parsed ?? fallback;
-  } catch {
-    return fallback;
+const DEFAULT_DECISION_OPTIONS = [
+  { value: "yes", label: "Oui" },
+  { value: "no", label: "Non" },
+  { value: "no_opinion", label: "Sans avis" },
+];
+
+function parseJsonish(value, fallback) {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (Array.isArray(value) || typeof value === "object") return value;
+  if (typeof value === "string") {
+    try { return JSON.parse(value); } catch { return value; }
   }
+  return fallback;
 }
 
-function writeJson(key, value) {
-  window.localStorage.setItem(key, JSON.stringify(value));
-  window.dispatchEvent(new CustomEvent("nova-terra-projects-change", { detail: { key } }));
-  return value;
+function normalizeStringList(value) {
+  const parsed = parseJsonish(value, []);
+  if (Array.isArray(parsed)) {
+    return parsed.map((entry) => {
+      if (typeof entry === "string") return entry;
+      if (entry && typeof entry === "object") return entry.title || entry.label || entry.name || entry.text || JSON.stringify(entry);
+      return String(entry ?? "");
+    }).filter(Boolean);
+  }
+  if (parsed && typeof parsed === "object") {
+    return Object.values(parsed).map((entry) => {
+      if (typeof entry === "string") return entry;
+      if (entry && typeof entry === "object") return entry.title || entry.label || entry.name || entry.text || JSON.stringify(entry);
+      return String(entry ?? "");
+    }).filter(Boolean);
+  }
+  if (typeof parsed === "string") return parsed.split(/\r?\n|;/).map((entry) => entry.trim()).filter(Boolean);
+  return [];
 }
 
-function ensureProjects() {
-  const current = readJson(PROJECTS_KEY, null);
-  if (Array.isArray(current) && current.length) return current;
-  writeJson(PROJECTS_KEY, SEED_PROJECTS);
-  return SEED_PROJECTS;
+function normalizeMilestones(value) {
+  const parsed = parseJsonish(value, []);
+  const rows = Array.isArray(parsed) ? parsed : parsed && typeof parsed === "object" ? Object.values(parsed) : [];
+  return rows.map((entry, index) => {
+    if (typeof entry === "string") return { title: entry, status: index === 0 ? "current" : "upcoming" };
+    return {
+      ...entry,
+      title: entry?.title || entry?.label || entry?.name || `Étape ${index + 1}`,
+      status: entry?.status || entry?.state || (entry?.completed ? "completed" : "upcoming"),
+    };
+  });
 }
 
-function slugify(value = "") {
-  return String(value)
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `projet-${Date.now()}`;
+function normalizeOptions(value, participationType) {
+  const parsed = parseJsonish(value, null);
+  if (Array.isArray(parsed)) {
+    const rows = parsed.map((entry) => typeof entry === "string"
+      ? { value: entry, label: entry }
+      : { value: entry?.value ?? entry?.id ?? entry?.key ?? entry?.label, label: entry?.label ?? entry?.name ?? entry?.value ?? entry?.id });
+    if (rows.filter((entry) => entry.value).length) return rows.filter((entry) => entry.value);
+  }
+  if (parsed && typeof parsed === "object") {
+    const rows = Object.entries(parsed).map(([valueKey, labelValue]) => ({
+      value: valueKey,
+      label: typeof labelValue === "string" ? labelValue : labelValue?.label || labelValue?.name || valueKey,
+    }));
+    if (rows.length) return rows;
+  }
+  return participationType === "decision" ? DEFAULT_DECISION_OPTIONS : DEFAULT_CONSULTATION_OPTIONS;
 }
 
-function citizenKey(citizen = {}) {
-  return String(citizen.id || citizen.email || citizen.username || "citizen-demo");
+function booleanish(value, fallback = false) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    if (["true", "1", "yes"].includes(value.toLowerCase())) return true;
+    if (["false", "0", "no", ""].includes(value.toLowerCase())) return false;
+  }
+  return fallback;
 }
 
-function nextReference(prefix, rows) {
-  const year = new Date().getFullYear();
-  const seq = rows.length + 1;
-  return `${prefix}-${year}-${String(seq).padStart(3, "0")}`;
+export function normalizeMunicipalProject(item = {}) {
+  const participationType = item.participation_type || "none";
+  return {
+    ...item,
+    id: item.id ?? item.slug,
+    slug: item.slug || String(item.id || ""),
+    title: item.title || "Projet municipal",
+    summary: item.short_description ?? item.summary ?? "",
+    shortDescription: item.short_description ?? item.summary ?? "",
+    description: item.description || item.short_description || "",
+    district: item.district || "Nova Terra",
+    status: item.status || "planned",
+    statusLabel: item.status_label || "",
+    progress: Math.max(0, Math.min(100, Number(item.progress || 0))),
+    start_date: item.start_date || "",
+    expected_end_date: item.expected_end_date || "",
+    actual_end_date: item.actual_end_date || "",
+    objectives: normalizeStringList(item.objectives),
+    milestones: normalizeMilestones(item.milestones),
+    participation_type: participationType,
+    participationType,
+    participationTypeLabel: item.participation_type_label || "",
+    participation_question: item.participation_question || "",
+    participationQuestion: item.participation_question || "",
+    participationOptions: normalizeOptions(item.participation_options, participationType),
+    participation_opens_at: item.participation_opens_at || "",
+    participation_closes_at: item.participation_closes_at || "",
+    participationIsOpen: item.participation_is_open !== undefined
+      ? booleanish(item.participation_is_open)
+      : participationType !== "none",
+    supportEnabled: booleanish(item.support_enabled),
+    supportCount: Number(item.support_count || 0),
+    isSupported: booleanish(item.is_supported),
+    isPublished: item.is_published !== false,
+    participationCount: Number(item.participation_count || 0),
+    ideaCount: Number(item.idea_count || 0),
+    publishedAt: item.published_at || "",
+    updatedAt: item.updated_at || "",
+  };
 }
 
-export async function getMunicipalProjects() {
-  return ensureProjects().map((item) => ({ ...item }));
+function normalizeContribution(item = {}) {
+  return {
+    ...item,
+    id: item.reference || `${item.project_slug || "project"}-${item.created_at || "contribution"}`,
+    reference: item.reference || "",
+    projectSlug: item.project_slug || "",
+    projectTitle: item.project_title || "Projet municipal",
+    type: item.contribution_type || item.type || "consultation",
+    typeLabel: item.contribution_type_label || "",
+    question: item.question_snapshot || "",
+    choice: item.choice || "",
+    choiceLabel: item.choice_label || item.choice || "",
+    comment: item.comment || "",
+    createdAt: item.created_at || "",
+    updatedAt: item.updated_at || item.created_at || "",
+    confirmation: item.confirmation || "Participation enregistrée.",
+    citizenId: item.citizen_id,
+    citizenEmail: item.citizen_email || "",
+    citizenName: item.citizen_name || item.citizen_email || "Citoyen",
+  };
 }
 
-export async function getMunicipalProject(idOrSlug) {
-  const rows = ensureProjects();
-  const project = rows.find((item) => String(item.id) === String(idOrSlug) || item.slug === idOrSlug);
-  if (!project) throw new Error("Projet municipal introuvable.");
-  return { ...project };
+function normalizeIdea(item = {}) {
+  return {
+    ...item,
+    id: item.reference || item.id,
+    reference: item.reference || "",
+    projectSlug: item.project_slug || "",
+    projectTitle: item.project_title || "",
+    title: item.title || "Idée citoyenne",
+    category: item.category || "Autre",
+    district: item.district || "",
+    description: item.description || "",
+    status: item.status || "submitted",
+    statusLabel: item.status_label || "",
+    staffNote: item.staff_note || "",
+    citizenId: item.citizen_id,
+    citizenEmail: item.citizen_email || "",
+    citizenName: item.citizen_name || item.citizen_email || "Citoyen",
+    createdAt: item.created_at || "",
+    updatedAt: item.updated_at || item.created_at || "",
+    confirmation: item.confirmation || "Proposition enregistrée.",
+  };
+}
+
+function cleanNullable(value) {
+  return value === "" || value === undefined ? null : value;
+}
+
+function toIso(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
+function optionsObject(value, participationType) {
+  const rows = normalizeOptions(value, participationType);
+  return Object.fromEntries(rows.map((entry) => [String(entry.value), String(entry.label)]));
+}
+
+function projectPayload(payload = {}) {
+  const participationType = payload.participation_type || payload.participationType || "none";
+  const objectives = Array.isArray(payload.objectives)
+    ? payload.objectives
+    : normalizeStringList(payload.objectivesText ?? payload.objectives);
+  const milestones = Array.isArray(payload.milestones)
+    ? payload.milestones
+    : normalizeStringList(payload.milestonesText ?? payload.milestones).map((title, index) => ({ title, status: index === 0 ? "current" : "upcoming" }));
+  return {
+    ...(payload.slug ? { slug: payload.slug } : {}),
+    title: payload.title,
+    short_description: payload.short_description ?? payload.shortDescription ?? payload.summary ?? "",
+    description: payload.description || "",
+    district: payload.district || "",
+    status: payload.status || "planned",
+    progress: Math.max(0, Math.min(100, Number(payload.progress || 0))),
+    start_date: cleanNullable(payload.start_date),
+    expected_end_date: cleanNullable(payload.expected_end_date),
+    actual_end_date: cleanNullable(payload.actual_end_date),
+    objectives,
+    milestones,
+    participation_type: participationType,
+    participation_question: participationType === "none" ? "" : payload.participation_question ?? payload.participationQuestion ?? "",
+    participation_options: participationType === "none" ? {} : optionsObject(payload.participation_options ?? payload.participationOptions, participationType),
+    participation_opens_at: participationType === "none" ? null : toIso(payload.participation_opens_at),
+    participation_closes_at: participationType === "none" ? null : toIso(payload.participation_closes_at ?? payload.decision_closes_at),
+    support_enabled: Boolean(payload.support_enabled ?? payload.supportEnabled),
+    is_published: payload.is_published ?? payload.isPublished ?? true,
+  };
+}
+
+/* Public / citizen */
+export async function getMunicipalProjects({ force = false } = {}) {
+  const load = async () => {
+    const { data } = await api.get("/city/projects/", { skipAccessToken: true });
+    return unwrapList(data).map(normalizeMunicipalProject);
+  };
+  return force ? load() : cachedRequest("projects:public:list", load, { ttl: 60_000 });
+}
+
+export async function getMunicipalProject(slug, { force = false } = {}) {
+  const load = async () => {
+    const { data } = await api.get(`/city/projects/${encodeURIComponent(slug)}/`, { skipAccessToken: true });
+    return normalizeMunicipalProject(data);
+  };
+  return force ? load() : cachedRequest(`projects:public:item:${slug}`, load, { ttl: 60_000 });
+}
+
+export async function getMyProjectContribution(projectOrSlug) {
+  const slug = typeof projectOrSlug === "object" ? projectOrSlug?.slug : projectOrSlug;
+  const { data } = await api.get(`/citizen/projects/${encodeURIComponent(slug)}/participation/`);
+  const rows = unwrapList(data);
+  const row = rows[0] || (data && !Array.isArray(data) && !data.results ? data : null);
+  return row ? normalizeContribution(row) : null;
+}
+
+export async function submitProjectContribution(projectOrSlug, _citizen, payload = {}) {
+  const slug = typeof projectOrSlug === "object" ? projectOrSlug?.slug : projectOrSlug;
+  const { data } = await api.post(`/citizen/projects/${encodeURIComponent(slug)}/participation/`, {
+    choice: payload.choice,
+    comment: payload.comment || "",
+  });
+  invalidateCache(`projects:public:item:${slug}`);
+  if (data?.reference || data?.project_slug || data?.confirmation) return normalizeContribution(data);
+  const receipt = await getMyProjectContribution(slug);
+  return receipt || normalizeContribution(data);
+}
+
+export async function getProjectSupport(projectOrSlug) {
+  const slug = typeof projectOrSlug === "object" ? projectOrSlug?.slug : projectOrSlug;
+  const { data } = await api.get(`/citizen/projects/${encodeURIComponent(slug)}/support/`);
+  const rows = unwrapList(data);
+  const row = rows[0] || (data && !Array.isArray(data) && !data.results ? data : {});
+  return {
+    supported: booleanish(row?.supported),
+    supportCount: Number(row?.support_count || 0),
+    supportedAt: row?.supported_at || "",
+    message: row?.message || "",
+  };
+}
+
+export async function setProjectSupport(projectOrSlug, supported) {
+  const slug = typeof projectOrSlug === "object" ? projectOrSlug?.slug : projectOrSlug;
+  const endpoint = `/citizen/projects/${encodeURIComponent(slug)}/support/`;
+  const response = supported ? await api.post(endpoint, {}) : await api.delete(endpoint);
+  invalidateCache(`projects:public:item:${slug}`);
+  if (!supported && !response?.data) return { supported: false, supportCount: 0, supportedAt: "", message: "Soutien retiré." };
+  const row = response?.data || {};
+  return {
+    supported: booleanish(row.supported, supported),
+    supportCount: Number(row.support_count || 0),
+    supportedAt: row.supported_at || "",
+    message: row.message || "",
+  };
+}
+
+export async function submitCitizenIdea(_citizen, payload = {}) {
+  const { data } = await api.post("/citizen/ideas/", {
+    ...(payload.project_slug || payload.projectSlug ? { project_slug: payload.project_slug || payload.projectSlug } : {}),
+    title: payload.title,
+    category: payload.category,
+    district: payload.district || "",
+    description: payload.description,
+  });
+  return normalizeIdea(data);
+}
+
+export async function getCitizenIdeas() {
+  const { data } = await api.get("/citizen/ideas/");
+  return unwrapList(data).map(normalizeIdea);
+}
+
+export async function getCitizenIdea(reference) {
+  const { data } = await api.get(`/citizen/ideas/${encodeURIComponent(reference)}/`);
+  return normalizeIdea(data);
+}
+
+/* Administration */
+export async function getAdminMunicipalProjects() {
+  const { data } = await api.get("/admin/projects/");
+  return unwrapList(data).map(normalizeMunicipalProject);
+}
+
+export async function getAdminMunicipalProject(slug) {
+  const { data } = await api.get(`/admin/projects/${encodeURIComponent(slug)}/`);
+  return normalizeMunicipalProject(data);
+}
+
+export async function createAdminMunicipalProject(payload) {
+  const { data } = await api.post("/admin/projects/", projectPayload(payload));
+  invalidateCache("projects:");
+  return normalizeMunicipalProject(data);
+}
+
+export async function updateAdminMunicipalProject(slug, payload) {
+  const { data } = await api.patch(`/admin/projects/${encodeURIComponent(slug)}/`, projectPayload(payload));
+  invalidateCache("projects:");
+  return normalizeMunicipalProject(data);
+}
+
+export async function deleteAdminMunicipalProject(slug) {
+  await api.delete(`/admin/projects/${encodeURIComponent(slug)}/`);
+  invalidateCache("projects:");
+  return true;
 }
 
 export async function saveMunicipalProject(payload = {}) {
-  const rows = ensureProjects();
-  const existingIndex = rows.findIndex((item) => String(item.id) === String(payload.id) || item.slug === payload.slug);
-  const existing = existingIndex >= 0 ? rows[existingIndex] : null;
-  const id = existing?.id || `PRJ-${String(rows.length + 1).padStart(3, "0")}`;
-  const next = {
-    id,
-    slug: existing?.slug || slugify(payload.title),
-    title: payload.title || existing?.title || "Nouveau projet",
-    summary: payload.summary || existing?.summary || "",
-    description: payload.description || existing?.description || "",
-    district: payload.district || existing?.district || "Nova Centre",
-    status: payload.status || existing?.status || "planned",
-    progress: Math.max(0, Math.min(100, Number(payload.progress ?? existing?.progress ?? 0))),
-    start_date: payload.start_date || existing?.start_date || "",
-    expected_end_date: payload.expected_end_date || existing?.expected_end_date || "",
-    participation_type: payload.participation_type || existing?.participation_type || "none",
-    participation_question: payload.participation_question ?? existing?.participation_question ?? "",
-    decision_closes_at: payload.decision_closes_at ?? existing?.decision_closes_at ?? "",
-    objectives: Array.isArray(payload.objectives) ? payload.objectives : existing?.objectives || [],
-    milestones: Array.isArray(payload.milestones) ? payload.milestones : existing?.milestones || [],
-    updated_at: new Date().toISOString(),
-  };
-  const updated = [...rows];
-  if (existingIndex >= 0) updated[existingIndex] = next;
-  else updated.unshift(next);
-  writeJson(PROJECTS_KEY, updated);
-  return { ...next };
-}
-
-export async function submitProjectContribution(project, citizen, payload = {}) {
-  const rows = readJson(CONTRIBUTIONS_KEY, []);
-  const userKey = citizenKey(citizen);
-  const contributionType = payload.type || project.participation_type || "consultation";
-  const previousIndex = rows.findIndex((item) => item.project_id === project.id && item.citizen_key === userKey && item.type === contributionType);
-  const previous = previousIndex >= 0 ? rows[previousIndex] : null;
-  const contribution = {
-    id: previous?.id || `${project.id}-${userKey}-${contributionType}`,
-    reference: previous?.reference || nextReference(contributionType === "decision" ? "PART" : "AVIS", rows),
-    project_id: project.id,
-    project_slug: project.slug,
-    project_title: project.title,
-    citizen_key: userKey,
-    citizen_name: citizen?.display_name || `${citizen?.first_name || ""} ${citizen?.last_name || ""}`.trim() || citizen?.email || "Citoyen",
-    citizen_email: citizen?.email || "",
-    type: contributionType,
-    choice: payload.choice || "",
-    comment: payload.comment || "",
-    created_at: previous?.created_at || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  const updated = [...rows];
-  if (previousIndex >= 0) updated[previousIndex] = contribution;
-  else updated.unshift(contribution);
-  writeJson(CONTRIBUTIONS_KEY, updated);
-  return { ...contribution };
-}
-
-export async function getMyProjectContribution(projectId, citizen) {
-  const rows = readJson(CONTRIBUTIONS_KEY, []);
-  const userKey = citizenKey(citizen);
-  const row = rows.find((item) => item.project_id === projectId && item.citizen_key === userKey);
-  return row ? { ...row } : null;
+  if (payload.slug) return updateAdminMunicipalProject(payload.slug, payload);
+  return createAdminMunicipalProject(payload);
 }
 
 export async function getAllProjectContributions() {
-  return readJson(CONTRIBUTIONS_KEY, []).map((item) => ({ ...item }));
-}
-
-export async function submitCitizenIdea(citizen, payload = {}) {
-  const rows = readJson(IDEAS_KEY, []);
-  const idea = {
-    id: `idea-${Date.now()}`,
-    reference: nextReference("IDEA", rows),
-    citizen_key: citizenKey(citizen),
-    citizen_name: citizen?.display_name || `${citizen?.first_name || ""} ${citizen?.last_name || ""}`.trim() || citizen?.email || "Citoyen",
-    citizen_email: citizen?.email || "",
-    title: payload.title || "Idée citoyenne",
-    category: payload.category || "Autre",
-    district: payload.district || "Nova Centre",
-    description: payload.description || "",
-    status: "submitted",
-    created_at: new Date().toISOString(),
-  };
-  writeJson(IDEAS_KEY, [idea, ...rows]);
-  return { ...idea };
-}
-
-export async function getCitizenIdeas(citizen) {
-  const key = citizenKey(citizen);
-  return readJson(IDEAS_KEY, []).filter((item) => item.citizen_key === key).map((item) => ({ ...item }));
+  const { data } = await api.get("/admin/project-participations/");
+  return unwrapList(data).map(normalizeContribution);
 }
 
 export async function getAllCitizenIdeas() {
-  return readJson(IDEAS_KEY, []).map((item) => ({ ...item }));
+  const { data } = await api.get("/admin/ideas/");
+  return unwrapList(data).map(normalizeIdea);
+}
+
+export async function getAdminCitizenIdea(reference) {
+  const { data } = await api.get(`/admin/ideas/${encodeURIComponent(reference)}/`);
+  return normalizeIdea(data);
+}
+
+export async function updateAdminCitizenIdea(reference, patch = {}) {
+  const { data } = await api.patch(`/admin/ideas/${encodeURIComponent(reference)}/`, {
+    ...(patch.status !== undefined ? { status: patch.status } : {}),
+    ...(patch.staff_note !== undefined || patch.staffNote !== undefined ? { staff_note: patch.staff_note ?? patch.staffNote ?? "" } : {}),
+  });
+  return normalizeIdea(data);
 }
 
 export const municipalProjectBackendStatus = {
-  mode: "local-fallback",
-  reason: "Aucun endpoint projets/participation n’est documenté dans l’API Nova Terra actuellement disponible.",
+  mode: "backend",
+  publicProjects: "/api/city/projects/",
+  citizenParticipation: "/api/citizen/projects/{slug}/participation/",
+  citizenIdeas: "/api/citizen/ideas/",
+  adminProjects: "/api/admin/projects/",
 };
