@@ -21,7 +21,7 @@ DEBUG = env_bool("MODE_DEV", env_bool("DEBUG", True))
 
 ALLOWED_HOSTS = env_list(
     "ALLOWED_HOSTS",
-    "api.ikomholala.madagascar.webcup.hodi.cloud,127.0.0.1,localhost,192.168.8.150",
+    "api.ikomholala.madagascar.webcup.hodi.cloud,127.0.0.1,localhost",
 )
 
 LOCAL_APPS = [
@@ -106,7 +106,7 @@ AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PERMISSION_CLASSES": ["helpers.permissions.IsAuthenticatedAnyRole"],
     "EXCEPTION_HANDLER": "helpers.api_exception_handler.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": [

@@ -1,25 +1,22 @@
-from rest_framework.permissions import BasePermission
+"""Compatibilité des anciennes permissions de l'application city.
 
+Les nouvelles permissions centralisées vivent dans ``helpers.permissions``.
+"""
 
-class IsCitizen(BasePermission):
-    message = "Cet espace est réservé aux citoyens."
+from helpers.permissions import (
+    IsAuthenticatedAdmin,
+    IsAuthenticatedAgent,
+    IsAuthenticatedCitizen,
+)
 
-    def has_permission(self, request, view):
-        user = request.user
-        return bool(
-            user
-            and user.is_authenticated
-            and getattr(user, "role", None) == "citizen"
-        )
+# Alias conservés temporairement pour ne casser aucun import existant.
+IsCitizen = IsAuthenticatedCitizen
+IsAgentOrAdmin = IsAuthenticatedAgent | IsAuthenticatedAdmin
 
-
-class IsAgentOrAdmin(BasePermission):
-    message = "Cet espace est réservé aux agents municipaux et administrateurs."
-
-    def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        if user.is_superuser:
-            return True
-        return getattr(user, "role", None) in {"agent", "admin"}
+__all__ = [
+    "IsAuthenticatedCitizen",
+    "IsAuthenticatedAgent",
+    "IsAuthenticatedAdmin",
+    "IsCitizen",
+    "IsAgentOrAdmin",
+]

@@ -5,7 +5,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import CitizenRequest, MunicipalService, NewsArticle
-from .permissions import IsAgentOrAdmin, IsCitizen
+from helpers.permissions import (
+    IsAuthenticatedAdmin,
+    IsAuthenticatedAgent,
+    IsAuthenticatedCitizen,
+)
 from .serializers import (
     AgentCitizenRequestSerializer,
     CitizenRequestSerializer,
@@ -84,7 +88,7 @@ class ContactMessageCreateView(generics.CreateAPIView):
 
 
 class CitizenRequestListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsCitizen]
+    permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenRequestSerializer
 
     def get_queryset(self):
@@ -96,7 +100,7 @@ class CitizenRequestListCreateView(generics.ListCreateAPIView):
 
 
 class CitizenRequestDetailView(generics.RetrieveAPIView):
-    permission_classes = [IsCitizen]
+    permission_classes = [IsAuthenticatedCitizen]
     serializer_class = CitizenRequestSerializer
     lookup_field = "reference"
 
@@ -105,7 +109,7 @@ class CitizenRequestDetailView(generics.RetrieveAPIView):
 
 
 class AgentRequestListView(generics.ListAPIView):
-    permission_classes = [IsAgentOrAdmin]
+    permission_classes = [IsAuthenticatedAgent | IsAuthenticatedAdmin]
     serializer_class = AgentCitizenRequestSerializer
 
     def get_queryset(self):
@@ -129,7 +133,7 @@ class AgentRequestListView(generics.ListAPIView):
 
 
 class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAgentOrAdmin]
+    permission_classes = [IsAuthenticatedAgent | IsAuthenticatedAdmin]
     serializer_class = AgentCitizenRequestSerializer
     lookup_field = "reference"
     queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to")
@@ -139,7 +143,7 @@ class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
 
 
 class WebCupRequestsView(APIView):
-    permission_classes = [IsAgentOrAdmin]
+    permission_classes = [IsAuthenticatedAgent | IsAuthenticatedAdmin]
 
     def get(self, request):
         force = request.query_params.get("force", "").strip().lower() in {"1", "true", "yes"}

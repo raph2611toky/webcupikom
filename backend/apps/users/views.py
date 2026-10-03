@@ -7,12 +7,14 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from helpers.permissions import IsAuthenticatedAnyRole
 
 from .auth_cookies import (
     build_refresh_token,
@@ -412,7 +414,7 @@ class PasswordResetConfirmView(APIView):
 
 
 class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedAnyRole]
     parser_classes = [MultiPartParser]
 
     def get(self, request):
@@ -441,7 +443,7 @@ class ProfileView(APIView):
 
 
 class ChangePasswordView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedAnyRole]
 
     def post(self, request):
         try:
@@ -465,7 +467,7 @@ class ChangePasswordView(APIView):
 
 
 class SetPasswordView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedAnyRole]
 
     def post(self, request):
         try:
@@ -487,7 +489,7 @@ class SetPasswordView(APIView):
 
 
 class ChangeEmailRequestView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedAnyRole]
 
     def post(self, request):
         try:
@@ -532,7 +534,7 @@ class ChangeEmailConfirmView(APIView):
 
 
 class DeleteAccountView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedAnyRole]
 
     def delete(self, request):
         try:
