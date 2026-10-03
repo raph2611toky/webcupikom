@@ -7,7 +7,7 @@ const items = [
   {
     index: "01",
     title: "Accéder",
-    text: "Retrouvez plus simplement les informations et services utiles de Terra Nova.",
+    text: "Retrouvez plus simplement les informations et services utiles de Nova Terra.",
   },
   {
     index: "02",
@@ -28,8 +28,8 @@ export default function Mission() {
     <section className="terra-mission" id="mission" aria-labelledby="mission-title">
       <div className="terra-mission__head">
         <span className="terra-mission__kicker">Notre mission</span>
-        <h2 id="mission-title">Faire grandir Terra Nova <span>avec ses habitants.</span></h2>
-        <p>Terra Nova grandit : son espace numérique doit accompagner les nouveaux besoins de ses habitants.</p>
+        <h2 id="mission-title">Faire grandir Nova Terra <span>avec ses habitants.</span></h2>
+        <p>Nova Terra grandit : son espace numérique doit accompagner les nouveaux besoins de ses habitants.</p>
       </div>
 
       <div className="terra-mission__grid">

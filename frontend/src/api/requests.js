@@ -1,3 +1,4 @@
+
 import { api } from "./api.js";
 import { formatDateTime, unwrapList } from "./helpers.js";
 
@@ -44,13 +45,16 @@ function baseRequest(item, statusLabels) {
   return {
     ...item,
     id: item.reference,
+    reference: item.reference,
     ref: item.reference,
+    title: item.title || item.subject || "Demande citoyenne",
+    description: item.description || item.message || "",
     service: item.service_name || "Service non attribué",
     serviceId: item.service,
     statusCode: item.status,
     status: statusLabels[item.status] || item.status,
     priorityCode: item.priority,
-    priority: PRIORITY_LABEL[item.priority] || item.priority,
+    priority: PRIORITY_LABEL[item.priority] || item.priority || "Normale",
     created: formatDateTime(item.created_at),
     updated: formatDateTime(item.updated_at),
   };
@@ -64,7 +68,7 @@ export function normalizeRequestForAgent(item) {
   const normalized = baseRequest(item, API_STATUS);
   return {
     ...normalized,
-    citizen: item.citizen_name || item.citizen_email || `Citoyen ${item.citizen}`,
+    citizen: item.citizen_name || item.citizen_email || `Citoyen ${item.citizen ?? ""}`.trim(),
     citizenId: String(item.citizen ?? ""),
     citizenEmail: item.citizen_email || "",
     assignedTo: item.assigned_to ?? null,

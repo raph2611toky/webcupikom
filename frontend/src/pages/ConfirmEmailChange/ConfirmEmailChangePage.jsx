@@ -39,7 +39,7 @@ export default function ConfirmEmailChangePage() {
   return (
     <main className="auth-page">
       <section className="auth-shell auth-shell--compact auth-shell--center" aria-labelledby="email-change-title">
-        <a className="auth-brand" href="/">Terra<span>Nova</span></a>
+        <a className="auth-brand" href="/">Nova<span>Terra</span></a>
         <div className="auth-intro">
           <span className="auth-kicker">Compte</span>
           <h1 id="email-change-title">Nouvelle adresse e-mail</h1>

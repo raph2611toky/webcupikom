@@ -2,7 +2,7 @@ export const currentCitizen = {
   id: "CIT-0021",
   firstName: "Jennysca",
   lastName: "Razanaparany",
-  email: "jennysca@terranova.city",
+  email: "jennysca@novaterra.city",
   phone: "+TN 261 34 00 000 00",
   district: "Astra",
   sector: "A-07",
@@ -41,11 +41,11 @@ export const agentRequests = [
 ];
 
 export const citizens = [
-  { id: "CIT-0012", name: "Lina Nova", district: "Astra", requests: 4, status: "Actif", email: "lina@terranova.city", phone: "+TN 100 001" },
-  { id: "CIT-0015", name: "Marc Astra", district: "Kepler", requests: 7, status: "Actif", email: "marc@terranova.city", phone: "+TN 100 002" },
-  { id: "CIT-0019", name: "Ava Terra", district: "Helios", requests: 3, status: "Actif", email: "ava@terranova.city", phone: "+TN 100 003" },
-  { id: "CIT-0024", name: "Noah Kepler", district: "Orion", requests: 2, status: "Actif", email: "noah@terranova.city", phone: "+TN 100 004" },
-  { id: "CIT-0030", name: "Mila Orion", district: "Astra", requests: 6, status: "Actif", email: "mila@terranova.city", phone: "+TN 100 005" },
+  { id: "CIT-0012", name: "Lina Nova", district: "Astra", requests: 4, status: "Actif", email: "lina@novaterra.city", phone: "+TN 100 001" },
+  { id: "CIT-0015", name: "Marc Astra", district: "Kepler", requests: 7, status: "Actif", email: "marc@novaterra.city", phone: "+TN 100 002" },
+  { id: "CIT-0019", name: "Ava Terra", district: "Helios", requests: 3, status: "Actif", email: "ava@novaterra.city", phone: "+TN 100 003" },
+  { id: "CIT-0024", name: "Noah Kepler", district: "Orion", requests: 2, status: "Actif", email: "noah@novaterra.city", phone: "+TN 100 004" },
+  { id: "CIT-0030", name: "Mila Orion", district: "Astra", requests: 6, status: "Actif", email: "mila@novaterra.city", phone: "+TN 100 005" },
 ];
 
 export const webcupRequests = [
@@ -57,8 +57,8 @@ export const webcupRequests = [
 ];
 
 export const adminUsers = [
-  { id: "USR-101", name: "Jennysca Razanaparany", email: "jennysca@terranova.city", role: "Citoyen", status: "Actif" },
-  { id: "USR-076", name: "Lina Nova", email: "lina@terranova.city", role: "Citoyen", status: "Actif" },
-  { id: "USR-014", name: "Marc Vega", email: "marc.vega@terranova.city", role: "Agent", status: "Actif" },
-  { id: "USR-002", name: "Admin Terra", email: "admin@terranova.city", role: "Admin", status: "Actif" },
+  { id: "USR-101", name: "Jennysca Razanaparany", email: "jennysca@novaterra.city", role: "Citoyen", status: "Actif" },
+  { id: "USR-076", name: "Lina Nova", email: "lina@novaterra.city", role: "Citoyen", status: "Actif" },
+  { id: "USR-014", name: "Marc Vega", email: "marc.vega@novaterra.city", role: "Agent", status: "Actif" },
+  { id: "USR-002", name: "Admin Terra", email: "admin@novaterra.city", role: "Admin", status: "Actif" },
 ];

@@ -36,7 +36,7 @@ export default function GoogleCallbackPage() {
   return (
     <main className="auth-page">
       <section className="auth-shell auth-shell--compact auth-shell--center" aria-labelledby="google-title">
-        <a className="auth-brand" href="/">Terra<span>Nova</span></a>
+        <a className="auth-brand" href="/">Nova<span>Terra</span></a>
         <div className="auth-intro">
           <span className="auth-kicker">Google</span>
           <h1 id="google-title">Authentification</h1>

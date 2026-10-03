@@ -1,43 +1,65 @@
-import { useState } from "react";
-import {
-  getApiErrorMessage,
-  isEmailNotVerifiedError,
-  resendVerification,
-  startGoogleAuth,
-} from "../../api/auth.js";
+import { useEffect, useMemo, useState } from "react";
+import { getApiErrorMessage, isEmailNotVerifiedError, resendVerification } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getRoleSafeNextPath, navigate } from "../../utils/navigation.js";
 import "../auth.css";
 
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.32 2.98-7.41Z" />
-      <path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.44l-3.24-2.54c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.06v2.62A10 10 0 0 0 12 22Z" />
-      <path fill="#FBBC05" d="M6.41 13.86A6.01 6.01 0 0 1 6.1 12c0-.65.11-1.28.31-1.86V7.52H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.48l3.35-2.62Z" />
-      <path fill="#EA4335" d="M12 6.02c1.47 0 2.78.5 3.82 1.49l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.94 5.52l3.35 2.62C7.2 7.78 9.4 6.02 12 6.02Z" />
-    </svg>
+function useViewportBox() {
+  const read = () => ({ width: window.innerWidth, height: window.innerHeight });
+  const [viewport, setViewport] = useState(read);
+  useEffect(() => {
+    let frame = 0;
+    const sync = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setViewport(read()));
+    };
+    window.addEventListener("resize", sync, { passive: true });
+    window.addEventListener("orientationchange", sync, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+    };
+  }, []);
+  return viewport;
+}
+
+function EyeIcon({ open }) {
+  return open ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.4-6 9-6 9 6 9 6-3.4 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.4-6 9-6c5.6 0 9 6 9 6a17 17 0 0 1-2.3 3.1M6.2 7.7A15.5 15.5 0 0 0 3 12s3.4 6 9 6a8.8 8.8 0 0 0 3.8-.9M4 4l16 16"/></svg>
   );
 }
 
 export default function LoginPage() {
+  const viewport = useViewportBox();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [remember, setRemember] = useState(true);
   const [canResend, setCanResend] = useState(false);
+
+  const shellStyle = useMemo(() => ({
+    "--auth-screen-w": `${viewport.width}px`,
+    "--auth-screen-h": `${viewport.height}px`,
+  }), [viewport]);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setLoading(true);
     setStatus(null);
     setCanResend(false);
+    const form = new FormData(event.currentTarget);
 
     try {
-      const data = await login({ email, password, remember });
+      const data = await login({
+        email: String(form.get("email") || ""),
+        password: String(form.get("password") || ""),
+        remember,
+      });
       navigate(getRoleSafeNextPath(data.user?.role), { replace: true });
     } catch (error) {
       setCanResend(isEmailNotVerifiedError(error));
@@ -47,110 +69,83 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogle() {
-    setGoogleLoading(true);
-    setStatus(null);
-    try {
-      await startGoogleAuth({ remember });
-    } catch (error) {
-      setStatus({ type: "error", message: getApiErrorMessage(error, "Connexion Google impossible.") });
-      setGoogleLoading(false);
-    }
-  }
-
-  async function handleResend() {
+  async function resend() {
     if (!email) return;
     try {
       const data = await resendVerification(email);
-      setStatus({ type: "success", message: data.message });
+      setStatus({ type: "success", message: data?.message || "E-mail de vérification renvoyé." });
       setCanResend(false);
     } catch (error) {
-      setStatus({ type: "error", message: getApiErrorMessage(error) });
+      setStatus({ type: "error", message: getApiErrorMessage(error, "Impossible de renvoyer l’e-mail.") });
     }
   }
 
-  const busy = loading || googleLoading;
-
   return (
-    <main className="auth-page">
-      <section className="auth-shell" aria-labelledby="login-title">
-        <a className="auth-brand" href="/" aria-label="Terra Nova, retour à l’accueil">
-          Terra<span>Nova</span>
-        </a>
+    <main className="auth-screen auth-screen--login" style={shellStyle}>
+      <div className="auth-split-shell">
+        <aside className="auth-visual auth-visual--login" aria-hidden="true">
+          <a className="auth-visual__brand" href="/" tabIndex="-1">Nova<span>Terra</span></a>
+          <div className="auth-visual__copy">
+            <p className="auth-visual__eyebrow">PORTAIL CITOYEN · NOVA TERRA</p>
+            <h1>La ville,<br/><strong>plus proche de vous.</strong></h1>
+            <p>Retrouvez vos démarches, vos services et les informations de Nova Terra au même endroit.</p>
+          </div>
+          <div className="auth-orbit-scene">
+            <div className="auth-orbit auth-orbit--one" />
+            <div className="auth-orbit auth-orbit--two" />
+            <div className="auth-planet"><span>NT</span></div>
+            <article className="auth-float-card auth-float-card--a"><span className="auth-float-card__icon">✓</span><strong>Démarches suivies</strong><i/><i/></article>
+            <article className="auth-float-card auth-float-card--b"><span className="auth-float-card__icon">⌁</span><strong>Services accessibles</strong><i/><i/></article>
+            <article className="auth-float-card auth-float-card--c"><span className="auth-float-card__icon">!</span><strong>Alertes reçues</strong><i/><i/></article>
+          </div>
+          <div className="auth-visual__line" />
+          <span className="auth-visual__spark">✦</span>
+        </aside>
 
-        <div className="auth-intro">
-          <span className="auth-kicker">Portail municipal</span>
-          <h1 id="login-title">Se connecter</h1>
-          <p>Accédez à votre espace Terra Nova.</p>
-        </div>
+        <section className="auth-form-panel" aria-labelledby="login-title">
+          <a className="auth-back" href="/" onClick={(e)=>{e.preventDefault();navigate('/')}}><span>←</span> Retour à l’accueil</a>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <button className="auth-google" type="button" onClick={handleGoogle} disabled={busy}>
-            <GoogleIcon />
-            <span>{googleLoading ? "Redirection…" : "Se connecter avec Google"}</span>
-          </button>
+          <div className="auth-form-wrap">
+            <div className="auth-page-brand auth-page-brand--mobile">Nova<span>Terra</span></div>
+            <div className="auth-title-block">
+              <span className="auth-mini-kicker">ESPACE SÉCURISÉ</span>
+              <h2 id="login-title">Heureux de vous revoir</h2>
+              <p>Connectez-vous à votre espace Nova Terra.</p>
+            </div>
 
-          <div className="auth-divider" aria-hidden="true"><span>ou</span></div>
+            <form className="auth-modern-form" onSubmit={handleSubmit}>
+              <label className="auth-modern-field">
+                <span>Adresse e-mail</span>
+                <input type="email" name="email" autoComplete="email" placeholder="vous@exemple.com" value={email} onChange={(e)=>setEmail(e.target.value)} required />
+              </label>
 
-          <label className="auth-field">
-            <span>Adresse e-mail</span>
-            <input
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder="vous@exemple.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              disabled={busy}
-              required
-            />
-          </label>
+              <label className="auth-modern-field">
+                <span>Mot de passe</span>
+                <div className="auth-input-with-action">
+                  <input type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" placeholder="••••••••••••" required />
+                  <button type="button" className="auth-eye" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}><EyeIcon open={showPassword} /></button>
+                </div>
+              </label>
 
-          <label className="auth-field">
-            <span>Mot de passe</span>
-            <input
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              placeholder="Votre mot de passe"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              disabled={busy}
-              required
-            />
-          </label>
+              <div className="auth-form-meta">
+                <label className="auth-checkbox"><input type="checkbox" checked={remember} onChange={(e)=>setRemember(e.target.checked)}/><span>Se souvenir de moi</span></label>
+                <a href="/mot-de-passe-oublie" onClick={(e)=>{e.preventDefault();navigate('/mot-de-passe-oublie')}}>Mot de passe oublié ?</a>
+              </div>
 
-          <div className="auth-form-row">
-            <label className="auth-check">
-              <input
-                type="checkbox"
-                name="remember"
-                checked={remember}
-                onChange={(event) => setRemember(event.target.checked)}
-                disabled={busy}
-              />
-              <span>Se souvenir de moi</span>
-            </label>
-            <a href="/mot-de-passe-oublie">Mot de passe oublié ?</a>
+              <button className="auth-primary-button" type="submit" disabled={loading}>
+                <span>{loading ? "Connexion…" : "Se connecter"}</span><span className="auth-button-arrow">→</span>
+              </button>
+
+              {status ? <p className={`auth-feedback auth-feedback--${status.type}`} role={status.type==="error" ? "alert" : "status"} aria-live="polite">{status.message}</p> : null}
+              {canResend ? <button className="auth-secondary-link" type="button" onClick={resend}>Renvoyer l’e-mail de vérification</button> : null}
+            </form>
+
+            <p className="auth-switch-line">Pas encore de compte ? <a href="/inscription" onClick={(e)=>{e.preventDefault();navigate('/inscription')}}>Créer un compte</a></p>
           </div>
 
-          <button className="auth-submit" type="submit" disabled={busy}>
-            {loading ? "Connexion…" : "Se connecter"}
-          </button>
-
-          {status ? <p className={`auth-status auth-status--${status.type}`}>{status.message}</p> : null}
-
-          {canResend ? (
-            <button className="auth-link-button" type="button" onClick={handleResend}>
-              Renvoyer l’e-mail de vérification
-            </button>
-          ) : null}
-        </form>
-
-        <p className="auth-switch">
-          Pas encore de compte ? <a href="/inscription">Créer un compte</a>
-        </p>
-      </section>
+          <div className="auth-legal"><a href="#confidentialite">Confidentialité</a><span>•</span><a href="#conditions">Conditions d’utilisation</a></div>
+        </section>
+      </div>
     </main>
   );
 }

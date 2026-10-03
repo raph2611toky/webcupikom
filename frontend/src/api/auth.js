@@ -1,6 +1,6 @@
 import { api, clearAccessToken, setAccessToken } from "./api.js";
 
-const GOOGLE_REMEMBER_KEY = "kamo_google_remember";
+const GOOGLE_REMEMBER_KEY = "nova_terra_google_remember";
 let bootstrapPromise = null;
 
 function rememberFromSession() {

@@ -7,10 +7,64 @@ import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
+
 const filters=["Toutes","Envoyée","À traiter","En traitement","Action requise","Terminée"];
+
 export default function AgentRequests(){
-  const [items,setItems]=useState([]),[services,setServices]=useState([]),[filter,setFilter]=useState('Toutes'),[query,setQuery]=useState(''),[service,setService]=useState('Tous'),[loading,setLoading]=useState(true),[error,setError]=useState('');
-  useEffect(()=>{let mounted=true;Promise.all([getAgentRequests(),getServices()]).then(([r,s])=>{if(!mounted)return;setItems(r);setServices(s)}).catch(e=>mounted&&setError(getApiErrorMessage(e,"Impossible de charger les demandes."))).finally(()=>mounted&&setLoading(false));return()=>{mounted=false}},[]);
-  const rows=useMemo(()=>items.filter(r=>(filter==='Toutes'||r.status===filter)&&(service==='Tous'||String(r.serviceId)===service)&&(!query||`${r.ref} ${r.citizen} ${r.service}`.toLowerCase().includes(query.toLowerCase()))),[items,filter,query,service]);
-  return <div className="portal-layout"><AgentSidebar/><div className="portal-main"><PortalTopbar eyebrow="Traitement" title="Demandes citoyennes"/><main className="portal-content">{error?<div className="error-card">{error}</div>:null}<section className="toolbar-card toolbar-card--stack"><div className="toolbar-line"><label className="portal-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Référence, citoyen, service..."/></label><select value={service} onChange={e=>setService(e.target.value)}><option value="Tous">Tous</option>{services.map(s=><option key={s.id} value={String(s.id)}>{s.name}</option>)}</select></div><div className="filter-row filter-row--portal">{filters.map(f=><button key={f} className={filter===f?'is-active':''} onClick={()=>setFilter(f)}>{f}</button>)}</div></section><section className="portal-card">{loading?<div className="loading-card">Chargement…</div>:<div className="portal-table portal-table--agent"><div className="portal-table__head"><span>Référence</span><span>Citoyen</span><span>Service</span><span>Priorité</span><span>Statut</span><span/></div>{rows.map(r=><button className="portal-table__row" key={r.ref} onClick={()=>navigate(`/agent/requests/${encodeURIComponent(r.ref)}`)}><span className="mono">{r.ref}</span><strong>{r.citizen}</strong><span>{r.service}</span><span>{r.priority}</span><span><em className={`status-pill status-${r.status.replaceAll(' ','-').toLowerCase()}`}>{r.status}</em></span><span>→</span></button>)}{rows.length===0?<p className="detail-copy">Aucune demande correspondante.</p>:null}</div>}</section></main></div></div>;
+  const [items,setItems]=useState([]);
+  const [services,setServices]=useState([]);
+  const [filter,setFilter]=useState("Toutes");
+  const [query,setQuery]=useState("");
+  const [service,setService]=useState("Tous");
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
+
+  useEffect(()=>{
+    let mounted=true;
+    Promise.all([getAgentRequests(),getServices()])
+      .then(([r,s])=>{if(!mounted)return;setItems(r);setServices(s)})
+      .catch(e=>mounted&&setError(getApiErrorMessage(e,"Impossible de charger les demandes.")))
+      .finally(()=>mounted&&setLoading(false));
+    return()=>{mounted=false};
+  },[]);
+
+  const rows=useMemo(()=>items.filter(r=>
+    (filter==="Toutes"||r.status===filter)&&
+    (service==="Tous"||String(r.serviceId)===service)&&
+    (!query||`${r.ref} ${r.citizen} ${r.service}`.toLowerCase().includes(query.toLowerCase()))
+  ),[items,filter,query,service]);
+
+  return <div className="portal-layout">
+    <AgentSidebar/>
+    <div className="portal-main">
+      <PortalTopbar eyebrow="Traitement" title="Demandes citoyennes"/>
+      <main className="portal-content">
+        {error?<div className="error-card" role="alert">{error}</div>:null}
+
+        <section className="toolbar-card toolbar-card--stack">
+          <div className="toolbar-line">
+            <label className="portal-search"><span aria-hidden="true">⌕</span><input aria-label="Rechercher une demande" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Référence, citoyen, service..."/></label>
+            <select aria-label="Filtrer par service" value={service} onChange={e=>setService(e.target.value)}><option value="Tous">Tous les services</option>{services.map(s=><option key={s.id} value={String(s.id)}>{s.name}</option>)}</select>
+          </div>
+          <div className="filter-row filter-row--portal">{filters.map(f=><button key={f} className={filter===f?"is-active":""} aria-pressed={filter===f} onClick={()=>setFilter(f)}>{f}</button>)}</div>
+        </section>
+
+        <section className="portal-card">
+          {loading?<div className="loading-card">Chargement…</div>:
+          <div className="accessible-table-wrap">
+            <table className="accessible-table">
+              <caption className="sr-only">Liste des demandes citoyennes</caption>
+              <thead><tr><th scope="col">Référence</th><th scope="col">Citoyen</th><th scope="col">Service</th><th scope="col">Priorité</th><th scope="col">Statut</th><th scope="col">Action</th></tr></thead>
+              <tbody>{rows.map(r=><tr key={r.ref}>
+                <td className="mono">{r.ref}</td><td><strong>{r.citizen}</strong></td><td>{r.service}</td><td>{r.priority}</td>
+                <td><span className={`status-pill status-${String(r.status).replaceAll(" ","-").toLowerCase()}`}>{r.status}</span></td>
+                <td><button className="accessible-table__action" onClick={()=>navigate(`/agent/requests/${encodeURIComponent(r.ref)}`)}>Ouvrir →</button></td>
+              </tr>)}</tbody>
+            </table>
+            {!rows.length?<div className="dashboard-empty">Aucune demande correspondante.</div>:null}
+          </div>}
+        </section>
+      </main>
+    </div>
+  </div>;
 }
