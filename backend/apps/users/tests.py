@@ -156,6 +156,200 @@ class AccountApiTests(APITestCase):
         self.assertEqual(user.google_sub, "google-123")
         self.assertFalse(user.has_usable_password())
 
+
+    def create_google_user(self, email="google-user@example.com", sub="google-sub-123"):
+        user = User.objects.create_user(
+            email=email,
+            password=None,
+            email_verified=True,
+            google_sub=sub,
+            auth_provider=User.AuthProvider.GOOGLE,
+        )
+        return user
+
+    @patch("apps.users.views.verify_google_credential")
+    def test_google_only_user_can_set_password_after_google_reauthentication(self, verify_mock):
+        user = self.create_google_user()
+        self.auth(user)
+        verify_mock.return_value = {
+            "sub": user.google_sub,
+            "email": user.email,
+            "email_verified": True,
+        }
+
+        response = self.client.post(
+            reverse("users:change-password"),
+            {
+                "credential": "fresh-google-id-token",
+                "new_password": "NewStrongPass!2026",
+                "new_password_confirm": "NewStrongPass!2026",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("NewStrongPass!2026"))
+        self.assertEqual(user.auth_provider, User.AuthProvider.HYBRID)
+
+    @patch("apps.users.views.verify_google_credential")
+    def test_google_only_set_password_endpoint_requires_and_accepts_google_reauthentication(self, verify_mock):
+        user = self.create_google_user(email="set-password@example.com", sub="set-password-sub")
+        self.auth(user)
+
+        missing_reauth = self.client.post(
+            reverse("users:set-password"),
+            {
+                "new_password": "FirstLocalPass!2026",
+                "new_password_confirm": "FirstLocalPass!2026",
+            },
+            format="json",
+        )
+        self.assertEqual(missing_reauth.status_code, status.HTTP_400_BAD_REQUEST)
+
+        verify_mock.return_value = {
+            "sub": user.google_sub,
+            "email": user.email,
+            "email_verified": True,
+        }
+        response = self.client.post(
+            reverse("users:set-password"),
+            {
+                "credential": "fresh-google-id-token",
+                "new_password": "FirstLocalPass!2026",
+                "new_password_confirm": "FirstLocalPass!2026",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("FirstLocalPass!2026"))
+        self.assertEqual(user.auth_provider, User.AuthProvider.HYBRID)
+
+    def test_local_user_can_still_change_password_with_current_password(self):
+        user = self.create_verified_user(email="local-password@example.com")
+        self.auth(user)
+
+        response = self.client.post(
+            reverse("users:change-password"),
+            {
+                "current_password": "StrongPass!2026",
+                "new_password": "ChangedLocalPass!2026",
+                "new_password_confirm": "ChangedLocalPass!2026",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("ChangedLocalPass!2026"))
+
+    @patch("apps.users.views.verify_google_credential")
+    def test_hybrid_user_can_change_password_with_google_instead_of_current_password(self, verify_mock):
+        user = self.create_verified_user(email="hybrid@example.com")
+        user.google_sub = "hybrid-google-sub"
+        user.auth_provider = User.AuthProvider.HYBRID
+        user.save(update_fields=["google_sub", "auth_provider", "updated_at"])
+        self.auth(user)
+        verify_mock.return_value = {
+            "sub": user.google_sub,
+            "email": user.email,
+            "email_verified": True,
+        }
+
+        response = self.client.post(
+            reverse("users:change-password"),
+            {
+                "credential": "fresh-google-id-token",
+                "new_password": "AnotherStrongPass!2026",
+                "new_password_confirm": "AnotherStrongPass!2026",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("AnotherStrongPass!2026"))
+
+    @patch("apps.users.views.exchange_google_authorization_code")
+    def test_google_reauthentication_also_accepts_oauth_code_and_state(self, exchange_mock):
+        user = self.create_google_user(email="oauth-reauth@example.com", sub="oauth-reauth-sub")
+        self.auth(user)
+        exchange_mock.return_value = {
+            "sub": user.google_sub,
+            "email": user.email,
+            "email_verified": True,
+        }
+
+        response = self.client.post(
+            reverse("users:change-password"),
+            {
+                "code": "oauth-code",
+                "state": "signed-google-state",
+                "new_password": "OAuthStrongPass!2026",
+                "new_password_confirm": "OAuthStrongPass!2026",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        exchange_mock.assert_called_once_with("oauth-code", "signed-google-state")
+
+    @patch("apps.users.views.verify_google_credential")
+    def test_google_only_user_can_delete_account_after_google_reauthentication(self, verify_mock):
+        user = self.create_google_user(email="delete-google@example.com", sub="delete-google-sub")
+        user_id = user.pk
+        self.auth(user)
+        verify_mock.return_value = {
+            "sub": user.google_sub,
+            "email": user.email,
+            "email_verified": True,
+        }
+
+        response = self.client.delete(
+            reverse("users:delete-account"),
+            {"credential": "fresh-google-id-token", "confirmation": "DELETE"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(User.objects.filter(pk=user_id).exists())
+
+    @patch("apps.users.views.verify_google_credential")
+    def test_google_reauthentication_must_match_linked_google_identity(self, verify_mock):
+        user = self.create_google_user(email="protected@example.com", sub="expected-sub")
+        self.auth(user)
+        verify_mock.return_value = {
+            "sub": "another-google-account",
+            "email": "attacker@example.com",
+            "email_verified": True,
+        }
+
+        response = self.client.delete(
+            reverse("users:delete-account"),
+            {"credential": "other-google-token", "confirmation": "DELETE"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(User.objects.filter(pk=user.pk).exists())
+        self.assertIn("google", response.data)
+
+    def test_google_only_user_cannot_delete_without_google_reauthentication(self):
+        user = self.create_google_user(email="no-reauth@example.com", sub="no-reauth-sub")
+        self.auth(user)
+
+        response = self.client.delete(
+            reverse("users:delete-account"),
+            {"confirmation": "DELETE"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(User.objects.filter(pk=user.pk).exists())
+        self.assertIn("google", response.data)
+
     def test_profile_update(self):
         user = self.create_verified_user()
         self.auth(user)
@@ -204,7 +398,7 @@ class AccountApiTests(APITestCase):
 
 class BackendStructureTests(APITestCase):
     def test_user_urls_reference_views_module_not_swagger_module(self):
-        from . import urls as user_urls
+        from ....apps.users import urls as user_urls
 
         for pattern in user_urls.urlpatterns:
             callback = pattern.callback

@@ -1,8 +1,0 @@
-{% extends "emails/base.html" %}
-{% block title %}Alerte de sécurité{% endblock %}
-{% block content %}
-  <p style="margin:0 0 12px;color:#64748b;font-size:15px;">Bonjour {{ display_name }},</p>
-  <h1 style="margin:0 0 14px;font-size:26px;color:#111827;">Alerte de sécurité</h1>
-  <div style="padding:16px 18px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#9a3412;line-height:1.7;">{{ security_message }}</div>
-  <p style="margin:22px 0 0;color:#64748b;line-height:1.7;">Si cette action vient de vous, aucune intervention n'est nécessaire. Sinon, sécurisez votre compte et contactez l'administration.</p>
-{% endblock %}

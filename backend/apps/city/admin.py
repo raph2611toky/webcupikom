@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    CitizenAppointment,
     CitizenNotification,
     CitizenPreference,
     CitizenRequest,
@@ -69,10 +70,26 @@ class CitizenPreferenceAdmin(admin.ModelAdmin):
 
 @admin.register(CitizenNotification)
 class CitizenNotificationAdmin(admin.ModelAdmin):
-    list_display = ("user", "kind", "title", "is_read", "created_at")
-    list_filter = ("kind", "is_read")
-    search_fields = ("user__email", "title", "message")
-    readonly_fields = ("created_at", "read_at")
+    list_display = (
+        "user", "kind", "scope", "title", "sender", "is_important",
+        "visible_from", "email_sent_at", "is_read", "created_at",
+    )
+    list_filter = ("kind", "scope", "is_important", "is_read")
+    search_fields = ("user__email", "sender__email", "title", "message", "notification_code")
+    readonly_fields = ("created_at", "read_at", "email_sent_at", "email_last_error")
+
+
+@admin.register(CitizenAppointment)
+class CitizenAppointmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "reference", "citizen", "agent", "service", "starts_at", "ends_at", "status",
+        "reminder_enabled",
+    )
+    list_filter = ("status", "service", "agent", "reminder_enabled")
+    search_fields = (
+        "reference", "reason", "citizen__email", "agent__email", "service__name"
+    )
+    readonly_fields = ("reference", "created_at", "updated_at")
 
 
 @admin.register(WebCupRequestSnapshot)

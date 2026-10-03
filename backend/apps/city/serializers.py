@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth import password_validation
+from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import serializers
@@ -9,6 +10,7 @@ from apps.users.models import User
 
 from .constants import ONBOARDING_STEPS, SUPPORTED_LANGUAGE_CODES
 from .models import (
+    CitizenAppointment,
     CitizenNotification,
     CitizenPreference,
     CitizenRequest,
@@ -17,6 +19,12 @@ from .models import (
     MunicipalService,
     NewsArticle,
     WebCupRequestSnapshot,
+)
+
+
+ACTIVE_APPOINTMENT_STATUSES = (
+    CitizenAppointment.Status.REQUESTED,
+    CitizenAppointment.Status.CONFIRMED,
 )
 
 
@@ -419,20 +427,255 @@ class AgentCitizenRequestDetailSerializer(AgentCitizenRequestSerializer):
         return CitizenRequestEventSerializer(queryset, many=True, context=self.context).data
 
 
+def _validate_appointment_conflicts(*, citizen, agent, starts_at, ends_at, instance=None):
+    overlapping = CitizenAppointment.objects.filter(
+        status__in=ACTIVE_APPOINTMENT_STATUSES,
+        starts_at__lt=ends_at,
+        ends_at__gt=starts_at,
+    )
+    if instance and instance.pk:
+        overlapping = overlapping.exclude(pk=instance.pk)
+    if overlapping.filter(agent=agent).exists():
+        raise serializers.ValidationError(
+            {"starts_at": "Cet agent a déjà un rendez-vous qui chevauche ce créneau."}
+        )
+    if overlapping.filter(citizen=citizen).exists():
+        raise serializers.ValidationError(
+            {"starts_at": "Vous avez déjà un rendez-vous qui chevauche ce créneau."}
+        )
+
+
+class AppointmentAgentSerializer(serializers.ModelSerializer):
+    display_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ("id", "display_name")
+
+    def get_display_name(self, obj):
+        return obj.get_full_name().strip() or obj.email
+
+
+class CitizenAppointmentSerializer(serializers.ModelSerializer):
+    citizen_name = serializers.SerializerMethodField()
+    agent_name = serializers.SerializerMethodField()
+    service_name = serializers.CharField(source="service.name", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    preparation_documents = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CitizenAppointment
+        fields = (
+            "id", "reference", "citizen", "citizen_name", "agent", "agent_name",
+            "service", "service_name", "starts_at", "ends_at", "reason", "details",
+            "location", "preparation_instructions", "preparation_documents", "status",
+            "status_label", "reminder_enabled", "reminder_minutes_before",
+            "created_at", "updated_at",
+        )
+        read_only_fields = (
+            "id", "reference", "citizen", "citizen_name", "agent_name", "service_name",
+            "location", "preparation_instructions", "preparation_documents", "status",
+            "status_label", "created_at", "updated_at",
+        )
+
+    def get_citizen_name(self, obj):
+        return obj.citizen.get_full_name().strip() or obj.citizen.email
+
+    def get_agent_name(self, obj):
+        return obj.agent.get_full_name().strip() or obj.agent.email
+
+    def get_preparation_documents(self, obj):
+        return list(obj.service.required_documents or []) if obj.service else []
+
+    def validate_agent(self, value):
+        if not value.is_active or getattr(value, "role", None) != User.Role.AGENT:
+            raise serializers.ValidationError("Sélectionnez un agent municipal actif.")
+        return value
+
+    def validate_service(self, value):
+        if value and not value.is_active:
+            raise serializers.ValidationError("Ce service n'est pas disponible.")
+        return value
+
+    def validate_reminder_minutes_before(self, value):
+        if value < 1 or value > 10080:
+            raise serializers.ValidationError("Le rappel doit être compris entre 1 minute et 7 jours avant le rendez-vous.")
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        instance = self.instance
+        request = self.context.get("request")
+        citizen = instance.citizen if instance else getattr(request, "user", None)
+        agent = attrs.get("agent", instance.agent if instance else None)
+        starts_at = attrs.get("starts_at", instance.starts_at if instance else None)
+        ends_at = attrs.get("ends_at", instance.ends_at if instance else None)
+
+        next_status = attrs.get(
+            "status",
+            instance.status if instance else CitizenAppointment.Status.REQUESTED,
+        )
+        if starts_at and ends_at and ends_at <= starts_at:
+            raise serializers.ValidationError({"ends_at": "La fin du rendez-vous doit être postérieure au début."})
+        if (
+            starts_at
+            and starts_at <= timezone.now()
+            and next_status in ACTIVE_APPOINTMENT_STATUSES
+            and (not instance or "starts_at" in attrs)
+        ):
+            raise serializers.ValidationError({"starts_at": "Le rendez-vous doit être planifié dans le futur."})
+        if (
+            citizen
+            and agent
+            and starts_at
+            and ends_at
+            and next_status in ACTIVE_APPOINTMENT_STATUSES
+        ):
+            _validate_appointment_conflicts(
+                citizen=citizen,
+                agent=agent,
+                starts_at=starts_at,
+                ends_at=ends_at,
+                instance=instance,
+            )
+        return attrs
+
+    def create(self, validated_data):
+        citizen = self.context["request"].user
+        agent = validated_data["agent"]
+        service = validated_data.get("service")
+        if service and not validated_data.get("location"):
+            validated_data["location"] = service.address
+
+        with transaction.atomic():
+            # Les verrous utilisateurs sérialisent les réservations concurrentes
+            # pour le citoyen et l'agent, même sur MySQL/SQLite sans exclusion range.
+            list(
+                User.objects.select_for_update()
+                .filter(pk__in=sorted({citizen.pk, agent.pk}))
+                .order_by("pk")
+            )
+            _validate_appointment_conflicts(
+                citizen=citizen,
+                agent=agent,
+                starts_at=validated_data["starts_at"],
+                ends_at=validated_data["ends_at"],
+            )
+            validated_data["citizen"] = citizen
+            return super().create(validated_data)
+
+
+class CitizenAppointmentUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CitizenAppointment
+        fields = ("status", "reminder_enabled", "reminder_minutes_before")
+
+    def validate_status(self, value):
+        if value != CitizenAppointment.Status.CANCELLED:
+            raise serializers.ValidationError("Un citoyen peut uniquement annuler son rendez-vous.")
+        if self.instance.status in {
+            CitizenAppointment.Status.CANCELLED,
+            CitizenAppointment.Status.DECLINED,
+            CitizenAppointment.Status.COMPLETED,
+        }:
+            raise serializers.ValidationError("Ce rendez-vous ne peut plus être annulé.")
+        return value
+
+    def validate_reminder_minutes_before(self, value):
+        if value < 1 or value > 10080:
+            raise serializers.ValidationError("Le rappel doit être compris entre 1 minute et 7 jours avant le rendez-vous.")
+        return value
+
+
+class AgentAppointmentSerializer(CitizenAppointmentSerializer):
+    citizen_email = serializers.EmailField(source="citizen.email", read_only=True)
+
+    class Meta(CitizenAppointmentSerializer.Meta):
+        fields = CitizenAppointmentSerializer.Meta.fields + ("citizen_email",)
+        read_only_fields = (
+            "id", "reference", "citizen", "citizen_name", "citizen_email",
+            "agent", "agent_name", "service", "service_name", "reason", "details",
+            "preparation_documents", "status_label", "reminder_enabled",
+            "reminder_minutes_before", "created_at", "updated_at",
+        )
+
+    def validate_status(self, value):
+        if value not in CitizenAppointment.Status.values:
+            raise serializers.ValidationError("Statut de rendez-vous invalide.")
+        return value
+
+    def update(self, instance, validated_data):
+        starts_at = validated_data.get("starts_at", instance.starts_at)
+        ends_at = validated_data.get("ends_at", instance.ends_at)
+        with transaction.atomic():
+            list(
+                User.objects.select_for_update()
+                .filter(pk__in=sorted({instance.citizen_id, instance.agent_id}))
+                .order_by("pk")
+            )
+            next_status = validated_data.get("status", instance.status)
+            if next_status in ACTIVE_APPOINTMENT_STATUSES:
+                _validate_appointment_conflicts(
+                    citizen=instance.citizen,
+                    agent=instance.agent,
+                    starts_at=starts_at,
+                    ends_at=ends_at,
+                    instance=instance,
+                )
+            return super().update(instance, validated_data)
+
+
+class NotificationCreateSerializer(serializers.Serializer):
+    audience = serializers.ChoiceField(choices=("global", "targeted"))
+    recipient = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role=User.Role.CITIZEN, is_active=True),
+        required=False,
+        allow_null=True,
+    )
+    title = serializers.CharField(max_length=220)
+    message = serializers.CharField(required=False, allow_blank=True)
+    action_label = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    action_url = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    visible_from = serializers.DateTimeField(required=False, default=timezone.now)
+    is_important = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        audience = attrs["audience"]
+        recipient = attrs.get("recipient")
+        request = self.context.get("request")
+        if audience == "targeted" and not recipient:
+            raise serializers.ValidationError({"recipient": "Le citoyen destinataire est obligatoire pour une notification ciblée."})
+        if audience == "global" and recipient:
+            raise serializers.ValidationError({"recipient": "Une notification globale ne doit pas avoir de destinataire unique."})
+        if request and request.user.role == User.Role.AGENT and audience == "global":
+            raise serializers.ValidationError({"audience": "Un agent peut envoyer uniquement des notifications ciblées."})
+        return attrs
+
+
 class CitizenNotificationSerializer(serializers.ModelSerializer):
     request_reference = serializers.CharField(source="related_request.reference", read_only=True)
     contact_reference = serializers.CharField(source="related_contact.reference", read_only=True)
+    appointment_reference = serializers.CharField(source="related_appointment.reference", read_only=True)
+    sender_name = serializers.SerializerMethodField()
 
     class Meta:
         model = CitizenNotification
         fields = (
-            "id", "kind", "title", "message", "request_reference", "contact_reference",
-            "is_read", "read_at", "created_at",
+            "id", "kind", "scope", "title", "message", "sender", "sender_name",
+            "action_label", "action_url", "request_reference", "contact_reference",
+            "appointment_reference", "visible_from", "is_important", "is_read", "read_at", "created_at",
         )
         read_only_fields = (
-            "id", "kind", "title", "message", "request_reference", "contact_reference",
-            "read_at", "created_at",
+            "id", "kind", "scope", "title", "message", "sender", "sender_name",
+            "action_label", "action_url", "request_reference", "contact_reference",
+            "appointment_reference", "visible_from", "is_important", "read_at", "created_at",
         )
+
+    def get_sender_name(self, obj):
+        if not obj.sender:
+            return None
+        return obj.sender.get_full_name().strip() or obj.sender.email
 
     def update(self, instance, validated_data):
         is_read = validated_data.get("is_read", instance.is_read)

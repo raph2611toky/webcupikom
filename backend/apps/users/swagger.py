@@ -179,13 +179,21 @@ PROFILE_PARAMETERS = [
     form_string("locale", "Locale utilisateur, par exemple fr ou en"),
 ]
 
+GOOGLE_REAUTH_PARAMETERS = [
+    form_string("credential", "ID token Google Identity Services pour confirmer l'identité", required=False),
+    form_string("code", "Code OAuth Google obtenu après GET /api/auth/google/redirect/", required=False),
+    form_string("state", "State signé associé au code OAuth Google", required=False),
+]
+
 CHANGE_PASSWORD_PARAMETERS = [
-    form_string("current_password", "Mot de passe actuel", required=True),
+    form_string("current_password", "Mot de passe actuel (compte local/hybride)", required=False),
+    *GOOGLE_REAUTH_PARAMETERS,
     form_string("new_password", "Nouveau mot de passe", required=True),
     form_string("new_password_confirm", "Confirmation du nouveau mot de passe", required=True),
 ]
 
 SET_PASSWORD_PARAMETERS = [
+    *GOOGLE_REAUTH_PARAMETERS,
     form_string("new_password", "Nouveau mot de passe", required=True),
     form_string("new_password_confirm", "Confirmation du nouveau mot de passe", required=True),
 ]
@@ -200,7 +208,8 @@ CHANGE_EMAIL_CONFIRM_PARAMETERS = [
 ]
 
 DELETE_ACCOUNT_PARAMETERS = [
-    form_string("current_password", "Mot de passe actuel si le compte en possède un", required=False),
+    form_string("current_password", "Mot de passe actuel (compte local/hybride)", required=False),
+    *GOOGLE_REAUTH_PARAMETERS,
     form_string("confirmation", 'Saisir exactement "DELETE"', required=True),
 ]
 
@@ -379,6 +388,11 @@ change_password_post_schema = swagger_auto_schema(
     tags=["Compte"],
     operation_id="account_change_password",
     operation_summary="Changer le mot de passe",
+    operation_description=(
+        "Confirmer l'identité avec current_password, ou avec Google via credential "
+        "ou code + state. Pour un compte Google sans mot de passe local, cette route "
+        "permet de définir le premier mot de passe après ré-authentification Google."
+    ),
     security=JWT_SECURITY,
     manual_parameters=CHANGE_PASSWORD_PARAMETERS,
     responses={200: openapi.Response("Mot de passe modifié", MessageResponseSerializer()), 400: ERROR_RESPONSE},
@@ -389,6 +403,10 @@ set_password_post_schema = swagger_auto_schema(
     tags=["Compte"],
     operation_id="account_set_password",
     operation_summary="Définir un mot de passe local",
+    operation_description=(
+        "Pour un compte Google sans mot de passe, une ré-authentification Google "
+        "est requise via credential ou code + state."
+    ),
     security=JWT_SECURITY,
     manual_parameters=SET_PASSWORD_PARAMETERS,
     responses={200: openapi.Response("Mot de passe configuré", MessageResponseSerializer()), 400: ERROR_RESPONSE},
@@ -419,6 +437,11 @@ delete_account_schema = swagger_auto_schema(
     tags=["Compte"],
     operation_id="account_delete",
     operation_summary="Supprimer définitivement le compte",
+    operation_description=(
+        "Compte local : current_password requis. Compte Google : ré-authentification "
+        "Google requise. Compte hybride : current_password ou Google au choix. "
+        "Le champ confirmation doit toujours valoir DELETE."
+    ),
     security=JWT_SECURITY,
     manual_parameters=DELETE_ACCOUNT_PARAMETERS,
     responses={204: openapi.Response("Compte supprimé"), 400: ERROR_RESPONSE, 401: ERROR_RESPONSE},

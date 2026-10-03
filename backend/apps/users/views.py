@@ -6,7 +6,7 @@ from django.contrib.auth.models import update_last_login
 from django.db import transaction
 from django.core import signing
 from rest_framework import status
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -109,6 +109,51 @@ def server_error(exc, view_name):
         {"detail": "Une erreur interne est survenue."},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
+
+
+def verify_sensitive_action_identity(user, validated_data):
+    """Confirme l'identité avec le mot de passe local ou Google.
+
+    Pour les comptes hybrides, les deux méthodes sont acceptées. Un compte
+    Google sans mot de passe doit impérativement se ré-authentifier avec la
+    même identité Google avant une action sensible.
+    """
+    current_password = validated_data.get("current_password")
+    credential = validated_data.get("credential")
+    code = validated_data.get("code")
+    state_value = validated_data.get("state")
+
+    if current_password:
+        if not user.has_usable_password() or not user.check_password(current_password):
+            raise ValidationError({"current_password": "Mot de passe actuel incorrect."})
+        return "password"
+
+    if credential or (code and state_value):
+        if not user.google_sub:
+            raise ValidationError({"google": "Ce compte n'est pas associé à Google."})
+        try:
+            if credential:
+                payload = verify_google_credential(credential)
+            else:
+                payload = exchange_google_authorization_code(code, state_value)
+        except GoogleIdentityError as exc:
+            raise ValidationError({"google": str(exc)}) from exc
+
+        if payload.get("sub") != user.google_sub:
+            raise ValidationError({
+                "google": "Le compte Google utilisé ne correspond pas à celui associé à ce compte."
+            })
+        return "google"
+
+    if user.google_sub and user.has_usable_password():
+        raise ValidationError({
+            "detail": "Confirmez l'action avec votre mot de passe actuel ou avec Google."
+        })
+    if user.google_sub:
+        raise ValidationError({
+            "google": "Une ré-authentification Google est requise pour confirmer cette action."
+        })
+    raise ValidationError({"current_password": "Le mot de passe actuel est requis."})
 
 
 class RegisterView(APIView):
@@ -571,6 +616,7 @@ class ChangePasswordView(APIView):
             serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
             user = request.user
+            verify_sensitive_action_identity(user, serializer.validated_data)
             user.set_password(serializer.validated_data["new_password"])
             if user.google_sub:
                 user.auth_provider = User.AuthProvider.HYBRID
@@ -597,6 +643,7 @@ class SetPasswordView(APIView):
             serializer = SetPasswordSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
             user = request.user
+            verify_sensitive_action_identity(user, serializer.validated_data)
             user.set_password(serializer.validated_data["new_password"])
             user.auth_provider = User.AuthProvider.HYBRID if user.google_sub else User.AuthProvider.LOCAL
             user.save(update_fields=["password", "auth_provider", "updated_at"])
@@ -671,6 +718,7 @@ class DeleteAccountView(APIView):
                 serializer = DeleteAccountSerializer(data=request.data, context={"request": request})
                 serializer.is_valid(raise_exception=True)
                 user = request.user
+                verify_sensitive_action_identity(user, serializer.validated_data)
                 email = user.email
                 display_name = user.get_full_name().strip() or email.split("@", 1)[0]
                 user.delete()

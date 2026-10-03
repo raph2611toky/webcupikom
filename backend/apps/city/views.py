@@ -1,3 +1,6 @@
+import uuid
+from datetime import date, datetime, time, timedelta
+
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, F, Q
@@ -16,6 +19,7 @@ from helpers.permissions import (
 )
 
 from .models import (
+    CitizenAppointment,
     CitizenNotification,
     CitizenPreference,
     CitizenRequest,
@@ -37,7 +41,11 @@ from .serializers import (
     AgentCitizenListSerializer,
     AgentCitizenRequestDetailSerializer,
     AgentCitizenRequestSerializer,
+    AgentAppointmentSerializer,
     AgentRequestEventCreateSerializer,
+    AppointmentAgentSerializer,
+    CitizenAppointmentSerializer,
+    CitizenAppointmentUpdateSerializer,
     AssigneeSerializer,
     CitizenContactMessageSerializer,
     CitizenNotificationSerializer,
@@ -51,9 +59,12 @@ from .serializers import (
     ContactMessageSerializer,
     MunicipalServiceSerializer,
     NewsArticleSerializer,
+    NotificationCreateSerializer,
     WebCupRequestSnapshotSerializer,
 )
 from .swagger import (
+    admin_appointment_patch_schema,
+    admin_notification_post_schema,
     admin_contact_patch_schema,
     admin_news_delete_schema,
     admin_news_patch_schema,
@@ -66,33 +77,179 @@ from .swagger import (
     admin_user_patch_schema,
     admin_user_post_schema,
     agent_contact_patch_schema,
+    agent_appointment_patch_schema,
+    agent_notification_post_schema,
     agent_request_event_post_schema,
     agent_request_patch_schema,
     citizen_notification_patch_schema,
     citizen_notification_read_all_schema,
+    citizen_appointment_patch_schema,
+    citizen_appointment_post_schema,
     citizen_onboarding_patch_schema,
     citizen_preferences_patch_schema,
     citizen_report_post_schema,
     citizen_request_post_schema,
     contact_create_schema,
 )
+from .services.notifications import schedule_notification_batch, schedule_notification_email
 from .services.webcup import WebCupUpstreamError, get_webcup_requests
 
 
 AGENT_OR_ADMIN = IsAuthenticatedAgent | IsAuthenticatedAdmin
+ACTIVE_APPOINTMENT_STATUSES = (
+    CitizenAppointment.Status.REQUESTED,
+    CitizenAppointment.Status.CONFIRMED,
+)
 
 
-def _notify_request_status(citizen_request, previous_status=None):
+def _appointment_frontend_url(appointment):
+    return f"/appointments/{appointment.reference}"
+
+
+def _appointment_reminder_message(appointment):
+    local_start = timezone.localtime(appointment.starts_at)
+    agent_name = appointment.agent.get_full_name().strip() or appointment.agent.email
+    details = [
+        f"Rendez-vous avec {agent_name} le {local_start:%d/%m/%Y à %H:%M}.",
+    ]
+    if appointment.location:
+        details.append(f"Lieu : {appointment.location}.")
+    if appointment.preparation_instructions:
+        details.append(appointment.preparation_instructions.strip())
+    elif appointment.service and appointment.service.required_documents:
+        details.append("Pensez à préparer les documents indiqués pour ce service.")
+    return " ".join(details)
+
+
+def _sync_appointment_reminder(appointment):
+    reminders = CitizenNotification.objects.filter(
+        user=appointment.citizen,
+        related_appointment=appointment,
+        notification_code="appointment_reminder",
+    )
+    if (
+        not appointment.reminder_enabled
+        or appointment.status not in ACTIVE_APPOINTMENT_STATUSES
+    ):
+        # Les rappels non lus deviennent inutiles dès qu'un rendez-vous est
+        # annulé/refusé/terminé. Les rappels déjà lus restent dans l'historique.
+        reminders.filter(is_read=False).delete()
+        return None
+
+    now = timezone.now()
+    visible_from = appointment.starts_at - timedelta(
+        minutes=appointment.reminder_minutes_before
+    )
+    if visible_from < now:
+        visible_from = now
+
+    defaults = {
+        "kind": CitizenNotification.Kind.APPOINTMENT,
+        "scope": CitizenNotification.Scope.AUTOMATED,
+        "title": "Rappel de rendez-vous",
+        "message": _appointment_reminder_message(appointment),
+        "action_label": "Voir le rendez-vous",
+        "action_url": _appointment_frontend_url(appointment),
+        "visible_from": visible_from,
+        "sender": appointment.agent,
+        "is_important": True,
+        "is_read": False,
+        "read_at": None,
+    }
+    reminder = reminders.order_by("id").first()
+    if reminder:
+        for field, value in defaults.items():
+            setattr(reminder, field, value)
+        reminder.save(update_fields=[*defaults.keys()])
+        reminders.exclude(pk=reminder.pk).delete()
+        schedule_notification_email(reminder)
+        return reminder
+    reminder = CitizenNotification.objects.create(
+        user=appointment.citizen,
+        related_appointment=appointment,
+        notification_code="appointment_reminder",
+        **defaults,
+    )
+    schedule_notification_email(reminder)
+    return reminder
+
+
+def _notify_appointment_update(appointment, *, sender, message=None):
+    local_start = timezone.localtime(appointment.starts_at)
+    if message is None:
+        message = (
+            f"Votre rendez-vous du {local_start:%d/%m/%Y à %H:%M} est maintenant "
+            f"« {appointment.get_status_display()} » ."
+        )
+    notification = CitizenNotification.objects.create(
+        user=appointment.citizen,
+        sender=sender,
+        scope=CitizenNotification.Scope.TARGETED,
+        kind=CitizenNotification.Kind.APPOINTMENT,
+        title=f"Rendez-vous {appointment.reference}",
+        message=message,
+        action_label="Voir le rendez-vous",
+        action_url=_appointment_frontend_url(appointment),
+        notification_code=f"appointment_update:{uuid.uuid4().hex}",
+        related_appointment=appointment,
+        is_important=True,
+    )
+    schedule_notification_email(notification)
+    return notification
+
+
+def _dispatch_manual_notification(*, sender, validated_data):
+    audience = validated_data["audience"]
+    recipient = validated_data.get("recipient")
+    batch_code = f"manual:{uuid.uuid4().hex}"
+    common = {
+        "sender": sender,
+        "scope": (
+            CitizenNotification.Scope.GLOBAL
+            if audience == "global"
+            else CitizenNotification.Scope.TARGETED
+        ),
+        "kind": CitizenNotification.Kind.SYSTEM,
+        "title": validated_data["title"],
+        "message": validated_data.get("message", ""),
+        "action_label": validated_data.get("action_label", ""),
+        "action_url": validated_data.get("action_url", ""),
+        "visible_from": validated_data["visible_from"],
+        "notification_code": batch_code,
+        "is_important": validated_data.get("is_important", False),
+    }
+
+    if audience == "targeted":
+        notification = CitizenNotification.objects.create(user=recipient, **common)
+        schedule_notification_email(notification)
+        return 1, batch_code
+
+    citizens = User.objects.filter(role=User.Role.CITIZEN, is_active=True).only("id")
+    notifications = [CitizenNotification(user=user, **common) for user in citizens]
+    if notifications:
+        CitizenNotification.objects.bulk_create(notifications, batch_size=500)
+        if common["is_important"]:
+            schedule_notification_batch(batch_code)
+    return len(notifications), batch_code
+
+
+def _notify_request_status(citizen_request, previous_status=None, *, sender=None):
     if previous_status == citizen_request.status:
         return
     label = citizen_request.get_status_display()
-    CitizenNotification.objects.create(
+    notification = CitizenNotification.objects.create(
         user=citizen_request.citizen,
+        sender=sender or citizen_request.assigned_to,
+        scope=CitizenNotification.Scope.TARGETED,
         kind=CitizenNotification.Kind.REQUEST,
         title=f"Demande {citizen_request.reference}",
         message=f"Le statut de votre demande est maintenant : {label}.",
+        action_label="Voir la demande",
+        action_url=f"/requests/{citizen_request.reference}",
         related_request=citizen_request,
+        is_important=True,
     )
+    schedule_notification_email(notification)
 
 
 def _create_request_event(citizen_request, *, actor=None, event_type=None, title=None, message="", is_public=True):
@@ -272,6 +429,8 @@ class CitizenDashboardView(APIView):
 
     def get(self, request):
         requests = CitizenRequest.objects.filter(citizen=request.user)
+        appointments = CitizenAppointment.objects.filter(citizen=request.user)
+        now = timezone.now()
         return Response(
             {
                 "requests": {
@@ -283,8 +442,15 @@ class CitizenDashboardView(APIView):
                     "completed": requests.filter(status=CitizenRequest.Status.COMPLETED).count(),
                 },
                 "notifications_unread": CitizenNotification.objects.filter(
-                    user=request.user, is_read=False
+                    user=request.user, is_read=False, visible_from__lte=now
                 ).count(),
+                "appointments": {
+                    "total": appointments.count(),
+                    "upcoming": appointments.filter(
+                        status__in=ACTIVE_APPOINTMENT_STATUSES,
+                        ends_at__gte=now,
+                    ).count(),
+                },
                 "contacts": ContactMessage.objects.filter(user=request.user).count(),
                 "profile_completion": _profile_completion(request.user),
                 "locale": (request.user.locale or "fr").split("-")[0],
@@ -528,9 +694,11 @@ class CitizenNotificationListView(generics.ListAPIView):
         user = getattr(self.request, "user", None)
         if not user or not user.is_authenticated:
             return CitizenNotification.objects.none()
-        queryset = CitizenNotification.objects.filter(user=user).select_related(
-            "related_request", "related_contact"
-        )
+        queryset = CitizenNotification.objects.filter(
+            user=user, visible_from__lte=timezone.now()
+        ).select_related(
+            "sender", "related_request", "related_contact", "related_appointment"
+        ).order_by("-visible_from", "-created_at")
         unread = self.request.query_params.get("unread", "").strip().lower()
         if unread in {"1", "true", "yes"}:
             queryset = queryset.filter(is_read=False)
@@ -549,9 +717,11 @@ class CitizenNotificationDetailView(generics.RetrieveUpdateAPIView):
         user = getattr(self.request, "user", None)
         if not user or not user.is_authenticated:
             return CitizenNotification.objects.none()
-        return CitizenNotification.objects.filter(user=user).select_related(
-            "related_request", "related_contact"
-        )
+        return CitizenNotification.objects.filter(
+            user=user, visible_from__lte=timezone.now()
+        ).select_related(
+            "sender", "related_request", "related_contact", "related_appointment"
+        ).order_by("-visible_from", "-created_at")
 
     def put(self, request, *args, **kwargs):
         return Response(
@@ -567,9 +737,128 @@ class CitizenNotificationReadAllView(APIView):
     def post(self, request):
         now = timezone.now()
         updated = CitizenNotification.objects.filter(
-            user=request.user, is_read=False
+            user=request.user, is_read=False, visible_from__lte=now
         ).update(is_read=True, read_at=now)
         return Response({"updated": updated})
+
+
+class CitizenAppointmentAgentListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticatedCitizen]
+    serializer_class = AppointmentAgentSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
+        return User.objects.filter(
+            role=User.Role.AGENT,
+            is_active=True,
+            email_verified=True,
+        ).order_by("first_name", "last_name", "email")
+
+
+class CitizenAppointmentAvailabilityView(APIView):
+    permission_classes = [IsAuthenticatedCitizen]
+
+    def get(self, request):
+        agent_id = request.query_params.get("agent")
+        raw_date = (request.query_params.get("date") or "").strip()
+        if not agent_id:
+            return Response(
+                {"agent": "Le paramètre agent est obligatoire."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            target_date = date.fromisoformat(raw_date)
+        except ValueError:
+            return Response(
+                {"date": "Utilisez une date ISO au format YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            agent = User.objects.get(
+                pk=agent_id,
+                role=User.Role.AGENT,
+                is_active=True,
+            )
+        except (User.DoesNotExist, ValueError):
+            return Response(
+                {"agent": "Agent introuvable ou indisponible."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        tz = timezone.get_current_timezone()
+        day_start = timezone.make_aware(datetime.combine(target_date, time.min), tz)
+        day_end = timezone.make_aware(datetime.combine(target_date, time.max), tz)
+        slots = CitizenAppointment.objects.filter(
+            agent=agent,
+            status__in=ACTIVE_APPOINTMENT_STATUSES,
+            starts_at__lt=day_end,
+            ends_at__gt=day_start,
+        ).order_by("starts_at")
+        return Response(
+            {
+                "agent": AppointmentAgentSerializer(agent).data,
+                "date": target_date.isoformat(),
+                "unavailable": [
+                    {
+                        "starts_at": item.starts_at,
+                        "ends_at": item.ends_at,
+                    }
+                    for item in slots
+                ],
+            }
+        )
+
+
+@method_decorator(name="post", decorator=citizen_appointment_post_schema)
+class CitizenAppointmentListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticatedCitizen]
+    serializer_class = CitizenAppointmentSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenAppointment.objects.none()
+        return CitizenAppointment.objects.filter(citizen=self.request.user).select_related(
+            "citizen", "agent", "service"
+        )
+
+    def perform_create(self, serializer):
+        with transaction.atomic():
+            appointment = serializer.save()
+            _sync_appointment_reminder(appointment)
+
+
+@method_decorator(name="patch", decorator=citizen_appointment_patch_schema)
+class CitizenAppointmentDetailView(generics.RetrieveUpdateAPIView):
+    http_method_names = ["get", "patch", "head", "options"]
+    permission_classes = [IsAuthenticatedCitizen]
+    lookup_field = "reference"
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return CitizenAppointmentUpdateSerializer
+        return CitizenAppointmentSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenAppointment.objects.none()
+        return CitizenAppointment.objects.filter(citizen=self.request.user).select_related(
+            "citizen", "agent", "service"
+        )
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            appointment = serializer.save()
+            _sync_appointment_reminder(appointment)
+        return Response(
+            CitizenAppointmentSerializer(
+                appointment,
+                context={"request": request},
+            ).data
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -577,11 +866,126 @@ class CitizenNotificationReadAllView(APIView):
 # ---------------------------------------------------------------------------
 
 
+class _NotificationCreateBaseView(APIView):
+    def post(self, request):
+        serializer = NotificationCreateSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            created, batch_code = _dispatch_manual_notification(
+                sender=request.user,
+                validated_data=serializer.validated_data,
+            )
+        return Response(
+            {
+                "created": created,
+                "audience": serializer.validated_data["audience"],
+                "notification_code": batch_code,
+                "visible_from": serializer.validated_data["visible_from"],
+                "is_important": serializer.validated_data.get("is_important", False),
+                "email_delivery": (
+                    "scheduled_or_sent"
+                    if serializer.validated_data.get("is_important", False)
+                    else "not_requested"
+                ),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AgentNotificationCreateView(_NotificationCreateBaseView):
+    permission_classes = [IsAuthenticatedAgent]
+
+    @agent_notification_post_schema
+    def post(self, request):
+        return super().post(request)
+
+
+class AdminNotificationCreateView(_NotificationCreateBaseView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_notification_post_schema
+    def post(self, request):
+        return super().post(request)
+
+
+class AgentAppointmentListView(generics.ListAPIView):
+    permission_classes = [AGENT_OR_ADMIN]
+    serializer_class = AgentAppointmentSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenAppointment.objects.none()
+        queryset = CitizenAppointment.objects.select_related("citizen", "agent", "service")
+        if getattr(self.request.user, "role", None) == User.Role.AGENT:
+            queryset = queryset.filter(agent=self.request.user)
+        appointment_status = self.request.query_params.get("status")
+        citizen = self.request.query_params.get("citizen")
+        agent = self.request.query_params.get("agent")
+        upcoming = (self.request.query_params.get("upcoming") or "").strip().lower()
+        if appointment_status:
+            queryset = queryset.filter(status=appointment_status)
+        if citizen:
+            queryset = queryset.filter(citizen_id=citizen)
+        if agent and getattr(self.request.user, "role", None) == User.Role.ADMIN:
+            queryset = queryset.filter(agent_id=agent)
+        if upcoming in {"1", "true", "yes"}:
+            queryset = queryset.filter(
+                status__in=ACTIVE_APPOINTMENT_STATUSES,
+                ends_at__gte=timezone.now(),
+            )
+        return queryset
+
+
+@method_decorator(name="patch", decorator=agent_appointment_patch_schema)
+class AgentAppointmentDetailView(generics.RetrieveUpdateAPIView):
+    http_method_names = ["get", "patch", "head", "options"]
+    permission_classes = [AGENT_OR_ADMIN]
+    serializer_class = AgentAppointmentSerializer
+    lookup_field = "reference"
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenAppointment.objects.none()
+        queryset = CitizenAppointment.objects.select_related("citizen", "agent", "service")
+        if getattr(self.request.user, "role", None) == User.Role.AGENT:
+            queryset = queryset.filter(agent=self.request.user)
+        return queryset
+
+    def perform_update(self, serializer):
+        appointment = serializer.instance
+        previous = (
+            appointment.status,
+            appointment.starts_at,
+            appointment.ends_at,
+            appointment.location,
+            appointment.preparation_instructions,
+        )
+        with transaction.atomic():
+            appointment = serializer.save()
+            current = (
+                appointment.status,
+                appointment.starts_at,
+                appointment.ends_at,
+                appointment.location,
+                appointment.preparation_instructions,
+            )
+            _sync_appointment_reminder(appointment)
+            if previous != current:
+                _notify_appointment_update(appointment, sender=self.request.user)
+
+
 class AgentDashboardView(APIView):
     permission_classes = [AGENT_OR_ADMIN]
 
     def get(self, request):
         requests = CitizenRequest.objects.all()
+        appointments = CitizenAppointment.objects.all()
+        if getattr(request.user, "role", None) == User.Role.AGENT:
+            appointments = appointments.filter(agent=request.user)
+        now = timezone.now()
         try:
             webcup = get_webcup_requests(force=False)
             webcup_session = webcup.get("session", {})
@@ -607,6 +1011,19 @@ class AgentDashboardView(APIView):
                 "contacts_unread": ContactMessage.objects.filter(
                     status=ContactMessage.Status.RECEIVED
                 ).count(),
+                "appointments": {
+                    "total": appointments.count(),
+                    "upcoming": appointments.filter(
+                        status__in=ACTIVE_APPOINTMENT_STATUSES,
+                        ends_at__gte=now,
+                    ).count(),
+                    "requested": appointments.filter(
+                        status=CitizenAppointment.Status.REQUESTED
+                    ).count(),
+                    "confirmed": appointments.filter(
+                        status=CitizenAppointment.Status.CONFIRMED
+                    ).count(),
+                },
                 "webcup": {"session": webcup_session, "meta": webcup_meta},
             }
         )
@@ -691,7 +1108,11 @@ class AgentRequestDetailView(generics.RetrieveUpdateAPIView):
         previous_priority = serializer.instance.priority
         previous_assignee = serializer.instance.assigned_to_id
         instance = serializer.save()
-        _notify_request_status(instance, previous_status=previous_status)
+        _notify_request_status(
+            instance,
+            previous_status=previous_status,
+            sender=self.request.user,
+        )
         if previous_status != instance.status:
             _create_request_event(
                 instance,
@@ -896,6 +1317,8 @@ class AdminDashboardView(APIView):
     def get(self, request):
         users = User.objects.all()
         citizen_requests = CitizenRequest.objects.all()
+        appointments = CitizenAppointment.objects.all()
+        now = timezone.now()
         state = WebCupSyncState.objects.filter(key="requests").first()
         return Response(
             {
@@ -930,6 +1353,19 @@ class AdminDashboardView(APIView):
                 "contacts": {
                     "total": ContactMessage.objects.count(),
                     "unread": ContactMessage.objects.filter(status=ContactMessage.Status.RECEIVED).count(),
+                },
+                "appointments": {
+                    "total": appointments.count(),
+                    "upcoming": appointments.filter(
+                        status__in=ACTIVE_APPOINTMENT_STATUSES,
+                        ends_at__gte=now,
+                    ).count(),
+                    "requested": appointments.filter(
+                        status=CitizenAppointment.Status.REQUESTED
+                    ).count(),
+                    "confirmed": appointments.filter(
+                        status=CitizenAppointment.Status.CONFIRMED
+                    ).count(),
                 },
                 "webcup": {
                     "visible_requests": WebCupRequestSnapshot.objects.filter(is_visible=True).count(),
@@ -1074,9 +1510,14 @@ class AdminNewsListCreateView(generics.ListCreateAPIView):
             notifications = [
                 CitizenNotification(
                     user=user,
+                    sender=self.request.user,
+                    scope=CitizenNotification.Scope.GLOBAL,
                     kind=CitizenNotification.Kind.NEWS,
                     title=article.title,
                     message=article.excerpt or "Nouvelle information municipale disponible.",
+                    action_label="Lire l'actualité",
+                    action_url=f"/news/{article.slug}",
+                    notification_code=f"news:{article.pk}",
                 )
                 for user in User.objects.filter(role=User.Role.CITIZEN, is_active=True).only("id")
             ]
@@ -1130,6 +1571,18 @@ class AdminRequestDetailView(AgentRequestDetailView):
     permission_classes = [IsAuthenticatedAdmin]
 
     @admin_request_patch_schema
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+
+class AdminAppointmentListView(AgentAppointmentListView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+
+class AdminAppointmentDetailView(AgentAppointmentDetailView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_appointment_patch_schema
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 

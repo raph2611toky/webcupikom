@@ -1,8 +1,0 @@
-{% extends "emails/base.html" %}
-{% block title %}Bienvenue{% endblock %}
-{% block content %}
-  <p style="margin:0 0 12px;color:#64748b;font-size:15px;">Bonjour {{ display_name }},</p>
-  <h1 style="margin:0 0 14px;font-size:26px;color:#111827;">Votre compte est prêt</h1>
-  <p style="margin:0 0 24px;color:#64748b;line-height:1.7;">Votre compte {{ site_name }} est maintenant actif. Vous pouvez vous connecter et gérer votre profil.</p>
-  <p style="margin:26px 0;text-align:center;"><a href="{{ frontend_url }}" style="display:inline-block;padding:14px 22px;background:#5b7eff;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Ouvrir l'application</a></p>
-{% endblock %}

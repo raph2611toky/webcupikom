@@ -1,13 +1,25 @@
+from datetime import timedelta
+
+from django.core import mail
+from django.core.management import call_command
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.users.models import User
 
-from .models import CitizenNotification, CitizenRequest, ContactMessage, MunicipalService
+from .models import (
+    CitizenAppointment,
+    CitizenNotification,
+    CitizenRequest,
+    ContactMessage,
+    MunicipalService,
+)
 
 
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class TerraNovaRoleApiTests(APITestCase):
     def setUp(self):
         self.citizen = User.objects.create_user(
@@ -99,6 +111,241 @@ class TerraNovaRoleApiTests(APITestCase):
         allowed = self.client.get(reverse("city:admin-user-list"))
         self.assertEqual(allowed.status_code, status.HTTP_200_OK)
 
+    def test_agent_can_send_targeted_notification_but_not_global(self):
+        self.client.force_authenticate(self.agent)
+        targeted = self.client.post(
+            reverse("city:agent-notification-create"),
+            {
+                "audience": "targeted",
+                "recipient": self.citizen.pk,
+                "title": "Dossier à compléter",
+                "message": "Merci d'ajouter votre justificatif.",
+            },
+            format="json",
+        )
+        self.assertEqual(targeted.status_code, status.HTTP_201_CREATED)
+        notification = CitizenNotification.objects.get(
+            user=self.citizen,
+            sender=self.agent,
+            title="Dossier à compléter",
+        )
+        self.assertEqual(notification.scope, CitizenNotification.Scope.TARGETED)
+
+        denied = self.client.post(
+            reverse("city:agent-notification-create"),
+            {
+                "audience": "global",
+                "title": "Annonce générale",
+                "message": "Information générale.",
+            },
+            format="json",
+        )
+        self.assertEqual(denied.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_important_targeted_notification_is_also_sent_by_email(self):
+        self.client.force_authenticate(self.agent)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("city:agent-notification-create"),
+                {
+                    "audience": "targeted",
+                    "recipient": self.citizen.pk,
+                    "title": "Document urgent",
+                    "message": "Merci de transmettre le document avant demain.",
+                    "action_label": "Voir mon dossier",
+                    "action_url": "/requests/NT-R-TEST",
+                    "is_important": True,
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        notification = CitizenNotification.objects.get(
+            user=self.citizen, title="Document urgent"
+        )
+        self.assertTrue(notification.is_important)
+        self.assertIsNotNone(notification.email_sent_at)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.citizen.email])
+        self.assertIn("Document urgent", mail.outbox[0].subject)
+        self.assertIn("Notification importante", mail.outbox[0].alternatives[0][0])
+        self.assertIn("Voir mon dossier", mail.outbox[0].alternatives[0][0])
+
+    def test_normal_targeted_notification_does_not_send_email(self):
+        self.client.force_authenticate(self.agent)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("city:agent-notification-create"),
+                {
+                    "audience": "targeted",
+                    "recipient": self.citizen.pk,
+                    "title": "Information simple",
+                    "message": "Ceci reste uniquement dans le site.",
+                    "is_important": False,
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_future_important_notification_email_waits_until_due(self):
+        notification = CitizenNotification.objects.create(
+            user=self.citizen,
+            sender=self.agent,
+            scope=CitizenNotification.Scope.TARGETED,
+            kind=CitizenNotification.Kind.APPOINTMENT,
+            title="Rappel futur",
+            message="Votre rendez-vous approche.",
+            visible_from=timezone.now() + timedelta(hours=1),
+            is_important=True,
+        )
+
+        call_command("send_due_notification_emails")
+        notification.refresh_from_db()
+        self.assertIsNone(notification.email_sent_at)
+        self.assertEqual(len(mail.outbox), 0)
+
+        notification.visible_from = timezone.now() - timedelta(minutes=1)
+        notification.save(update_fields=["visible_from"])
+        call_command("send_due_notification_emails")
+        notification.refresh_from_db()
+        self.assertIsNotNone(notification.email_sent_at)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_admin_can_send_global_notification(self):
+        second_citizen = User.objects.create_user(
+            email="citizen2@example.com",
+            password="StrongPass123!",
+            role=User.Role.CITIZEN,
+            email_verified=True,
+            is_active=True,
+        )
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(
+            reverse("city:admin-notification-create"),
+            {
+                "audience": "global",
+                "title": "Fermeture exceptionnelle",
+                "message": "Le service sera fermé cet après-midi.",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["created"], 2)
+        self.assertEqual(
+            CitizenNotification.objects.filter(
+                title="Fermeture exceptionnelle",
+                scope=CitizenNotification.Scope.GLOBAL,
+            ).count(),
+            2,
+        )
+
+    def test_citizen_can_book_appointment_and_get_deferred_reminder(self):
+        starts_at = timezone.now() + timedelta(days=2)
+        ends_at = starts_at + timedelta(minutes=30)
+        self.client.force_authenticate(self.citizen)
+        response = self.client.post(
+            reverse("city:citizen-appointment-list"),
+            {
+                "agent": self.agent.pk,
+                "service": self.service.pk,
+                "starts_at": starts_at.isoformat(),
+                "ends_at": ends_at.isoformat(),
+                "reason": "Renouvellement de document",
+                "reminder_enabled": True,
+                "reminder_minutes_before": 60,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        appointment = CitizenAppointment.objects.get(reference=response.data["reference"])
+        reminder = CitizenNotification.objects.get(
+            related_appointment=appointment,
+            notification_code="appointment_reminder",
+        )
+        self.assertEqual(reminder.kind, CitizenNotification.Kind.APPOINTMENT)
+        self.assertGreater(reminder.visible_from, timezone.now())
+
+        hidden = self.client.get(reverse("city:citizen-notification-list"))
+        self.assertEqual(hidden.status_code, status.HTTP_200_OK)
+        ids = [item["id"] for item in hidden.data]
+        self.assertNotIn(reminder.pk, ids)
+
+        reminder.visible_from = timezone.now() - timedelta(minutes=1)
+        reminder.save(update_fields=["visible_from"])
+        visible = self.client.get(reverse("city:citizen-notification-list"))
+        ids = [item["id"] for item in visible.data]
+        self.assertIn(reminder.pk, ids)
+
+    def test_appointment_overlap_is_rejected(self):
+        starts_at = timezone.now() + timedelta(days=1)
+        ends_at = starts_at + timedelta(hours=1)
+        CitizenAppointment.objects.create(
+            citizen=self.citizen,
+            agent=self.agent,
+            service=self.service,
+            starts_at=starts_at,
+            ends_at=ends_at,
+            reason="Premier rendez-vous",
+        )
+        other_citizen = User.objects.create_user(
+            email="other@example.com",
+            password="StrongPass123!",
+            role=User.Role.CITIZEN,
+            email_verified=True,
+            is_active=True,
+        )
+        self.client.force_authenticate(other_citizen)
+        response = self.client.post(
+            reverse("city:citizen-appointment-list"),
+            {
+                "agent": self.agent.pk,
+                "service": self.service.pk,
+                "starts_at": (starts_at + timedelta(minutes=15)).isoformat(),
+                "ends_at": (ends_at + timedelta(minutes=15)).isoformat(),
+                "reason": "Conflit",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_agent_can_confirm_appointment_and_set_preparation(self):
+        starts_at = timezone.now() + timedelta(days=1)
+        appointment = CitizenAppointment.objects.create(
+            citizen=self.citizen,
+            agent=self.agent,
+            service=self.service,
+            starts_at=starts_at,
+            ends_at=starts_at + timedelta(minutes=45),
+            reason="Démarche administrative",
+        )
+        self.client.force_authenticate(self.agent)
+        response = self.client.patch(
+            reverse(
+                "city:agent-appointment-detail",
+                kwargs={"reference": appointment.reference},
+            ),
+            {
+                "status": CitizenAppointment.Status.CONFIRMED,
+                "location": "Guichet 4",
+                "preparation_instructions": "Apporter une pièce d'identité.",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        appointment.refresh_from_db()
+        self.assertEqual(appointment.status, CitizenAppointment.Status.CONFIRMED)
+        self.assertEqual(appointment.location, "Guichet 4")
+        self.assertTrue(
+            CitizenNotification.objects.filter(
+                user=self.citizen,
+                related_appointment=appointment,
+                kind=CitizenNotification.Kind.APPOINTMENT,
+                sender=self.agent,
+            ).exists()
+        )
+
 
 class SchemaGenerationSafetyTests(APITestCase):
     """Régression: drf-yasg parcourt get_queryset() avec un AnonymousUser."""
@@ -110,7 +357,7 @@ class SchemaGenerationSafetyTests(APITestCase):
         from django.contrib.auth.models import AnonymousUser
         from rest_framework.generics import GenericAPIView
 
-        from . import views as city_views
+        from ....apps.city import views as city_views
 
         checked = []
         for _, view_class in inspect.getmembers(city_views, inspect.isclass):

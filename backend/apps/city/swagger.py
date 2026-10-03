@@ -14,8 +14,10 @@ from .serializers import (
     AdminMunicipalServiceSerializer,
     AdminNewsArticleSerializer,
     AdminUserSerializer,
+    AgentAppointmentSerializer,
     AgentCitizenRequestDetailSerializer,
     AgentRequestEventCreateSerializer,
+    CitizenAppointmentSerializer,
     CitizenNotificationSerializer,
     CitizenPreferenceSerializer,
     CitizenRequestSerializer,
@@ -186,6 +188,42 @@ ADMIN_NEWS_PARAMETERS = [
     form_string("published_at", "Date/heure ISO 8601"),
 ]
 
+APPOINTMENT_CREATE_PARAMETERS = [
+    form_int("agent", "ID de l'agent municipal", required=True),
+    form_int("service", "ID du service municipal concerné"),
+    form_string("starts_at", "Début du rendez-vous au format ISO 8601", required=True),
+    form_string("ends_at", "Fin du rendez-vous au format ISO 8601", required=True),
+    form_string("reason", "Motif du rendez-vous", required=True),
+    form_string("details", "Informations complémentaires"),
+    form_bool("reminder_enabled", "Activer le rappel avant le rendez-vous"),
+    form_int("reminder_minutes_before", "Nombre de minutes avant le rendez-vous pour afficher le rappel"),
+]
+
+APPOINTMENT_CITIZEN_UPDATE_PARAMETERS = [
+    form_string("status", "Utiliser cancelled pour annuler le rendez-vous"),
+    form_bool("reminder_enabled", "Activer ou désactiver le rappel"),
+    form_int("reminder_minutes_before", "Nombre de minutes avant le rendez-vous pour le rappel"),
+]
+
+APPOINTMENT_AGENT_UPDATE_PARAMETERS = [
+    form_string("status", "Statut : requested, confirmed, declined, cancelled ou completed"),
+    form_string("starts_at", "Nouveau début au format ISO 8601"),
+    form_string("ends_at", "Nouvelle fin au format ISO 8601"),
+    form_string("location", "Lieu précis du rendez-vous"),
+    form_string("preparation_instructions", "Instructions pour préparer le rendez-vous"),
+]
+
+NOTIFICATION_SEND_PARAMETERS = [
+    form_string("audience", "Audience : global ou targeted", required=True),
+    form_int("recipient", "ID du citoyen pour une notification ciblée"),
+    form_string("title", "Titre de la notification", required=True),
+    form_string("message", "Message de la notification"),
+    form_string("action_label", "Libellé du bouton d'action"),
+    form_string("action_url", "URL ou route frontend de l'action"),
+    form_string("visible_from", "Date/heure ISO 8601 à partir de laquelle la notification devient visible"),
+    form_bool("is_important", "Notification importante : envoie également un email au citoyen"),
+]
+
 
 contact_create_schema = swagger_auto_schema(
     auto_schema=ManualFormAutoSchema,
@@ -255,6 +293,47 @@ citizen_notification_read_all_schema = swagger_auto_schema(
     security=JWT_SECURITY,
     manual_parameters=[],
     responses={200: "Nombre de notifications mises à jour"},
+)
+
+citizen_appointment_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Citoyen - Rendez-vous"],
+    operation_id="citizen_appointment_create",
+    operation_summary="Prendre rendez-vous avec un agent",
+    security=JWT_SECURITY,
+    manual_parameters=APPOINTMENT_CREATE_PARAMETERS,
+    responses={201: CitizenAppointmentSerializer()},
+)
+
+citizen_appointment_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Citoyen - Rendez-vous"],
+    operation_id="citizen_appointment_update",
+    operation_summary="Annuler un rendez-vous ou modifier son rappel",
+    security=JWT_SECURITY,
+    manual_parameters=APPOINTMENT_CITIZEN_UPDATE_PARAMETERS,
+    responses={200: CitizenAppointmentSerializer()},
+)
+
+agent_notification_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Agent - Notifications"],
+    operation_id="agent_notification_create",
+    operation_summary="Envoyer une notification ciblée à un citoyen",
+    operation_description="Les agents peuvent uniquement utiliser audience=targeted.",
+    security=JWT_SECURITY,
+    manual_parameters=NOTIFICATION_SEND_PARAMETERS,
+    responses={201: "Notification envoyée"},
+)
+
+agent_appointment_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Agent - Rendez-vous"],
+    operation_id="agent_appointment_update",
+    operation_summary="Confirmer, replanifier ou clôturer un rendez-vous",
+    security=JWT_SECURITY,
+    manual_parameters=APPOINTMENT_AGENT_UPDATE_PARAMETERS,
+    responses={200: AgentAppointmentSerializer()},
 )
 
 agent_request_patch_schema = swagger_auto_schema(
@@ -365,6 +444,26 @@ admin_news_delete_schema = swagger_auto_schema(
     security=JWT_SECURITY,
     manual_parameters=[],
     responses={204: "Actualité dépubliée"},
+)
+
+admin_notification_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Notifications"],
+    operation_id="admin_notification_create",
+    operation_summary="Envoyer une notification globale ou ciblée",
+    security=JWT_SECURITY,
+    manual_parameters=NOTIFICATION_SEND_PARAMETERS,
+    responses={201: "Notification envoyée"},
+)
+
+admin_appointment_patch_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Rendez-vous"],
+    operation_id="admin_appointment_update",
+    operation_summary="Modifier un rendez-vous citoyen",
+    security=JWT_SECURITY,
+    manual_parameters=APPOINTMENT_AGENT_UPDATE_PARAMETERS,
+    responses={200: AgentAppointmentSerializer()},
 )
 
 admin_contact_patch_schema = swagger_auto_schema(

@@ -1,8 +1,0 @@
-{% extends "emails/base.html" %}
-{% block title %}Message support{% endblock %}
-{% block content %}
-  <h1 style="margin:0 0 14px;font-size:26px;color:#111827;">Nouveau message pour l'administration</h1>
-  <p style="margin:0 0 8px;color:#64748b;"><strong>Nom :</strong> {{ sender_name|default:"Non renseigné" }}</p>
-  <p style="margin:0 0 18px;color:#64748b;"><strong>Email :</strong> {{ sender_email|default:"Non renseigné" }}</p>
-  <div style="padding:16px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;color:#334155;line-height:1.7;white-space:pre-line;">{{ message }}</div>
-{% endblock %}

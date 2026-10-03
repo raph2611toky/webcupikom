@@ -296,28 +296,68 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return attrs
 
 
-class ChangePasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+class SensitiveActionAuthSerializer(serializers.Serializer):
+    """Méthodes de ré-authentification acceptées pour une action sensible.
+
+    Le client conserve la compatibilité avec le mot de passe actuel et peut,
+    pour un compte lié à Google, fournir soit un credential Google Identity
+    Services, soit le couple code + state du flux OAuth déjà existant.
+    """
+
+    current_password = serializers.CharField(
+        write_only=True, trim_whitespace=False, required=False, allow_blank=False
+    )
+    credential = serializers.CharField(
+        write_only=True, trim_whitespace=False, required=False, allow_blank=False
+    )
+    code = serializers.CharField(
+        write_only=True, trim_whitespace=False, required=False, allow_blank=False
+    )
+    state = serializers.CharField(
+        write_only=True, trim_whitespace=False, required=False, allow_blank=False
+    )
+
+    def validate_authentication_fields(self, attrs):
+        current_password = attrs.get("current_password")
+        credential = attrs.get("credential")
+        code = attrs.get("code")
+        state = attrs.get("state")
+
+        if credential and (code or state):
+            raise serializers.ValidationError({
+                "credential": "Utilisez soit 'credential', soit le couple 'code' + 'state'."
+            })
+        if bool(code) != bool(state):
+            missing = "state" if code else "code"
+            raise serializers.ValidationError({missing: "Ce champ est requis avec le flux OAuth Google."})
+
+        has_google_auth = bool(credential or (code and state))
+        if current_password and has_google_auth:
+            raise serializers.ValidationError(
+                "Utilisez une seule méthode de confirmation : mot de passe ou Google."
+            )
+        return attrs
+
+
+class ChangePasswordSerializer(SensitiveActionAuthSerializer):
     new_password = serializers.CharField(write_only=True, trim_whitespace=False)
     new_password_confirm = serializers.CharField(write_only=True, trim_whitespace=False)
 
     def validate(self, attrs):
+        attrs = self.validate_authentication_fields(attrs)
         user = self.context["request"].user
-        if not user.has_usable_password():
-            raise serializers.ValidationError("Ce compte n'a pas encore de mot de passe local. Utilisez l'endpoint set-password.")
-        if not user.check_password(attrs["current_password"]):
-            raise serializers.ValidationError({"current_password": "Mot de passe actuel incorrect."})
         if attrs["new_password"] != attrs.pop("new_password_confirm"):
             raise serializers.ValidationError({"new_password_confirm": "Les mots de passe ne correspondent pas."})
         password_validation.validate_password(attrs["new_password"], user)
         return attrs
 
 
-class SetPasswordSerializer(serializers.Serializer):
+class SetPasswordSerializer(SensitiveActionAuthSerializer):
     new_password = serializers.CharField(write_only=True, trim_whitespace=False)
     new_password_confirm = serializers.CharField(write_only=True, trim_whitespace=False)
 
     def validate(self, attrs):
+        attrs = self.validate_authentication_fields(attrs)
         user = self.context["request"].user
         if user.has_usable_password():
             raise serializers.ValidationError("Un mot de passe existe déjà. Utilisez change-password.")
@@ -368,16 +408,13 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
         return attrs
 
 
-class DeleteAccountSerializer(serializers.Serializer):
-    current_password = serializers.CharField(write_only=True, trim_whitespace=False, required=False, allow_blank=True)
+class DeleteAccountSerializer(SensitiveActionAuthSerializer):
     confirmation = serializers.CharField(help_text='Saisir exactement "DELETE".')
 
     def validate(self, attrs):
-        user = self.context["request"].user
+        attrs = self.validate_authentication_fields(attrs)
         if attrs.get("confirmation") != "DELETE":
             raise serializers.ValidationError({"confirmation": 'Saisissez exactement "DELETE".'})
-        if user.has_usable_password() and not user.check_password(attrs.get("current_password", "")):
-            raise serializers.ValidationError({"current_password": "Mot de passe actuel incorrect."})
         return attrs
 
 

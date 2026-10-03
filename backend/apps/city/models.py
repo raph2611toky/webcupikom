@@ -233,21 +233,106 @@ class CitizenRequestEvent(models.Model):
         return f"{self.request.reference} — {self.title}"
 
 
+class CitizenAppointment(models.Model):
+    class Status(models.TextChoices):
+        REQUESTED = "requested", "Demandé"
+        CONFIRMED = "confirmed", "Confirmé"
+        DECLINED = "declined", "Refusé"
+        CANCELLED = "cancelled", "Annulé"
+        COMPLETED = "completed", "Terminé"
+
+    reference = models.CharField(max_length=32, unique=True, editable=False)
+    citizen = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="citizen_appointments",
+    )
+    agent = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="agent_appointments",
+    )
+    service = models.ForeignKey(
+        MunicipalService,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="appointments",
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    reason = models.CharField(max_length=220)
+    details = models.TextField(blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    preparation_instructions = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.REQUESTED,
+    )
+    reminder_enabled = models.BooleanField(default=True)
+    reminder_minutes_before = models.PositiveIntegerField(default=60)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("starts_at", "id")
+        verbose_name = "rendez-vous citoyen"
+        verbose_name_plural = "rendez-vous citoyens"
+        indexes = [
+            models.Index(fields=("agent", "starts_at"), name="city_appt_agent_start_idx"),
+            models.Index(fields=("citizen", "starts_at"), name="city_appt_cit_start_idx"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            self.reference = make_reference("NT-A")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.reference} — {self.citizen_id} / {self.agent_id}"
+
+
 class CitizenNotification(models.Model):
     class Kind(models.TextChoices):
         REQUEST = "request", "Demande"
         CONTACT = "contact", "Contact"
         NEWS = "news", "Actualité"
+        APPOINTMENT = "appointment", "Rendez-vous"
         SYSTEM = "system", "Système"
+
+    class Scope(models.TextChoices):
+        GLOBAL = "global", "Globale"
+        TARGETED = "targeted", "Ciblée"
+        AUTOMATED = "automated", "Automatique"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="city_notifications",
     )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sent_city_notifications",
+    )
+    scope = models.CharField(
+        max_length=20,
+        choices=Scope.choices,
+        default=Scope.AUTOMATED,
+    )
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.SYSTEM)
     title = models.CharField(max_length=220)
     message = models.TextField(blank=True)
+    action_label = models.CharField(max_length=120, blank=True)
+    action_url = models.CharField(max_length=500, blank=True)
+    notification_code = models.CharField(max_length=80, blank=True, db_index=True)
+    visible_from = models.DateTimeField(default=timezone.now, db_index=True)
+    is_important = models.BooleanField(default=False, db_index=True)
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    email_last_error = models.TextField(blank=True)
     related_request = models.ForeignKey(
         CitizenRequest,
         on_delete=models.SET_NULL,
@@ -257,6 +342,13 @@ class CitizenNotification(models.Model):
     )
     related_contact = models.ForeignKey(
         ContactMessage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+    related_appointment = models.ForeignKey(
+        CitizenAppointment,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
