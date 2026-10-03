@@ -341,7 +341,8 @@ class ReportTests(APITestCase):
         lighting = next(row for row in response.data['categories'] if row['code']=='street_lighting')
         self.assertEqual(lighting['suggested_service'], self.energy.pk)
         item, _ = self.create()
-        response = self.client.get(reverse('city:citizen-request-history'), {'created_from':timezone.now().date().isoformat(), 'created_to':timezone.now().date().isoformat()})
+        local_created_day = timezone.localtime(item.created_at).date().isoformat()
+        response = self.client.get(reverse('city:citizen-request-history'), {'created_from':local_created_day, 'created_to':local_created_day})
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(self.client.get(reverse('city:citizen-request-history'), {'created_from':'2026-12-31','created_to':'2026-01-01'}).status_code, 400)
 

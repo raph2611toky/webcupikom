@@ -105,7 +105,7 @@ from .swagger import (
 )
 from .services.notifications import schedule_notification_batch, schedule_notification_email
 from .services.audit import record_staff_audit
-from .report_api import ReportMutationMixin, ReportPagination, filter_requests
+from .report_api import ReportMutationMixin, ReportPagination, filter_local_date_range, filter_requests
 from .report_swagger import report_list_schema
 from .services.reports import attachment_transaction, CLOSED, event as report_event, notify_citizen as notify_report_citizen
 from .services.webcup import WebCupUpstreamError, get_webcup_requests
@@ -1041,18 +1041,21 @@ class AgentAppointmentListView(generics.ListAPIView):
                 status__in=ACTIVE_APPOINTMENT_STATUSES,
                 ends_at__gte=timezone.now(),
             )
+        start_day = None
+        end_day = None
         if date_from:
             try:
                 start_day = date.fromisoformat(date_from)
             except ValueError as exc:
                 raise ValidationError({"date_from": "Utilisez YYYY-MM-DD."}) from exc
-            queryset = queryset.filter(starts_at__date__gte=start_day)
         if date_to:
             try:
                 end_day = date.fromisoformat(date_to)
             except ValueError as exc:
                 raise ValidationError({"date_to": "Utilisez YYYY-MM-DD."}) from exc
-            queryset = queryset.filter(starts_at__date__lte=end_day)
+        if start_day and end_day and start_day > end_day:
+            raise ValidationError({"date_to": "date_to doit être postérieure ou égale à date_from."})
+        queryset = filter_local_date_range(queryset, "starts_at", start_day, end_day)
         if search:
             queryset = queryset.filter(
                 Q(reference__icontains=search)
@@ -1137,6 +1140,8 @@ class AgentDashboardView(APIView):
         day_ago = now - timedelta(hours=24)
         week_ago = now - timedelta(days=7)
         week_ahead = now + timedelta(days=7)
+        today = timezone.localdate(now)
+        appointments_today = filter_local_date_range(appointments, "starts_at", today, today)
 
         open_requests = requests.exclude(status__in=CLOSED)
         my_requests = open_requests.filter(assigned_to=request.user)
@@ -1192,7 +1197,7 @@ class AgentDashboardView(APIView):
                     "assigned_needs_action": my_requests.filter(status__in=AGENT_ACTION_STATUSES).count(),
                     "unassigned_open_requests": unassigned_requests.count(),
                     "contacts_assigned_to_me": contacts.exclude(status=ContactMessage.Status.CLOSED).filter(assigned_to=request.user).count(),
-                    "appointments_today": appointments.filter(starts_at__date=timezone.localdate(now)).count(),
+                    "appointments_today": appointments_today.count(),
                     "appointments_next_7_days": appointments.filter(
                         status__in=ACTIVE_APPOINTMENT_STATUSES,
                         starts_at__gte=now,
@@ -1222,7 +1227,7 @@ class AgentDashboardView(APIView):
                     ).count(),
                     "requested": appointments.filter(status=CitizenAppointment.Status.REQUESTED).count(),
                     "confirmed": appointments.filter(status=CitizenAppointment.Status.CONFIRMED).count(),
-                    "today": appointments.filter(starts_at__date=timezone.localdate(now)).count(),
+                    "today": appointments_today.count(),
                     "next_7_days": appointments.filter(
                         status__in=ACTIVE_APPOINTMENT_STATUSES,
                         starts_at__gte=now,
@@ -1235,11 +1240,14 @@ class AgentDashboardView(APIView):
         )
 
 
-@method_decorator(name="get", decorator=agent_audit_list_schema)
 class AgentAuditListView(generics.ListAPIView):
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = StaffAuditEventSerializer
     pagination_class = ReportPagination
+
+    @agent_audit_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -1279,17 +1287,21 @@ class AgentAuditListView(generics.ListAPIView):
                 | Q(actor__first_name__icontains=search)
                 | Q(actor__last_name__icontains=search)
             )
+        start_day = None
+        end_day = None
         if date_from:
             try:
-                queryset = queryset.filter(created_at__date__gte=date.fromisoformat(date_from))
+                start_day = date.fromisoformat(date_from)
             except ValueError as exc:
                 raise ValidationError({"date_from": "Utilisez YYYY-MM-DD."}) from exc
         if date_to:
             try:
-                queryset = queryset.filter(created_at__date__lte=date.fromisoformat(date_to))
+                end_day = date.fromisoformat(date_to)
             except ValueError as exc:
                 raise ValidationError({"date_to": "Utilisez YYYY-MM-DD."}) from exc
-        return queryset
+        if start_day and end_day and start_day > end_day:
+            raise ValidationError({"date_to": "date_to doit être postérieure ou égale à date_from."})
+        return filter_local_date_range(queryset, "created_at", start_day, end_day)
 
 
 class AgentAuditDetailView(generics.RetrieveAPIView):
@@ -1305,9 +1317,12 @@ class AgentAuditDetailView(generics.RetrieveAPIView):
         return queryset
 
 
-@method_decorator(name="get", decorator=admin_audit_list_schema)
 class AdminAuditListView(AgentAuditListView):
     permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_audit_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class AdminAuditDetailView(AgentAuditDetailView):
