@@ -6,8 +6,11 @@ import "../../styles/app-shell.css";
 const items = [
   ["/admin", "◫", "Tableau de bord"],
   ["/admin/users", "◉", "Utilisateurs"],
+  ["/admin/requests", "◎", "Demandes"],
+  ["/admin/messages", "✉", "Messages"],
   ["/admin/services", "◇", "Services"],
   ["/admin/news", "▤", "Actualités"],
+  ["/admin/webcup", "⌘", "Flux WebCup"],
   ["/admin/settings", "⚙", "Paramètres"],
 ];
 

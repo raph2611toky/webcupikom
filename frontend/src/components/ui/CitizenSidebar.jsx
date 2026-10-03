@@ -9,6 +9,7 @@ const items = [
   ["/citizen/requests", "◎", "Mes demandes"],
   ["/citizen/services", "◇", "Services"],
   ["/citizen/notifications", "◌", "Notifications"],
+  ["/citizen/messages", "✉", "Mes messages"],
   ["/citizen/settings", "⚙", "Paramètres"],
 ];
 

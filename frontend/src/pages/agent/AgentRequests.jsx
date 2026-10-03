@@ -7,7 +7,7 @@ import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
-const filters=["Toutes","À traiter","En traitement","Action requise","Terminée"];
+const filters=["Toutes","Envoyée","À traiter","En traitement","Action requise","Terminée"];
 export default function AgentRequests(){
   const [items,setItems]=useState([]),[services,setServices]=useState([]),[filter,setFilter]=useState('Toutes'),[query,setQuery]=useState(''),[service,setService]=useState('Tous'),[loading,setLoading]=useState(true),[error,setError]=useState('');
   useEffect(()=>{let mounted=true;Promise.all([getAgentRequests(),getServices()]).then(([r,s])=>{if(!mounted)return;setItems(r);setServices(s)}).catch(e=>mounted&&setError(getApiErrorMessage(e,"Impossible de charger les demandes."))).finally(()=>mounted&&setLoading(false));return()=>{mounted=false}},[]);

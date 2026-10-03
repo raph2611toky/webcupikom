@@ -7,7 +7,9 @@ const items = [
   ["/agent", "◫", "Tableau de bord"],
   ["/agent/requests", "◎", "Demandes"],
   ["/agent/citizens", "◉", "Citoyens"],
+  ["/agent/messages", "✉", "Messages"],
   ["/agent/api", "⌘", "Flux WebCup"],
+  ["/agent/settings", "⚙", "Paramètres"],
 ];
 
 export default function AgentSidebar() {

@@ -72,10 +72,19 @@ export function AuthProvider({ children }) {
     setUser(nextUser || null);
   }, []);
 
-  const logout = useCallback(async () => {
-    await logoutRequest();
+  const clearSession = useCallback(() => {
+    clearAccessToken();
+    invalidateSessionBootstrap();
     setUser(null);
   }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await logoutRequest();
+    } finally {
+      clearSession();
+    }
+  }, [clearSession]);
 
   const value = useMemo(
     () => ({
@@ -87,9 +96,10 @@ export function AuthProvider({ children }) {
       verifyEmail,
       refreshUser,
       replaceUser,
+      clearSession,
       logout,
     }),
-    [completeGoogle, login, logout, ready, refreshUser, replaceUser, user, verifyEmail],
+    [clearSession, completeGoogle, login, logout, ready, refreshUser, replaceUser, user, verifyEmail],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { unwrapList } from "./helpers.js";
 
 function formatDate(value) {
   if (!value) return "";
@@ -7,7 +8,7 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "long", year: "numeric" }).format(date);
 }
 
-function normalizeNews(item) {
+export function normalizeNews(item) {
   return {
     ...item,
     date: formatDate(item.published_at),
@@ -17,10 +18,34 @@ function normalizeNews(item) {
 
 export async function getNews(params = {}) {
   const { data } = await api.get("/city/news/", { params, skipAccessToken: true });
-  return (Array.isArray(data) ? data : data?.results || []).map(normalizeNews);
+  return unwrapList(data).map(normalizeNews);
 }
 
 export async function getNewsItem(slug) {
   const { data } = await api.get(`/city/news/${encodeURIComponent(slug)}/`, { skipAccessToken: true });
   return normalizeNews(data);
+}
+
+export async function getAdminNews(params = {}) {
+  const { data } = await api.get("/admin/news/", { params });
+  return unwrapList(data).map(normalizeNews);
+}
+
+export async function getAdminNewsItem(slug) {
+  const { data } = await api.get(`/admin/news/${encodeURIComponent(slug)}/`);
+  return normalizeNews(data);
+}
+
+export async function createAdminNews(payload) {
+  const { data } = await api.post("/admin/news/", payload);
+  return normalizeNews(data);
+}
+
+export async function updateAdminNews(slug, payload) {
+  const { data } = await api.patch(`/admin/news/${encodeURIComponent(slug)}/`, payload);
+  return normalizeNews(data);
+}
+
+export async function unpublishAdminNews(slug) {
+  await api.delete(`/admin/news/${encodeURIComponent(slug)}/`);
 }

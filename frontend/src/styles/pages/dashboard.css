@@ -14,3 +14,28 @@
 @media(max-width:1100px){.metric-grid{grid-template-columns:repeat(2,1fr)}.portal-grid--2,.portal-grid--detail{grid-template-columns:1fr}.portal-card--wide{grid-column:auto}.citizen-service-grid{grid-template-columns:repeat(2,1fr)}.admin-service-list article{grid-template-columns:56px minmax(0,1fr) 80px}.admin-service-meta{display:none}}
 @media(max-width:700px){.welcome-banner{padding:24px;min-height:260px}.welcome-banner__orb{display:none}.metric-grid{grid-template-columns:1fr 1fr;gap:10px}.metric-grid article{min-height:110px;padding:16px}.metric-grid article>strong{font-size:28px}.quick-services{grid-template-columns:repeat(2,1fr)}.profile-hero{align-items:flex-start;flex-wrap:wrap}.profile-progress{margin-left:0;width:100%;text-align:left}.profile-form-grid{grid-template-columns:1fr}.profile-form-grid .span-2{grid-column:auto}.citizen-service-grid{grid-template-columns:1fr}.action-bar,.agent-detail-head{flex-direction:column;align-items:stretch}.agent-detail-controls{flex-wrap:wrap}.api-request-list article{grid-template-columns:54px minmax(0,1fr);}.api-request-list article>em,.api-request-list article>b{grid-column:2}.admin-service-list article{grid-template-columns:50px minmax(0,1fr)}.admin-service-list article>button{grid-column:2;width:max-content}.admin-news-list article{grid-template-columns:1fr}.admin-news-list article>div:last-child{justify-content:flex-start}.system-banner{align-items:flex-start;flex-direction:column}.portal-table{margin:0 -6px}.notification-list>button{grid-template-columns:20px 1fr}.notification-list em{grid-column:2}}
 .profile-form-grid select{width:100%;height:44px;border:1px solid #e7e1ea;border-radius:11px;background:#fff;padding:0 12px;color:#251e2c;font-size:12px}.profile-form-grid select:disabled{background:#f8f7fa;color:#68606f}
+
+/* Final API integration helpers — preserve the existing Terra Nova visual language. */
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.portal-table--messages .portal-table__head,.portal-table--messages .portal-table__row{grid-template-columns:1.05fr 1.25fr 1.6fr .85fr 1fr 24px}
+.portal-table--messages .portal-table__row{padding:0 2px}
+.status-received{background:#fff3d7;color:#9a6700}.status-read{background:#eee5ff;color:#6311d7}.status-closed{background:#e8f9f1;color:#138254}
+.row-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.row-actions button,.danger-link{border:1px solid #e7e1ea;background:#fff;border-radius:10px;padding:8px 10px;color:#514958;font-size:9px;font-weight:800}
+.row-actions .danger-link,.danger-link{border-color:#f1d5d8;color:#b93842;background:#fff7f8}
+.portal-modal--wide{width:min(720px,100%)}
+.portal-modal .form-grid{margin:0}
+.check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.compact-check{display:flex!important;grid-template-columns:none!important;align-items:center;gap:9px!important;padding:10px 12px;border:1px solid #ece7f0;border-radius:11px;background:#fbfafe;color:#504858;font-size:10px;font-weight:700}
+.compact-check input{width:15px!important;height:15px!important;margin:0;padding:0}
+.success-inline{padding:14px 16px;margin-bottom:15px;border:1px solid #d7eee3;border-radius:14px;background:#effaf5;color:#177250;font-size:11px;font-weight:700}
+.danger-action{min-height:42px;border:0;border-radius:11px;padding:0 15px;background:#c83f48;color:#fff;font-size:12px;font-weight:800}
+.setting-line--danger{margin-top:8px}.setting-line--danger b,.setting-line--danger>button{color:#b93842}
+.settings-grid--narrow{max-width:760px}
+.portal-card .primary-action{margin-top:14px}
+
+@media(max-width:700px){
+  .form-grid,.check-grid{grid-template-columns:1fr}
+  .portal-modal--wide{width:100%}
+  .row-actions{justify-content:flex-start}
+}

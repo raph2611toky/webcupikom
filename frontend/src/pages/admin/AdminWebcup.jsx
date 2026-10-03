@@ -1,0 +1,12 @@
+import { useEffect, useState } from "react";
+import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
+import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import { getWebcupFeed, getWebcupLocalRequests, getWebcupStatus } from "../../api/webcup.js";
+import "../../styles/app-shell.css";
+import "../../styles/pages/dashboard.css";
+export default function AdminWebcup(){
+  const[data,setData]=useState(null),[status,setStatus]=useState(null),[history,setHistory]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  async function load(force=false){setLoading(true);setError('');try{const [feed,s,h]=await Promise.all([getWebcupFeed({force}),getWebcupStatus(),getWebcupLocalRequests()]);setData(feed);setStatus(s);setHistory(h)}catch(e){setError(e?.response?.data?.detail||e.message||'Impossible de charger le flux.')}finally{setLoading(false)}}
+  useEffect(()=>{load()},[]);const s=data?.session||status?.session||{};
+  return <div className="portal-layout"><AdminSidebar/><div className="portal-main"><PortalTopbar eyebrow="24H By WebCup" title="Flux Terra Nova" actions={<button className="topbar-cta" onClick={()=>load(true)}>Synchroniser</button>}/><main className="portal-content">{loading?<div className="loading-card">Connexion au flux…</div>:error?<div className="error-card">{error}</div>:<><section className="api-status"><div><i/><span>Session {s.status||'active'}</span><small>{status?.known_requests_count||history.length} demande(s) connues côté backend</small></div><strong>Vague {s.current_wave??0}</strong></section><section className="portal-card"><div className="api-request-list">{(data?.requests||[]).map((r,i)=><article key={r.request_code||i}><div className="api-request-code">{r.request_code}</div><div><span>{r.requester_name||'Terra Nova'}</span><strong>{r.message_public}</strong></div><em>{r.difficulty||'—'}</em><b>{r.xp_available??r.xp_total??'—'} XP</b></article>)}</div></section><section className="portal-card"><span className="section-label">Historique local</span><h3>Toutes les demandes observées</h3><div className="api-request-list">{history.map((r,i)=><article key={r.request_code||i}><div className="api-request-code">{r.request_code}</div><div><span>Vague {r.wave_number??0} · {r.requester_name||'Terra Nova'}</span><strong>{r.message_public}</strong></div><em>{r.is_visible?'Visible':'Historique'}</em><b>{r.xp_available??r.xp_total??0} XP</b></article>)}</div></section></>}</main></div></div>;
+}

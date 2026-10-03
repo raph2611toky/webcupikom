@@ -7,6 +7,7 @@ import ForgotPasswordPage from "./pages/ForgotPassword/ForgotPasswordPage.jsx";
 import ResetPasswordPage from "./pages/ResetPassword/ResetPasswordPage.jsx";
 import VerifyEmailPage from "./pages/VerifyEmail/VerifyEmailPage.jsx";
 import GoogleCallbackPage from "./pages/GoogleCallback/GoogleCallbackPage.jsx";
+import ConfirmEmailChangePage from "./pages/ConfirmEmailChange/ConfirmEmailChangePage.jsx";
 import Services from "./pages/public/Services.jsx";
 import ServiceDetails from "./pages/public/ServiceDetails.jsx";
 import News from "./pages/public/News.jsx";
@@ -18,6 +19,8 @@ import CitizenRequests from "./pages/citizen/CitizenRequests.jsx";
 import CitizenRequestDetails from "./pages/citizen/CitizenRequestDetails.jsx";
 import CitizenServices from "./pages/citizen/CitizenServices.jsx";
 import CitizenNotifications from "./pages/citizen/CitizenNotifications.jsx";
+import CitizenMessages from "./pages/citizen/CitizenMessages.jsx";
+import CitizenMessageDetails from "./pages/citizen/CitizenMessageDetails.jsx";
 import CitizenSettings from "./pages/citizen/CitizenSettings.jsx";
 import AgentDashboard from "./pages/agent/AgentDashboard.jsx";
 import AgentRequests from "./pages/agent/AgentRequests.jsx";
@@ -25,11 +28,19 @@ import AgentRequestDetails from "./pages/agent/AgentRequestDetails.jsx";
 import AgentCitizens from "./pages/agent/AgentCitizens.jsx";
 import AgentCitizenDetails from "./pages/agent/AgentCitizenDetails.jsx";
 import AgentApi from "./pages/agent/AgentApi.jsx";
+import AgentMessages from "./pages/agent/AgentMessages.jsx";
+import AgentMessageDetails from "./pages/agent/AgentMessageDetails.jsx";
+import AgentSettings from "./pages/agent/AgentSettings.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminServices from "./pages/admin/AdminServices.jsx";
 import AdminNews from "./pages/admin/AdminNews.jsx";
 import AdminSettings from "./pages/admin/AdminSettings.jsx";
+import AdminRequests from "./pages/admin/AdminRequests.jsx";
+import AdminRequestDetails from "./pages/admin/AdminRequestDetails.jsx";
+import AdminMessages from "./pages/admin/AdminMessages.jsx";
+import AdminMessageDetails from "./pages/admin/AdminMessageDetails.jsx";
+import AdminWebcup from "./pages/admin/AdminWebcup.jsx";
 import { navigate, normalizePath, roleHome } from "./utils/navigation.js";
 import "./styles/app-shell.css";
 
@@ -119,6 +130,7 @@ export default function App() {
     "/reset-password": <GuestRoute><ResetPasswordPage /></GuestRoute>,
     "/verify-email": <VerifyEmailPage />,
     "/auth/google/callback": <GoogleCallbackPage />,
+    "/confirm-email-change": <ConfirmEmailChangePage />,
     "/app": <RoleEntry />,
 
     "/citizen": <Protected role="citizen"><CitizenDashboard /></Protected>,
@@ -127,19 +139,25 @@ export default function App() {
     "/citizen/requests": <Protected role="citizen"><CitizenRequests /></Protected>,
     "/citizen/services": <Protected role="citizen"><CitizenServices /></Protected>,
     "/citizen/notifications": <Protected role="citizen"><CitizenNotifications /></Protected>,
+    "/citizen/messages": <Protected role="citizen"><CitizenMessages /></Protected>,
     "/citizen/settings": <Protected role="citizen"><CitizenSettings /></Protected>,
 
     "/agent": <Protected role="agent"><AgentDashboard /></Protected>,
     "/agent/dashboard": <Protected role="agent"><AgentDashboard /></Protected>,
     "/agent/requests": <Protected role="agent"><AgentRequests /></Protected>,
     "/agent/citizens": <Protected role="agent"><AgentCitizens /></Protected>,
+    "/agent/messages": <Protected role="agent"><AgentMessages /></Protected>,
     "/agent/api": <Protected role="agent"><AgentApi /></Protected>,
+    "/agent/settings": <Protected role="agent"><AgentSettings /></Protected>,
 
     "/admin": <Protected role="admin"><AdminDashboard /></Protected>,
     "/admin/dashboard": <Protected role="admin"><AdminDashboard /></Protected>,
     "/admin/users": <Protected role="admin"><AdminUsers /></Protected>,
+    "/admin/requests": <Protected role="admin"><AdminRequests /></Protected>,
+    "/admin/messages": <Protected role="admin"><AdminMessages /></Protected>,
     "/admin/services": <Protected role="admin"><AdminServices /></Protected>,
     "/admin/news": <Protected role="admin"><AdminNews /></Protected>,
+    "/admin/webcup": <Protected role="admin"><AdminWebcup /></Protected>,
     "/admin/settings": <Protected role="admin"><AdminSettings /></Protected>,
   };
 
@@ -154,11 +172,23 @@ export default function App() {
   params = match("/citizen/requests/:id", pathname);
   if (params) return <Protected role="citizen"><CitizenRequestDetails params={params} /></Protected>;
 
+  params = match("/citizen/messages/:id", pathname);
+  if (params) return <Protected role="citizen"><CitizenMessageDetails params={params} /></Protected>;
+
   params = match("/agent/requests/:id", pathname);
   if (params) return <Protected role="agent"><AgentRequestDetails params={params} /></Protected>;
 
   params = match("/agent/citizens/:id", pathname);
   if (params) return <Protected role="agent"><AgentCitizenDetails params={params} /></Protected>;
+
+  params = match("/agent/messages/:id", pathname);
+  if (params) return <Protected role="agent"><AgentMessageDetails params={params} /></Protected>;
+
+  params = match("/admin/requests/:id", pathname);
+  if (params) return <Protected role="admin"><AdminRequestDetails params={params} /></Protected>;
+
+  params = match("/admin/messages/:id", pathname);
+  if (params) return <Protected role="admin"><AdminMessageDetails params={params} /></Protected>;
 
   return <LandingPage />;
 }

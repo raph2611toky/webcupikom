@@ -1,9 +1,10 @@
 import { api } from "./api.js";
 import { services as presentationServices } from "../data/services.js";
+import { unwrapList } from "./helpers.js";
 
 const presentationBySlug = new Map(presentationServices.map((item) => [item.slug, item]));
 
-function normalizeService(item) {
+export function normalizeService(item) {
   const presentation = presentationBySlug.get(item.slug) || {};
   return {
     ...presentation,
@@ -19,7 +20,7 @@ function normalizeService(item) {
 
 export async function getServices(params = {}) {
   const { data } = await api.get("/city/services/", { params, skipAccessToken: true });
-  return (Array.isArray(data) ? data : data?.results || []).map(normalizeService);
+  return unwrapList(data).map(normalizeService);
 }
 
 export async function getService(slug) {
@@ -29,4 +30,23 @@ export async function getService(slug) {
 
 export function getServiceCategories(items = []) {
   return ["Tous", ...Array.from(new Set(items.map((item) => item.category).filter(Boolean)))];
+}
+
+export async function getAdminServices(params = {}) {
+  const { data } = await api.get("/admin/services/", { params });
+  return unwrapList(data).map(normalizeService);
+}
+
+export async function createAdminService(payload) {
+  const { data } = await api.post("/admin/services/", payload);
+  return normalizeService(data);
+}
+
+export async function updateAdminService(slug, payload) {
+  const { data } = await api.patch(`/admin/services/${encodeURIComponent(slug)}/`, payload);
+  return normalizeService(data);
+}
+
+export async function disableAdminService(slug) {
+  await api.delete(`/admin/services/${encodeURIComponent(slug)}/`);
 }

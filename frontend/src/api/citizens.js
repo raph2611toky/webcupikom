@@ -1,32 +1,30 @@
-import { getAgentRequests } from "./requests.js";
+import { api } from "./api.js";
+import { formatDateTime, unwrapList } from "./helpers.js";
+import { normalizeRequestForAgent } from "./requests.js";
 
-function aggregate(requests) {
-  const map = new Map();
-  for (const item of requests) {
-    const id = item.citizenId;
-    if (!id) continue;
-    const current = map.get(id) || {
-      id,
-      name: item.citizen,
-      email: item.citizenEmail || "",
-      phone: "—",
-      district: "—",
-      requests: 0,
-      status: "Actif",
-      requestItems: [],
-    };
-    current.requests += 1;
-    current.requestItems.push(item);
-    map.set(id, current);
-  }
-  return Array.from(map.values());
+function normalizeCitizen(item) {
+  return {
+    ...item,
+    name: item.display_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || item.email,
+    requests: item.request_count ?? 0,
+    status: item.is_active ? "Actif" : "Inactif",
+    joinedLabel: formatDateTime(item.date_joined, { dateOnly: true, withYear: true }),
+    lastLoginLabel: formatDateTime(item.last_login),
+    requestItems: (item.recent_requests || []).map(normalizeRequestForAgent),
+  };
 }
 
-export async function getCitizens() {
-  return aggregate(await getAgentRequests());
+export async function getCitizens(params = {}) {
+  const { data } = await api.get("/agent/citizens/", { params });
+  return unwrapList(data).map(normalizeCitizen);
 }
 
 export async function getCitizen(id) {
-  const citizens = await getCitizens();
-  return citizens.find((citizen) => String(citizen.id) === String(id)) || null;
+  const { data } = await api.get(`/agent/citizens/${encodeURIComponent(id)}/`);
+  return normalizeCitizen(data);
+}
+
+export async function getAssignees() {
+  const { data } = await api.get("/agent/assignees/");
+  return unwrapList(data);
 }

@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { formatDateTime, unwrapList } from "./helpers.js";
 
 export const API_STATUS = Object.freeze({
   submitted: "Envoyée",
@@ -39,19 +40,7 @@ export const PRIORITY_CODE = Object.freeze({
   Urgente: "urgent",
 });
 
-function dateTime(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function citizenRequest(item) {
+function baseRequest(item, statusLabels) {
   return {
     ...item,
     id: item.reference,
@@ -59,62 +48,79 @@ function citizenRequest(item) {
     service: item.service_name || "Service non attribué",
     serviceId: item.service,
     statusCode: item.status,
-    status: CITIZEN_STATUS[item.status] || item.status,
+    status: statusLabels[item.status] || item.status,
     priorityCode: item.priority,
     priority: PRIORITY_LABEL[item.priority] || item.priority,
-    created: dateTime(item.created_at),
-    updated: dateTime(item.updated_at),
+    created: formatDateTime(item.created_at),
+    updated: formatDateTime(item.updated_at),
   };
 }
 
-function agentRequest(item) {
+export function normalizeRequestForCitizen(item) {
+  return baseRequest(item, CITIZEN_STATUS);
+}
+
+export function normalizeRequestForAgent(item) {
+  const normalized = baseRequest(item, API_STATUS);
   return {
-    ...item,
-    id: item.reference,
-    ref: item.reference,
+    ...normalized,
     citizen: item.citizen_name || item.citizen_email || `Citoyen ${item.citizen}`,
     citizenId: String(item.citizen ?? ""),
     citizenEmail: item.citizen_email || "",
-    service: item.service_name || "Service non attribué",
-    serviceId: item.service,
-    statusCode: item.status,
-    status: API_STATUS[item.status] || item.status,
-    priorityCode: item.priority,
-    priority: PRIORITY_LABEL[item.priority] || item.priority,
-    created: dateTime(item.created_at),
-    updated: dateTime(item.updated_at),
+    assignedTo: item.assigned_to ?? null,
+    assignedToName: item.assigned_to_name || "",
   };
+}
+
+function toPatchPayload(changes) {
+  const payload = { ...changes };
+  if (payload.status && STATUS_CODE[payload.status]) payload.status = STATUS_CODE[payload.status];
+  if (payload.priority && PRIORITY_CODE[payload.priority]) payload.priority = PRIORITY_CODE[payload.priority];
+  if (payload.assigned_to === "" || payload.assigned_to === "null") payload.assigned_to = null;
+  return payload;
 }
 
 export async function getCitizenRequests(params = {}) {
   const { data } = await api.get("/citizen/requests/", { params });
-  return (Array.isArray(data) ? data : data?.results || []).map(citizenRequest);
+  return unwrapList(data).map(normalizeRequestForCitizen);
 }
 
 export async function createCitizenRequest(payload) {
   const { data } = await api.post("/citizen/requests/", payload);
-  return citizenRequest(data);
+  return normalizeRequestForCitizen(data);
 }
 
 export async function getCitizenRequest(reference) {
   const { data } = await api.get(`/citizen/requests/${encodeURIComponent(reference)}/`);
-  return citizenRequest(data);
+  return normalizeRequestForCitizen(data);
 }
 
 export async function getAgentRequests(params = {}) {
   const { data } = await api.get("/agent/requests/", { params });
-  return (Array.isArray(data) ? data : data?.results || []).map(agentRequest);
+  return unwrapList(data).map(normalizeRequestForAgent);
 }
 
 export async function getAgentRequest(reference) {
   const { data } = await api.get(`/agent/requests/${encodeURIComponent(reference)}/`);
-  return agentRequest(data);
+  return normalizeRequestForAgent(data);
 }
 
 export async function updateAgentRequest(reference, changes) {
-  const payload = { ...changes };
-  if (payload.status && STATUS_CODE[payload.status]) payload.status = STATUS_CODE[payload.status];
-  if (payload.priority && PRIORITY_CODE[payload.priority]) payload.priority = PRIORITY_CODE[payload.priority];
-  const { data } = await api.patch(`/agent/requests/${encodeURIComponent(reference)}/`, payload);
-  return agentRequest(data);
+  const { data } = await api.patch(`/agent/requests/${encodeURIComponent(reference)}/`, toPatchPayload(changes));
+  return normalizeRequestForAgent(data);
+}
+
+export async function getAdminRequests(params = {}) {
+  const { data } = await api.get("/admin/requests/", { params });
+  return unwrapList(data).map(normalizeRequestForAgent);
+}
+
+export async function getAdminRequest(reference) {
+  const { data } = await api.get(`/admin/requests/${encodeURIComponent(reference)}/`);
+  return normalizeRequestForAgent(data);
+}
+
+export async function updateAdminRequest(reference, changes) {
+  const { data } = await api.patch(`/admin/requests/${encodeURIComponent(reference)}/`, toPatchPayload(changes));
+  return normalizeRequestForAgent(data);
 }
