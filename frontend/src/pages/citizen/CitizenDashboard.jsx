@@ -132,8 +132,8 @@ export default function CitizenDashboard(){
               <button onClick={()=>navigate('/citizen/services')}>{t("allServices", locale)} →</button>
             </div>
             <div className="quick-services quick-services--compact">
-              {services.slice(0,6).map(s=><button key={s.slug} onClick={()=>navigate(`/citizen/services/${s.slug}`)}>
-                <i>{s.icon}</i><span>{s.name}</span>
+              {services.slice(0,6).map(s=><button key={s.slug} className={s.isAvailable===false?"is-unavailable":""} onClick={()=>navigate(`/citizen/services/${s.slug}`)}>
+                <i>{s.icon}</i><span>{s.name}</span>{s.isAvailable===false?<small>Indisponible</small>:null}
               </button>)}
             </div>
           </article>

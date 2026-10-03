@@ -67,7 +67,9 @@ export function buildServiceLocations(services=[]){
       serviceId:service.id,
       name:service.name||"Service municipal",
       category:service.category||"Service municipal",
-      description:service.shortDescription||service.description||"Service physique de Nova Terra.",
+      description:service.isAvailable===false
+        ? (service.unavailabilityReason||"Service temporairement indisponible.")
+        : (service.shortDescription||service.description||"Service physique de Nova Terra."),
       openingHours:service.openingHours||"Horaires disponibles dans la fiche service",
       address:`${spot.address} · ${district.name}`,
       district:district.name,
@@ -76,7 +78,9 @@ export function buildServiceLocations(services=[]){
       icon:service.icon||"◇",
       x:spot.x+offset,
       y:spot.y+(duplicate>2?22:0),
-      color:spot.color,
+      color:service.isAvailable===false?"#c65748":spot.color,
+      isAvailable:service.isAvailable!==false,
+      availabilityLabel:service.isAvailable===false?"Indisponible":"Disponible",
       source:service,
     };
   });

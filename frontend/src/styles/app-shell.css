@@ -1084,13 +1084,7 @@ body[data-route-group="portal"] .portal-sidebar,
 body[data-route-group="portal"] button,
 body[data-route-group="portal"] input,
 body[data-route-group="portal"] select,
-body[data-route-group="portal"] textarea,
-body[data-route-group="portal"] h1,
-body[data-route-group="portal"] h2,
-body[data-route-group="portal"] h3,
-body[data-route-group="portal"] h4,
-body[data-route-group="portal"] h5,
-body[data-route-group="portal"] h6 {
+body[data-route-group="portal"] textarea {
   font-family:var(--kamo-body-font,"Plus Jakarta Sans","Helvetica Neue",Arial,sans-serif);
 }
 

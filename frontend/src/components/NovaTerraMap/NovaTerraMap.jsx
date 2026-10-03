@@ -448,6 +448,7 @@ export default function NovaTerraMap({ services = [], visibleSlugs = null, local
             <div><dt>{copy.address}</dt><dd>{selected.address || selected.district}</dd></div>
             {selected.openingHours ? <div><dt>{copy.hours}</dt><dd>{selected.openingHours}</dd></div> : null}
             {selected.kind === "report" ? <div><dt>Statut</dt><dd>{selected.statusLabel}</dd></div> : null}
+            {selected.kind === "service" ? <div><dt>Disponibilité</dt><dd>{selected.availabilityLabel || (selected.isAvailable===false?"Indisponible":"Disponible")}</dd></div> : null}
           </dl>
           <button type="button" className="primary-action" onClick={openSelected}>{actionLabel} →</button>
         </div> : <div className="nova-city-map__empty">{copy.noSelection}</div>}

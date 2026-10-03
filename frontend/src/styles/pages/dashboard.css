@@ -8571,7 +8571,6 @@ html[data-contrast="high"] .notification-filter-row--visual::-webkit-scrollbar-t
   }
   body[data-route-group="portal"] .citizen-dashboard .welcome-banner--compact h2 {
     margin:4px 0 5px;
-    font-family:var(--kamo-body-font,"Plus Jakarta Sans",Arial,sans-serif)!important;
     font-size:1.55rem;
     font-weight:800;
     letter-spacing:-.035em;
@@ -8786,4 +8785,264 @@ html[data-contrast="high"] .settings-tabs button.is-active {background:#f2d34b!i
   .settings-tabs button{min-height:34px;padding:0 11px;border:1px solid var(--tn-line);border-radius:9px;background:var(--tn-card);color:var(--tn-text);white-space:nowrap}
   .settings-tabs button.is-active{background:var(--tn-purple);color:#fff;border-color:var(--tn-purple)}
   .settings-general-grid{display:grid;grid-template-columns:1fr;gap:10px}
+}
+
+/* ========================================================================== 
+   V69 — Service availability F38 / F63 / F64
+   ========================================================================== */
+.services-filter-summary--availability{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px}.service-availability-filters{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}.service-availability-filters button{display:inline-flex;align-items:center;gap:6px;min-height:27px;padding:0 9px;border:1px solid var(--tn-line);border-radius:999px;background:var(--tn-card);color:var(--tn-muted);font:inherit;font-size:.55rem;font-weight:800;text-decoration:none}.service-availability-filters button b{min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px;border-radius:999px;background:#f1eef4;color:inherit;font-size:.5rem}.service-availability-filters button.is-active{border-color:var(--tn-purple);color:var(--tn-purple);background:var(--tn-purple-soft)}.service-availability-filters button.is-ok.is-active{border-color:#4a9b68;color:#35764e;background:#edf8f1}.service-availability-filters button.is-down.is-active{border-color:#ce6758;color:#a84337;background:#fff1ee}
+.citizen-service-card__statusline{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px}.citizen-service-card__statusline .citizen-service-card__category{margin-top:0!important}.citizen-service-card.is-unavailable{border-color:#efd3ce!important;background:linear-gradient(145deg,#fff,#fff8f6)!important}.citizen-service-card__alternative{display:block;max-width:84%;margin-top:5px;color:#955045;font-size:.53rem;line-height:1.35}.citizen-service-card__alternative b{font-weight:850}.service-detail-heading-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.service-detail-heading-line>span{font-size:.54rem;text-transform:uppercase;letter-spacing:.08em;color:#8a8192;font-weight:800}.service-portal-hero--availability{align-items:center}.service-portal-hero__cta.is-disabled,.primary-action.is-disabled{cursor:not-allowed;opacity:.6;box-shadow:none!important}.service-detail-with-availability{gap:10px!important}
+.service-management-page{gap:10px!important}.service-management-summary{display:grid;grid-template-columns:90px 110px minmax(220px,.65fr) minmax(300px,1fr);gap:8px;align-items:center}.service-management-summary>div:not(.service-management-filters){display:grid;gap:2px;padding:9px 11px;border:1px solid var(--tn-line);border-radius:12px;background:var(--tn-card)}.service-management-summary>div>strong{font-size:1rem;color:var(--tn-text)}.service-management-summary>div>span{font-size:.54rem;color:var(--tn-muted)}.service-management-summary>div.is-warning{border-color:#efcec6;background:#fff7f4}.service-management-summary>div.is-warning>strong{color:#b54a3d}.service-management-filters{display:flex;align-items:center;justify-content:flex-end;gap:6px}.service-management-filters button{min-height:31px;padding:0 9px;border:1px solid var(--tn-line);border-radius:9px;background:var(--tn-card);color:var(--tn-muted);font:inherit;font-size:.57rem;font-weight:800}.service-management-filters button.is-active{border-color:var(--tn-purple);background:var(--tn-purple-soft);color:var(--tn-purple)}.service-management-row.is-unavailable{background:#fffaf8}.service-management-row .management-row__meta{min-width:165px}.service-management-row .management-row__meta .service-availability-badge{margin-bottom:2px}.service-agent-detail-page{gap:10px!important}.service-agent-detail-grid>.portal-card--wide{grid-column:1/-1}
+html[data-contrast="high"] .service-availability-filters button,html[data-contrast="high"] .service-management-summary>div,html[data-contrast="high"] .service-management-filters button,html[data-contrast="high"] .service-management-row.is-unavailable,html[data-contrast="high"] .citizen-service-card.is-unavailable{background:#000!important;color:#fff!important;border-color:#fff!important}html[data-contrast="high"] .service-availability-filters button.is-active,html[data-contrast="high"] .service-management-filters button.is-active,html[data-contrast="high"] .service-availability-filters button.is-down.is-active{background:#f2d34b!important;color:#000!important;border-color:#f2d34b!important}html[data-contrast="high"] .service-availability-filters button b{background:#111!important;color:inherit!important}html[data-contrast="high"] .citizen-service-card__alternative{color:#fff!important}
+@media(max-width:1100px){.service-management-summary{grid-template-columns:90px 110px 1fr}.service-management-filters{grid-column:1/-1;justify-content:flex-start}.services-filter-summary--availability{grid-template-columns:auto 1fr}.services-filter-summary--availability>button:last-child{grid-column:1/-1;width:max-content}}
+@media(max-width:760px){.service-management-summary{grid-template-columns:1fr 1fr}.service-management-summary .portal-search{grid-column:1/-1}.service-availability-filters{justify-content:flex-start;overflow-x:auto}.services-filter-summary--availability{grid-template-columns:1fr}.services-filter-summary--availability>button:last-child{grid-column:auto}.citizen-service-card__statusline{align-items:flex-start;flex-direction:column}}
+.quick-services--compact>button{position:relative}.quick-services--compact>button.is-unavailable{border-color:#efd3ce!important;background:#fff8f6!important}.quick-services--compact>button.is-unavailable small{position:absolute;right:7px;top:6px;padding:2px 5px;border-radius:999px;background:#fff0ed;color:#ae463a;font-size:.43rem;font-weight:850}.quick-services--compact>button.is-unavailable i{color:#ae463a!important}html[data-contrast="high"] .quick-services--compact>button.is-unavailable{background:#000!important;border-color:#f2d34b!important}html[data-contrast="high"] .quick-services--compact>button.is-unavailable small{background:#f2d34b!important;color:#000!important}
+
+/* ========================================================================== 
+   V70 — Restore v49 notification proportions and typography
+   Compact, readable, no category overflow on normal desktop widths.
+   ========================================================================== */
+.notification-center-page{
+  gap:10px!important;
+  padding-top:10px!important;
+  background:#f7f7fb!important;
+}
+
+/* KPI: keep the visual idea but restore the compact v49 scale. */
+.notification-kpi-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px!important;
+}
+.notification-kpi-grid>.notification-kpi-card{
+  min-height:88px!important;
+  grid-template-columns:36px minmax(0,1fr)!important;
+  gap:10px!important;
+  padding:12px 13px 10px 13px!important;
+  border-radius:15px!important;
+  border-left-width:4px!important;
+  box-shadow:0 6px 16px rgba(58,66,92,.055)!important;
+}
+.notification-kpi-grid>.notification-kpi-card::before{
+  width:88px!important;
+  height:40px!important;
+  bottom:-21px!important;
+}
+.notification-kpi-grid>.notification-kpi-card::after{
+  width:58px!important;
+  height:28px!important;
+  bottom:-18px!important;
+}
+.notification-kpi-icon{
+  width:36px!important;
+  height:36px!important;
+  border-radius:11px!important;
+  box-shadow:0 5px 12px color-mix(in srgb,var(--kpi) 18%,transparent)!important;
+}
+.notification-kpi-icon svg{width:17px!important;height:17px!important}
+.notification-kpi-card>div>span{
+  margin:1px 0 4px!important;
+  font-size:.625rem!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+}
+.notification-kpi-card>div>strong{
+  font-size:1.35rem!important;
+  line-height:1!important;
+}
+.notification-kpi-card>div>small{
+  margin-top:4px!important;
+  font-size:.5rem!important;
+  line-height:1.25!important;
+}
+
+/* Reference sent by the user: pills only, low height, small type. */
+.notification-category-card{
+  gap:0!important;
+  padding:9px 10px!important;
+  min-height:0!important;
+  border-radius:14px!important;
+  box-shadow:0 5px 14px rgba(58,66,92,.04)!important;
+}
+.notification-category-title{display:none!important}
+.notification-filter-row--visual{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  gap:6px!important;
+  overflow:visible!important;
+  padding:0!important;
+}
+.notification-filter-row--visual button{
+  flex:0 0 auto!important;
+  min-height:30px!important;
+  height:30px!important;
+  gap:5px!important;
+  padding:0 9px!important;
+  border-radius:999px!important;
+  font-size:.625rem!important;
+  line-height:1!important;
+  font-weight:700!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+}
+.notification-filter-row--visual button>i{
+  width:14px!important;
+  height:14px!important;
+}
+.notification-filter-row--visual button>i svg{
+  width:13px!important;
+  height:13px!important;
+}
+.notification-filter-row--visual button>small{
+  min-width:17px!important;
+  height:17px!important;
+  padding:0 4px!important;
+  font-size:.5rem!important;
+}
+
+/* Notification list: restore the compact v49 card proportions. */
+.notification-workspace,
+.notification-workspace.has-detail{
+  gap:10px!important;
+}
+.notification-list--backend{
+  gap:8px!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+.notification-list--backend>button{
+  min-height:78px!important;
+  grid-template-columns:40px minmax(0,1fr) 32px!important;
+  gap:11px!important;
+  padding:11px 13px!important;
+  border:1px solid #e7e5ec!important;
+  border-left:1px solid #e7e5ec!important;
+  border-radius:14px!important;
+  box-shadow:none!important;
+}
+.notification-list--backend>button:hover{
+  background:#faf8fc!important;
+}
+.notification-list--backend>button.is-unread{
+  background:#fdfbff!important;
+}
+.notification-list--backend>button.is-selected{
+  background:#f5efff!important;
+  box-shadow:inset 3px 0 0 #6d1fe0!important;
+}
+.notification-type-icon{
+  width:38px!important;
+  height:38px!important;
+  border-radius:12px!important;
+}
+.notification-type-icon svg{width:16px!important;height:16px!important}
+.notification-title-line{
+  gap:6px!important;
+}
+.notification-title-line strong{
+  font-size:.6875rem!important;
+  line-height:1.25!important;
+  font-weight:800!important;
+}
+.notification-new-dot{
+  width:7px!important;
+  height:7px!important;
+  flex:0 0 7px!important;
+}
+.notification-main>p{
+  display:block!important;
+  margin:3px 0 0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#8f8797!important;
+  font-size:.5625rem!important;
+  line-height:1.35!important;
+}
+.notification-meta{
+  margin-top:6px!important;
+  gap:7px!important;
+  flex-wrap:wrap!important;
+}
+.notification-type-badge,
+.notification-event-status{
+  padding:3px 7px!important;
+  font-size:.5rem!important;
+  line-height:1.15!important;
+}
+.notification-date{
+  gap:4px!important;
+  font-size:.5rem!important;
+}
+.notification-date svg{width:12px!important;height:12px!important}
+.notification-arrow{
+  width:30px!important;
+  height:30px!important;
+  font-size:.72rem!important;
+}
+.notification-loading-state,
+.notification-empty-state{
+  min-height:126px!important;
+  gap:5px!important;
+  padding:14px!important;
+}
+.notification-empty-state i{width:34px!important;height:34px!important;border-radius:10px!important}
+.notification-empty-state strong{font-size:.6875rem!important}
+.notification-empty-state span{font-size:.5625rem!important}
+
+/* Selected detail stays readable but does not dominate the screen. */
+.notification-detail-panel{
+  gap:9px!important;
+  padding:13px!important;
+}
+.notification-detail-panel__head h2{font-size:.9rem!important}
+.notification-detail-icon{width:36px!important;height:36px!important;border-radius:10px!important}
+.notification-detail-message{font-size:.625rem!important;line-height:1.45!important}
+.notification-detail-facts>div{min-height:31px!important}
+.notification-detail-facts span{font-size:.5rem!important}
+.notification-detail-facts b{font-size:.5625rem!important}
+
+@media(max-width:1180px){
+  .notification-filter-row--visual{flex-wrap:wrap!important}
+}
+@media(max-width:900px){
+  .notification-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .notification-list--backend>button{grid-template-columns:38px minmax(0,1fr) 30px!important}
+}
+@media(max-width:620px){
+  .notification-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px!important}
+  .notification-kpi-grid>.notification-kpi-card{min-height:80px!important;padding:10px!important}
+  .notification-filter-row--visual{gap:5px!important}
+  .notification-filter-row--visual button{height:29px!important;min-height:29px!important;padding:0 8px!important;font-size:.58rem!important}
+  .notification-list--backend>button{min-height:72px!important;grid-template-columns:36px minmax(0,1fr)!important;padding:10px!important}
+  .notification-type-icon{width:34px!important;height:34px!important}
+  .notification-list--backend .notification-arrow{display:none!important}
+}
+
+/* High contrast keeps the same compact geometry. */
+html[data-contrast="high"] .notification-category-card,
+html[data-contrast="high"] .notification-kpi-card,
+html[data-contrast="high"] .notification-list--backend>button,
+html[data-contrast="high"] .notification-detail-panel{
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}
+html[data-contrast="high"] .notification-filter-row--visual button{
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}
+html[data-contrast="high"] .notification-filter-row--visual button.is-active{
+  background:#f2d34b!important;
+  color:#000!important;
+  border-color:#f2d34b!important;
+}
+html[data-contrast="high"] .notification-main>p,
+html[data-contrast="high"] .notification-title-line strong,
+html[data-contrast="high"] .notification-date,
+html[data-contrast="high"] .notification-kpi-card>div>span,
+html[data-contrast="high"] .notification-kpi-card>div>strong,
+html[data-contrast="high"] .notification-kpi-card>div>small{
+  color:#fff!important;
 }
