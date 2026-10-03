@@ -14,7 +14,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from helpers.permissions import IsAuthenticatedAnyRole
+from helpers.permissions import IsAuthenticatedAdmin, IsAuthenticatedAnyRole
 
 from .auth_cookies import (
     build_refresh_token,
@@ -26,6 +26,7 @@ from .auth_cookies import (
 )
 from .models import User
 from .serializers import (
+    AgentRegisterSerializer,
     ChangeEmailConfirmSerializer,
     ChangeEmailRequestSerializer,
     ChangePasswordSerializer,
@@ -101,6 +102,36 @@ class RegisterView(APIView):
             return Response(
                 {
                     "message": "Compte créé. Vérifiez votre adresse email pour terminer l'inscription.",
+                    "user": user_payload(user, request),
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except APIException:
+            raise
+        except Exception as exc:
+            return server_error(exc, self.__class__.__name__)
+
+
+class AgentRegisterView(APIView):
+    """Crée un compte agent puis applique le même parcours de vérification email.
+
+    La création d'un compte privilégié reste réservée aux administrateurs afin
+    qu'un visiteur public ne puisse jamais s'auto-attribuer le rôle agent.
+    """
+
+    permission_classes = [IsAuthenticatedAdmin]
+    throttle_scope = "auth"
+
+    def post(self, request):
+        try:
+            with transaction.atomic():
+                serializer = AgentRegisterSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user = serializer.save()
+                transaction.on_commit(lambda: send_verification_email(user), robust=True)
+            return Response(
+                {
+                    "message": "Compte agent créé. L'agent doit vérifier son adresse email pour terminer l'inscription.",
                     "user": user_payload(user, request),
                 },
                 status=status.HTTP_201_CREATED,

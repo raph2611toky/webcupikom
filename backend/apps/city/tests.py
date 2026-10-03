@@ -140,3 +140,119 @@ class SchemaGenerationSafetyTests(APITestCase):
         response = self.client.get("/__terra_nova_missing_route__/", HTTP_ACCEPT="text/html")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertContains(response, "Page introuvable", status_code=status.HTTP_404_NOT_FOUND)
+
+
+class Wave2FeatureTests(APITestCase):
+    def setUp(self):
+        self.citizen = User.objects.create_user(
+            email="wave2-citizen@example.com",
+            password="StrongPass123!",
+            role=User.Role.CITIZEN,
+            email_verified=True,
+            is_active=True,
+        )
+        self.agent = User.objects.create_user(
+            email="wave2-agent@example.com",
+            password="StrongPass123!",
+            role=User.Role.AGENT,
+            email_verified=True,
+            is_active=True,
+        )
+        self.service = MunicipalService.objects.create(
+            name="Éclairage public",
+            slug="eclairage-public-test",
+            category="Infrastructure",
+            short_description="Éclairage des espaces publics",
+            translations={
+                "en": {
+                    "name": "Street lighting",
+                    "short_description": "Lighting for public spaces",
+                }
+            },
+            is_featured=True,
+            priority_order=1,
+        )
+
+    def test_request_creation_returns_confirmation_and_timeline(self):
+        self.client.force_authenticate(self.citizen)
+        response = self.client.post(
+            reverse("city:citizen-request-list"),
+            {
+                "service": self.service.pk,
+                "title": "Question éclairage",
+                "description": "Je souhaite une information.",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("confirmation", response.data)
+        request_obj = CitizenRequest.objects.get(reference=response.data["reference"])
+        self.assertTrue(request_obj.timeline_events.filter(is_public=True).exists())
+
+    def test_issue_report_requires_location_and_is_saved_as_report(self):
+        self.client.force_authenticate(self.citizen)
+        response = self.client.post(
+            reverse("city:citizen-report-create"),
+            {
+                "service": self.service.pk,
+                "incident_category": "lampadaire",
+                "title": "Lampadaire cassé",
+                "description": "Le lampadaire ne fonctionne plus.",
+                "location_text": "Rue Nova, secteur Astra",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        item = CitizenRequest.objects.get(reference=response.data["reference"])
+        self.assertEqual(item.request_type, CitizenRequest.RequestType.REPORT)
+        self.assertEqual(item.location_text, "Rue Nova, secteur Astra")
+
+    def test_preferences_persist_accessibility_and_language(self):
+        self.client.force_authenticate(self.citizen)
+        response = self.client.patch(
+            reverse("city:citizen-preferences"),
+            {
+                "language": "en",
+                "screen_reader_mode": True,
+                "high_contrast": True,
+                "font_scale": 130,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.citizen.refresh_from_db()
+        self.assertEqual(self.citizen.locale, "en")
+        self.assertTrue(response.data["high_contrast"])
+        self.assertEqual(response.data["font_scale"], 130)
+
+    def test_onboarding_can_be_completed(self):
+        self.client.force_authenticate(self.citizen)
+        response = self.client.patch(
+            reverse("city:citizen-onboarding"),
+            {"completed": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["completed"])
+        self.assertEqual(response.data["step"], "done")
+
+    def test_agent_summary_counts_requests_waiting_for_handling(self):
+        CitizenRequest.objects.create(
+            citizen=self.citizen,
+            service=self.service,
+            title="À prendre en charge",
+            description="Test",
+        )
+        self.client.force_authenticate(self.agent)
+        response = self.client.get(reverse("city:agent-request-summary"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data["awaiting_handling"], 1)
+
+    def test_service_can_be_returned_in_english(self):
+        response = self.client.get(
+            reverse("city:service-detail", kwargs={"slug": self.service.slug}),
+            {"lang": "en"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], "Street lighting")
+        self.assertEqual(response.data["language"], "en")

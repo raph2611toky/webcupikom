@@ -50,6 +50,51 @@ class AccountApiTests(APITestCase):
         self.assertIn(settings.AUTH_REFRESH_COOKIE_NAME, response.cookies)
         self.assertTrue(response.cookies[settings.AUTH_REFRESH_COOKIE_NAME]["httponly"])
 
+
+    def test_admin_can_register_agent_and_agent_uses_standard_verification_flow(self):
+        admin = User.objects.create_superuser(
+            email="admin@example.com",
+            password="StrongPass!2026",
+        )
+        self.auth(admin)
+
+        response = self.client.post(reverse("users:register-agent"), {
+            "email": "agent@example.com",
+            "password": "StrongPass!2026",
+            "password_confirm": "StrongPass!2026",
+            "first_name": "Alex",
+            "last_name": "Agent",
+        }, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        agent = User.objects.get(email="agent@example.com")
+        self.assertEqual(agent.role, User.Role.AGENT)
+        self.assertFalse(agent.email_verified)
+        self.assertFalse(agent.is_staff)
+        self.assertEqual(len(mail.outbox), 1)
+
+        self.client.credentials()
+        uid = urlsafe_base64_encode(force_bytes(agent.pk))
+        token = email_verification_token.make_token(agent)
+        verify = self.client.post(
+            reverse("users:verify-email"),
+            {"uid": uid, "token": token},
+            format="json",
+        )
+        self.assertEqual(verify.status_code, status.HTTP_200_OK)
+        self.assertEqual(verify.data["user"]["role"], User.Role.AGENT)
+
+    def test_public_user_cannot_self_register_as_agent(self):
+        response = self.client.post(reverse("users:register-agent"), {
+            "email": "rogue@example.com",
+            "password": "StrongPass!2026",
+            "password_confirm": "StrongPass!2026",
+            "first_name": "Rogue",
+            "last_name": "User",
+        }, format="json")
+        self.assertIn(response.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN))
+        self.assertFalse(User.objects.filter(email="rogue@example.com").exists())
+
     @override_settings(GOOGLE_CLIENT_ID="test-client.apps.googleusercontent.com")
     @patch("apps.users.views.verify_google_credential")
     def test_google_login_creates_user(self, verify_mock):

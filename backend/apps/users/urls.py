@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .swagger import (
+    AgentRegisterView,
     ChangeEmailConfirmView,
     ChangeEmailRequestView,
     ChangePasswordView,
@@ -23,6 +24,7 @@ app_name = "users"
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
+    path("auth/register/agent/", AgentRegisterView.as_view(), name="register-agent"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/google/redirect/", GoogleRedirectView.as_view(), name="google-redirect"),
     path("auth/google/", GoogleLoginView.as_view(), name="google-login"),

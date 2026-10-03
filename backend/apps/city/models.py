@@ -19,6 +19,13 @@ class MunicipalService(models.Model):
     phone = models.CharField(max_length=50, blank=True)
     email = models.EmailField(blank=True)
     address = models.CharField(max_length=255, blank=True)
+    actions = models.JSONField(default=list, blank=True)
+    required_documents = models.JSONField(default=list, blank=True)
+    faq = models.JSONField(default=list, blank=True)
+    translations = models.JSONField(default=dict, blank=True)
+    is_featured = models.BooleanField(default=False)
+    priority_order = models.PositiveIntegerField(default=0)
+    usage_count = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -106,6 +113,10 @@ class ContactMessage(models.Model):
 
 
 class CitizenRequest(models.Model):
+    class RequestType(models.TextChoices):
+        PROCEDURE = "procedure", "Démarche"
+        REPORT = "report", "Signalement"
+
     class Status(models.TextChoices):
         SUBMITTED = "submitted", "Envoyée"
         PENDING = "pending", "À traiter"
@@ -132,8 +143,15 @@ class CitizenRequest(models.Model):
         blank=True,
         related_name="citizen_requests",
     )
+    request_type = models.CharField(
+        max_length=20, choices=RequestType.choices, default=RequestType.PROCEDURE
+    )
+    incident_category = models.CharField(max_length=100, blank=True)
     title = models.CharField(max_length=220)
     description = models.TextField()
+    location_text = models.CharField(max_length=255, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING)
     priority = models.CharField(max_length=12, choices=Priority.choices, default=Priority.NORMAL)
     assigned_to = models.ForeignKey(
@@ -158,6 +176,61 @@ class CitizenRequest(models.Model):
 
     def __str__(self):
         return f"{self.reference} — {self.title}"
+
+
+class CitizenPreference(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="city_preference",
+    )
+    screen_reader_mode = models.BooleanField(default=False)
+    high_contrast = models.BooleanField(default=False)
+    font_scale = models.PositiveSmallIntegerField(default=100)
+    onboarding_step = models.CharField(max_length=32, default="welcome")
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "préférence citoyenne"
+        verbose_name_plural = "préférences citoyennes"
+
+    def __str__(self):
+        return f"Préférences — {self.user_id}"
+
+
+class CitizenRequestEvent(models.Model):
+    class EventType(models.TextChoices):
+        CREATED = "created", "Création"
+        STATUS = "status", "Changement de statut"
+        NOTE = "note", "Étape / note"
+
+    request = models.ForeignKey(
+        CitizenRequest,
+        on_delete=models.CASCADE,
+        related_name="timeline_events",
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="citizen_request_events",
+    )
+    event_type = models.CharField(max_length=20, choices=EventType.choices, default=EventType.NOTE)
+    status = models.CharField(max_length=24, choices=CitizenRequest.Status.choices, blank=True)
+    title = models.CharField(max_length=220)
+    message = models.TextField(blank=True)
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at", "id")
+        verbose_name = "étape de demande citoyenne"
+        verbose_name_plural = "étapes de demandes citoyennes"
+
+    def __str__(self):
+        return f"{self.request.reference} — {self.title}"
 
 
 class CitizenNotification(models.Model):

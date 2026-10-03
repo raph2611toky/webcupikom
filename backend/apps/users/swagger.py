@@ -11,6 +11,7 @@ from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import serializers
 
 from .serializers import (
+    AgentRegisterSerializer,
     ChangeEmailConfirmSerializer,
     ChangeEmailRequestSerializer,
     ChangePasswordSerializer,
@@ -25,6 +26,7 @@ from .serializers import (
     VerifyEmailSerializer,
 )
 from .views import (
+    AgentRegisterView,
     ChangeEmailConfirmView,
     ChangeEmailRequestView,
     ChangePasswordView,
@@ -174,6 +176,28 @@ RegisterView = _document(
     responses={
         201: openapi.Response("Compte créé", RegisterResponseSerializer()),
         400: openapi.Response("Données invalides", ERROR_RESPONSE),
+        500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
+    },
+)
+
+AgentRegisterView = _document(
+    AgentRegisterView,
+    "post",
+    tags=["Authentification"],
+    operation_id="auth_register_agent",
+    operation_summary="Créer un compte agent",
+    operation_description=(
+        "Crée un compte avec le rôle agent. Endpoint réservé aux administrateurs. "
+        "L'agent reçoit ensuite le même email de vérification qu'un citoyen, puis "
+        "utilise les endpoints standards de vérification et de connexion."
+    ),
+    security=JWT_SECURITY,
+    request_body=AgentRegisterSerializer,
+    responses={
+        201: openapi.Response("Compte agent créé", RegisterResponseSerializer()),
+        400: openapi.Response("Données invalides", ERROR_RESPONSE),
+        401: openapi.Response("Non authentifié", ERROR_RESPONSE),
+        403: openapi.Response("Réservé aux administrateurs", ERROR_RESPONSE),
         500: openapi.Response("Erreur serveur", ERROR_RESPONSE),
     },
 )
@@ -443,6 +467,7 @@ DeleteAccountView = _document(
 
 __all__ = [
     "RegisterView",
+    "AgentRegisterView",
     "VerifyEmailView",
     "ResendVerificationView",
     "LoginView",

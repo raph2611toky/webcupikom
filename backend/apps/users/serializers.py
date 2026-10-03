@@ -81,6 +81,21 @@ class RegisterSerializer(serializers.ModelSerializer):
         return User.objects.create_user(password=password, **validated_data)
 
 
+class AgentRegisterSerializer(RegisterSerializer):
+    """Inscription d'un agent municipal avec le même parcours qu'un citoyen.
+
+    Le rôle n'est jamais accepté depuis la requête : il est forcé côté serveur.
+    """
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        return User.objects.create_user(
+            password=password,
+            role=User.Role.AGENT,
+            **validated_data,
+        )
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import password_validation
 from django.utils import timezone
 from django.utils.text import slugify
@@ -5,9 +7,12 @@ from rest_framework import serializers
 
 from apps.users.models import User
 
+from .constants import ONBOARDING_STEPS, SUPPORTED_LANGUAGE_CODES
 from .models import (
     CitizenNotification,
+    CitizenPreference,
     CitizenRequest,
+    CitizenRequestEvent,
     ContactMessage,
     MunicipalService,
     NewsArticle,
@@ -29,13 +34,80 @@ def _unique_slug(model, value, instance=None, max_length=180):
     return candidate
 
 
+def _requested_language(context):
+    request = context.get("request") if context else None
+    raw = ""
+    if request is not None:
+        raw = (request.query_params.get("lang") or "").strip().lower()
+    code = raw.split("-")[0] if raw else "fr"
+    return code if code in SUPPORTED_LANGUAGE_CODES else "fr"
+
+
 class MunicipalServiceSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
+    short_description = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+    opening_hours = serializers.SerializerMethodField()
+    address = serializers.SerializerMethodField()
+    actions = serializers.SerializerMethodField()
+    required_documents = serializers.SerializerMethodField()
+    faq = serializers.SerializerMethodField()
+    language = serializers.SerializerMethodField()
+    available_languages = serializers.SerializerMethodField()
+
     class Meta:
         model = MunicipalService
         fields = (
             "id", "name", "slug", "category", "short_description", "description",
-            "opening_hours", "phone", "email", "address",
+            "opening_hours", "phone", "email", "address", "actions",
+            "required_documents", "faq", "is_featured", "priority_order",
+            "usage_count", "language", "available_languages",
         )
+
+    def _localized_value(self, obj, field):
+        lang = _requested_language(self.context)
+        if lang == "fr":
+            return getattr(obj, field)
+        translations = obj.translations or {}
+        translated = translations.get(lang) or {}
+        value = translated.get(field)
+        return getattr(obj, field) if value in (None, "", []) else value
+
+    def get_name(self, obj):
+        return self._localized_value(obj, "name")
+
+    def get_category(self, obj):
+        return self._localized_value(obj, "category")
+
+    def get_short_description(self, obj):
+        return self._localized_value(obj, "short_description")
+
+    def get_description(self, obj):
+        return self._localized_value(obj, "description")
+
+    def get_opening_hours(self, obj):
+        return self._localized_value(obj, "opening_hours")
+
+    def get_address(self, obj):
+        return self._localized_value(obj, "address")
+
+    def get_actions(self, obj):
+        return self._localized_value(obj, "actions")
+
+    def get_required_documents(self, obj):
+        return self._localized_value(obj, "required_documents")
+
+    def get_faq(self, obj):
+        return self._localized_value(obj, "faq")
+
+    def get_language(self, obj):
+        return _requested_language(self.context)
+
+    def get_available_languages(self, obj):
+        languages = {"fr"}
+        languages.update((obj.translations or {}).keys())
+        return sorted(code for code in languages if code in SUPPORTED_LANGUAGE_CODES)
 
 
 class AdminMunicipalServiceSerializer(serializers.ModelSerializer):
@@ -45,10 +117,12 @@ class AdminMunicipalServiceSerializer(serializers.ModelSerializer):
         model = MunicipalService
         fields = (
             "id", "name", "slug", "category", "short_description", "description",
-            "opening_hours", "phone", "email", "address", "is_active", "sort_order",
+            "opening_hours", "phone", "email", "address", "actions",
+            "required_documents", "faq", "translations", "is_featured",
+            "priority_order", "usage_count", "is_active", "sort_order",
             "created_at", "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "usage_count", "created_at", "updated_at")
 
     def validate(self, attrs):
         slug = attrs.get("slug")
@@ -58,6 +132,9 @@ class AdminMunicipalServiceSerializer(serializers.ModelSerializer):
                 queryset = queryset.exclude(pk=self.instance.pk)
             if queryset.exists():
                 raise serializers.ValidationError({"slug": "Ce slug est déjà utilisé."})
+        translations = attrs.get("translations")
+        if translations is not None and not isinstance(translations, dict):
+            raise serializers.ValidationError({"translations": "Les traductions doivent être un objet JSON."})
         return attrs
 
     def create(self, validated_data):
@@ -201,6 +278,40 @@ class CitizenContactMessageSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class CitizenRequestEventSerializer(serializers.ModelSerializer):
+    actor_name = serializers.SerializerMethodField()
+    status_label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CitizenRequestEvent
+        fields = (
+            "id", "event_type", "status", "status_label", "title", "message",
+            "actor_name", "is_public", "created_at",
+        )
+        read_only_fields = fields
+
+    def get_actor_name(self, obj):
+        if not obj.actor:
+            return None
+        return obj.actor.get_full_name().strip() or obj.actor.email
+
+    def get_status_label(self, obj):
+        return obj.get_status_display() if obj.status else None
+
+
+class AgentRequestEventCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CitizenRequestEvent
+        fields = ("title", "message", "is_public")
+
+    def create(self, validated_data):
+        validated_data["request"] = self.context["citizen_request"]
+        validated_data["actor"] = self.context["request"].user
+        validated_data["event_type"] = CitizenRequestEvent.EventType.NOTE
+        validated_data["status"] = self.context["citizen_request"].status
+        return super().create(validated_data)
+
+
 class CitizenRequestSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source="service.name", read_only=True)
     citizen_name = serializers.SerializerMethodField()
@@ -211,12 +322,13 @@ class CitizenRequestSerializer(serializers.ModelSerializer):
         model = CitizenRequest
         fields = (
             "id", "reference", "citizen", "citizen_name", "citizen_email",
-            "service", "service_name", "title", "description", "status", "priority",
+            "service", "service_name", "request_type", "incident_category", "title",
+            "description", "location_text", "latitude", "longitude", "status", "priority",
             "assigned_to", "assigned_to_name", "created_at", "updated_at",
         )
         read_only_fields = (
             "id", "reference", "citizen", "citizen_name", "citizen_email",
-            "status", "assigned_to", "assigned_to_name", "created_at", "updated_at",
+            "status", "priority", "assigned_to", "assigned_to_name", "created_at", "updated_at",
         )
 
     def get_citizen_name(self, obj):
@@ -232,16 +344,57 @@ class CitizenRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Ce service n'est pas disponible.")
         return value
 
+    def validate_latitude(self, value):
+        if value is not None and not (Decimal("-90") <= value <= Decimal("90")):
+            raise serializers.ValidationError("La latitude doit être comprise entre -90 et 90.")
+        return value
+
+    def validate_longitude(self, value):
+        if value is not None and not (Decimal("-180") <= value <= Decimal("180")):
+            raise serializers.ValidationError("La longitude doit être comprise entre -180 et 180.")
+        return value
+
     def create(self, validated_data):
         validated_data["citizen"] = self.context["request"].user
         return super().create(validated_data)
+
+
+class CitizenIssueReportSerializer(CitizenRequestSerializer):
+    class Meta(CitizenRequestSerializer.Meta):
+        fields = CitizenRequestSerializer.Meta.fields
+        read_only_fields = CitizenRequestSerializer.Meta.read_only_fields + ("request_type",)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if not (attrs.get("location_text") or (attrs.get("latitude") is not None and attrs.get("longitude") is not None)):
+            raise serializers.ValidationError(
+                {"location_text": "Indiquez un lieu ou fournissez latitude et longitude."}
+            )
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["request_type"] = CitizenRequest.RequestType.REPORT
+        return super().create(validated_data)
+
+
+class CitizenRequestDetailSerializer(CitizenRequestSerializer):
+    timeline = serializers.SerializerMethodField()
+
+    class Meta(CitizenRequestSerializer.Meta):
+        fields = CitizenRequestSerializer.Meta.fields + ("timeline",)
+        read_only_fields = CitizenRequestSerializer.Meta.read_only_fields + ("timeline",)
+
+    def get_timeline(self, obj):
+        queryset = obj.timeline_events.filter(is_public=True).select_related("actor")
+        return CitizenRequestEventSerializer(queryset, many=True, context=self.context).data
 
 
 class AgentCitizenRequestSerializer(CitizenRequestSerializer):
     class Meta(CitizenRequestSerializer.Meta):
         read_only_fields = (
             "id", "reference", "citizen", "citizen_name", "citizen_email",
-            "service", "service_name", "title", "description",
+            "service", "service_name", "request_type", "incident_category", "title",
+            "description", "location_text", "latitude", "longitude",
             "created_at", "updated_at", "assigned_to_name",
         )
 
@@ -252,6 +405,18 @@ class AgentCitizenRequestSerializer(CitizenRequestSerializer):
         ):
             raise serializers.ValidationError("La demande ne peut être assignée qu'à un agent ou administrateur actif.")
         return value
+
+
+class AgentCitizenRequestDetailSerializer(AgentCitizenRequestSerializer):
+    timeline = serializers.SerializerMethodField()
+
+    class Meta(AgentCitizenRequestSerializer.Meta):
+        fields = AgentCitizenRequestSerializer.Meta.fields + ("timeline",)
+        read_only_fields = AgentCitizenRequestSerializer.Meta.read_only_fields + ("timeline",)
+
+    def get_timeline(self, obj):
+        queryset = obj.timeline_events.select_related("actor").all()
+        return CitizenRequestEventSerializer(queryset, many=True, context=self.context).data
 
 
 class CitizenNotificationSerializer(serializers.ModelSerializer):
@@ -275,6 +440,52 @@ class CitizenNotificationSerializer(serializers.ModelSerializer):
         instance.read_at = timezone.now() if is_read else None
         instance.save(update_fields=["is_read", "read_at"])
         return instance
+
+
+class CitizenPreferenceSerializer(serializers.ModelSerializer):
+    language = serializers.CharField(required=False)
+    onboarding_completed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CitizenPreference
+        fields = (
+            "language", "screen_reader_mode", "high_contrast", "font_scale",
+            "onboarding_step", "onboarding_completed", "onboarding_completed_at", "updated_at",
+        )
+        read_only_fields = ("onboarding_completed", "onboarding_completed_at", "updated_at")
+
+    def get_onboarding_completed(self, obj):
+        return obj.onboarding_completed_at is not None
+
+    def validate_language(self, value):
+        code = value.strip().lower().split("-")[0]
+        if code not in SUPPORTED_LANGUAGE_CODES:
+            raise serializers.ValidationError("Langue non prise en charge.")
+        return code
+
+    def validate_font_scale(self, value):
+        if value < 80 or value > 180:
+            raise serializers.ValidationError("La taille du texte doit être comprise entre 80 et 180 %.")
+        return value
+
+    def validate_onboarding_step(self, value):
+        value = value.strip().lower()
+        if value not in ONBOARDING_STEPS:
+            raise serializers.ValidationError("Étape d'onboarding invalide.")
+        return value
+
+    def update(self, instance, validated_data):
+        language = validated_data.pop("language", None)
+        instance = super().update(instance, validated_data)
+        if language and instance.user.locale != language:
+            instance.user.locale = language
+            instance.user.save(update_fields=["locale", "updated_at"])
+        return instance
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["language"] = (instance.user.locale or "fr").split("-")[0]
+        return data
 
 
 class AgentCitizenListSerializer(serializers.ModelSerializer):
