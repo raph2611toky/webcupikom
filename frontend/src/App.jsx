@@ -46,6 +46,7 @@ import AgentMessageDetails from "./pages/agent/AgentMessageDetails.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminServices from "./pages/admin/AdminServices.jsx";
+import AdminAppointments from "./pages/admin/AdminAppointments.jsx";
 import AdminNews from "./pages/admin/AdminNews.jsx";
 import AdminSettings from "./pages/admin/AdminSettings.jsx";
 import AdminMessages from "./pages/admin/AdminMessages.jsx";
@@ -255,6 +256,7 @@ export default function App() {
       "/admin/dashboard":<Protected roles={["admin"]}><AdminDashboard/></Protected>,
       "/admin/users":<Protected roles={["admin"]}><AdminUsers/></Protected>,
       "/admin/services":<Protected roles={["admin"]}><AdminServices/></Protected>,
+      "/admin/appointments":<Protected roles={["admin"]}><AdminAppointments/></Protected>,
       "/admin/news":<Protected roles={["admin"]}><AdminNews/></Protected>,
       "/admin/settings":<Protected roles={["admin"]}><AdminSettings/></Protected>,
       "/admin/messages":<Protected roles={["admin"]}><AdminMessages/></Protected>,

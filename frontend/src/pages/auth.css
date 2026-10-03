@@ -561,3 +561,126 @@
 
 .auth-language-switcher{position:absolute;right:28px;top:24px;z-index:15}
 @media(max-width:760px){.auth-language-switcher{right:18px;top:18px}}
+
+/* ========================================================================== 
+   V40 — optional profile completion after email verification
+   ========================================================================== */
+.auth-screen--post-verify{
+  padding-top:82px;
+  padding-bottom:58px;
+}
+.auth-centered-card--post-verify{
+  width:min(100%,760px);
+}
+.auth-centered-card--post-verify .auth-step-icon{
+  width:62px;
+  height:62px;
+  margin-bottom:12px;
+  font-size:1.45rem;
+  font-weight:900;
+}
+.auth-centered-card--post-verify .auth-step-icon.is-success{
+  background:#e8f7ed;
+  color:#217044;
+}
+.auth-centered-card--post-verify h1{
+  font-size:clamp(1.75rem,3.2vw,2.65rem);
+  margin:10px 0 7px;
+}
+.auth-choice-copy{
+  max-width:620px;
+  margin:0 auto!important;
+  color:#69738a!important;
+  font-size:.875rem!important;
+  line-height:1.55!important;
+}
+.auth-post-verify-actions{
+  width:min(100%,520px);
+  display:grid;
+  grid-template-columns:1.25fr .9fr;
+  gap:10px;
+  margin:24px auto 10px;
+}
+.auth-secondary-button{
+  min-height:50px;
+  border:1px solid #dfe2ea;
+  border-radius:8px;
+  background:#fff;
+  color:#222737;
+  font:inherit;
+  font-size:.8rem;
+  font-weight:800;
+  cursor:pointer;
+}
+.profile-form--registration{
+  width:min(100%,720px);
+  margin-top:18px;
+  gap:14px;
+}
+.profile-form--registration .register-progress{
+  margin:0 0 8px;
+  text-align:center;
+}
+.auth-profile-heading{
+  text-align:center;
+  margin-bottom:2px;
+}
+.auth-profile-heading h2{
+  margin:0;
+  color:#11131c;
+  font-size:1.25rem;
+  letter-spacing:-.035em;
+}
+.auth-profile-heading p{
+  margin:4px 0 0;
+  color:#76809a;
+  font-size:.72rem;
+}
+.profile-form--registration .auth-modern-field input,
+.profile-form--registration .auth-modern-field select{
+  height:46px;
+}
+.profile-actions--wide{
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-top:4px;
+}
+.auth-primary-inline{
+  min-height:42px;
+  border:0!important;
+  border-radius:8px;
+  background:var(--auth-purple)!important;
+  color:#fff!important;
+  padding:0 18px!important;
+  font:inherit;
+  font-size:.75rem!important;
+  font-weight:850!important;
+}
+.auth-post-verify-enter{
+  width:min(100%,420px);
+  margin:22px auto 0;
+}
+html[data-contrast="high"] .auth-secondary-button,
+html[data-contrast="high"] .profile-form--registration .auth-modern-field input,
+html[data-contrast="high"] .profile-form--registration .auth-modern-field select{
+  background:#000!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+}
+html[data-contrast="high"] .auth-primary-inline{
+  background:#f2d34b!important;
+  color:#000!important;
+  border:2px solid #f2d34b!important;
+}
+html[data-contrast="high"] .auth-profile-heading h2,
+html[data-contrast="high"] .auth-profile-heading p,
+html[data-contrast="high"] .auth-choice-copy{
+  color:#fff!important;
+}
+@media(max-width:640px){
+  .auth-screen--post-verify{padding-top:92px}
+  .auth-post-verify-actions{grid-template-columns:1fr}
+  .profile-actions--wide{align-items:stretch;flex-direction:column-reverse}
+  .profile-actions--wide button{width:100%;min-height:42px}
+}

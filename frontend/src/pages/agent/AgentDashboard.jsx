@@ -5,7 +5,7 @@ import { getAgentRequests } from "../../api/requests.js";
 import { getNews } from "../../api/news.js";
 import { getServices } from "../../api/services.js";
 import { navigate } from "../../utils/navigation.js";
-import { getAppointments } from "../../api/appointments.js";
+import { getAgentAppointmentSummary } from "../../api/appointments.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -16,12 +16,12 @@ export default function AgentDashboard(){
   const [appointmentCount,setAppointmentCount]=useState(0);
 
   useEffect(()=>{
-    Promise.all([getAgentRequests(),getNews(),getServices()])
-      .then(([requests,publications,services])=>{
+    Promise.all([getAgentRequests(),getNews(),getServices(),getAgentAppointmentSummary()])
+      .then(([requests,publications,services,appointmentSummary])=>{
         setAgentRequests(requests);
         setNewsCount(publications.length);
         setServiceCount(services.length);
-        setAppointmentCount(getAppointments().filter(item=>["confirmed","checked_in"].includes(item.status)).length);
+        setAppointmentCount(Number(appointmentSummary?.upcoming ?? appointmentSummary?.confirmed ?? 0));
       });
   },[]);
 

@@ -2,6 +2,7 @@ import { api, clearAccessToken, setAccessToken } from "./api.js";
 
 const GOOGLE_REMEMBER_KEY = "nova_terra_google_remember";
 const GOOGLE_FLOW_KEY = "nova_terra_google_flow";
+const REGISTRATION_CONTEXT_KEY = "nova_terra_registration_context";
 let bootstrapPromise = null;
 
 function rememberFromSession() {
@@ -62,6 +63,71 @@ export async function register(payload) {
     skipAuthRefresh: true,
     skipAccessToken: true,
   });
+  if (data?.registration_token) {
+    window.localStorage.setItem(REGISTRATION_CONTEXT_KEY, JSON.stringify({
+      token: data.registration_token,
+      email: payload?.email || data?.user?.email || "",
+      first_name: payload?.first_name || data?.user?.first_name || "",
+      last_name: payload?.last_name || data?.user?.last_name || "",
+      created_at: Date.now(),
+    }));
+  }
+  return data;
+}
+
+export function getRegistrationContext() {
+  const raw = window.localStorage.getItem(REGISTRATION_CONTEXT_KEY);
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw);
+    if (!value?.token) return null;
+    const maxAge = 24 * 60 * 60 * 1000;
+    if (value.created_at && Date.now() - Number(value.created_at) > maxAge) {
+      window.localStorage.removeItem(REGISTRATION_CONTEXT_KEY);
+      return null;
+    }
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+export function clearRegistrationContext() {
+  window.localStorage.removeItem(REGISTRATION_CONTEXT_KEY);
+}
+
+export async function completeRegistrationProfile(payload = {}) {
+  const context = getRegistrationContext();
+  const registrationToken = payload.registration_token || context?.token;
+  if (!registrationToken) {
+    throw new Error("Le jeton d’inscription n’est plus disponible. Vous pourrez compléter votre profil depuis votre espace citoyen.");
+  }
+
+  const body = {
+    registration_token: registrationToken,
+    first_name: payload.first_name,
+    last_name: payload.last_name,
+    profession: payload.profession,
+    gender: payload.gender,
+    birth_date: payload.birth_date,
+    phone_number: payload.phone_number,
+    address: payload.address,
+    habitat: payload.habitat,
+    district: payload.district,
+    sector: payload.sector,
+    street: payload.street,
+    building: payload.building,
+    apartment: payload.apartment,
+  };
+  Object.keys(body).forEach((key) => {
+    if (body[key] === undefined || body[key] === null || body[key] === "") delete body[key];
+  });
+  const { data } = await api.post(
+    "/auth/register/profile/",
+    body,
+    { skipAuthRefresh: true, skipAccessToken: true },
+  );
+  clearRegistrationContext();
   return data;
 }
 

@@ -52,6 +52,7 @@ export default function AdminDashboard(){
             <span className="section-label">Contenu</span><h3>Gestion rapide</h3>
             <div className="admin-shortcuts">
               <button onClick={()=>navigate("/admin/services")}><i>◇</i><div><b>Services municipaux</b><span>{s.active||0} actifs</span></div><em>→</em></button>
+              <button onClick={()=>navigate("/admin/appointments")}><i>◷</i><div><b>Rendez-vous</b><span>Agenda et créneaux municipaux</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/news")}><i>▤</i><div><b>Actualités</b><span>{n.published||0} publications</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/settings")}><i>⚙</i><div><b>Paramètres</b><span>Configuration plateforme</span></div><em>→</em></button>
             </div>

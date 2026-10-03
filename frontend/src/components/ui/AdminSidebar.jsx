@@ -7,6 +7,7 @@ const items = [
   ["/admin", "◫", "Tableau de bord"],
   ["/admin/users", "◉", "Utilisateurs"],
   ["/admin/services", "◇", "Services"],
+  ["/admin/appointments", "◷", "Rendez-vous"],
   ["/admin/news", "▤", "Actualités"],
   ["/admin/settings", "⚙", "Paramètres"],
 ];

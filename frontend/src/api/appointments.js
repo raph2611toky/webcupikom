@@ -1,294 +1,353 @@
-const APPOINTMENTS_KEY = "nova_terra_appointments_v1";
-const BLOCKED_SLOTS_KEY = "nova_terra_appointment_blocks_v1";
-const LOCAL_NOTIFICATIONS_KEY = "nova_terra_local_notifications_v1";
-const UPDATE_EVENT = "nova-appointments-updated";
-const NOTIFICATION_EVENT = "nova-local-notifications-updated";
+import { api } from "./api.js";
+import { unwrapList } from "./helpers.js";
 
-const TIMES = ["09:00","10:00","11:00","14:00","15:00","16:00"];
-
-function read(key, fallback = []) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
+function toFormData(payload = {}) {
+  const form = new FormData();
+  Object.entries(payload).forEach(([key,value]) => {
+    if (value === undefined || value === null || value === "") return;
+    form.append(key, typeof value === "boolean" ? String(value) : value);
+  });
+  return form;
 }
 
-function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+function cleanParams(params = {}) {
+  return Object.fromEntries(Object.entries(params).filter(([,value]) => value !== undefined && value !== null && value !== ""));
 }
 
-function emit(name) {
-  window.dispatchEvent(new CustomEvent(name));
-}
-
-function makeReference() {
-  const year = new Date().getFullYear();
-  return `RDV-${year}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
-}
-
-function toTimestamp(date, time) {
-  const value = new Date(`${date}T${time}:00`);
-  return Number.isNaN(value.getTime()) ? null : value.getTime();
-}
-
-function localDateLabel(date, locale = "fr") {
-  try {
-    return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : locale === "mg" ? "mg-MG" : "fr-FR", {
-      weekday:"long", day:"2-digit", month:"long", year:"numeric"
-    }).format(new Date(`${date}T12:00:00`));
-  } catch {
-    return date;
-  }
-}
-
-export function pushLocalNotification(notification) {
-  const rows = read(LOCAL_NOTIFICATIONS_KEY, []);
-  const next = {
-    id: notification.id || `local-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-    local: true,
-    is_read: false,
-    created_at: new Date().toISOString(),
-    ...notification,
+export function normalizeAppointmentSlot(item = {}) {
+  const remaining = Number(item.remaining_capacity ?? Math.max(0, Number(item.capacity ?? 1) - Number(item.booked_count ?? 0)));
+  const active = item.is_active !== false;
+  const available = active && item.is_available !== false && remaining > 0;
+  return {
+    ...item,
+    id: item.id,
+    serviceId: item.service,
+    serviceName: item.service_name || "Service municipal",
+    agentId: item.agent ?? null,
+    agentName: item.agent_name || "",
+    date: item.date,
+    startTime: String(item.start_time || "").slice(0,5),
+    endTime: String(item.end_time || "").slice(0,5),
+    time: String(item.start_time || "").slice(0,5),
+    capacity: Number(item.capacity ?? 1),
+    bookedCount: Number(item.booked_count ?? 0),
+    remainingCapacity: remaining,
+    isAvailable: available,
+    isActive: active,
+    state: !active ? "unavailable" : available ? "available" : "full",
+    key: String(item.id ?? `${item.service}|${item.date}|${item.start_time}`),
   };
-  write(LOCAL_NOTIFICATIONS_KEY, [next, ...rows].slice(0,80));
-  emit(NOTIFICATION_EVENT);
-  return next;
 }
 
-export function getLocalNotifications() {
-  return read(LOCAL_NOTIFICATIONS_KEY, []);
+export function normalizeCitizenAppointment(item = {}) {
+  return {
+    ...item,
+    id: item.id,
+    reference: item.reference || String(item.id || ""),
+    serviceId: item.service,
+    serviceName: item.service_name || "Service municipal",
+    serviceAddress: item.service_address || "",
+    agentId: item.agent ?? null,
+    agentName: item.agent_name || "Agent municipal",
+    slotId: item.slot ?? null,
+    date: item.date,
+    startTime: String(item.start_time || "").slice(0,5),
+    endTime: String(item.end_time || "").slice(0,5),
+    time: String(item.start_time || "").slice(0,5),
+    reason: item.reason || "",
+    notes: item.notes || "",
+    preferredLanguage: item.preferred_language || "",
+    accessibilityNeeds: item.accessibility_needs || "",
+    contactPhone: item.contact_phone || "",
+    status: item.status || "pending",
+    cancellationReason: item.cancellation_reason || "",
+    canCancel: item.can_cancel !== false,
+    canReschedule: item.can_reschedule !== false,
+    createdAt: item.created_at || "",
+    updatedAt: item.updated_at || "",
+  };
 }
 
-export function setLocalNotificationRead(id, isRead = true) {
-  const rows = read(LOCAL_NOTIFICATIONS_KEY, []);
-  const next = rows.map((row) => row.id === id ? {...row, is_read: Boolean(isRead)} : row);
-  write(LOCAL_NOTIFICATIONS_KEY, next);
-  emit(NOTIFICATION_EVENT);
-  return next.find((row) => row.id === id) || null;
+export function normalizeAgentAppointment(item = {}) {
+  return {
+    ...normalizeCitizenAppointment(item),
+    citizenId: item.citizen,
+    citizenName: item.citizen_name || "Citoyen",
+    citizenEmail: item.citizen_email || "",
+    citizenPhone: item.citizen_phone || "",
+    citizenAddress: item.citizen_address || "",
+    assignedTo: item.assigned_to ?? null,
+    assignedToName: item.assigned_to_name || "",
+    internalNotes: item.internal_notes || "",
+  };
 }
 
-export function markAllLocalNotificationsRead() {
-  const rows = read(LOCAL_NOTIFICATIONS_KEY, []).map((row) => ({...row,is_read:true}));
-  write(LOCAL_NOTIFICATIONS_KEY, rows);
-  emit(NOTIFICATION_EVENT);
+export function normalizeAppointmentEvent(item = {}) {
+  return {
+    ...item,
+    id: item.id,
+    title: item.title || "Mise à jour",
+    message: item.message || "",
+    eventType: item.event_type || "note",
+    isPublic: item.is_public !== false,
+    createdBy: item.created_by ?? null,
+    createdByName: item.created_by_name || "",
+    createdAt: item.created_at || "",
+  };
 }
 
-export function getAppointments() {
-  return read(APPOINTMENTS_KEY, []).sort((a,b) => {
-    const ta = toTimestamp(a.date,a.time) || 0;
-    const tb = toTimestamp(b.date,b.time) || 0;
-    return ta - tb;
-  });
+/* ------------------------------ Citizen ------------------------------ */
+export async function getCitizenAppointments(params = {}) {
+  const { data } = await api.get("/citizen/appointments/", { params: cleanParams(params) });
+  return unwrapList(data).map(normalizeCitizenAppointment);
 }
 
-export function getCitizenAppointments(citizenId) {
-  return getAppointments().filter((item) => String(item.citizenId) === String(citizenId));
+export async function getCitizenAppointmentAvailability(params = {}) {
+  const { data } = await api.get("/citizen/appointments/availability/", { params: cleanParams(params) });
+  return unwrapList(data).map(normalizeAppointmentSlot);
 }
 
-export function getAppointment(id) {
-  return getAppointments().find((item) => String(item.id) === String(id)) || null;
+export async function getCitizenUpcomingAppointments() {
+  const { data } = await api.get("/citizen/appointments/upcoming/");
+  return unwrapList(data).map(normalizeCitizenAppointment);
 }
 
-export function getUpcomingDates(days = 8) {
-  const result = [];
-  const cursor = new Date();
-  cursor.setHours(12,0,0,0);
-
-  while (result.length < days) {
-    cursor.setDate(cursor.getDate() + 1);
-    const weekday = cursor.getDay();
-    if (weekday === 0 || weekday === 6) continue;
-    result.push(cursor.toISOString().slice(0,10));
-  }
-  return result;
+export async function getCitizenAppointmentHistory() {
+  const { data } = await api.get("/citizen/appointments/history/");
+  return unwrapList(data).map(normalizeCitizenAppointment);
 }
 
-export function getAppointmentSlots({ serviceId, date }) {
-  const appointments = getAppointments();
-  const blocked = read(BLOCKED_SLOTS_KEY, []);
-  return TIMES.map((time) => {
-    const key = `${serviceId}|${date}|${time}`;
-    const appointment = appointments.find((item) =>
-      String(item.serviceId) === String(serviceId) &&
-      item.date === date &&
-      item.time === time &&
-      !["cancelled"].includes(item.status)
-    );
-    const isBlocked = blocked.some((item) => item.key === key);
-    return {
-      key,
-      time,
-      state: appointment ? "booked" : isBlocked ? "unavailable" : "available",
-      appointmentId: appointment?.id || null,
-    };
-  });
+export async function getCitizenAppointment(reference) {
+  const { data } = await api.get(`/citizen/appointments/${encodeURIComponent(reference)}/`);
+  return normalizeCitizenAppointment(data);
 }
 
-export function toggleAppointmentSlotAvailability({ serviceId, date, time, unavailable }) {
-  const key = `${serviceId}|${date}|${time}`;
-  const rows = read(BLOCKED_SLOTS_KEY, []).filter((item) => item.key !== key);
-  if (unavailable) rows.push({key,serviceId,date,time,createdAt:new Date().toISOString()});
-  write(BLOCKED_SLOTS_KEY, rows);
-  emit(UPDATE_EVENT);
+export async function createCitizenAppointment(payload) {
+  const { data } = await api.post("/citizen/appointments/", toFormData({
+    service: payload.service ?? payload.serviceId,
+    slot: payload.slot ?? payload.slotId,
+    reason: payload.reason,
+    notes: payload.notes,
+    preferred_language: payload.preferred_language ?? payload.preferredLanguage,
+    accessibility_needs: payload.accessibility_needs ?? payload.accessibilityNeeds,
+    contact_phone: payload.contact_phone ?? payload.contactPhone,
+  }));
+  return normalizeCitizenAppointment(data);
 }
 
-export function createAppointment(payload) {
-  const rows = getAppointments();
-  const slot = getAppointmentSlots({serviceId:payload.serviceId,date:payload.date})
-    .find((item) => item.time === payload.time);
+export async function updateCitizenAppointment(reference, payload = {}) {
+  const { data } = await api.patch(`/citizen/appointments/${encodeURIComponent(reference)}/`, toFormData({
+    slot: payload.slot ?? payload.slotId,
+    reason: payload.reason,
+    notes: payload.notes,
+    preferred_language: payload.preferred_language ?? payload.preferredLanguage,
+    accessibility_needs: payload.accessibility_needs ?? payload.accessibilityNeeds,
+    contact_phone: payload.contact_phone ?? payload.contactPhone,
+  }));
+  return normalizeCitizenAppointment(data);
+}
 
-  if (!slot || slot.state !== "available") {
-    throw new Error("Ce créneau n’est plus disponible. Choisissez un autre horaire.");
-  }
+export async function cancelCitizenAppointment(reference, reason = "") {
+  const config = reason ? { data: toFormData({ reason }) } : undefined;
+  await api.delete(`/citizen/appointments/${encodeURIComponent(reference)}/`, config);
+  return true;
+}
 
-  const appointment = {
-    id: makeReference(),
-    citizenId: payload.citizenId,
-    citizenName: payload.citizenName || "Citoyen",
-    citizenEmail: payload.citizenEmail || "",
-    serviceId: payload.serviceId,
-    serviceName: payload.serviceName || "Service municipal",
-    agentName: payload.agentName || "Agent municipal disponible",
+export async function getCitizenAppointmentTimeline(reference) {
+  const { data } = await api.get(`/citizen/appointments/${encodeURIComponent(reference)}/timeline/`);
+  return unwrapList(data).map(normalizeAppointmentEvent);
+}
+
+/* ------------------------------- Agent ------------------------------- */
+export async function getAgentAppointments(params = {}) {
+  const { data } = await api.get("/agent/appointments/", { params: cleanParams(params) });
+  return unwrapList(data).map(normalizeAgentAppointment);
+}
+
+export async function getAgentAppointmentSummary() {
+  const { data } = await api.get("/agent/appointments/summary/");
+  return data || {};
+}
+
+export async function getAgentAppointment(reference) {
+  const { data } = await api.get(`/agent/appointments/${encodeURIComponent(reference)}/`);
+  return normalizeAgentAppointment(data);
+}
+
+export async function updateAgentAppointment(reference, payload = {}) {
+  const { data } = await api.patch(`/agent/appointments/${encodeURIComponent(reference)}/`, toFormData({
+    status: payload.status,
+    slot: payload.slot ?? payload.slotId,
+    assigned_to: payload.assigned_to ?? payload.assignedTo,
+    internal_notes: payload.internal_notes ?? payload.internalNotes,
+    public_message: payload.public_message ?? payload.publicMessage,
+    cancellation_reason: payload.cancellation_reason ?? payload.cancellationReason,
+  }));
+  return normalizeAgentAppointment(data);
+}
+
+export async function getAgentAppointmentTimeline(reference) {
+  const { data } = await api.get(`/agent/appointments/${encodeURIComponent(reference)}/timeline/`);
+  return unwrapList(data).map(normalizeAppointmentEvent);
+}
+
+export async function addAgentAppointmentEvent(reference, payload = {}) {
+  const { data } = await api.post(`/agent/appointments/${encodeURIComponent(reference)}/timeline/`, toFormData({
+    title: payload.title,
+    message: payload.message,
+    is_public: payload.is_public ?? payload.isPublic,
+  }));
+  return normalizeAppointmentEvent(data);
+}
+
+export async function getAgentAppointmentSlots(params = {}) {
+  const { data } = await api.get("/agent/appointment-slots/", { params: cleanParams(params) });
+  return unwrapList(data).map(normalizeAppointmentSlot);
+}
+
+export async function createAgentAppointmentSlot(payload = {}) {
+  const { data } = await api.post("/agent/appointment-slots/", toFormData({
+    service: payload.service ?? payload.serviceId,
     date: payload.date,
-    time: payload.time,
-    durationMinutes: 30,
-    reason: payload.reason || "",
-    notes: payload.notes || "",
-    reminder: Boolean(payload.reminder),
-    status: "confirmed",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  write(APPOINTMENTS_KEY, [...rows, appointment]);
-  pushLocalNotification({
-    type:"appointment",
-    category:"Rendez-vous",
-    event_status:"Confirmé",
-    title:"Rendez-vous confirmé",
-    message:`${appointment.serviceName} · ${localDateLabel(appointment.date)} à ${appointment.time}`,
-    appointment_id:appointment.id,
-  });
-
-  if (appointment.reminder) {
-    const timestamp = toTimestamp(appointment.date, appointment.time);
-    pushLocalNotification({
-      type:"appointment_reminder",
-      category:"Rendez-vous",
-      event_status:"Rappel programmé",
-      title:"Rappel de rendez-vous programmé",
-      message:`Un rappel est prévu avant votre rendez-vous du ${localDateLabel(appointment.date)} à ${appointment.time}.`,
-      appointment_id:appointment.id,
-      scheduled_for: timestamp ? new Date(timestamp - 24*60*60*1000).toISOString() : null,
-    });
-  }
-
-  emit(UPDATE_EVENT);
-  return appointment;
+    start_time: payload.start_time ?? payload.startTime,
+    end_time: payload.end_time ?? payload.endTime,
+    capacity: payload.capacity,
+  }));
+  return normalizeAppointmentSlot(data);
 }
 
-export function updateAppointment(id, changes = {}) {
-  const rows = getAppointments();
-  let updated = null;
-  const next = rows.map((item) => {
-    if (String(item.id) !== String(id)) return item;
-    updated = {...item,...changes,updatedAt:new Date().toISOString()};
-    return updated;
-  });
-  if (!updated) throw new Error("Rendez-vous introuvable.");
-  write(APPOINTMENTS_KEY, next);
-
-  const statusLabels = {
-    checked_in:"Arrivé / check-in",
-    completed:"Terminé",
-    cancelled:"Annulé",
-    confirmed:"Confirmé",
-  };
-  if (changes.status && statusLabels[changes.status]) {
-    pushLocalNotification({
-      type:"appointment",
-      category:"Rendez-vous",
-      event_status:statusLabels[changes.status],
-      title:`Rendez-vous · ${statusLabels[changes.status]}`,
-      message:`${updated.serviceName} · ${localDateLabel(updated.date)} à ${updated.time}`,
-      appointment_id:updated.id,
-    });
-  }
-
-  emit(UPDATE_EVENT);
-  return updated;
+export async function getAgentAppointmentSlot(id) {
+  const { data } = await api.get(`/agent/appointment-slots/${encodeURIComponent(id)}/`);
+  return normalizeAppointmentSlot(data);
 }
 
-export function cancelAppointment(id) {
-  return updateAppointment(id,{status:"cancelled"});
+export async function updateAgentAppointmentSlot(id, payload = {}) {
+  const { data } = await api.patch(`/agent/appointment-slots/${encodeURIComponent(id)}/`, toFormData({
+    date: payload.date,
+    start_time: payload.start_time ?? payload.startTime,
+    end_time: payload.end_time ?? payload.endTime,
+    capacity: payload.capacity,
+    is_active: payload.is_active ?? payload.isActive,
+  }));
+  return normalizeAppointmentSlot(data);
 }
 
+export async function disableAgentAppointmentSlot(id) {
+  await api.delete(`/agent/appointment-slots/${encodeURIComponent(id)}/`);
+  return true;
+}
 
-export function materializeDueAppointmentReminders() {
-  const appointments = getAppointments();
-  const notifications = read(LOCAL_NOTIFICATIONS_KEY, []);
-  const now = Date.now();
-  let changed = false;
-  let next = [...notifications];
+/* ------------------------------- Admin ------------------------------- */
+export async function getAdminAppointments(params = {}) {
+  const { data } = await api.get("/admin/appointments/", { params: cleanParams(params) });
+  return unwrapList(data).map(normalizeAgentAppointment);
+}
 
-  for (const appointment of appointments) {
-    if (!appointment.reminder || appointment.status !== "confirmed") continue;
-    const appointmentAt = toTimestamp(appointment.date, appointment.time);
-    if (!appointmentAt) continue;
+export async function createAdminAppointment(payload = {}) {
+  const { data } = await api.post("/admin/appointments/", toFormData({
+    citizen: payload.citizen ?? payload.citizenId,
+    service: payload.service ?? payload.serviceId,
+    slot: payload.slot ?? payload.slotId,
+    assigned_to: payload.assigned_to ?? payload.assignedTo,
+    reason: payload.reason,
+    notes: payload.notes,
+  }));
+  return normalizeAgentAppointment(data);
+}
 
-    const reminderAt = appointmentAt - 24 * 60 * 60 * 1000;
-    const due = now >= reminderAt && now < appointmentAt;
-    const reminderId = `appointment-reminder-${appointment.id}`;
-    const exists = next.some((item) => item.id === reminderId);
+export async function getAdminAppointmentSummary() {
+  const { data } = await api.get("/admin/appointments/summary/");
+  return data || {};
+}
 
-    if (due && !exists) {
-      next.unshift({
-        id: reminderId,
-        local: true,
-        is_read: false,
-        created_at: new Date().toISOString(),
-        type: "appointment_reminder_due",
-        category: "Rendez-vous",
-        event_status: "Rappel",
-        title: "Rappel · rendez-vous à venir",
-        message: `${appointment.serviceName} · ${localDateLabel(appointment.date)} à ${appointment.time}`,
-        appointment_id: appointment.id,
-      });
-      changed = true;
+export async function getAdminAppointment(reference) {
+  const { data } = await api.get(`/admin/appointments/${encodeURIComponent(reference)}/`);
+  return normalizeAgentAppointment(data);
+}
 
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        try {
-          new Notification("Nova Terra · Rendez-vous", {
-            body: `${appointment.serviceName} · ${localDateLabel(appointment.date)} à ${appointment.time}`,
-          });
-        } catch {}
-      }
-    }
-  }
+export async function updateAdminAppointment(reference, payload = {}) {
+  const { data } = await api.patch(`/admin/appointments/${encodeURIComponent(reference)}/`, toFormData({
+    status: payload.status,
+    slot: payload.slot ?? payload.slotId,
+    assigned_to: payload.assigned_to ?? payload.assignedTo,
+    reason: payload.reason,
+    internal_notes: payload.internal_notes ?? payload.internalNotes,
+    public_message: payload.public_message ?? payload.publicMessage,
+    cancellation_reason: payload.cancellation_reason ?? payload.cancellationReason,
+  }));
+  return normalizeAgentAppointment(data);
+}
 
-  if (changed) {
-    write(LOCAL_NOTIFICATIONS_KEY, next.slice(0,80));
-    emit(NOTIFICATION_EVENT);
-  }
+export async function getAdminAppointmentTimeline(reference) {
+  const { data } = await api.get(`/admin/appointments/${encodeURIComponent(reference)}/timeline/`);
+  return unwrapList(data).map(normalizeAppointmentEvent);
+}
 
-  return next;
+export async function addAdminAppointmentEvent(reference, payload = {}) {
+  const { data } = await api.post(`/admin/appointments/${encodeURIComponent(reference)}/timeline/`, toFormData({
+    title: payload.title,
+    message: payload.message,
+    is_public: payload.is_public ?? payload.isPublic,
+  }));
+  return normalizeAppointmentEvent(data);
+}
+
+export async function getAdminAppointmentSlots(params = {}) {
+  const { data } = await api.get("/admin/appointment-slots/", { params: cleanParams(params) });
+  return unwrapList(data).map(normalizeAppointmentSlot);
+}
+
+export async function createAdminAppointmentSlot(payload = {}) {
+  const { data } = await api.post("/admin/appointment-slots/", toFormData({
+    service: payload.service ?? payload.serviceId,
+    agent: payload.agent ?? payload.agentId,
+    date: payload.date,
+    start_time: payload.start_time ?? payload.startTime,
+    end_time: payload.end_time ?? payload.endTime,
+    capacity: payload.capacity,
+    is_active: payload.is_active ?? payload.isActive,
+  }));
+  return normalizeAppointmentSlot(data);
+}
+
+export async function getAdminAppointmentSlot(id) {
+  const { data } = await api.get(`/admin/appointment-slots/${encodeURIComponent(id)}/`);
+  return normalizeAppointmentSlot(data);
+}
+
+export async function updateAdminAppointmentSlot(id, payload = {}) {
+  const { data } = await api.patch(`/admin/appointment-slots/${encodeURIComponent(id)}/`, toFormData({
+    service: payload.service ?? payload.serviceId,
+    agent: payload.agent ?? payload.agentId,
+    date: payload.date,
+    start_time: payload.start_time ?? payload.startTime,
+    end_time: payload.end_time ?? payload.endTime,
+    capacity: payload.capacity,
+    is_active: payload.is_active ?? payload.isActive,
+  }));
+  return normalizeAppointmentSlot(data);
+}
+
+export async function disableAdminAppointmentSlot(id) {
+  await api.delete(`/admin/appointment-slots/${encodeURIComponent(id)}/`);
+  return true;
 }
 
 export function getAppointmentStatusLabel(status) {
   return ({
+    pending:"En attente",
     confirmed:"Confirmé",
-    checked_in:"Arrivé / check-in",
     completed:"Terminé",
     cancelled:"Annulé",
-  })[status] || status;
+    rejected:"Refusé",
+    no_show:"Absent",
+  })[status] || status || "—";
 }
 
 export function getSlotStatusLabel(state) {
   return ({
     available:"Disponible",
-    booked:"Réservé",
+    full:"Complet",
     unavailable:"Indisponible",
-  })[state] || state;
+  })[state] || state || "—";
 }

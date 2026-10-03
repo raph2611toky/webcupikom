@@ -7,7 +7,6 @@ import { REPORT_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import { pushLocalNotification } from "../../api/appointments.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
 
@@ -202,14 +201,6 @@ export default function CitizenReports(){
           ...(coordinates||{}),
         },
         attachments:file?[file]:[],
-      });
-      pushLocalNotification({
-        type:"report",
-        category:"Signalement",
-        event_status:"Envoyé",
-        title:"Signalement enregistré",
-        message:`${selected.label} · ${request.location?.label || label}`,
-        request_reference:request.reference,
       });
       setCreated(request);
       await refresh();
