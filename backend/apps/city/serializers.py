@@ -23,6 +23,7 @@ from .models import (
     ContactMessage,
     MunicipalService,
     NewsArticle,
+    StaffAuditEvent,
     WebCupRequestSnapshot,
 )
 
@@ -638,20 +639,23 @@ class CitizenAppointmentSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source="service.name", read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     preparation_documents = serializers.SerializerMethodField()
+    slot = serializers.SerializerMethodField()
+    preparation = serializers.SerializerMethodField()
+    can_cancel = serializers.SerializerMethodField()
 
     class Meta:
         model = CitizenAppointment
         fields = (
             "id", "reference", "citizen", "citizen_name", "agent", "agent_name",
             "service", "service_name", "starts_at", "ends_at", "reason", "details",
-            "location", "preparation_instructions", "preparation_documents", "status",
-            "status_label", "reminder_enabled", "reminder_minutes_before",
-            "created_at", "updated_at",
+            "location", "preparation_instructions", "preparation_documents", "slot",
+            "preparation", "can_cancel", "status", "status_label", "reminder_enabled",
+            "reminder_minutes_before", "created_at", "updated_at",
         )
         read_only_fields = (
             "id", "reference", "citizen", "citizen_name", "agent_name", "service_name",
-            "location", "preparation_instructions", "preparation_documents", "status",
-            "status_label", "created_at", "updated_at",
+            "location", "preparation_instructions", "preparation_documents", "slot",
+            "preparation", "can_cancel", "status", "status_label", "created_at", "updated_at",
         )
 
     def get_citizen_name(self, obj):
@@ -662,6 +666,27 @@ class CitizenAppointmentSerializer(serializers.ModelSerializer):
 
     def get_preparation_documents(self, obj):
         return list(obj.service.required_documents or []) if obj.service else []
+
+    def get_slot(self, obj):
+        duration = max(0, int((obj.ends_at - obj.starts_at).total_seconds() // 60))
+        return {
+            "starts_at": obj.starts_at,
+            "ends_at": obj.ends_at,
+            "duration_minutes": duration,
+            "timezone": timezone.get_current_timezone_name(),
+        }
+
+    def get_preparation(self, obj):
+        documents = self.get_preparation_documents(obj)
+        return {
+            "location": obj.location or (obj.service.address if obj.service else ""),
+            "instructions": obj.preparation_instructions,
+            "documents": documents,
+            "is_ready": bool((obj.location or (obj.service and obj.service.address)) or obj.preparation_instructions or documents),
+        }
+
+    def get_can_cancel(self, obj):
+        return obj.status in ACTIVE_APPOINTMENT_STATUSES and obj.ends_at > timezone.now()
 
     def validate_agent(self, value):
         if not value.is_active or getattr(value, "role", None) != User.Role.AGENT:
@@ -1053,6 +1078,36 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
             if security_change:
                 revoke_all(instance, 'admin_account_change')
             return instance
+
+
+class StaffAuditEventSerializer(serializers.ModelSerializer):
+    actor = serializers.SerializerMethodField()
+    subject = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StaffAuditEvent
+        fields = (
+            "id", "created_at", "actor", "actor_role", "action", "resource_type",
+            "resource_id", "resource_reference", "subject", "summary", "changes",
+            "metadata", "visibility",
+        )
+        read_only_fields = fields
+
+    def _user_payload(self, user):
+        if not user:
+            return None
+        return {
+            "id": user.pk,
+            "display_name": user.get_full_name().strip() or user.email,
+            "email": user.email,
+            "role": user.role,
+        }
+
+    def get_actor(self, obj):
+        return self._user_payload(obj.actor)
+
+    def get_subject(self, obj):
+        return self._user_payload(obj.subject_user)
 
 
 class WebCupRequestSnapshotSerializer(serializers.ModelSerializer):

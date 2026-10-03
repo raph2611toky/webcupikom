@@ -24,6 +24,7 @@ from .serializers import (
     CitizenPreferenceSerializer,
     CitizenRequestSerializer,
     ContactMessageSerializer,
+    StaffAuditEventSerializer,
 )
 
 from .report_swagger import RICH_PARAMETERS, IMAGE_PARAMETERS, ReportCreatedSerializer, responses as report_responses
@@ -255,6 +256,37 @@ APPOINTMENT_AGENT_UPDATE_PARAMETERS = [
     form_string("preparation_instructions", "Instructions pour préparer le rendez-vous"),
 ]
 
+APPOINTMENT_AGENT_LIST_PARAMETERS = [
+    query_string("status", "Filtrer par statut du rendez-vous"),
+    query_string("citizen", "ID du citoyen"),
+    query_string("agent", "ID de l'agent (administrateur uniquement)"),
+    openapi.Parameter("upcoming", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, required=False, description="Afficher uniquement les rendez-vous actifs à venir"),
+    query_string("date_from", "Date minimale YYYY-MM-DD"),
+    query_string("date_to", "Date maximale YYYY-MM-DD"),
+    query_string("search", "Référence, motif, citoyen ou service"),
+]
+
+AUDIT_LIST_PARAMETERS = [
+    query_string("actor", "ID de l'agent ou administrateur auteur"),
+    query_string("action", "Action exacte, par exemple request.update ou appointment.update"),
+    query_string("resource_type", "Type de ressource : request, appointment, citizen, service, publication..."),
+    query_string("resource_id", "Identifiant de la ressource"),
+    query_string("date_from", "Date minimale YYYY-MM-DD"),
+    query_string("date_to", "Date maximale YYYY-MM-DD"),
+    openapi.Parameter("mine", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, required=False, description="Afficher uniquement mes propres actions"),
+    query_string("search", "Résumé, référence de ressource ou identité de l'auteur"),
+    query_string("page", "Numéro de page"),
+    query_string("page_size", "Taille de page, 100 maximum"),
+]
+
+
+class StaffAuditPageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    results = StaffAuditEventSerializer(many=True)
+
+
 NOTIFICATION_SEND_PARAMETERS = [
     form_string("audience", "Audience : global ou targeted", required=True),
     form_int("recipient", "ID du citoyen pour une notification ciblée"),
@@ -366,6 +398,42 @@ agent_notification_post_schema = swagger_auto_schema(
     security=JWT_SECURITY,
     manual_parameters=NOTIFICATION_SEND_PARAMETERS,
     responses={201: "Notification envoyée"},
+)
+
+agent_appointment_list_schema = swagger_auto_schema(
+    tags=["Agent - Rendez-vous"],
+    operation_id="agent_appointment_list",
+    operation_summary="Lister et filtrer les rendez-vous à traiter",
+    security=JWT_SECURITY,
+    manual_parameters=APPOINTMENT_AGENT_LIST_PARAMETERS,
+    responses={200: AgentAppointmentSerializer(many=True)},
+)
+
+admin_appointment_list_schema = swagger_auto_schema(
+    tags=["Administration - Rendez-vous"],
+    operation_id="admin_appointment_list",
+    operation_summary="Lister et filtrer tous les rendez-vous",
+    security=JWT_SECURITY,
+    manual_parameters=APPOINTMENT_AGENT_LIST_PARAMETERS,
+    responses={200: AgentAppointmentSerializer(many=True)},
+)
+
+agent_audit_list_schema = swagger_auto_schema(
+    tags=["Agent - Audit"],
+    operation_id="agent_audit_list",
+    operation_summary="Consulter le journal des actions agents",
+    security=JWT_SECURITY,
+    manual_parameters=AUDIT_LIST_PARAMETERS,
+    responses={200: StaffAuditPageSerializer()},
+)
+
+admin_audit_list_schema = swagger_auto_schema(
+    tags=["Administration - Audit"],
+    operation_id="admin_audit_list",
+    operation_summary="Consulter le journal complet des actions staff",
+    security=JWT_SECURITY,
+    manual_parameters=AUDIT_LIST_PARAMETERS,
+    responses={200: StaffAuditPageSerializer()},
 )
 
 agent_appointment_patch_schema = swagger_auto_schema(

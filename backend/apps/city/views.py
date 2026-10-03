@@ -30,6 +30,7 @@ from .models import (
     ContactMessage,
     MunicipalService,
     NewsArticle,
+    StaffAuditEvent,
     WebCupRequestSnapshot,
     WebCupSyncState,
 )
@@ -40,8 +41,6 @@ from .serializers import (
     AdminUserCreateSerializer,
     AdminUserSerializer,
     AdminUserUpdateSerializer,
-    AgentCitizenDetailSerializer,
-    AgentCitizenListSerializer,
     AgentCitizenRequestDetailSerializer,
     AgentCitizenRequestSerializer,
     AgentAppointmentSerializer,
@@ -63,9 +62,11 @@ from .serializers import (
     MunicipalServiceSerializer,
     NewsArticleSerializer,
     NotificationCreateSerializer,
+    StaffAuditEventSerializer,
     WebCupRequestSnapshotSerializer,
 )
 from .swagger import (
+    admin_appointment_list_schema,
     admin_appointment_patch_schema,
     admin_notification_post_schema,
     admin_contact_patch_schema,
@@ -81,7 +82,10 @@ from .swagger import (
     admin_user_patch_schema,
     admin_user_post_schema,
     agent_contact_patch_schema,
+    agent_appointment_list_schema,
     agent_appointment_patch_schema,
+    agent_audit_list_schema,
+    admin_audit_list_schema,
     agent_notification_post_schema,
     agent_request_event_post_schema,
     agent_request_list_schema,
@@ -97,6 +101,7 @@ from .swagger import (
     contact_create_schema,
 )
 from .services.notifications import schedule_notification_batch, schedule_notification_email
+from .services.audit import record_staff_audit
 from .report_api import ReportMutationMixin, ReportPagination, filter_requests
 from .report_swagger import report_list_schema
 from .services.reports import attachment_transaction, CLOSED, event as report_event, notify_citizen as notify_report_citizen
@@ -846,17 +851,28 @@ class CitizenAppointmentAvailabilityView(APIView):
             starts_at__lt=day_end,
             ends_at__gt=day_start,
         ).order_by("starts_at")
+        # Do not expose another citizen's appointment reference here.
+        # The public availability endpoint only needs occupied intervals.
+        unavailable = [
+            {
+                "starts_at": item.starts_at,
+                "ends_at": item.ends_at,
+            }
+            for item in slots
+        ]
         return Response(
             {
                 "agent": AppointmentAgentSerializer(agent).data,
                 "date": target_date.isoformat(),
-                "unavailable": [
-                    {
-                        "starts_at": item.starts_at,
-                        "ends_at": item.ends_at,
-                    }
-                    for item in slots
-                ],
+                "timezone": timezone.get_current_timezone_name(),
+                "unavailable": unavailable,
+                "unavailable_count": len(unavailable),
+                "selection": {
+                    "starts_at_required": True,
+                    "ends_at_required": True,
+                    "interval_rule": "Le créneau choisi ne doit chevaucher aucun intervalle indisponible.",
+                    "date_time_format": "ISO-8601",
+                },
             }
         )
 
@@ -929,6 +945,21 @@ class _NotificationCreateBaseView(APIView):
                 sender=request.user,
                 validated_data=serializer.validated_data,
             )
+            record_staff_audit(
+                actor=request.user,
+                action="notification.send",
+                resource_type="notification_batch",
+                resource_id=batch_code,
+                resource_reference=batch_code,
+                subject_user=serializer.validated_data.get("recipient"),
+                summary="Notification municipale envoyée",
+                changes={
+                    "audience": serializer.validated_data["audience"],
+                    "created": created,
+                    "is_important": serializer.validated_data.get("is_important", False),
+                },
+                request=request,
+            )
         return Response(
             {
                 "created": created,
@@ -962,6 +993,7 @@ class AdminNotificationCreateView(_NotificationCreateBaseView):
         return super().post(request)
 
 
+@method_decorator(name="get", decorator=agent_appointment_list_schema)
 class AgentAppointmentListView(generics.ListAPIView):
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = AgentAppointmentSerializer
@@ -976,6 +1008,9 @@ class AgentAppointmentListView(generics.ListAPIView):
         citizen = self.request.query_params.get("citizen")
         agent = self.request.query_params.get("agent")
         upcoming = (self.request.query_params.get("upcoming") or "").strip().lower()
+        search = (self.request.query_params.get("search") or "").strip()
+        date_from = (self.request.query_params.get("date_from") or "").strip()
+        date_to = (self.request.query_params.get("date_to") or "").strip()
         if appointment_status:
             queryset = queryset.filter(status=appointment_status)
         if citizen:
@@ -986,6 +1021,27 @@ class AgentAppointmentListView(generics.ListAPIView):
             queryset = queryset.filter(
                 status__in=ACTIVE_APPOINTMENT_STATUSES,
                 ends_at__gte=timezone.now(),
+            )
+        if date_from:
+            try:
+                start_day = date.fromisoformat(date_from)
+            except ValueError as exc:
+                raise ValidationError({"date_from": "Utilisez YYYY-MM-DD."}) from exc
+            queryset = queryset.filter(starts_at__date__gte=start_day)
+        if date_to:
+            try:
+                end_day = date.fromisoformat(date_to)
+            except ValueError as exc:
+                raise ValidationError({"date_to": "Utilisez YYYY-MM-DD."}) from exc
+            queryset = queryset.filter(starts_at__date__lte=end_day)
+        if search:
+            queryset = queryset.filter(
+                Q(reference__icontains=search)
+                | Q(reason__icontains=search)
+                | Q(citizen__email__icontains=search)
+                | Q(citizen__first_name__icontains=search)
+                | Q(citizen__last_name__icontains=search)
+                | Q(service__name__icontains=search)
             )
         return queryset
 
@@ -1007,36 +1063,69 @@ class AgentAppointmentDetailView(generics.RetrieveUpdateAPIView):
 
     def perform_update(self, serializer):
         appointment = serializer.instance
-        previous = (
-            appointment.status,
-            appointment.starts_at,
-            appointment.ends_at,
-            appointment.location,
-            appointment.preparation_instructions,
-        )
+        previous = {
+            "status": appointment.status,
+            "starts_at": appointment.starts_at,
+            "ends_at": appointment.ends_at,
+            "location": appointment.location,
+            "preparation_instructions": appointment.preparation_instructions,
+        }
         with transaction.atomic():
             appointment = serializer.save()
-            current = (
-                appointment.status,
-                appointment.starts_at,
-                appointment.ends_at,
-                appointment.location,
-                appointment.preparation_instructions,
-            )
+            current = {
+                "status": appointment.status,
+                "starts_at": appointment.starts_at,
+                "ends_at": appointment.ends_at,
+                "location": appointment.location,
+                "preparation_instructions": appointment.preparation_instructions,
+            }
             _sync_appointment_reminder(appointment)
             if previous != current:
                 _notify_appointment_update(appointment, sender=self.request.user)
+                changed_fields = [name for name in previous if previous[name] != current[name]]
+                safe_changes = {"fields": changed_fields}
+                if previous["status"] != current["status"]:
+                    safe_changes["status"] = {"from": previous["status"], "to": current["status"]}
+                if previous["starts_at"] != current["starts_at"] or previous["ends_at"] != current["ends_at"]:
+                    safe_changes["slot"] = {
+                        "from": {"starts_at": previous["starts_at"], "ends_at": previous["ends_at"]},
+                        "to": {"starts_at": current["starts_at"], "ends_at": current["ends_at"]},
+                    }
+                record_staff_audit(
+                    actor=self.request.user,
+                    action="appointment.update",
+                    resource_type="appointment",
+                    resource_id=appointment.pk,
+                    resource_reference=appointment.reference,
+                    subject_user=appointment.citizen,
+                    summary="Rendez-vous citoyen mis à jour",
+                    changes=safe_changes,
+                    request=self.request,
+                )
 
 
 class AgentDashboardView(APIView):
     permission_classes = [AGENT_OR_ADMIN]
 
     def get(self, request):
-        requests = CitizenRequest.objects.all()
-        appointments = CitizenAppointment.objects.all()
-        if getattr(request.user, "role", None) == User.Role.AGENT:
+        requests = CitizenRequest.objects.select_related("assigned_to", "service")
+        appointments = CitizenAppointment.objects.select_related("citizen", "agent", "service")
+        contacts = ContactMessage.objects.select_related("assigned_to", "service")
+        is_agent = getattr(request.user, "role", None) == User.Role.AGENT
+        if is_agent:
             appointments = appointments.filter(agent=request.user)
         now = timezone.now()
+        day_ago = now - timedelta(hours=24)
+        week_ago = now - timedelta(days=7)
+        week_ahead = now + timedelta(days=7)
+
+        open_requests = requests.exclude(status__in=CLOSED)
+        my_requests = open_requests.filter(assigned_to=request.user)
+        unassigned_requests = open_requests.filter(assigned_to__isnull=True)
+        audit_queryset = StaffAuditEvent.objects.select_related("actor", "subject_user")
+        if is_agent:
+            audit_queryset = audit_queryset.filter(visibility=StaffAuditEvent.Visibility.STAFF)
+
         try:
             webcup = get_webcup_requests(force=False)
             webcup_session = webcup.get("session", {})
@@ -1047,8 +1136,22 @@ class AgentDashboardView(APIView):
 
         return Response(
             {
+                "generated_at": now,
+                "workspace": {
+                    "kind": "agent",
+                    "role": request.user.role,
+                    "display_name": request.user.get_full_name().strip() or request.user.email,
+                    "capabilities": {
+                        "requests": ["read", "assign", "update", "timeline"],
+                        "citizens": ["read", "update_profile", "activate", "deactivate"],
+                        "appointments": ["read", "confirm", "decline", "reschedule", "complete"],
+                        "audit": ["read"],
+                        "full_administration": request.user.role == User.Role.ADMIN,
+                    },
+                },
                 "requests": {
                     "total": requests.count(),
+                    "open": open_requests.count(),
                     "pending": requests.filter(status=CitizenRequest.Status.PENDING).count(),
                     "submitted": requests.filter(status=CitizenRequest.Status.SUBMITTED).count(),
                     "in_progress": requests.filter(status=CitizenRequest.Status.IN_PROGRESS).count(),
@@ -1059,28 +1162,137 @@ class AgentDashboardView(APIView):
                     ).count(),
                     "needs_agent_action": requests.filter(status__in=AGENT_ACTION_STATUSES).count(),
                     "waiting_citizen": requests.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
-                    "unassigned_open": requests.exclude(status__in=CLOSED).filter(assigned_to__isnull=True).count(),
+                    "unassigned_open": unassigned_requests.count(),
+                    "urgent_open": open_requests.filter(priority=CitizenRequest.Priority.URGENT).count(),
+                    "high_priority_open": open_requests.filter(priority=CitizenRequest.Priority.HIGH).count(),
+                    "created_last_24h": requests.filter(created_at__gte=day_ago).count(),
+                    "updated_last_24h": requests.filter(updated_at__gte=day_ago).count(),
                 },
+                "my_work": {
+                    "assigned_open_requests": my_requests.count(),
+                    "assigned_needs_action": my_requests.filter(status__in=AGENT_ACTION_STATUSES).count(),
+                    "unassigned_open_requests": unassigned_requests.count(),
+                    "contacts_assigned_to_me": contacts.exclude(status=ContactMessage.Status.CLOSED).filter(assigned_to=request.user).count(),
+                    "appointments_today": appointments.filter(starts_at__date=timezone.localdate(now)).count(),
+                    "appointments_next_7_days": appointments.filter(
+                        status__in=ACTIVE_APPOINTMENT_STATUSES,
+                        starts_at__gte=now,
+                        starts_at__lte=week_ahead,
+                    ).count(),
+                },
+                # Kept as an integer for backward compatibility with the existing frontend.
                 "citizens": User.objects.filter(role=User.Role.CITIZEN).count(),
-                "contacts_unread": ContactMessage.objects.filter(
-                    status=ContactMessage.Status.RECEIVED
-                ).count(),
+                "citizen_accounts": {
+                    "total": User.objects.filter(role=User.Role.CITIZEN).count(),
+                    "active": User.objects.filter(role=User.Role.CITIZEN, is_active=True).count(),
+                    "inactive": User.objects.filter(role=User.Role.CITIZEN, is_active=False).count(),
+                    "new_last_7_days": User.objects.filter(role=User.Role.CITIZEN, date_joined__gte=week_ago).count(),
+                },
+                "contacts_unread": contacts.filter(status=ContactMessage.Status.RECEIVED).count(),
+                "contacts": {
+                    "total": contacts.count(),
+                    "received": contacts.filter(status=ContactMessage.Status.RECEIVED).count(),
+                    "read": contacts.filter(status=ContactMessage.Status.READ).count(),
+                    "closed": contacts.filter(status=ContactMessage.Status.CLOSED).count(),
+                },
                 "appointments": {
                     "total": appointments.count(),
                     "upcoming": appointments.filter(
                         status__in=ACTIVE_APPOINTMENT_STATUSES,
                         ends_at__gte=now,
                     ).count(),
-                    "requested": appointments.filter(
-                        status=CitizenAppointment.Status.REQUESTED
-                    ).count(),
-                    "confirmed": appointments.filter(
-                        status=CitizenAppointment.Status.CONFIRMED
+                    "requested": appointments.filter(status=CitizenAppointment.Status.REQUESTED).count(),
+                    "confirmed": appointments.filter(status=CitizenAppointment.Status.CONFIRMED).count(),
+                    "today": appointments.filter(starts_at__date=timezone.localdate(now)).count(),
+                    "next_7_days": appointments.filter(
+                        status__in=ACTIVE_APPOINTMENT_STATUSES,
+                        starts_at__gte=now,
+                        starts_at__lte=week_ahead,
                     ).count(),
                 },
+                "recent_activity": StaffAuditEventSerializer(audit_queryset[:10], many=True).data,
                 "webcup": {"session": webcup_session, "meta": webcup_meta},
             }
         )
+
+
+@method_decorator(name="get", decorator=agent_audit_list_schema)
+class AgentAuditListView(generics.ListAPIView):
+    permission_classes = [AGENT_OR_ADMIN]
+    serializer_class = StaffAuditEventSerializer
+    pagination_class = ReportPagination
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return StaffAuditEvent.objects.none()
+        queryset = StaffAuditEvent.objects.select_related("actor", "subject_user")
+        if getattr(self.request.user, "role", None) == User.Role.AGENT:
+            queryset = queryset.filter(visibility=StaffAuditEvent.Visibility.STAFF)
+
+        actor = self.request.query_params.get("actor")
+        action = (self.request.query_params.get("action") or "").strip()
+        resource_type = (self.request.query_params.get("resource_type") or "").strip()
+        resource_id = (self.request.query_params.get("resource_id") or "").strip()
+        search = (self.request.query_params.get("search") or "").strip()
+        date_from = (self.request.query_params.get("date_from") or "").strip()
+        date_to = (self.request.query_params.get("date_to") or "").strip()
+        mine = (self.request.query_params.get("mine") or "").strip().lower()
+
+        if actor:
+            try:
+                actor_id = int(actor)
+            except (TypeError, ValueError) as exc:
+                raise ValidationError({"actor": "Un identifiant numérique est requis."}) from exc
+            queryset = queryset.filter(actor_id=actor_id)
+        if action:
+            queryset = queryset.filter(action=action)
+        if resource_type:
+            queryset = queryset.filter(resource_type=resource_type)
+        if resource_id:
+            queryset = queryset.filter(resource_id=resource_id)
+        if mine in {"1", "true", "yes"}:
+            queryset = queryset.filter(actor=self.request.user)
+        if search:
+            queryset = queryset.filter(
+                Q(summary__icontains=search)
+                | Q(resource_reference__icontains=search)
+                | Q(actor__email__icontains=search)
+                | Q(actor__first_name__icontains=search)
+                | Q(actor__last_name__icontains=search)
+            )
+        if date_from:
+            try:
+                queryset = queryset.filter(created_at__date__gte=date.fromisoformat(date_from))
+            except ValueError as exc:
+                raise ValidationError({"date_from": "Utilisez YYYY-MM-DD."}) from exc
+        if date_to:
+            try:
+                queryset = queryset.filter(created_at__date__lte=date.fromisoformat(date_to))
+            except ValueError as exc:
+                raise ValidationError({"date_to": "Utilisez YYYY-MM-DD."}) from exc
+        return queryset
+
+
+class AgentAuditDetailView(generics.RetrieveAPIView):
+    permission_classes = [AGENT_OR_ADMIN]
+    serializer_class = StaffAuditEventSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return StaffAuditEvent.objects.none()
+        queryset = StaffAuditEvent.objects.select_related("actor", "subject_user")
+        if getattr(self.request.user, "role", None) == User.Role.AGENT:
+            queryset = queryset.filter(visibility=StaffAuditEvent.Visibility.STAFF)
+        return queryset
+
+
+@method_decorator(name="get", decorator=admin_audit_list_schema)
+class AdminAuditListView(AgentAuditListView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+
+class AdminAuditDetailView(AgentAuditDetailView):
+    permission_classes = [IsAuthenticatedAdmin]
 
 
 class AgentRequestListView(generics.ListAPIView):
@@ -1229,6 +1441,32 @@ class AgentRequestDetailView(ReportMutationMixin, generics.RetrieveUpdateAPIView
             if instance.request_type == 'report':
                 notify_report_citizen(instance, self.request.user, 'Une précision de traitement est disponible.')
 
+        audit_changes = {}
+        if previous_status != instance.status:
+            audit_changes["status"] = {"from": previous_status, "to": instance.status}
+        if previous_priority != instance.priority:
+            audit_changes["priority"] = {"from": previous_priority, "to": instance.priority}
+        if previous_assignee != instance.assigned_to_id:
+            audit_changes["assigned_to"] = {"from": previous_assignee, "to": instance.assigned_to_id}
+        if previous_service != instance.service_id:
+            audit_changes["service"] = {"from": previous_service, "to": instance.service_id}
+        if previous_duplicate != instance.duplicate_of_id:
+            audit_changes["duplicate_of"] = {"from": previous_duplicate, "to": instance.duplicate_of_id}
+        if previous_summary != instance.resolution_summary:
+            audit_changes.setdefault("fields", []).append("resolution_summary")
+        if audit_changes:
+            record_staff_audit(
+                actor=self.request.user,
+                action="request.update",
+                resource_type="request",
+                resource_id=instance.pk,
+                resource_reference=instance.reference,
+                subject_user=instance.citizen,
+                summary="Traitement d'une demande citoyenne mis à jour",
+                changes=audit_changes,
+                request=self.request,
+            )
+
 
 @method_decorator(name="post", decorator=agent_request_event_post_schema)
 class AgentRequestTimelineView(ReportMutationMixin, generics.ListCreateAPIView):
@@ -1241,6 +1479,17 @@ class AgentRequestTimelineView(ReportMutationMixin, generics.ListCreateAPIView):
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
             item.save(update_fields=["updated_at"])
+            record_staff_audit(
+                actor=request.user,
+                action="request.timeline_add",
+                resource_type="request",
+                resource_id=item.pk,
+                resource_reference=item.reference,
+                subject_user=item.citizen,
+                summary="Étape ajoutée à la chronologie d'une demande",
+                changes={"event_type": instance.event_type, "is_public": instance.is_public},
+                request=request,
+            )
             data = CitizenRequestEventSerializer(instance, context={"request": request}).data
         return Response(data, status=201)
 
@@ -1265,42 +1514,6 @@ class AgentRequestTimelineView(ReportMutationMixin, generics.ListCreateAPIView):
             context["citizen_request"] = self.get_citizen_request()
         return context
 
-
-class AgentCitizenListView(generics.ListAPIView):
-    permission_classes = [AGENT_OR_ADMIN]
-    serializer_class = AgentCitizenListSerializer
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):
-            return User.objects.none()
-        queryset = User.objects.filter(role=User.Role.CITIZEN).annotate(
-            request_count=Count("citizen_requests", distinct=True)
-        )
-        search = self.request.query_params.get("search")
-        active = self.request.query_params.get("active")
-        if search:
-            queryset = queryset.filter(
-                Q(email__icontains=search)
-                | Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
-            )
-        if active in {"1", "true", "yes"}:
-            queryset = queryset.filter(is_active=True)
-        if active in {"0", "false", "no"}:
-            queryset = queryset.filter(is_active=False)
-        return queryset.order_by("first_name", "last_name", "email")
-
-
-class AgentCitizenDetailView(generics.RetrieveAPIView):
-    permission_classes = [AGENT_OR_ADMIN]
-    serializer_class = AgentCitizenDetailSerializer
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):
-            return User.objects.none()
-        return User.objects.filter(role=User.Role.CITIZEN).annotate(
-            request_count=Count("citizen_requests", distinct=True)
-        )
 
 
 class AgentAssigneeListView(generics.ListAPIView):
@@ -1362,6 +1575,29 @@ class AgentContactMessageDetailView(generics.RetrieveUpdateAPIView):
             {"detail": "Utilisez PATCH pour mettre à jour le statut ou le responsable."},
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        previous_status = serializer.instance.status
+        previous_assignee = serializer.instance.assigned_to_id
+        instance = serializer.save()
+        changes = {}
+        if previous_status != instance.status:
+            changes["status"] = {"from": previous_status, "to": instance.status}
+        if previous_assignee != instance.assigned_to_id:
+            changes["assigned_to"] = {"from": previous_assignee, "to": instance.assigned_to_id}
+        if changes:
+            record_staff_audit(
+                actor=self.request.user,
+                action="contact.update",
+                resource_type="contact_message",
+                resource_id=instance.pk,
+                resource_reference=instance.reference,
+                subject_user=instance.user,
+                summary="Message citoyen mis à jour",
+                changes=changes,
+                request=self.request,
+            )
 
 
 class WebCupRequestsView(APIView):
@@ -1458,9 +1694,11 @@ class AdminDashboardView(APIView):
                     "in_progress": citizen_requests.filter(status=CitizenRequest.Status.IN_PROGRESS).count(),
                     "action_required": citizen_requests.filter(status=CitizenRequest.Status.ACTION_REQUIRED).count(),
                     "completed": citizen_requests.filter(status=CitizenRequest.Status.COMPLETED).count(),
-                    "awaiting_handling": citizen_requests.exclude(
-                        status__in=CLOSED
-                    ).filter(assigned_to__isnull=True).count(),
+                    "awaiting_handling": citizen_requests.filter(
+                        status__in=AWAITING_HANDLING_STATUSES, acknowledged_at__isnull=True
+                    ).count(),
+                    "needs_agent_action": citizen_requests.filter(status__in=AGENT_ACTION_STATUSES).count(),
+                    "unassigned_open": citizen_requests.exclude(status__in=CLOSED).filter(assigned_to__isnull=True).count(),
                     "reports": citizen_requests.filter(
                         request_type=CitizenRequest.RequestType.REPORT
                     ).count(),
@@ -1482,6 +1720,13 @@ class AdminDashboardView(APIView):
                         status=CitizenAppointment.Status.CONFIRMED
                     ).count(),
                 },
+                "audit": {
+                    "total": StaffAuditEvent.objects.count(),
+                    "last_24h": StaffAuditEvent.objects.filter(created_at__gte=now - timedelta(hours=24)).count(),
+                    "recent": StaffAuditEventSerializer(
+                        StaffAuditEvent.objects.select_related("actor", "subject_user")[:10], many=True
+                    ).data,
+                },
                 "webcup": {
                     "visible_requests": WebCupRequestSnapshot.objects.filter(is_visible=True).count(),
                     "session": state.session if state else {},
@@ -1500,6 +1745,22 @@ class AdminUserListCreateView(generics.ListCreateAPIView):
         if self.request.method == "POST":
             return AdminUserCreateSerializer
         return AdminUserSerializer
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        record_staff_audit(
+            actor=self.request.user,
+            action="admin.user_create",
+            resource_type="user",
+            resource_id=instance.pk,
+            resource_reference=instance.email,
+            subject_user=instance,
+            summary="Compte utilisateur créé dans l'administration",
+            changes={"role": instance.role, "is_active": instance.is_active},
+            request=self.request,
+            visibility=StaffAuditEvent.Visibility.ADMIN,
+        )
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -1548,9 +1809,34 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
+    @transaction.atomic
     def patch(self, request, *args, **kwargs):
-        response = super().patch(request, *args, **kwargs)
         instance = self.get_object()
+        tracked_fields = ("first_name", "last_name", "phone_number", "role", "email_verified", "is_active", "locale")
+        previous = {field: getattr(instance, field) for field in tracked_fields}
+        super().patch(request, *args, **kwargs)
+        instance.refresh_from_db()
+        changes = {}
+        for field in tracked_fields:
+            current = getattr(instance, field)
+            if previous[field] != current:
+                if field in {"role", "email_verified", "is_active"}:
+                    changes[field] = {"from": previous[field], "to": current}
+                else:
+                    changes.setdefault("fields", []).append(field)
+        if changes:
+            record_staff_audit(
+                actor=request.user,
+                action="admin.user_update",
+                resource_type="user",
+                resource_id=instance.pk,
+                resource_reference=instance.email,
+                subject_user=instance,
+                summary="Compte utilisateur modifié dans l'administration",
+                changes=changes,
+                request=request,
+                visibility=StaffAuditEvent.Visibility.ADMIN,
+            )
         return Response(AdminUserSerializer(instance, context={"request": request}).data)
 
 
@@ -1558,6 +1844,16 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
 class AdminServiceListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedAdmin]
     serializer_class = AdminMunicipalServiceSerializer
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        record_staff_audit(
+            actor=self.request.user, action="service.create", resource_type="service",
+            resource_id=instance.pk, resource_reference=instance.slug,
+            summary="Service municipal créé", changes={"is_active": instance.is_active},
+            request=self.request,
+        )
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -1590,9 +1886,32 @@ class AdminServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "slug"
     queryset = MunicipalService.objects.all()
 
+    @transaction.atomic
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        tracked = ("name", "category", "short_description", "opening_hours", "phone", "email", "address", "is_featured", "priority_order", "is_active", "sort_order")
+        previous = {field: getattr(instance, field) for field in tracked}
+        instance = serializer.save()
+        changed_fields = [field for field in tracked if previous[field] != getattr(instance, field)]
+        if changed_fields:
+            record_staff_audit(
+                actor=self.request.user, action="service.update", resource_type="service",
+                resource_id=instance.pk, resource_reference=instance.slug,
+                summary="Service municipal modifié", changes={"fields": changed_fields},
+                request=self.request,
+            )
+
+    @transaction.atomic
     def perform_destroy(self, instance):
+        was_active = instance.is_active
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
+        record_staff_audit(
+            actor=self.request.user, action="service.deactivate", resource_type="service",
+            resource_id=instance.pk, resource_reference=instance.slug,
+            summary="Service municipal désactivé", changes={"is_active": {"from": was_active, "to": False}},
+            request=self.request,
+        )
 
 
 class AdminContactMessageListView(AgentContactMessageListView):
@@ -1637,6 +1956,10 @@ class AdminRequestDetailView(AgentRequestDetailView):
 
 class AdminAppointmentListView(AgentAppointmentListView):
     permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_appointment_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class AdminAppointmentDetailView(AgentAppointmentDetailView):

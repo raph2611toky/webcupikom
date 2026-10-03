@@ -214,7 +214,13 @@ class SecurityTests(APITestCase):
         response = self.client.patch(reverse('users:agent-citizen', args=[self.user.pk]),
             {'is_active': False, 'current_password': 'StrongPass!2026'}, format='json')
         self.assertEqual(response.status_code, 200, response.data)
+        self.assertIn('account_state', response.data)
+        self.assertIn('request_count', response.data)
         self.assertTrue(SecurityEvent.objects.filter(actor=agent, subject=self.user, kind='agent_citizen_update').exists())
+        from apps.city.models import StaffAuditEvent
+        self.assertTrue(StaffAuditEvent.objects.filter(
+            actor=agent, subject_user=self.user, action='citizen.account_update'
+        ).exists())
         self.client.patch(reverse('users:agent-citizen', args=[self.user.pk]),
             {'is_active': True, 'current_password': 'StrongPass!2026'}, format='json')
         self.auth(self.refresh)
@@ -224,6 +230,49 @@ class SecurityTests(APITestCase):
             {'is_active': False, 'current_password': 'StrongPass!2026'}, format='json').status_code, 404)
         self.assertEqual(self.client.patch(reverse('users:agent-citizen', args=[self.other.pk]),
             {'role': 'admin', 'current_password': 'StrongPass!2026'}, format='json').status_code, 400)
+
+    def test_agent_citizen_directory_supports_rich_search_and_filters(self):
+        self.user.first_name = 'Pauline'
+        self.user.district = 'Centre'
+        self.user.profession = 'Architecte'
+        self.user.save()
+        agent = User.objects.create_user(
+            email='agent-directory@example.com', password='StrongPass!2026',
+            role=User.Role.AGENT, email_verified=True,
+        )
+        self.auth(build_refresh_token(agent, remember=False))
+        response = self.client.get(reverse('users:agent-citizens'), {'search': 'Pauline', 'district': 'Centre'})
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['count'], 1)
+        item = response.data['results'][0]
+        self.assertEqual(item['profession'], 'Architecte')
+        self.assertEqual(item['account_state'], 'active')
+        self.assertIn('appointment_count', item)
+
+    def test_agent_citizen_update_accepts_email_mfa_confirmation(self):
+        agent = User.objects.create_user(
+            email='agent-mfa@example.com', password='StrongPass!2026',
+            role=User.Role.AGENT, email_verified=True, mfa_enabled=True,
+            mfa_secret_encrypted=encrypt_secret('JBSWY3DPEHPK3PXP'),
+        )
+        self.auth(build_refresh_token(agent, remember=False))
+        action = f'/api/agent/citizens/{self.user.pk}/'
+        sent = self.client.post(reverse('users:mfa-sensitive-email-send'), {'action': action}, format='json')
+        self.assertEqual(sent.status_code, 200, sent.data)
+        response = self.client.patch(
+            reverse('users:agent-citizen', args=[self.user.pk]),
+            {
+                'district': 'Nord',
+                'reason': 'Correction demandée au guichet',
+                'current_password': 'StrongPass!2026',
+                'email_challenge_id': sent.data['email_challenge_id'],
+                'email_code': self.code(),
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.district, 'Nord')
 
     def test_citizen_cannot_access_agent_administration(self):
         self.assertEqual(self.client.get(reverse('users:agent-citizens')).status_code, 403)

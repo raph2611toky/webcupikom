@@ -4,6 +4,8 @@ from django.urls import path
 from .views import (
     AdminAppointmentDetailView,
     AdminAppointmentListView,
+    AdminAuditDetailView,
+    AdminAuditListView,
     AdminContactMessageDetailView,
     AdminContactMessageListView,
     AdminDashboardView,
@@ -21,9 +23,9 @@ from .views import (
     AdminUserListCreateView,
     AgentAssigneeListView,
     AgentAppointmentDetailView,
+    AgentAuditDetailView,
+    AgentAuditListView,
     AgentAppointmentListView,
-    AgentCitizenDetailView,
-    AgentCitizenListView,
     AgentContactMessageDetailView,
     AgentContactMessageListView,
     AgentDashboardView,
@@ -98,6 +100,8 @@ urlpatterns = [
 
     # Agent operational space
     path("agent/dashboard/", AgentDashboardView.as_view(), name="agent-dashboard"),
+    path("agent/audit/", AgentAuditListView.as_view(), name="agent-audit-list"),
+    path("agent/audit/<int:pk>/", AgentAuditDetailView.as_view(), name="agent-audit-detail"),
     path("agent/notifications/", AgentNotificationCreateView.as_view(), name="agent-notification-create"),
     path("agent/appointments/", AgentAppointmentListView.as_view(), name="agent-appointment-list"),
     path("agent/appointments/<str:reference>/", AgentAppointmentDetailView.as_view(), name="agent-appointment-detail"),
@@ -105,14 +109,14 @@ urlpatterns = [
     path("agent/requests/summary/", AgentRequestSummaryView.as_view(), name="agent-request-summary"),
     path("agent/requests/<str:reference>/timeline/", AgentRequestTimelineView.as_view(), name="agent-request-timeline"),
     path("agent/requests/<str:reference>/", AgentRequestDetailView.as_view(), name="agent-request-detail"),
-    path("agent/citizens/", AgentCitizenListView.as_view(), name="agent-citizen-list"),
-    path("agent/citizens/<int:pk>/", AgentCitizenDetailView.as_view(), name="agent-citizen-detail"),
     path("agent/assignees/", AgentAssigneeListView.as_view(), name="agent-assignee-list"),
     path("agent/contact-messages/", AgentContactMessageListView.as_view(), name="agent-contact-list"),
     path("agent/contact-messages/<str:reference>/", AgentContactMessageDetailView.as_view(), name="agent-contact-detail"),
 
     # Admin API. Deliberately separate from Django /admin/.
     path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
+    path("admin/audit/", AdminAuditListView.as_view(), name="admin-audit-list"),
+    path("admin/audit/<int:pk>/", AdminAuditDetailView.as_view(), name="admin-audit-detail"),
     path("admin/users/", AdminUserListCreateView.as_view(), name="admin-user-list"),
     path("admin/users/<int:pk>/", AdminUserDetailView.as_view(), name="admin-user-detail"),
     path("admin/services/", AdminServiceListCreateView.as_view(), name="admin-service-list"),

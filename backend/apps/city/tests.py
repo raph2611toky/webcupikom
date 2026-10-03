@@ -17,6 +17,7 @@ from .models import (
     CitizenRequest,
     ContactMessage,
     MunicipalService,
+    StaffAuditEvent,
 )
 
 
@@ -67,6 +68,31 @@ class TerraNovaRoleApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(ContactMessage.objects.count(), 1)
 
+    def test_role_boundaries_keep_agent_and_admin_spaces_separate(self):
+        self.client.force_authenticate(self.citizen)
+        self.assertEqual(self.client.get(reverse("city:agent-dashboard")).status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.get(reverse("city:admin-dashboard")).status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(self.agent)
+        self.assertEqual(self.client.get(reverse("city:agent-dashboard")).status_code, status.HTTP_200_OK)
+        self.assertEqual(self.client.get(reverse("city:admin-dashboard")).status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(self.admin)
+        self.assertEqual(self.client.get(reverse("city:admin-dashboard")).status_code, status.HTTP_200_OK)
+
+    def test_agent_dashboard_exposes_workload_and_capabilities(self):
+        CitizenRequest.objects.create(
+            citizen=self.citizen, service=self.service, title="Dossier", description="À traiter"
+        )
+        self.client.force_authenticate(self.agent)
+        response = self.client.get(reverse("city:agent-dashboard"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["workspace"]["role"], User.Role.AGENT)
+        self.assertIn("my_work", response.data)
+        self.assertIn("needs_agent_action", response.data["requests"])
+        self.assertIn("recent_activity", response.data)
+        self.assertFalse(response.data["workspace"]["capabilities"]["full_administration"])
+
     def test_agent_can_read_contact_but_citizen_cannot(self):
         ContactMessage.objects.create(
             name="Lina Nova",
@@ -102,6 +128,13 @@ class TerraNovaRoleApiTests(APITestCase):
                 user=self.citizen, related_request=item
             ).exists()
         )
+        audit = StaffAuditEvent.objects.filter(
+            actor=self.agent, action="request.update", resource_reference=item.reference
+        ).latest("created_at")
+        self.assertEqual(audit.changes["status"]["to"], CitizenRequest.Status.IN_PROGRESS)
+        audit_response = self.client.get(reverse("city:agent-audit-list"), {"resource_id": item.pk})
+        self.assertEqual(audit_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(audit_response.data["count"], 1)
 
     def test_admin_user_directory_is_admin_only(self):
         self.client.force_authenticate(self.agent)
@@ -338,6 +371,12 @@ class TerraNovaRoleApiTests(APITestCase):
         appointment.refresh_from_db()
         self.assertEqual(appointment.status, CitizenAppointment.Status.CONFIRMED)
         self.assertEqual(appointment.location, "Guichet 4")
+        self.assertEqual(response.data["preparation"]["location"], "Guichet 4")
+        self.assertEqual(response.data["slot"]["duration_minutes"], 45)
+        self.assertTrue(response.data["can_cancel"])
+        self.assertTrue(StaffAuditEvent.objects.filter(
+            actor=self.agent, action="appointment.update", resource_reference=appointment.reference
+        ).exists())
         self.assertTrue(
             CitizenNotification.objects.filter(
                 user=self.citizen,
@@ -346,6 +385,31 @@ class TerraNovaRoleApiTests(APITestCase):
                 sender=self.agent,
             ).exists()
         )
+
+    def test_agent_audit_hides_admin_only_events(self):
+        StaffAuditEvent.objects.create(
+            actor=self.admin, actor_role=User.Role.ADMIN, action="admin.user_update",
+            resource_type="user", resource_id=str(self.citizen.pk),
+            resource_reference=self.citizen.email, summary="Modification admin",
+            visibility=StaffAuditEvent.Visibility.ADMIN,
+        )
+        StaffAuditEvent.objects.create(
+            actor=self.agent, actor_role=User.Role.AGENT, action="request.update",
+            resource_type="request", resource_id="1", resource_reference="NT-R-X",
+            summary="Modification dossier", visibility=StaffAuditEvent.Visibility.STAFF,
+        )
+        self.client.force_authenticate(self.agent)
+        response = self.client.get(reverse("city:agent-audit-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        actions = {item["action"] for item in response.data["results"]}
+        self.assertIn("request.update", actions)
+        self.assertNotIn("admin.user_update", actions)
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(reverse("city:admin-audit-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        actions = {item["action"] for item in response.data["results"]}
+        self.assertIn("admin.user_update", actions)
 
 
 class SchemaGenerationSafetyTests(APITestCase):

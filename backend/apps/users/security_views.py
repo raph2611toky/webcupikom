@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Count, Q
 from django.utils import timezone
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
@@ -47,11 +48,20 @@ class OTPLoginSendSerializer(serializers.Serializer):
 
 
 class OTPSendSensitiveSerializer(serializers.Serializer):
-    action = serializers.ChoiceField(choices=[
+    action = serializers.CharField(max_length=255)
+
+    STATIC_ACTIONS = {
         '/api/account/change-password/', '/api/account/set-password/',
         '/api/account/change-email/', '/api/account/', '/api/account/mfa/disable/',
         '/api/account/mfa/recovery-codes/regenerate/',
-    ])
+    }
+
+    def validate_action(self, value):
+        import re
+        action = value.strip()
+        if action in self.STATIC_ACTIONS or re.fullmatch(r'/api/agent/citizens/[0-9]+/', action):
+            return action
+        raise serializers.ValidationError('Action sensible non autorisée pour un OTP email.')
 
 
 class SessionSerializer(serializers.ModelSerializer):
@@ -239,10 +249,43 @@ class CSRFTokenView(SecurityAPIView):
 
 
 class CitizenAdminSerializer(serializers.ModelSerializer):
+    display_name = serializers.SerializerMethodField()
+    account_state = serializers.SerializerMethodField()
+    profile_completed = serializers.SerializerMethodField()
+    request_count = serializers.SerializerMethodField()
+    appointment_count = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'phone_number', 'district', 'is_active']
-        read_only_fields = ['id', 'email']
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'display_name', 'phone_number',
+            'profession', 'address', 'habitat', 'district', 'sector', 'street',
+            'building', 'apartment', 'locale', 'email_verified', 'is_active',
+            'account_state', 'profile_completed', 'request_count', 'appointment_count',
+            'date_joined', 'last_login', 'updated_at',
+        ]
+        read_only_fields = fields
+
+    def get_display_name(self, obj):
+        return obj.get_full_name().strip() or obj.email
+
+    def get_account_state(self, obj):
+        if not obj.is_active:
+            return 'inactive'
+        if not obj.email_verified:
+            return 'email_unverified'
+        return 'active'
+
+    def get_profile_completed(self, obj):
+        return obj.registration_profile_completed_at is not None
+
+    def get_request_count(self, obj):
+        value = getattr(obj, 'agent_request_count', None)
+        return value if value is not None else obj.citizen_requests.count()
+
+    def get_appointment_count(self, obj):
+        value = getattr(obj, 'agent_appointment_count', None)
+        return value if value is not None else obj.citizen_appointments.count()
 
 
 class CitizenAdminPageSerializer(serializers.Serializer):
@@ -256,28 +299,82 @@ class CitizenAdminUpdateSerializer(SensitiveActionAuthSerializer):
     first_name = serializers.CharField(required=False, max_length=150)
     last_name = serializers.CharField(required=False, max_length=150)
     phone_number = serializers.CharField(required=False, max_length=32, allow_blank=True)
+    profession = serializers.CharField(required=False, max_length=120, allow_blank=True)
+    address = serializers.CharField(required=False, max_length=255, allow_blank=True)
+    habitat = serializers.CharField(required=False, max_length=120, allow_blank=True)
     district = serializers.CharField(required=False, max_length=120, allow_blank=True)
+    sector = serializers.CharField(required=False, max_length=120, allow_blank=True)
+    street = serializers.CharField(required=False, max_length=160, allow_blank=True)
+    building = serializers.CharField(required=False, max_length=120, allow_blank=True)
+    apartment = serializers.CharField(required=False, max_length=80, allow_blank=True)
+    locale = serializers.CharField(required=False, max_length=12, allow_blank=False)
     is_active = serializers.BooleanField(required=False)
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=500, write_only=True)
+
+    editable_fields = (
+        'first_name', 'last_name', 'phone_number', 'profession', 'address', 'habitat',
+        'district', 'sector', 'street', 'building', 'apartment', 'locale', 'is_active',
+    )
 
     def validate(self, attrs):
         forbidden = set(self.initial_data) - set(self.fields)
         if forbidden:
             raise serializers.ValidationError({key: 'Champ non autorisé.' for key in forbidden})
-        return self.validate_authentication_fields(attrs)
+        attrs = self.validate_authentication_fields(attrs)
+        locale = attrs.get('locale')
+        if locale:
+            attrs['locale'] = locale.strip().lower()[:12]
+        return attrs
 
 
 class AgentCitizenListView(SecurityAPIView):
     permission_classes = [IsAuthenticatedAgent | IsAuthenticatedAdmin]
 
-    @swagger_auto_schema(responses=responses(CitizenAdminPageSerializer), tags=['Comptes citoyens — agents'])
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('search', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Recherche par nom, email, téléphone, quartier ou adresse.'),
+            openapi.Parameter('active', openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, description='Filtre sur les comptes actifs/inactifs.'),
+            openapi.Parameter('email_verified', openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, description='Filtre sur la vérification de l’adresse email.'),
+            openapi.Parameter('district', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Filtre exact sur le quartier.'),
+            openapi.Parameter('page', openapi.IN_QUERY, type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, type=openapi.TYPE_INTEGER),
+        ],
+        responses=responses(CitizenAdminPageSerializer),
+        tags=['Comptes citoyens — agents'],
+    )
     def get(self, request):
         from rest_framework.pagination import PageNumberPagination
-        queryset = User.objects.filter(role=User.Role.CITIZEN, is_superuser=False).order_by('id')
-        search = request.query_params.get('search', '')[:150]
+        queryset = User.objects.filter(role=User.Role.CITIZEN, is_superuser=False).annotate(
+            agent_request_count=Count('citizen_requests', distinct=True),
+            agent_appointment_count=Count('citizen_appointments', distinct=True),
+        ).order_by('-date_joined')
+        search = request.query_params.get('search', '')[:150].strip()
+        active = (request.query_params.get('active') or '').strip().lower()
+        verified = (request.query_params.get('email_verified') or '').strip().lower()
+        district = (request.query_params.get('district') or '').strip()
         if search:
-            queryset = queryset.filter(email__icontains=search)
+            queryset = queryset.filter(
+                Q(email__icontains=search)
+                | Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(phone_number__icontains=search)
+                | Q(district__icontains=search)
+                | Q(address__icontains=search)
+            )
+        if active in {'1', 'true', 'yes'}:
+            queryset = queryset.filter(is_active=True)
+        elif active in {'0', 'false', 'no'}:
+            queryset = queryset.filter(is_active=False)
+        if verified in {'1', 'true', 'yes'}:
+            queryset = queryset.filter(email_verified=True)
+        elif verified in {'0', 'false', 'no'}:
+            queryset = queryset.filter(email_verified=False)
+        if district:
+            queryset = queryset.filter(district__iexact=district)
         pagination = PageNumberPagination()
         pagination.page_size = 50
+        pagination.page_size_query_param = 'page_size'
+        pagination.max_page_size = 100
         page = pagination.paginate_queryset(queryset, request, view=self)
         return no_store(pagination.get_paginated_response(CitizenAdminSerializer(page, many=True).data))
 
@@ -288,7 +385,11 @@ class AgentCitizenDetailView(SecurityAPIView):
     def citizen(self, pk, *, lock=False):
         from django.shortcuts import get_object_or_404
         queryset = User.objects.select_for_update() if lock else User.objects
-        return get_object_or_404(queryset, pk=pk, role=User.Role.CITIZEN, is_superuser=False)
+        queryset = queryset.filter(role=User.Role.CITIZEN, is_superuser=False).annotate(
+            agent_request_count=Count('citizen_requests', distinct=True),
+            agent_appointment_count=Count('citizen_appointments', distinct=True),
+        )
+        return get_object_or_404(queryset, pk=pk)
 
     @swagger_auto_schema(responses=responses(CitizenAdminSerializer), tags=['Comptes citoyens — agents'])
     def get(self, request, pk):
@@ -298,6 +399,8 @@ class AgentCitizenDetailView(SecurityAPIView):
     def patch(self, request, pk):
         from .views import verify_sensitive_action_identity
         from .models import SecurityEvent
+        from apps.city.services.audit import record_staff_audit
+
         serializer = CitizenAdminUpdateSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
@@ -307,19 +410,44 @@ class AgentCitizenDetailView(SecurityAPIView):
             verify_sensitive_action_identity(actor, serializer.validated_data)
             citizen = self.citizen(pk, lock=True)
             changes = {}
-            for field in ('first_name', 'last_name', 'phone_number', 'district', 'is_active'):
+            audit_changes = {}
+            for field in CitizenAdminUpdateSerializer.editable_fields:
                 if field in serializer.validated_data:
                     value = serializer.validated_data[field]
-                    if value != getattr(citizen, field):
+                    previous = getattr(citizen, field)
+                    if value != previous:
                         changes[field] = value
                         setattr(citizen, field, value)
-            citizen.save(update_fields=[*changes, 'updated_at'])
+                        if field == 'is_active':
+                            audit_changes[field] = {'from': previous, 'to': value}
+                        else:
+                            audit_changes.setdefault('fields', []).append(field)
+            if changes:
+                citizen.save(update_fields=[*changes, 'updated_at'])
             # Invalidate before a subsequent reactivation can revive old sessions.
             if 'is_active' in changes:
                 revoke_all(citizen, 'agent_status_change')
-            SecurityEvent.objects.create(actor=actor, subject=citizen,
-                kind='agent_citizen_update', details={'fields': list(changes)})
-        return no_store(Response(CitizenAdminSerializer(citizen).data))
+            reason = (serializer.validated_data.get('reason') or '').strip()
+            SecurityEvent.objects.create(
+                actor=actor,
+                subject=citizen,
+                kind='agent_citizen_update',
+                details={'fields': list(changes)},
+            )
+            if changes:
+                record_staff_audit(
+                    actor=actor,
+                    action='citizen.account_update',
+                    resource_type='citizen',
+                    resource_id=citizen.pk,
+                    resource_reference=citizen.email,
+                    subject_user=citizen,
+                    summary='Compte citoyen mis à jour',
+                    changes={**audit_changes, 'reason': reason},
+                    request=request,
+                )
+        refreshed = self.citizen(pk)
+        return no_store(Response(CitizenAdminSerializer(refreshed).data))
 
 
 class SecurityEventSerializer(serializers.ModelSerializer):

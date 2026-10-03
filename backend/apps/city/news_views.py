@@ -15,6 +15,7 @@ from helpers.permissions import IsAuthenticatedAdmin
 from .models import NewsArticle
 from .news_serializers import PublicationSerializer, PublicationAdminSerializer, NewsFilterSerializer, NewsCoverUploadSerializer, NewsDeliveryStatusSerializer
 from .services.news import active_news, ordered_news
+from .services.audit import record_staff_audit
 from .report_api import ReportPagination
 
 
@@ -89,7 +90,14 @@ class AdminNewsListCreateView(PublicationHeaders, generics.ListCreateAPIView):
 
     @transaction.atomic
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        instance = serializer.save(author=self.request.user)
+        record_staff_audit(
+            actor=self.request.user, action="publication.create", resource_type="publication",
+            resource_id=instance.pk, resource_reference=instance.slug,
+            summary="Publication municipale créée",
+            changes={"publication_type": instance.publication_type, "is_published": instance.is_published},
+            request=self.request,
+        )
 
 
 class AdminNewsDetailView(PublicationHeaders, generics.RetrieveUpdateDestroyAPIView):
@@ -110,9 +118,30 @@ class AdminNewsDetailView(PublicationHeaders, generics.RetrieveUpdateDestroyAPIV
         self.queryset = NewsArticle.objects.select_for_update()
         return super().destroy(request, *args, **kwargs)
 
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        tracked = ('title', 'publication_type', 'severity', 'is_published', 'published_at', 'expires_at', 'is_important', 'service_id')
+        previous = {field: getattr(instance, field) for field in tracked}
+        instance = serializer.save()
+        changed = [field for field in tracked if previous[field] != getattr(instance, field)]
+        if changed:
+            record_staff_audit(
+                actor=self.request.user, action="publication.update", resource_type="publication",
+                resource_id=instance.pk, resource_reference=instance.slug,
+                summary="Publication municipale modifiée", changes={"fields": changed},
+                request=self.request,
+            )
+
     def perform_destroy(self, instance):
+        was_published = instance.is_published
         instance.is_published = False
         instance.save(update_fields=['is_published', 'updated_at'])
+        record_staff_audit(
+            actor=self.request.user, action="publication.unpublish", resource_type="publication",
+            resource_id=instance.pk, resource_reference=instance.slug,
+            summary="Publication municipale dépubliée",
+            changes={"is_published": {"from": was_published, "to": False}}, request=self.request,
+        )
 
 
 class NewsCoverView(PublicationHeaders, APIView):
@@ -161,6 +190,12 @@ class AdminNewsCoverView(PublicationHeaders, APIView):
                 storage, saved = article.cover_image.storage, article.cover_image.name
                 article.cover_alt = serializer.validated_data['cover_alt']
                 article.save(update_fields=['cover_image', 'cover_alt', 'updated_at'])
+                record_staff_audit(
+                    actor=request.user, action="publication.cover_update", resource_type="publication",
+                    resource_id=article.pk, resource_reference=article.slug,
+                    summary="Illustration de publication mise à jour", changes={"cover_image": "updated"},
+                    request=request,
+                )
                 if old:
                     transaction.on_commit(lambda: storage.delete(old), robust=True)
         except Exception:
@@ -175,6 +210,12 @@ class AdminNewsCoverView(PublicationHeaders, APIView):
         article.cover_image = ''
         article.cover_alt = ''
         article.save(update_fields=['cover_image', 'cover_alt', 'updated_at'])
+        record_staff_audit(
+            actor=request.user, action="publication.cover_delete", resource_type="publication",
+            resource_id=article.pk, resource_reference=article.slug,
+            summary="Illustration de publication supprimée", changes={"cover_image": "removed"},
+            request=request,
+        )
         if old: transaction.on_commit(lambda: storage.delete(old), robust=True)
         return Response(status=204)
 

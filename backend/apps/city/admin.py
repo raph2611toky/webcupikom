@@ -16,6 +16,7 @@ from .models import (
     ContactMessage,
     MunicipalService,
     NewsArticle,
+    StaffAuditEvent,
     WebCupRequestSnapshot,
     WebCupSyncState,
 )
@@ -263,3 +264,31 @@ class WebCupRequestSnapshotAdmin(admin.ModelAdmin):
 class WebCupSyncStateAdmin(admin.ModelAdmin):
     list_display = ("key", "api_version", "last_success_at", "updated_at")
     readonly_fields = ("updated_at",)
+
+
+@admin.register(StaffAuditEvent)
+class StaffAuditEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at", "actor", "actor_role", "action", "resource_type",
+        "resource_reference", "visibility",
+    )
+    list_filter = ("visibility", "actor_role", "resource_type", "action", "created_at")
+    search_fields = (
+        "actor__email", "actor__first_name", "actor__last_name", "summary",
+        "resource_reference", "resource_id",
+    )
+    readonly_fields = (
+        "actor", "actor_role", "action", "resource_type", "resource_id",
+        "resource_reference", "subject_user", "summary", "changes", "metadata",
+        "visibility", "ip_address", "created_at",
+    )
+    ordering = ("-created_at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

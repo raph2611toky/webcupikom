@@ -420,6 +420,52 @@ class CitizenNotification(models.Model):
         return f"{self.user_id} — {self.title}"
 
 
+class StaffAuditEvent(models.Model):
+    class Visibility(models.TextChoices):
+        STAFF = "staff", "Agents et administrateurs"
+        ADMIN = "admin", "Administrateurs uniquement"
+
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="staff_audit_events",
+    )
+    actor_role = models.CharField(max_length=16, blank=True)
+    action = models.CharField(max_length=80, db_index=True)
+    resource_type = models.CharField(max_length=40, db_index=True)
+    resource_id = models.CharField(max_length=80, blank=True, db_index=True)
+    resource_reference = models.CharField(max_length=120, blank=True, db_index=True)
+    subject_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="staff_audit_subject_events",
+    )
+    summary = models.CharField(max_length=300)
+    changes = models.JSONField(default=dict, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    visibility = models.CharField(
+        max_length=16, choices=Visibility.choices, default=Visibility.STAFF, db_index=True
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        indexes = [
+            models.Index(fields=("resource_type", "resource_id", "created_at"), name="city_audit_resource_idx"),
+            models.Index(fields=("actor", "created_at"), name="city_audit_actor_idx"),
+        ]
+        verbose_name = "trace d'activité agent"
+        verbose_name_plural = "traces d'activité agents"
+
+    def __str__(self):
+        return f"{self.action} — {self.resource_reference or self.resource_id}"
+
+
 class WebCupRequestSnapshot(models.Model):
     external_id = models.PositiveIntegerField(null=True, blank=True)
     request_code = models.CharField(max_length=32, unique=True)
