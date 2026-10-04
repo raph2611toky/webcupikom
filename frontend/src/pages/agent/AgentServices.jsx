@@ -5,8 +5,6 @@ import { ServiceAvailabilityBadge } from "../../components/ui/ServiceAvailabilit
 import ServiceAvailabilityEditor from "../../components/ui/ServiceAvailabilityEditor.jsx";
 import { getServices } from "../../api/services.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 export default function AgentServices(){
   const [items,setItems]=useState([]);

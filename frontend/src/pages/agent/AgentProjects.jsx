@@ -3,8 +3,6 @@ import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getMunicipalProjects } from "../../api/projects.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/projects.css";
 
 const STATUS={planned:"Planifié",in_progress:"En cours",paused:"En pause",completed:"Terminé",cancelled:"Annulé"};
 

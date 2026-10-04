@@ -3,8 +3,6 @@ import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { createAdminNews, deleteAdminNews, getAdminNews, getAdminNewsItem, unpublishAdminNews, updateAdminNews } from "../../api/news.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const EMPTY={
   title:"",

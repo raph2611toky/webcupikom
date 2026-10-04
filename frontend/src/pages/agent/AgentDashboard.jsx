@@ -9,8 +9,6 @@ import { getAgentAudit, normalizeAuditEvent } from "../../api/audit.js";
 import { getCitizensPage } from "../../api/citizens.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 function pad(value){return String(value).padStart(2,"0")}
 function localDateKey(date=new Date()){return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`}

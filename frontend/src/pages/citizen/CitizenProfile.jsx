@@ -5,8 +5,6 @@ import { useAuth } from "../../auth/AuthContext.jsx";
 import { updateProfile } from "../../api/account.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { getLocale, setLocale, useLocale } from "../../utils/i18n.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const COPY={
   fr:{eyebrow:"Compte citoyen",title:"Mon profil",save:"Enregistrer",saving:"Enregistrement…",edit:"Modifier",updated:"Profil mis à jour.",error:"Impossible de mettre à jour le profil.",account:"Compte",citizen:"Compte citoyen",complete:"Profil complété",identity:"Identité",personal:"Informations personnelles",first:"Prénom",last:"Nom",profession:"Profession",gender:"Genre",birth:"Date de naissance",female:"Femme",male:"Homme",other:"Autre",prefer:"Préfère ne pas préciser",contact:"Contact",reach:"Comment vous joindre",email:"Email",phone:"Téléphone",addressBlock:"Adresse",addressTitle:"Résidence et secteur",address:"Adresse",habitat:"Habitat / résidence",district:"Quartier / district",sector:"Secteur",street:"Rue",building:"Bâtiment",apartment:"Appartement",preferences:"Préférences",experience:"Votre expérience",language:"Langue",notifications:"Notifications",enabled:"Activées",system:"Informations système",citizenId:"Identifiant citoyen",verified:"Email vérifié",connection:"Connexion",status:"Statut",active:"Actif",yes:"Oui",no:"Non"},

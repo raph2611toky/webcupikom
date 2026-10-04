@@ -11,8 +11,6 @@ import {
   updateAdminMunicipalProject,
 } from "../../api/projects.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/projects.css";
 
 const STATUS={planned:"Planifié",in_progress:"En cours",paused:"En pause",completed:"Terminé",cancelled:"Annulé"};
 const IDEA_STATUS={submitted:"Reçue",under_review:"À l’étude",accepted:"Acceptée",rejected:"Refusée",implemented:"Mise en œuvre"};

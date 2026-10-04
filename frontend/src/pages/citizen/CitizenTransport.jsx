@@ -4,8 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getCityTransport, getTransportStop, getTransportStops } from "../../api/transport.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/transport-v87.css";
 
 const COPY = {
   fr: { title:"Transport", eyebrow:"Espace citoyen", subtitle:"Lignes, arrêts, horaires et informations pratiques de Nova Terra.", search:"Rechercher un arrêt", allDistricts:"Tous les quartiers", allLines:"Toutes les lignes", nearby:"Autour de moi", citywide:"Toute la ville", stops:"Arrêts", lines:"Lignes", near:"À proximité", timetable:"Horaires", practical:"Infos pratiques", empty:"Aucun arrêt ne correspond à ces critères.", open:"Voir l'arrêt", distance:"Distance", address:"Adresse", district:"Quartier", close:"Fermer", locateError:"Impossible d’utiliser votre position. Vous pouvez toujours consulter tous les arrêts de la ville.", loading:"Chargement du transport…" },

@@ -5,8 +5,6 @@ import { ServiceAvailabilityBadge } from "../../components/ui/ServiceAvailabilit
 import ServiceAvailabilityEditor from "../../components/ui/ServiceAvailabilityEditor.jsx";
 import { createService, getServices, updateService } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const EMPTY={icon:"◇",name:"",category:"Administration",shortDescription:"",description:"",openingHours:"",phone:"",email:"",address:"",actions:[],requiredDocuments:[],faq:[],published:true,sortOrder:0,isFeatured:false,priorityOrder:0};
 

@@ -6,9 +6,6 @@ import { getApiErrorMessage } from "../../api/auth.js";
 import { CATEGORY_SERVICE, REQUEST_CATEGORIES, REQUEST_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
-import "../../styles/pages/citizen-requests.css";
 
 const filters = ["Toutes", "Envoyée", "En attente", "En traitement", "Action requise", "Terminée"];
 const emptyDraft = { type: "question", category: "État civil", subject: "", message: "", location: "" };
@@ -244,7 +241,7 @@ export default function CitizenRequests() {
           <section className="portal-card request-export-panel" aria-labelledby="request-export-title">
             <div className="request-export-panel__icon" aria-hidden="true"><span>⇩</span></div>
             <div className="request-export-panel__copy">
-              <span className="section-label">F56 · EXPORT</span>
+              <span className="section-label">EXPORT</span>
               <h3 id="request-export-title">{copy.exportTitle}</h3>
               <p className="detail-copy">{copy.exportText}</p>
             </div>

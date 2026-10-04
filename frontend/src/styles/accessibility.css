@@ -396,7 +396,46 @@ html[data-contrast="high"] body * {
 }
 
 /* Surfaces principales : noir + bordures blanches franches. */
-html[data-contrast="high"] .public-header, html[data-contrast="high"] .portal-topbar, html[data-contrast="high"] .portal-card, html[data-contrast="high"] .toolbar-card, html[data-contrast="high"] .portal-modal, html[data-contrast="high"] .a11y-panel, html[data-contrast="high"] .a11y-trigger, html[data-contrast="high"] .news-visual-card, html[data-contrast="high"] .citizen-news-card, html[data-contrast="high"] .article-visual, html[data-contrast="high"] .citizen-news-detail, html[data-contrast="high"] .contact-form-panel, html[data-contrast="high"] .smart-request-panel, html[data-contrast="high"] .metric-grid > article, html[data-contrast="high"] .quick-services button, html[data-contrast="high"] .request-stack > button, html[data-contrast="high"] .toggle-line, html[data-contrast="high"] .setting-line, html[data-contrast="high"] .agent-queue button, html[data-contrast="high"] .activity-feed > div, html[data-contrast="high"] .citizen-service-grid article, html[data-contrast="high"] .service-card, html[data-contrast="high"] .info-panel, html[data-contrast="high"] .management-row, html[data-contrast="high"] .profile-hero, html[data-contrast="high"] .request-studio-grid--extras, html[data-contrast="high"] .management-image-upload, html[data-contrast="high"] .management-news-thumb, html[data-contrast="high"] .appointment-redesign-header, html[data-contrast="high"] .appointment-mini-calendar, html[data-contrast="high"] .appointment-summary-empty, html[data-contrast="high"] .appointment-reminder-modern, html[data-contrast="high"] .appointment-prepare-modern, html[data-contrast="high"] .appointment-upcoming-card{
+html[data-contrast="high"] .public-header,
+html[data-contrast="high"] .portal-topbar,
+html[data-contrast="high"] .portal-card,
+html[data-contrast="high"] .toolbar-card,
+html[data-contrast="high"] .portal-modal,
+html[data-contrast="high"] .a11y-panel,
+html[data-contrast="high"] .a11y-trigger,
+html[data-contrast="high"] .news-visual-card,
+html[data-contrast="high"] .citizen-news-card,
+html[data-contrast="high"] .article-visual,
+html[data-contrast="high"] .citizen-news-detail,
+html[data-contrast="high"] .contact-form-panel,
+html[data-contrast="high"] .smart-request-panel,
+html[data-contrast="high"] .metric-grid > article,
+html[data-contrast="high"] .quick-services button,
+html[data-contrast="high"] .request-stack > button,
+html[data-contrast="high"] .notification-list > button,
+html[data-contrast="high"] .toggle-line,
+html[data-contrast="high"] .setting-line,
+html[data-contrast="high"] .agent-queue button,
+html[data-contrast="high"] .activity-feed > div,
+html[data-contrast="high"] .citizen-service-grid article,
+html[data-contrast="high"] .service-card,
+html[data-contrast="high"] .info-panel,
+html[data-contrast="high"] .management-row,
+html[data-contrast="high"] .profile-hero,
+html[data-contrast="high"] .request-studio-grid--extras,
+html[data-contrast="high"] .management-image-upload,
+html[data-contrast="high"] .management-news-thumb,
+html[data-contrast="high"] .appointment-redesign-header,
+html[data-contrast="high"] .appointment-mini-calendar,
+html[data-contrast="high"] .appointment-summary-empty,
+html[data-contrast="high"] .appointment-reminder-modern,
+html[data-contrast="high"] .appointment-prepare-modern,
+html[data-contrast="high"] .appointment-upcoming-card,
+html[data-contrast="high"] .notification-overview > div,
+html[data-contrast="high"] .notification-detail-panel,
+html[data-contrast="high"] .notification-list--backend,
+html[data-contrast="high"] .notification-empty-state,
+html[data-contrast="high"] .notification-loading-state {
   background: #000000 !important;
   color: #ffffff !important;
   border-color: #ffffff !important;
@@ -554,16 +593,30 @@ html[data-contrast="high"] textarea::placeholder {
 }
 
 /* Tableaux, séparateurs et statuts. */
-html[data-contrast="high"] .accessible-table, html[data-contrast="high"] .accessible-table th, html[data-contrast="high"] .accessible-table td, html[data-contrast="high"] .request-stack > button, html[data-contrast="high"] .agent-queue button, html[data-contrast="high"] .detail-list > div, html[data-contrast="high"] .account-facts > div{
+html[data-contrast="high"] .accessible-table,
+html[data-contrast="high"] .accessible-table th,
+html[data-contrast="high"] .accessible-table td,
+html[data-contrast="high"] .request-stack > button,
+html[data-contrast="high"] .notification-list > button,
+html[data-contrast="high"] .agent-queue button,
+html[data-contrast="high"] .detail-list > div,
+html[data-contrast="high"] .account-facts > div,
+html[data-contrast="high"] .notification-detail-facts > div {
   color: #ffffff !important;
   border-color: #ffffff !important;
 }
 
-html[data-contrast="high"] .accessible-table tbody tr:hover{
+html[data-contrast="high"] .accessible-table tbody tr:hover,
+html[data-contrast="high"] .notification-list--backend > button:hover,
+html[data-contrast="high"] .notification-list--backend > button.is-selected {
   background: #171700 !important;
 }
 
-html[data-contrast="high"] .status-pill, html[data-contrast="high"] .priority-pill{
+html[data-contrast="high"] .status-pill,
+html[data-contrast="high"] .priority-pill,
+html[data-contrast="high"] .notification-type-badge,
+html[data-contrast="high"] .notification-event-status,
+html[data-contrast="high"] .notification-read-state {
   background: #000000 !important;
   color: #ffffff !important;
   border: 2px solid #ffffff !important;
@@ -639,11 +692,25 @@ html[data-contrast="high"] .appointment-time-grid button.is-unavailable {
 }
 
 /* Notifications backend : accents jaunes, contenu blanc sur noir. */
+html[data-contrast="high"] .notification-type-icon,
+html[data-contrast="high"] .notification-detail-icon {
+  background: #000000 !important;
+  color: #f2d34b !important;
+  border: 2px solid #f2d34b !important;
+}
 
+html[data-contrast="high"] .notification-new-dot {
+  background: #f2d34b !important;
+  box-shadow: 0 0 0 3px #000000 !important;
+}
 
-
-
-
+html[data-contrast="high"] .notification-main p,
+html[data-contrast="high"] .notification-meta span,
+html[data-contrast="high"] .notification-detail-message,
+html[data-contrast="high"] .notification-empty-state span,
+html[data-contrast="high"] .notification-overview small {
+  color: #ffffff !important;
+}
 
 html[data-contrast="high"] .portal-notification-bell > b {
   background: #f2d34b !important;

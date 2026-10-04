@@ -4,8 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getAdminContactMessages } from "../../api/contact.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 export default function AdminMessages(){
   const [items,setItems]=useState([]),[query,setQuery]=useState(''),[filter,setFilter]=useState('all'),[loading,setLoading]=useState(true),[error,setError]=useState('');
   useEffect(()=>{let mounted=true;getAdminContactMessages().then(data=>mounted&&setItems(data)).catch(e=>mounted&&setError(getApiErrorMessage(e,"Impossible de charger les messages."))).finally(()=>mounted&&setLoading(false));return()=>{mounted=false}},[]);

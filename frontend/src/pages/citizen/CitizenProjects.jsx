@@ -5,8 +5,6 @@ import { getCitizenIdeas, getMunicipalProjects, submitCitizenIdea } from "../../
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/projects.css";
 
 const STATUS = {
   planned: "Planifié",

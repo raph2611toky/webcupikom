@@ -9,9 +9,6 @@ import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import { useDataMode } from "../../utils/useDataMode.js";
 import { runWhenIdle } from "../../utils/performance.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
-import "../../styles/pages/citizen-dashboard-reference.css";
 
 const DASH_COPY = {
   fr:{

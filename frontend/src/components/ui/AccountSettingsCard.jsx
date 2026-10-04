@@ -18,7 +18,6 @@ import {
   startGoogleAuth,
 } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/pages/dashboard.css";
 
 function formText(form, name, fallback = "") {
   const value = form.get(name);

@@ -5,8 +5,6 @@ import { getAgentRequestCount, getAgentRequestsPage } from "../../api/requests.j
 import { getServices } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const FLOW_FILTERS = [
   ["all","Toutes"],

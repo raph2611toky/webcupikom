@@ -5,8 +5,6 @@ import { getAdminContactMessage, updateAdminContactMessage } from "../../api/con
 import { getAssignees } from "../../api/citizens.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 export default function AdminMessageDetails({params}){
   const [item,setItem]=useState(null),[assignees,setAssignees]=useState([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
   useEffect(()=>{let mounted=true;Promise.all([getAdminContactMessage(params.id),getAssignees()]).then(([m,a])=>{if(!mounted)return;setItem(m);setAssignees(a)}).catch(e=>mounted&&setError(getApiErrorMessage(e,"Message introuvable."))).finally(()=>mounted&&setLoading(false));return()=>{mounted=false}},[params.id]);

@@ -6,8 +6,6 @@ import { deleteAccount, getMfaStatus } from "../../api/account.js";
 import { clearAccountGoogleProof, getAccountGoogleProof, getApiErrorMessage, startGoogleAuth } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const COPY = {
   fr: {

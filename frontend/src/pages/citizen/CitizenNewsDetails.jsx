@@ -4,8 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getNewsItem } from "../../api/news.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 import { useDataMode } from "../../utils/useDataMode.js";
 
 const COPY={

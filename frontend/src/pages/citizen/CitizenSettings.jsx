@@ -1,3 +1,4 @@
+import LanguageSwitcher from "../../components/ui/LanguageSwitcher.jsx";
 import { lazy, Suspense, useEffect, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
@@ -7,14 +8,12 @@ import { getCitizenContactMessages, sendContactMessage } from "../../api/contact
 import { navigate } from "../../utils/navigation.js";
 import { getDataModePreference, getPerformanceSnapshot, setDataModePreference } from "../../utils/performance.js";
 import { useDataMode } from "../../utils/useDataMode.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const AccountSettingsCard=lazy(()=>import("../../components/ui/AccountSettingsCard.jsx"));
 
 const COPY={
-  fr:{eyebrow:"Compte",title:"Paramètres",notifications:"Notifications",choose:"Choisissez ce que vous recevez",app:"Notifications dans l’application",email:"Notifications par e-mail",local:"Ces préférences visuelles restent locales tant que l’API ne fournit pas de réglage de notification dédié.",privacy:"Confidentialité",session:"Votre session",sessionText:"La session sécurisée est restaurée grâce au cookie HttpOnly du backend. Le token d’accès reste en mémoire du navigateur."},
-  en:{eyebrow:"Account",title:"Settings",notifications:"Notifications",choose:"Choose what you receive",app:"In-app notifications",email:"Email notifications",local:"These visual preferences stay local until the API provides dedicated notification settings.",privacy:"Privacy",session:"Your session",sessionText:"The secure session is restored through the backend HttpOnly cookie. The access token stays in browser memory."},
+  fr:{eyebrow:"Compte",title:"Paramètres",notifications:"Notifications",choose:"Choisissez ce que vous recevez",app:"Notifications dans l’application",email:"Notifications par e-mail",local:"Ces réglages sont une prévisualisation : ils ne modifient pas encore les notifications reçues.",privacy:"Confidentialité",session:"Votre session",sessionText:"Retrouvez vos informations et gérez la sécurité de votre compte depuis cet espace."},
+  en:{eyebrow:"Account",title:"Settings",notifications:"Notifications",choose:"Choose what you receive",app:"In-app notifications",email:"Email notifications",local:"These controls are a preview; they do not change the notifications you receive yet.",privacy:"Privacy",session:"Your session",sessionText:"Manage your information and account security from this space."},
   mg:{eyebrow:"Kaonty",title:"Fikirana",notifications:"Fampahafantarana",choose:"Safidio izay tianao horaisina",app:"Fampahafantarana ao amin'ny rindranasa",email:"Fampahafantarana amin'ny mailaka",local:"Mijanona eto amin'ity fitaovana ity ireo safidy ireo raha mbola tsy misy API manokana.",privacy:"Tsiambaratelo",session:"Ny session-nao",sessionText:"Averina amin'ny cookie HttpOnly avy amin'ny backend ny session azo antoka. Mijanona ao anaty fitadidian'ny navigateur ny access token."}
 };
 
@@ -104,6 +103,14 @@ export default function CitizenSettings(){
       </nav>
 
       {tab==="general"?<section className="settings-tab-panel settings-general-grid">
+        <article className="portal-card settings-account-summary">
+          <div className="portal-card__head"><div><span className="section-label">{locale === "en" ? "Account" : "Compte"}</span><h3>{locale === "en" ? "Your information" : "Vos informations"}</h3></div><button type="button" className="secondary-action" onClick={()=>navigate("/citizen/profile")}>{locale === "en" ? "Edit profile" : "Modifier mon profil"}</button></div>
+          <dl className="settings-account-fields">
+            <div><dt>{locale === "en" ? "Name" : "Nom"}</dt><dd>{user?.display_name || `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "—"}</dd></div>
+            <div><dt>Email</dt><dd>{user?.email || "—"}</dd></div>
+            <div><dt>{locale === "en" ? "Interface language" : "Langue de l’interface"}</dt><dd><LanguageSwitcher/></dd></div>
+          </dl>
+        </article>
         <article className="portal-card">
           <span className="section-label">{copy.notifications}</span><h3>{copy.choose}</h3>
           <Toggle label={copy.app} value={push} setValue={setPush}/>
@@ -117,7 +124,7 @@ export default function CitizenSettings(){
       </section>:null}
 
       {tab==="performance"?<section className="portal-card performance-settings-card settings-tab-panel">
-        <span className="section-label">Performance · F57 à F62</span><h3>Mode léger et appareils peu puissants</h3>
+        <span className="section-label">Préférences de chargement</span><h3>Mode léger et appareils peu puissants</h3>
         <p className="detail-copy">Nova Terra adapte le chargement aux connexions lentes, à l’économie de données et aux appareils peu puissants lorsque le navigateur fournit ces informations.</p>
         <div className="data-mode-buttons" role="group" aria-label="Mode de chargement">
           <button type="button" aria-pressed={dataPreference==="auto"} className={dataPreference==="auto"?"is-active":""} onClick={()=>changeDataPreference("auto")}><strong>Automatique</strong><span>S’adapte à la connexion</span></button>
@@ -126,7 +133,7 @@ export default function CitizenSettings(){
         </div>
         <div className="data-mode-status" role="status"><span>Mode actif</span><strong>{dataProfile.reduced?"Léger / simplifié":"Complet"}</strong><small>Connexion : {dataProfile.effectiveType||"inconnue"} · Appareil : {dataProfile.deviceTier==="low"?"peu puissant":dataProfile.deviceTier==="standard"?"standard":"non détecté"}{dataProfile.deviceMemory?` · ${dataProfile.deviceMemory} Go RAM estimés`:""}{dataProfile.hardwareConcurrency?` · ${dataProfile.hardwareConcurrency} threads`:""}</small></div>
         <div className="performance-audit-box performance-audit-box--compact">
-          <div><strong>Diagnostic de cette page</strong><span>Mesure locale via la Performance API.</span></div>
+          <div><strong>Diagnostic de cette page</strong><span>Informations de chargement de cette page.</span></div>
           <button type="button" className="secondary-action" onClick={()=>setPerformanceSnapshot(getPerformanceSnapshot())}>Mesurer</button>
           {performanceSnapshot?<div className="performance-audit-metrics" role="status">
             <div><strong>{performanceSnapshot.resourceCount}</strong><span>ressources</span></div>
@@ -139,7 +146,7 @@ export default function CitizenSettings(){
 
       {tab==="data"?<div className="settings-tab-panel settings-data-grid">
         <section className="portal-card data-export-card">
-          <span className="section-label">Mes données · F55</span><h3>Récupérer mes informations</h3>
+          <span className="section-label">Mes données</span><h3>Récupérer mes informations</h3>
           <p className="detail-copy">Préparez une copie de votre profil, demandes, signalements, rendez-vous, notifications, messages et préférences.</p>
           {exportError?<div className="error-card" role="alert">{exportError}</div>:null}
           {!exportBundle?<button type="button" className="primary-action" disabled={exporting} onClick={prepareExport}>{exporting?"Préparation…":"Préparer mon export"}</button>:<>
@@ -160,7 +167,7 @@ export default function CitizenSettings(){
         </section>
 
         <section className="portal-card privacy-concern-card">
-          <div className="privacy-concern-head"><div><span className="section-label">F51 · Utilisation de mes données</span><h3>Comprendre et signaler une inquiétude</h3></div><button type="button" className="text-action" onClick={()=>navigate("/citizen/messages")}>Mes messages →</button></div>
+          <div className="privacy-concern-head"><div><span className="section-label">Utilisation de mes données</span><h3>Comprendre et signaler une inquiétude</h3></div><button type="button" className="text-action" onClick={()=>navigate("/citizen/messages")}>Mes messages →</button></div>
           <p className="detail-copy">Nova Terra utilise les informations nécessaires pour vous identifier, traiter vos démarches et signalements, organiser vos rendez-vous et vous informer de leur évolution.</p>
           <div className="privacy-use-grid">
             <div><strong>Profil</strong><span>Identité, contact et préférences utiles à votre espace.</span></div>

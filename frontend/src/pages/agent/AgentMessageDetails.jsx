@@ -5,8 +5,6 @@ import { getAgentContactMessage, updateAgentContactMessage } from "../../api/con
 import { getAssignees } from "../../api/citizens.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 export default function AgentMessageDetails({params}){
   const [item,setItem]=useState(null),[assignees,setAssignees]=useState([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');

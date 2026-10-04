@@ -1,100 +1,6 @@
 /* ==========================================================================\n   V43 — scroll safety + editable profile\n   The desktop shell keeps the Nova Terra sidebar/topbar fixed, while the\n   current page becomes the scroll container instead of clipping overflow.\n   ========================================================================== */
 
-@media (min-width: 901px) {
-  body[data-route-group="portal"] .portal-layout {
-    height: var(--screen-height, 100dvh) !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
-  body[data-route-group="portal"] .portal-main {
-    height: var(--screen-height, 100dvh) !important;
-    min-height: 0 !important;
-    display: grid !important;
-    grid-template-rows: auto minmax(0, 1fr) !important;
-    overflow: hidden !important;
-  }
-
-  body[data-route-group="portal"] .portal-content {
-    width: 100%;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    overscroll-behavior-y: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--tn-purple) color-mix(in srgb, var(--tn-card) 86%, var(--tn-line));
-  }
-
-  body[data-route-group="portal"] .portal-sidebar {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    overscroll-behavior-y: contain;
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--tn-purple) 72%, #ffffff) transparent;
-  }
-
-  body[data-route-group="portal"] .portal-content::-webkit-scrollbar,
-  body[data-route-group="portal"] .portal-sidebar::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
-  }
-
-  body[data-route-group="portal"] .portal-content::-webkit-scrollbar-track {
-    background: color-mix(in srgb, var(--tn-card) 88%, var(--tn-line));
-    border-radius: 999px;
-  }
-
-  body[data-route-group="portal"] .portal-content::-webkit-scrollbar-thumb,
-  body[data-route-group="portal"] .portal-sidebar::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--tn-purple) 72%, var(--tn-muted));
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-
-  /* A+ / A++ keep enlarged text and gain scrolling instead of clipping. */
-  html[data-font-size="large"] body[data-route-group="portal"] .portal-layout,
-  html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-layout,
-  html[data-font-size="large"] body[data-route-group="portal"] .portal-main,
-  html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-main {
-    height: var(--screen-height, 100dvh) !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
-  html[data-font-size="large"] body[data-route-group="portal"] .portal-content,
-  html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-content {
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-  }
-}
-
 /* Small screens use the browser page scroll naturally. */
-@media (max-width: 900px) {
-  body[data-route-group="portal"],
-  body[data-route-group="portal"] #root,
-  body[data-route-group="portal"] .portal-layout,
-  body[data-route-group="portal"] .portal-main,
-  body[data-route-group="portal"] .portal-content {
-    height: auto !important;
-    max-height: none !important;
-  }
-
-  body[data-route-group="portal"] {
-    overflow-y: auto !important;
-  }
-
-  body[data-route-group="portal"] .portal-layout,
-  body[data-route-group="portal"] .portal-main,
-  body[data-route-group="portal"] .portal-content {
-    overflow: visible !important;
-  }
-}
 
 /* Long dialogs stay usable on short displays. */
 .portal-help,
@@ -134,13 +40,12 @@
 }
 
 /* Any page-specific horizontal data region gets its own scroll instead of\n   forcing the whole portal outside the viewport. */
-.accessible-table-wrap, .portal-table, .filter-row--portal{
+.accessible-table-wrap,
+.portal-table,
+.filter-row--portal,
+.notification-filter-row {
   scrollbar-width: thin;
   scrollbar-color: var(--tn-purple) transparent;
-}
-
-html[data-contrast="high"] body[data-route-group="portal"] .portal-content {
-  scrollbar-color: var(--tn-purple) #000;
 }
 
 html[data-contrast="high"] .profile-page .profile-readonly-field {

@@ -1,10 +1,9 @@
+import PortalIcon from "./PortalIcon.jsx";
+import "../../styles/portal.css";
 import { useState } from "react";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/portal-foundation-v87.css";
-import "../../styles/pages/citizen-polish.css";
 
 export default function CitizenSidebar() {
   const [locale] = useLocale();
@@ -13,18 +12,18 @@ export default function CitizenSidebar() {
   const [leaving,setLeaving]=useState(false);
 
   const items = [
-    ["/citizen", "⌂", t("dashboard", locale)],
-    ["/citizen/requests", "▤", t("requests", locale)],
-    ["/citizen/signalements", "♙", t("reports", locale)],
-    ["/citizen/services", "▦", t("services", locale)],
-    ["/citizen/transport", "⇄", locale === "en" ? "Transport" : locale === "mg" ? "Fitaterana" : "Transport"],
-    ["/citizen/appointments", "□", t("appointments", locale)],
-    ["/citizen/messages", "✉", t("messages", locale)],
-    ["/citizen/notifications", "♟", t("notifications", locale)],
-    ["/citizen/news", "▧", t("news", locale)],
-    ["/citizen/projects", "✦", locale === "en" ? "Projects" : locale === "mg" ? "Tetikasa" : "Projets"],
-    ["/citizen/profile", "●", t("profile", locale)],
-    ["/citizen/settings", "⚙", t("settings", locale)],
+    ["/citizen", "home", t("dashboard", locale)],
+    ["/citizen/requests", "requests", t("requests", locale)],
+    ["/citizen/signalements", "reports", t("reports", locale)],
+    ["/citizen/services", "services", t("services", locale)],
+    ["/citizen/transport", "transport", locale === "en" ? "Transport" : locale === "mg" ? "Fitaterana" : "Transport"],
+    ["/citizen/appointments", "appointments", t("appointments", locale)],
+    ["/citizen/messages", "messages", t("messages", locale)],
+    ["/citizen/notifications", "notifications", t("notifications", locale)],
+    ["/citizen/news", "news", t("news", locale)],
+    ["/citizen/projects", "projects", locale === "en" ? "Projects" : locale === "mg" ? "Tetikasa" : "Projets"],
+    ["/citizen/profile", "profile", t("profile", locale)],
+    ["/citizen/settings", "settings", t("settings", locale)],
   ];
 
   async function signOut(){
@@ -41,7 +40,7 @@ export default function CitizenSidebar() {
       {items.map(([to, icon, label]) => {
         const active = to === "/citizen" ? path === to || path === "/citizen/dashboard" : path.startsWith(to);
         return <button key={to} title={label} className={active ? "is-active" : ""} aria-current={active ? "page" : undefined} onClick={() => navigate(to)}>
-          <i aria-hidden="true">{icon}</i><span>{label}</span>
+          <i aria-hidden="true"><PortalIcon name={icon}/></i><span>{label}</span>
         </button>;
       })}
     </nav>

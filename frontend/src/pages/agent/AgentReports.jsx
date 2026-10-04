@@ -4,9 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getAgentRequestCount, getAgentRequests } from "../../api/requests.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
-import "../../styles/pages/agent-reports-v85.css";
 
 const STATUS_OPTIONS = [
   ["", "Tous les statuts"],

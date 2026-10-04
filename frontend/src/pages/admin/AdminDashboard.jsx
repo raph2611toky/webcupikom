@@ -5,8 +5,6 @@ import { getAdminDashboard } from "../../api/dashboards.js";
 import { getAdminUsers } from "../../api/admin.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 export default function AdminDashboard(){
   const [dashboard,setDashboard]=useState(null);

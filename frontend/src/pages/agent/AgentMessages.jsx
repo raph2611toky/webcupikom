@@ -4,8 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getAgentContactMessages } from "../../api/contact.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 export default function AgentMessages(){
   const [items,setItems]=useState([]),[query,setQuery]=useState(""),[filter,setFilter]=useState("all"),[loading,setLoading]=useState(true),[error,setError]=useState("");

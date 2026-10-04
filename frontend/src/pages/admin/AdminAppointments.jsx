@@ -8,8 +8,6 @@ import {
   updateAdminAppointment,
 } from "../../api/appointments.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const FILTERS=[["all","Tous"],["requested","En attente"],["confirmed","Confirmés"],["completed","Terminés"],["cancelled","Annulés"],["declined","Refusés"]];
 

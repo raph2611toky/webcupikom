@@ -5,8 +5,6 @@ import { ServiceAvailabilityBadge, ServiceAvailabilityNotice } from "../../compo
 import { getService } from "../../api/services.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const COPY = {
   fr: {eyebrow:"Services municipaux",back:"Retour aux services",request:"Faire une demande",actions:"Démarches disponibles",documents:"Documents requis",hours:"Horaires",contact:"Contact",address:"Adresse",none:"Aucune information disponible.",unavailableAction:"Démarche indisponible",availability:"État du service"},

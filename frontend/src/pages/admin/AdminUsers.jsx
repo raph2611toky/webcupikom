@@ -3,8 +3,6 @@ import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { createAdminUser, getAdminUser, getAdminUsers, updateAdminUser } from "../../api/admin.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const EMPTY={email:"",password:"",first_name:"",last_name:"",phone_number:"",role:"citizen",locale:"fr",email_verified:true,is_active:true};
 

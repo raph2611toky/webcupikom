@@ -7,8 +7,6 @@ import { REPORT_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const COPY = {
   fr:{
@@ -358,7 +356,7 @@ export default function CitizenReports(){
           </form>
 
           <aside className="portal-card report-history report-history--wizard">
-            <div className="portal-card__head"><div><span className="section-label">{copy.history}</span><h3>{copy.history}</h3></div></div>
+            <div className="portal-card__head"><div><h3>{copy.history}</h3></div></div>
             <div className="report-history-list">
               {items.length?items.slice(0,5).map(item=><button key={item.ref} type="button" onClick={()=>navigate(`/citizen/requests/${encodeURIComponent(item.ref)}`)}>
                 <i aria-hidden="true">!</i>

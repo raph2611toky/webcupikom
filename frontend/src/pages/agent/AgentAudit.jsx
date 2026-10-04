@@ -3,8 +3,6 @@ import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getAgentAudit, getAgentAuditEvent } from "../../api/audit.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const RESOURCE_LABELS = { request: "Demande", appointment: "Rendez-vous", citizen: "Citoyen", service: "Service", publication: "Publication" };
 

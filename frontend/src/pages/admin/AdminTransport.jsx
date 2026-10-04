@@ -3,8 +3,6 @@ import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { createAdminTransportStop, deleteAdminTransportStop, getAdminTransportStops, updateAdminTransportStop } from "../../api/transport.js";
 import { getApiErrorMessage } from "../../api/auth.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/transport-v87.css";
 
 const EMPTY={name:"",slug:"",category:"Transport",description:"",address:"",district:"",openingHours:"",phone:"",email:"",website:"",latitude:"",longitude:"",lines:[],timetable:{},practicalInfo:{},isActive:true,sortOrder:0};
 function linesText(lines=[]){return lines.map(l=>l?.name||l?.label||l?.id||l).filter(Boolean).join("\n")}

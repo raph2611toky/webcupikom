@@ -5,8 +5,6 @@ import { getCitizen, updateCitizen } from "../../api/citizens.js";
 import { sendAgentNotification } from "../../api/notifications.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const EDIT_FIELDS=[
   ["first_name","Prénom"],["last_name","Nom"],["phone_number","Téléphone"],["profession","Profession"],["address","Adresse"],["habitat","Habitat"],["district","Quartier"],["sector","Secteur"],["street","Rue"],["building","Bâtiment"],["apartment","Appartement"],["locale","Langue"],

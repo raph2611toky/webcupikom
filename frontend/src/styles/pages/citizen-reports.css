@@ -1,0 +1,26 @@
+/* Report workflow: clear progress, one action per step. */
+body[data-route-group="portal"] .report-layout--wizard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .38fr); align-items: start; gap: 18px; }
+body[data-route-group="portal"] .report-form--wizard { padding: 24px; }
+body[data-route-group="portal"] .report-wizard-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--tn-line); }
+body[data-route-group="portal"] .report-wizard-head h2 { margin: 8px 0; font-size: 1.4rem; line-height: 1.3; }
+body[data-route-group="portal"] .report-wizard-head p { margin: 0; color: var(--tn-muted); font-size: .875rem; }
+body[data-route-group="portal"] .report-wizard-progress { display: flex; align-items: center; gap: 8px; }
+body[data-route-group="portal"] .report-wizard-progress span { display: flex; align-items: center; gap: 8px; color: var(--tn-muted); }
+body[data-route-group="portal"] .report-wizard-progress span + span::before { content: ''; width: 16px; height: 1px; background: var(--tn-line); }
+body[data-route-group="portal"] .report-wizard-progress i { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--tn-line); border-radius: 50%; font-style: normal; font-size: .8125rem; }
+body[data-route-group="portal"] .report-wizard-progress .is-done i { background: var(--tn-purple); color: #fff; border-color: var(--tn-purple); }
+body[data-route-group="portal"] .report-step { padding: 20px 0; }
+body[data-route-group="portal"] .report-type-grid--wizard { padding: 0; }
+body[data-route-group="portal"] .report-history--wizard { position: static; margin: 0; }
+body[data-route-group="portal"] .report-wizard-actions { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 18px; border-top: 1px solid var(--tn-line); }
+body[data-route-group="portal"] .report-step label { display: grid; gap: 8px; font-size: .875rem; color: var(--tn-muted); }
+body[data-route-group="portal"] .report-step :is(input:not([type="file"]), textarea, select) { width: 100%; min-height: 44px; border: 1px solid var(--tn-line); border-radius: 10px; padding: 12px; background: var(--tn-card); color: var(--tn-text); }
+body[data-route-group="portal"] .report-step textarea { min-height: 150px; resize: vertical; }
+body[data-route-group="portal"] :is(.report-location-grid, .report-description-grid, .report-review-grid) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+body[data-route-group="portal"] .report-description-grid label:last-child { grid-column: 1 / -1; }
+body[data-route-group="portal"] .report-review-grid > div { display: grid; gap: 6px; padding: 14px; border: 1px solid var(--tn-line); border-radius: 10px; overflow-wrap: anywhere; }
+body[data-route-group="portal"] .report-review-grid span { color: var(--tn-muted); font-size: .8125rem; }
+body[data-route-group="portal"] .report-review-grid b { font-size: .875rem; }
+body[data-route-group="portal"] .report-review-grid .span-2 { grid-column: 1 / -1; }
+@media (max-width: 1050px) { body[data-route-group="portal"] .report-layout--wizard { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { body[data-route-group="portal"] :is(.report-location-grid, .report-description-grid, .report-review-grid) { grid-template-columns: 1fr; } body[data-route-group="portal"] .report-form--wizard { padding: 18px; } }

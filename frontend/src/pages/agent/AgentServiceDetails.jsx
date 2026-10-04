@@ -5,8 +5,6 @@ import { ServiceAvailabilityBadge, ServiceAvailabilityNotice } from "../../compo
 import ServiceAvailabilityEditor from "../../components/ui/ServiceAvailabilityEditor.jsx";
 import { getService } from "../../api/services.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 export default function AgentServiceDetails({params}) {
   const [service,setService]=useState(undefined);

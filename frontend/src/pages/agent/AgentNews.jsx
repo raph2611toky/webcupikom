@@ -3,8 +3,6 @@ import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getNews } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 import { useDataMode } from "../../utils/useDataMode.js";
 
 export default function AgentNews(){

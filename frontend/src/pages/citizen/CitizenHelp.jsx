@@ -7,8 +7,6 @@ import { getServices } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const COPY={
   fr:{eyebrow:"Relations citoyennes",title:"Nous contacter",messages:"Mes messages",help:"Besoin d’aide",headline:"Écrivez directement à la ville.",intro:<>Une question, une difficulté ou un besoin d’accompagnement ? Envoyez un message au service concerné. Vous pourrez ensuite retrouver son suivi dans <b>Mes messages</b>.</>,steps:["Choisissez le service concerné.","Décrivez votre besoin simplement.","Conservez la référence de confirmation."],sent:"Message envoyé",sentText:"Votre message a bien été transmis à Nova Terra.",newMessage:"Nouveau message",viewMessages:"Voir mes messages →",contact:"Nous contacter",yourMessage:"Votre message",service:"Service",subject:"Sujet",subjectPh:"Ex. Question sur ma démarche",message:"Message",messagePh:"Expliquez votre besoin...",destination:"Destinataire",municipal:"Service municipal",sending:"Envoi…",send:"Envoyer mon message →",error:"Impossible d’envoyer votre message."},

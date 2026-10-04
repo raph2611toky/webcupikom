@@ -12,9 +12,6 @@ import {
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
-import "../../styles/pages/citizen-requests.css";
 
 const COPY={
   fr:{eyebrow:"Suivi de demande",loading:"Chargement du dossier…",back:"Retour à mes demandes",follow:"Suivi",progress:"Historique du dossier",information:"Informations",details:"Détails",service:"Service",category:"Catégorie",location:"Lieu",notSpecified:"Non précisé",updated:"Dernière mise à jour",attachments:"Pièces jointes",elements:"Éléments transmis",add:"+ Ajouter une information",none:"Aucune pièce jointe pour cette demande.",need:"Besoin d’ajouter une précision ?",needText:"Votre complément sera rattaché au dossier et visible par l’agent.",addInfo:"Ajouter une information",notifications:"Voir mes notifications",complete:"Compléter le dossier",added:"Information ajoutée ✓",addDetail:"Ajouter une précision",modalText:"Votre message et votre photo éventuelle seront rattachés à la timeline du dossier.",message:"Message",messagePh:"Ajoutez une information utile…",save:"Enregistrer →",actionRequired:"Une action est attendue de votre part",cancel:"Annuler le signalement",reopen:"Rouvrir le signalement",edit:"Corriger le signalement",download:"Télécharger",reasonCancel:"Pourquoi annulez-vous ce signalement ?",reasonReopen:"Pourquoi souhaitez-vous rouvrir ce signalement ?",saved:"Signalement mis à jour.",cancelled:"Signalement annulé.",reopened:"Signalement rouvert."},

@@ -4,8 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getCitizenContactMessage } from "../../api/contact.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 export default function CitizenMessageDetails({params}){
  const [item,setItem]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState("");

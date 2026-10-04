@@ -4,8 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getCitizensPage } from "../../api/citizens.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 export default function AgentCitizens(){
   const [items,setItems]=useState([]),[count,setCount]=useState(0),[loading,setLoading]=useState(true),[error,setError]=useState("");

@@ -11,9 +11,6 @@ import energyArt from "../../assets/services/energy.webp";
 import healthArt from "../../assets/services/health.webp";
 import housingArt from "../../assets/services/housing.webp";
 import safetyArt from "../../assets/services/safety.webp";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
-import "../../styles/pages/citizen-services-v84.css";
 
 const NovaTerraMap = lazy(() => import("../../components/NovaTerraMap/NovaTerraMap.jsx"));
 

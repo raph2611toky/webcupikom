@@ -1,9 +1,7 @@
+import "../../styles/portal.css";
 import { useState } from "react";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/portal-foundation-v87.css";
-import "../../styles/pages/agent-polish.css";
 
 const groups = [
   {

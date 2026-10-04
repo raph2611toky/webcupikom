@@ -4,8 +4,6 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { getAgentAppointments, getAgentAppointmentSummary, getAppointmentStatusLabel, updateAgentAppointment } from "../../api/appointments.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
 
 const FILTERS=[["","Tous"],["requested","À confirmer"],["confirmed","Confirmés"],["completed","Terminés"],["cancelled","Annulés"],["declined","Refusés"]];
 function formatDate(date){if(!date)return"—";try{return new Intl.DateTimeFormat("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}).format(new Date(`${date}T12:00:00`))}catch{return date}}

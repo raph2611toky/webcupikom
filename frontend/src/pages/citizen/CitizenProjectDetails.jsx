@@ -5,8 +5,6 @@ import { getMunicipalProject, getMyProjectContribution, getProjectSupport, setPr
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/projects.css";
 
 const STATUS={planned:"Planifié",in_progress:"En cours",paused:"En pause",completed:"Terminé",cancelled:"Annulé"};
 
