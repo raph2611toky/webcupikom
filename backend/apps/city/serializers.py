@@ -14,6 +14,7 @@ from apps.users.models import User
 from .constants import ONBOARDING_STEPS, SUPPORTED_LANGUAGE_CODES
 from .report_serializers import ImageUploadMixin, RequestAttachmentSerializer
 from .services.reports import route_category, save_images, check_transition, CLOSED, CATEGORIES
+from .services.report_alerting import classify_report
 from .models import (
     CitizenAppointment,
     CitizenNotification,
@@ -561,7 +562,13 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
             if obj.status == 'cancelled':
                 return ['add_private_note', 'find_similar']
             duplicate_action = 'unlink_duplicate' if obj.duplicate_of_id else 'mark_duplicate'
-            return ['update_processing', 'add_note', 'upload_photos', 'find_similar', duplicate_action]
+            actions = ['update_processing', 'add_note', 'upload_photos', 'find_similar', duplicate_action]
+            if (
+                obj.handling_route == CitizenRequest.HandlingRoute.EMERGENCY
+                and obj.alert_status != CitizenRequest.AlertStatus.ACKNOWLEDGED
+            ):
+                actions.insert(0, 'acknowledge_alert')
+            return actions
         if request.user.pk != obj.citizen_id:
             return []
         if obj.status in ('completed','rejected'):
@@ -606,13 +613,15 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
             "id", "reference", "status_label", "priority_label", "severity_label", "category_label", "is_closed", "workflow_state", "requires_agent_action", "requires_citizen_action", "available_actions", "support_count", "citizen", "citizen_name", "citizen_email",
             "service", "service_name", "request_type", "incident_category", "title",
             "description", "location_text", "latitude", "longitude", "status", "priority",
+            "handling_route", "alert_status", "alert_triggered_at", "alert_acknowledged_at",
             "assigned_to", "assigned_to_name", "created_at", "updated_at",
             'district', 'street', 'building', 'landmark', 'location_accuracy', 'occurred_at', 'frequency', 'infrastructure_id', 'severity', 'danger_present', 'people_affected', 'impacts_accessibility', 'accessibility_details', 'allow_contact', 'preferred_contact', 'contact_phone', 'routing_source', 'needs_triage', 'resolution_summary', 'acknowledged_at', 'resolved_at', 'closed_at', 'cancellation_reason', 'reopened_count', 'attachments', 'attachment_count', 'images', 'image', 'image_captions',
         )
         read_only_fields = (
             'id', 'reference', 'citizen', 'citizen_name', 'citizen_email',
-            'status', 'priority', 'assigned_to', 'assigned_to_name', 'created_at', 'updated_at',
-            'routing_source', 'needs_triage', 'resolution_summary', 'acknowledged_at',
+            'status', 'priority', 'handling_route', 'alert_status', 'alert_triggered_at',
+            'alert_acknowledged_at', 'assigned_to', 'assigned_to_name',
+            'created_at', 'updated_at', 'routing_source', 'needs_triage', 'resolution_summary', 'acknowledged_at',
             'resolved_at', 'closed_at', 'cancellation_reason', 'reopened_count',
             'attachments', 'attachment_count',
         )
@@ -678,10 +687,18 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
             elif suggested_service:
                 validated_data['service'] = suggested_service
                 validated_data['routing_source'] = 'automatic'
-            if validated_data.get('danger_present') or validated_data.get('severity') == 'critical':
-                validated_data['priority'] = 'urgent'
-            elif validated_data.get('severity') == 'major':
-                validated_data['priority'] = 'high'
+            handling_route, priority = classify_report(
+                incident_category=validated_data.get('incident_category'),
+                severity=validated_data.get('severity'),
+                danger_present=validated_data.get('danger_present'),
+            )
+            validated_data['handling_route'] = handling_route
+            validated_data['priority'] = priority
+            if handling_route == CitizenRequest.HandlingRoute.EMERGENCY:
+                validated_data['alert_status'] = CitizenRequest.AlertStatus.PENDING
+                validated_data['alert_triggered_at'] = timezone.now()
+            else:
+                validated_data['alert_status'] = CitizenRequest.AlertStatus.NONE
             if not validated_data.get('contact_phone'):
                 validated_data['contact_phone'] = validated_data['citizen'].phone_number
         instance = super().create(validated_data)
@@ -701,6 +718,33 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
                 validated_data['routing_source'] = 'automatic' if suggested_service else 'unassigned'
         if manual_service:
             validated_data['routing_source'] = 'manual' if validated_data['service'] else 'unassigned'
+        if instance.request_type == CitizenRequest.RequestType.REPORT:
+            category = validated_data.get('incident_category', instance.incident_category)
+            severity = validated_data.get('severity', instance.severity)
+            danger_present = validated_data.get('danger_present', instance.danger_present)
+            handling_route, priority = classify_report(
+                incident_category=category, severity=severity, danger_present=danger_present
+            )
+            # Une alerte déjà diffusée/prise en charge ne peut pas être effacée
+            # silencieusement par une édition citoyenne.
+            if not (
+                instance.handling_route == CitizenRequest.HandlingRoute.EMERGENCY
+                and instance.alert_status in {
+                    CitizenRequest.AlertStatus.DISPATCHED,
+                    CitizenRequest.AlertStatus.ACKNOWLEDGED,
+                }
+                and handling_route != CitizenRequest.HandlingRoute.EMERGENCY
+            ):
+                validated_data['handling_route'] = handling_route
+                validated_data['priority'] = priority
+                if handling_route == CitizenRequest.HandlingRoute.EMERGENCY:
+                    if instance.alert_status == CitizenRequest.AlertStatus.NONE:
+                        validated_data['alert_status'] = CitizenRequest.AlertStatus.PENDING
+                    if not instance.alert_triggered_at:
+                        validated_data['alert_triggered_at'] = timezone.now()
+                elif instance.alert_status in {CitizenRequest.AlertStatus.NONE, CitizenRequest.AlertStatus.PENDING}:
+                    validated_data['alert_status'] = CitizenRequest.AlertStatus.NONE
+                    validated_data['alert_triggered_at'] = None
         instance = super().update(instance, validated_data)
         save_images(instance, images, uploader=self.context['request'].user, captions=captions)
         return instance
@@ -735,18 +779,28 @@ class AgentCitizenRequestSerializer(CitizenRequestSerializer):
     is_duplicate = serializers.SerializerMethodField()
     duplicate_of_reference = serializers.CharField(source='duplicate_of.reference', read_only=True, allow_null=True)
     duplicate_of_title = serializers.CharField(source='duplicate_of.title', read_only=True, allow_null=True)
+    alert_acknowledged_by = serializers.PrimaryKeyRelatedField(read_only=True)
+    alert_acknowledged_by_name = serializers.SerializerMethodField()
 
     class Meta(CitizenRequestSerializer.Meta):
         fields = CitizenRequestSerializer.Meta.fields + (
             'duplicate_of', 'is_duplicate', 'duplicate_of_reference', 'duplicate_of_title',
+            'alert_acknowledged_by', 'alert_acknowledged_by_name',
         )
         read_only_fields = tuple(name for name in CitizenRequestSerializer.Meta.fields
                                 if name not in ('status', 'priority', 'assigned_to', 'service', 'resolution_summary')) + (
             'is_duplicate', 'duplicate_of_reference', 'duplicate_of_title',
+            'alert_acknowledged_by', 'alert_acknowledged_by_name',
         )
 
     def get_is_duplicate(self, obj) -> bool:
         return bool(obj.duplicate_of_id)
+
+    def get_alert_acknowledged_by_name(self, obj):
+        user = obj.alert_acknowledged_by
+        if not user:
+            return None
+        return user.get_full_name().strip() or user.email
 
     def validate(self, attrs):
         allowed = {'status','priority','assigned_to','service','resolution_summary','duplicate_of'}

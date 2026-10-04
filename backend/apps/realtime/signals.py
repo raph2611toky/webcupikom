@@ -115,6 +115,10 @@ def request_saved(sender, instance, created, **kwargs):
         "status_label": instance.get_status_display(),
         "updated_at": instance.updated_at,
         "requires_citizen_action": instance.status == CitizenRequest.Status.ACTION_REQUIRED,
+        "handling_route": instance.handling_route,
+        "alert_status": instance.alert_status,
+        "alert_triggered_at": instance.alert_triggered_at,
+        "alert_acknowledged_at": instance.alert_acknowledged_at,
     }
     publish_after_commit(
         groups=[user_group(instance.citizen_id), resource_group("request", instance.pk)],

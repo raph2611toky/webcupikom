@@ -67,7 +67,8 @@ def filter_requests(queryset, params, *, citizen=False):
     serializer.is_valid(raise_exception=True)
     filters = serializer.validated_data
     for parameter, lookup in (('status', 'status'), ('type', 'request_type'),
-        ('priority', 'priority'), ('severity', 'severity'), ('incident_category', 'incident_category__iexact'),
+        ('priority', 'priority'), ('handling_route', 'handling_route'), ('alert_status', 'alert_status'),
+        ('severity', 'severity'), ('incident_category', 'incident_category__iexact'),
         ('district', 'district__iexact')):
         if parameter in filters:
             queryset = queryset.filter(**{lookup: filters[parameter]})

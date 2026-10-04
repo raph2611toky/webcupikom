@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count, F, Q
+from django.db.models import Case, Count, F, IntegerField, Q, When
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
@@ -80,6 +80,8 @@ from .swagger import (
     admin_request_list_schema,
     admin_request_patch_schema,
     admin_request_similar_schema,
+    admin_report_alert_list_schema,
+    admin_report_alert_ack_schema,
     admin_service_delete_schema,
     admin_service_patch_schema,
     admin_service_post_schema,
@@ -96,6 +98,8 @@ from .swagger import (
     agent_request_list_schema,
     agent_request_patch_schema,
     agent_request_similar_schema,
+    agent_report_alert_list_schema,
+    agent_report_alert_ack_schema,
     citizen_notification_patch_schema,
     citizen_notification_read_all_schema,
     citizen_appointment_patch_schema,
@@ -112,6 +116,7 @@ from .report_api import ReportMutationMixin, ReportPagination, filter_local_date
 from .report_swagger import report_list_schema
 from .services.reports import attachment_transaction, CLOSED, event as report_event, notify_citizen as notify_report_citizen
 from .services.request_similarity import find_similar_requests
+from .services.report_alerting import acknowledge_report_alert
 from .services.webcup import WebCupUpstreamError, get_webcup_requests
 
 
@@ -373,16 +378,30 @@ def _profile_completion(user):
 
 def _request_confirmation(instance):
     needs_triage = instance.request_type == CitizenRequest.RequestType.REPORT and not instance.service_id
+    is_emergency = (
+        instance.request_type == CitizenRequest.RequestType.REPORT
+        and instance.handling_route == CitizenRequest.HandlingRoute.EMERGENCY
+    )
+    if is_emergency:
+        message = (
+            "Votre signalement urgent est enregistré dans le circuit d'alerte municipal. "
+            "En cas de danger vital immédiat, contactez également les services d'urgence compétents."
+        )
+        next_step = "emergency"
+    elif needs_triage:
+        message = "Votre signalement est enregistré et sera orienté vers le service compétent."
+        next_step = "triage"
+    else:
+        message = "Votre demande a bien été enregistrée et transmise aux services municipaux."
+        next_step = "processing"
     return {
         "received": True,
-        "message": (
-            "Votre signalement est enregistré et sera orienté vers le service compétent."
-            if needs_triage
-            else "Votre demande a bien été enregistrée et transmise aux services municipaux."
-        ),
-        "next_step": "triage" if needs_triage else "processing",
+        "message": message,
+        "next_step": next_step,
         "service": instance.service_id,
         "needs_triage": needs_triage,
+        "handling_route": instance.handling_route,
+        "alert_status": instance.alert_status,
         "reference": instance.reference,
         "status": instance.status,
         "created_at": instance.created_at,
@@ -681,20 +700,36 @@ class CitizenIssueReportCreateView(ReportMutationMixin, generics.ListCreateAPIVi
     def perform_create(self, serializer):
         instance = serializer.save()
         _register_service_usage(instance.service_id)
+        is_emergency = instance.handling_route == CitizenRequest.HandlingRoute.EMERGENCY
         _create_request_event(
             instance,
             actor=self.request.user,
             event_type=CitizenRequestEvent.EventType.CREATED,
-            title="Signalement enregistré",
-            message=("Votre signalement a été transmis au service compétent." if instance.service_id else "Votre signalement est enregistré et attend son orientation."),
+            title="Signalement urgent enregistré" if is_emergency else "Signalement enregistré",
+            message=(
+                "Votre signalement urgent a été enregistré dans le circuit d'alerte municipal."
+                if is_emergency
+                else ("Votre signalement a été transmis au service compétent." if instance.service_id else "Votre signalement est enregistré et attend son orientation.")
+            ),
         )
-        CitizenNotification.objects.create(
+        notice = CitizenNotification.objects.create(
             user=self.request.user,
             kind=CitizenNotification.Kind.REQUEST,
-            title=f"Signalement {instance.reference} enregistré",
-            message="Votre signalement a bien été pris en compte.",
+            title=(
+                f"Signalement urgent {instance.reference} enregistré"
+                if is_emergency
+                else f"Signalement {instance.reference} enregistré"
+            ),
+            message=(
+                "Votre signalement urgent est enregistré. En cas de danger vital immédiat, contactez également les services d'urgence compétents."
+                if is_emergency
+                else "Votre signalement a bien été pris en compte."
+            ),
             related_request=instance,
+            is_important=is_emergency,
         )
+        if is_emergency:
+            schedule_notification_email(notice)
 
     def create(self, request, *args, **kwargs):
         with attachment_transaction():
@@ -1182,6 +1217,7 @@ class AgentDashboardView(APIView):
                     "display_name": request.user.get_full_name().strip() or request.user.email,
                     "capabilities": {
                         "requests": ["read", "assign", "update", "timeline"],
+                        "report_alerts": ["read", "acknowledge"],
                         "citizens": ["read", "update_profile", "activate", "deactivate"],
                         "appointments": ["read", "confirm", "decline", "reschedule", "complete"],
                         "audit": ["read"],
@@ -1204,6 +1240,10 @@ class AgentDashboardView(APIView):
                     "unassigned_open": unassigned_requests.count(),
                     "urgent_open": open_requests.filter(priority=CitizenRequest.Priority.URGENT).count(),
                     "high_priority_open": open_requests.filter(priority=CitizenRequest.Priority.HIGH).count(),
+                    "emergency_open": open_requests.filter(handling_route=CitizenRequest.HandlingRoute.EMERGENCY).count(),
+                    "emergency_unacknowledged": open_requests.filter(
+                        handling_route=CitizenRequest.HandlingRoute.EMERGENCY
+                    ).exclude(alert_status=CitizenRequest.AlertStatus.ACKNOWLEDGED).count(),
                     "created_last_24h": requests.filter(created_at__gte=day_ago).count(),
                     "updated_last_24h": requests.filter(updated_at__gte=day_ago).count(),
                 },
@@ -1356,7 +1396,7 @@ class AgentRequestListView(generics.ListAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return CitizenRequest.objects.none()
-        queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to").annotate(
+        queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to", "alert_acknowledged_by").annotate(
             support_count=Count("request_supports", distinct=True)
         )
         request_status = self.request.query_params.get("status")
@@ -1428,7 +1468,114 @@ class AgentRequestSummaryView(APIView):
             "needs_triage": open_queryset.filter(request_type="report", service__isnull=True).count(),
             "reports": queryset.filter(request_type=CitizenRequest.RequestType.REPORT).count(),
             "duplicates": queryset.filter(duplicate_of__isnull=False).count(),
+            "emergency_open": open_queryset.filter(
+                request_type=CitizenRequest.RequestType.REPORT,
+                handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
+            ).count(),
+            "emergency_unacknowledged": open_queryset.filter(
+                request_type=CitizenRequest.RequestType.REPORT,
+                handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
+            ).exclude(alert_status=CitizenRequest.AlertStatus.ACKNOWLEDGED).count(),
         })
+
+
+class AgentReportAlertListView(generics.ListAPIView):
+    """Dedicated F86 queue: emergency reports, never mixed with ordinary reports."""
+
+    pagination_class = ReportPagination
+    permission_classes = [AGENT_OR_ADMIN]
+    serializer_class = AgentCitizenRequestSerializer
+
+    @agent_report_alert_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenRequest.objects.none()
+        queryset = (
+            CitizenRequest.objects.filter(
+                request_type=CitizenRequest.RequestType.REPORT,
+                handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
+            )
+            .exclude(status__in=CLOSED)
+            .select_related("citizen", "service", "assigned_to", "alert_acknowledged_by")
+            .annotate(
+                support_count=Count("request_supports", distinct=True),
+                _alert_rank=Case(
+                    When(alert_status=CitizenRequest.AlertStatus.ACKNOWLEDGED, then=1),
+                    default=0, output_field=IntegerField(),
+                ),
+            )
+        )
+        queryset = filter_requests(queryset, self.request.query_params)
+        if not self.request.query_params.get("ordering"):
+            queryset = queryset.order_by("_alert_rank", "-alert_triggered_at", "-id")
+        return queryset
+
+
+class AgentReportAlertAcknowledgeView(APIView):
+    permission_classes = [AGENT_OR_ADMIN]
+
+    @agent_report_alert_ack_schema
+    def post(self, request, reference):
+        with transaction.atomic():
+            item = generics.get_object_or_404(
+                CitizenRequest.objects.select_for_update().select_related("citizen", "service"),
+                reference=reference,
+                request_type=CitizenRequest.RequestType.REPORT,
+            )
+            if item.handling_route != CitizenRequest.HandlingRoute.EMERGENCY:
+                raise ValidationError({"detail": "Ce signalement n'appartient pas au circuit d'urgence."})
+            if item.status in CLOSED:
+                raise ValidationError({"detail": "Ce signalement est déjà clôturé."})
+
+            already_acknowledged = item.alert_status == CitizenRequest.AlertStatus.ACKNOWLEDGED
+            if not already_acknowledged:
+                acknowledge_report_alert(item, request.user)
+                _create_request_event(
+                    item,
+                    actor=request.user,
+                    event_type=CitizenRequestEvent.EventType.STATUS,
+                    title="Alerte prise en charge",
+                    message="Le signalement urgent a été vu et pris en charge par un agent.",
+                    is_public=True,
+                )
+                notice = CitizenNotification.objects.create(
+                    user=item.citizen,
+                    sender=request.user,
+                    scope=CitizenNotification.Scope.TARGETED,
+                    kind=CitizenNotification.Kind.REQUEST,
+                    title=f"Signalement urgent {item.reference} pris en charge",
+                    message="Un agent a pris en charge votre signalement urgent.",
+                    action_label="Voir le signalement",
+                    action_url=f"/requests/{item.reference}",
+                    related_request=item,
+                    is_important=True,
+                )
+                schedule_notification_email(notice)
+                record_staff_audit(
+                    actor=request.user, action="report.alert_acknowledge",
+                    resource_type="request", resource_id=item.pk,
+                    resource_reference=item.reference, subject_user=item.citizen,
+                    summary="Alerte signalement prise en charge",
+                    changes={"alert_status": {"from": "pending/dispatched", "to": "acknowledged"}},
+                    request=request,
+                )
+                publish_after_commit(
+                    groups=[role_group(User.Role.AGENT), role_group(User.Role.ADMIN)],
+                    event="staff.report_alert.acknowledged",
+                    payload={
+                        "reference": item.reference,
+                        "alert_status": CitizenRequest.AlertStatus.ACKNOWLEDGED,
+                        "acknowledged_by": request.user.pk,
+                        "acknowledged_at": item.alert_acknowledged_at,
+                    },
+                )
+
+        data = AgentCitizenRequestSerializer(item, context={"request": request}).data
+        data["already_acknowledged"] = already_acknowledged
+        return Response(data)
 
 
 class AgentRequestSimilarView(APIView):
@@ -1482,7 +1629,7 @@ class AgentRequestDetailView(ReportMutationMixin, generics.RetrieveUpdateAPIView
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = AgentCitizenRequestDetailSerializer
     lookup_field = "reference"
-    queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to")
+    queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to", "alert_acknowledged_by")
 
     def put(self, request, *args, **kwargs):
         return Response(
@@ -1826,6 +1973,14 @@ class AdminDashboardView(APIView):
                     "reports": citizen_requests.filter(
                         request_type=CitizenRequest.RequestType.REPORT
                     ).count(),
+                    "emergency_open": citizen_requests.exclude(status__in=CLOSED).filter(
+                        request_type=CitizenRequest.RequestType.REPORT,
+                        handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
+                    ).count(),
+                    "emergency_unacknowledged": citizen_requests.exclude(status__in=CLOSED).filter(
+                        request_type=CitizenRequest.RequestType.REPORT,
+                        handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
+                    ).exclude(alert_status=CitizenRequest.AlertStatus.ACKNOWLEDGED).count(),
                 },
                 "contacts": {
                     "total": ContactMessage.objects.count(),
@@ -2116,6 +2271,22 @@ class AdminContactMessageDetailView(AgentContactMessageDetailView):
     @admin_contact_patch_schema
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
+
+
+class AdminReportAlertListView(AgentReportAlertListView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_report_alert_list_schema
+    def get(self, request, *args, **kwargs):
+        return generics.ListAPIView.get(self, request, *args, **kwargs)
+
+
+class AdminReportAlertAcknowledgeView(AgentReportAlertAcknowledgeView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_report_alert_ack_schema
+    def post(self, request, reference):
+        return super().post(request, reference)
 
 
 class AdminRequestListView(AgentRequestListView):

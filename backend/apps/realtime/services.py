@@ -110,6 +110,42 @@ def publish_event(*, groups, event: str, payload=None, event_id=None):
     return True
 
 
+def publish_event_now(*, groups, event: str, payload=None, event_id=None):
+    """Publication synchrone avec résultat explicite.
+
+    À réserver aux événements qui disposent d'une source durable en base
+    (notamment l'outbox des signalements urgents). Une panne Redis renvoie
+    ``False`` au lieu de faire perdre silencieusement l'événement.
+    """
+    if not settings.REALTIME_ENABLED:
+        return False
+    normalized_groups = tuple(dict.fromkeys(g for g in groups if g))
+    if not normalized_groups:
+        return False
+    envelope = {
+        "event": str(event)[:120],
+        "event_id": event_id or uuid.uuid4().hex,
+        "occurred_at": timezone.now().isoformat(),
+        "version": 1,
+        "payload": _json_safe(payload or {}),
+    }
+    try:
+        layer = get_channel_layer()
+        if layer is None:
+            return False
+        sender = async_to_sync(layer.group_send)
+        for group in normalized_groups:
+            sender(group, {"type": "realtime_event", **envelope})
+        return True
+    except Exception:
+        _warn_limited(
+            "channel_layer_sync",
+            "Publication temps réel durable non livrée ; elle restera dans l'outbox.",
+            exc_info=True,
+        )
+        return False
+
+
 def publish_after_commit(*, groups, event: str, payload=None, event_id=None):
     groups = tuple(groups)
     payload = _json_safe(payload or {})

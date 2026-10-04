@@ -84,6 +84,8 @@ class ReportFilterSerializer(serializers.Serializer):
     created_to = serializers.DateField(required=False)
     has_images = serializers.BooleanField(required=False)
     priority = serializers.ChoiceField(choices=['low','normal','high','urgent'], required=False)
+    handling_route = serializers.ChoiceField(choices=['standard','priority','emergency'], required=False)
+    alert_status = serializers.ChoiceField(choices=['none','pending','dispatched','acknowledged'], required=False)
     severity = serializers.ChoiceField(choices=['minor','moderate','major','critical'], required=False)
     ordering = serializers.ChoiceField(choices=['created_at','-created_at','updated_at','-updated_at'], required=False)
     incident_category = serializers.CharField(max_length=100, required=False)

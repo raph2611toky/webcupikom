@@ -124,12 +124,28 @@ def _state_snapshot(user_id, role):
             status__in=[CitizenAppointment.Status.REQUESTED, CitizenAppointment.Status.CONFIRMED],
             ends_at__gte=now,
         ).count()
+        state["emergency_reports_unacknowledged"] = CitizenRequest.objects.filter(
+            request_type=CitizenRequest.RequestType.REPORT,
+            handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
+        ).exclude(
+            alert_status=CitizenRequest.AlertStatus.ACKNOWLEDGED
+        ).exclude(
+            status__in=[CitizenRequest.Status.COMPLETED, CitizenRequest.Status.CANCELLED, CitizenRequest.Status.REJECTED]
+        ).count()
     elif role == User.Role.ADMIN:
         state["requests_awaiting_handling"] = CitizenRequest.objects.filter(
             status__in=[CitizenRequest.Status.SUBMITTED, CitizenRequest.Status.PENDING]
         ).count()
         state["audit_last_24h"] = StaffAuditEvent.objects.filter(
             created_at__gte=now - timedelta(hours=24)
+        ).count()
+        state["emergency_reports_unacknowledged"] = CitizenRequest.objects.filter(
+            request_type=CitizenRequest.RequestType.REPORT,
+            handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
+        ).exclude(
+            alert_status=CitizenRequest.AlertStatus.ACKNOWLEDGED
+        ).exclude(
+            status__in=[CitizenRequest.Status.COMPLETED, CitizenRequest.Status.CANCELLED, CitizenRequest.Status.REJECTED]
         ).count()
     return state
 
@@ -189,6 +205,7 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
                 "session_recheck_seconds": settings.REALTIME_SESSION_RECHECK_SECONDS,
                 "http_fallback": True,
                 "delivery": "best_effort",
+                "durable_report_alerts": True,
                 "source_of_truth": "http",
                 "allowed_client_messages": ["ping", "sync", "subscribe", "unsubscribe"],
                 "subscribable_resources": ["request", "appointment"],

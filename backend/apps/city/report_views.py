@@ -57,12 +57,17 @@ class ReportCategoryView(ReportMutationMixin, APIView):
             rows.append({'code': category['code'], 'label': category['label'],
                 'suggested_service': service.pk if service else None,
                 'suggested_service_name': service.name if service else None,
-                'needs_triage': service is None})
+                'needs_triage': service is None,
+                'alerting': category.get('alerting', 'standard'),
+                'emergency': category.get('alerting') == 'emergency'})
         return Response({'categories': rows, 'limits': {'images_per_upload': 10,
             'images_per_request': 20, 'image_max_bytes': 8388608, 'image_max_pixels': 20000000,
             'accepted_formats': ['JPEG', 'PNG', 'WebP']},
             'location_rule': 'location_text ou latitude et longitude',
-            'danger_guidance': 'Le signalement municipal ne remplace pas une demande d’intervention aux services d’urgence.'})
+            'danger_guidance': (
+                'Les catégories d’urgence déclenchent un circuit municipal prioritaire et une alerte agents. '
+                'En cas de danger vital immédiat, le signalement ne remplace pas l’appel aux services d’urgence.'
+            )})
 
 
 @method_decorator(name="get", decorator=report_detail_schema)
@@ -103,7 +108,9 @@ class CitizenReportSummaryView(ReportMutationMixin, APIView):
         return Response({'total': queryset.count(), 'open': queryset.exclude(status__in=CLOSED).count(),
             'by_status': {code: counts.get(code, 0) for code, _ in CitizenRequest.Status.choices},
             'needs_information': counts.get('action_required', 0),
-            'needs_triage': queryset.filter(service__isnull=True).exclude(status__in=CLOSED).count()})
+            'needs_triage': queryset.filter(service__isnull=True).exclude(status__in=CLOSED).count(),
+            'emergency_open': queryset.exclude(status__in=CLOSED).filter(handling_route=CitizenRequest.HandlingRoute.EMERGENCY).count(),
+            'emergency_acknowledged': queryset.filter(alert_status=CitizenRequest.AlertStatus.ACKNOWLEDGED).count()})
 
 
 @method_decorator(name="get", decorator=report_messages_get_schema)

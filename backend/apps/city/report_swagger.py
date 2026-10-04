@@ -17,12 +17,14 @@ class ReportErrorSerializer(serializers.Serializer):
 class ReportConfirmationSerializer(serializers.Serializer):
     received = serializers.BooleanField()
     message = serializers.CharField()
-    next_step = serializers.ChoiceField(choices=["triage", "processing"])
+    next_step = serializers.ChoiceField(choices=["triage", "processing", "emergency"])
     reference = serializers.CharField()
     status = serializers.CharField()
     created_at = serializers.DateTimeField()
     service = serializers.IntegerField(allow_null=True)
     needs_triage = serializers.BooleanField()
+    handling_route = serializers.ChoiceField(choices=["standard", "priority", "emergency"])
+    alert_status = serializers.ChoiceField(choices=["none", "pending", "dispatched", "acknowledged"])
 
 
 class ReportCreatedSerializer(CitizenRequestSerializer):
@@ -63,6 +65,8 @@ class ReportCategorySerializer(serializers.Serializer):
     suggested_service = serializers.IntegerField(allow_null=True)
     suggested_service_name = serializers.CharField(allow_null=True)
     needs_triage = serializers.BooleanField()
+    alerting = serializers.ChoiceField(choices=["standard", "emergency"])
+    emergency = serializers.BooleanField()
 
 
 class ReportLimitsSerializer(serializers.Serializer):
@@ -86,6 +90,8 @@ class ReportSummarySerializer(serializers.Serializer):
     by_status = serializers.DictField(child=serializers.IntegerField())
     needs_information = serializers.IntegerField()
     needs_triage = serializers.IntegerField()
+    emergency_open = serializers.IntegerField()
+    emergency_acknowledged = serializers.IntegerField()
 
 
 def responses(success=None, code=200):
@@ -124,6 +130,7 @@ FILTER_PARAMETERS = [
     for name, kind, description in [
         ('type','string','procedure ou report'), ('status','string','submitted, pending, in_progress, action_required, completed, cancelled, rejected'),
         ('incident_category','string','Code ou catégorie libre'), ('priority','string','low, normal, high, urgent'),
+        ('handling_route','string','standard, priority ou emergency'), ('alert_status','string','none, pending, dispatched ou acknowledged'),
         ('severity','string','minor, moderate, major, critical'), ('district','string','Quartier exact, sans distinction de casse'),
         ('search','string','Référence, titre, description, lieu ou service'), ('has_images','boolean','Au moins une image visible pour cet utilisateur'),
         ('created_from','string','Date minimale YYYY-MM-DD incluse'), ('created_to','string','Date maximale YYYY-MM-DD incluse'),

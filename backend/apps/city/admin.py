@@ -20,6 +20,7 @@ from .models import (
     MunicipalService,
     NewsArticle,
     PrivacyConcern,
+    ReportAlertDispatch,
     ServiceFeedback,
     StaffAuditEvent,
     WebCupRequestSnapshot,
@@ -217,16 +218,17 @@ class ReportAttachmentInline(admin.TabularInline):
 class CitizenRequestAdmin(admin.ModelAdmin):
     form = RequestProcessingForm
     inlines = (ReportAttachmentInline,)
-    list_display = ('reference', 'request_type', 'citizen', 'incident_category', 'service', 'status', 'priority', 'assigned_to', 'updated_at')
-    list_filter = ('request_type', 'status', 'priority', 'severity', 'incident_category', 'service', 'assigned_to')
+    list_display = ('reference', 'request_type', 'citizen', 'incident_category', 'service', 'status', 'priority', 'handling_route', 'alert_status', 'assigned_to', 'updated_at')
+    list_filter = ('request_type', 'status', 'priority', 'handling_route', 'alert_status', 'severity', 'incident_category', 'service', 'assigned_to')
     search_fields = ('reference', 'title', 'description', 'district', 'location_text', 'citizen__email')
-    readonly_fields = ('reference','created_at','updated_at','routing_source','acknowledged_at','resolved_at','closed_at','reopened_count','cancellation_reason')
+    readonly_fields = ('reference','created_at','updated_at','routing_source','handling_route','alert_status','alert_triggered_at','alert_acknowledged_at','alert_acknowledged_by','acknowledged_at','resolved_at','closed_at','reopened_count','cancellation_reason')
     fieldsets = (
         ('Dossier', {'fields': ('reference','citizen','request_type','title','description','incident_category')}),
         ('Localisation', {'fields': ('location_text','district','street','building','landmark','latitude','longitude','location_accuracy')}),
         ('Observation', {'fields': ('occurred_at','frequency','infrastructure_id','severity','danger_present','people_affected','impacts_accessibility','accessibility_details')}),
         ('Contact', {'fields': ('allow_contact','preferred_contact','contact_phone')}),
         ('Traitement', {'fields': ('service','routing_source','assigned_to','status','priority','duplicate_of','resolution_summary')}),
+        ('Alerting', {'fields': ('handling_route','alert_status','alert_triggered_at','alert_acknowledged_at','alert_acknowledged_by')}),
         ('Historique', {'fields': ('acknowledged_at','resolved_at','closed_at','cancellation_reason','reopened_count','created_at','updated_at')}),
     )
 
@@ -617,3 +619,21 @@ class PrivacyConcernAdmin(_AdminRoleOnlyMixin, admin.ModelAdmin):
                     request=request,
                     visibility=StaffAuditEvent.Visibility.ADMIN,
                 )
+
+
+@admin.register(ReportAlertDispatch)
+class ReportAlertDispatchAdmin(admin.ModelAdmin):
+    list_display = ("request", "status", "attempts", "next_attempt_at", "dispatched_at", "updated_at")
+    list_filter = ("status",)
+    search_fields = ("request__reference", "request__title")
+    readonly_fields = ("request", "event_id", "status", "attempts", "next_attempt_at", "last_error", "dispatched_at", "payload", "created_at", "updated_at")
+    ordering = ("next_attempt_at", "id")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

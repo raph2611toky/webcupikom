@@ -142,6 +142,8 @@ REQUEST_AGENT_LIST_PARAMETERS = [
     query_string("service", "ID ou slug du service municipal"),
     query_string("assigned_to", "ID de l'agent responsable"),
     query_string("priority", "low, normal, high ou urgent"),
+    query_string("handling_route", "standard, priority ou emergency"),
+    query_string("alert_status", "none, pending, dispatched ou acknowledged"),
     query_string("type", "procedure ou report"),
     query_string("incident_category", "Catégorie d'incident"),
     query_string("search", "Référence, titre, description, citoyen ou service"),
@@ -171,6 +173,57 @@ class AgentRequestPageSerializer(serializers.Serializer):
     next = serializers.CharField(allow_null=True)
     previous = serializers.CharField(allow_null=True)
     results = AgentCitizenRequestSerializer(many=True)
+
+
+REPORT_ALERT_LIST_PARAMETERS = [
+    query_string("alert_status", "pending, dispatched ou acknowledged"),
+    query_string("incident_category", "Type de signalement urgent"),
+    query_string("district", "Quartier"),
+    query_string("search", "Référence, titre, description, lieu ou service"),
+    query_string("page", "Numéro de page"),
+    query_string("page_size", "Taille de page, 100 maximum"),
+]
+
+agent_report_alert_list_schema = swagger_auto_schema(
+    tags=["Agent - Alerting"],
+    operation_id="agent_report_alert_list",
+    operation_summary="File des signalements urgents (F86)",
+    operation_description=(
+        "Retourne uniquement les signalements du circuit emergency. L'API HTTP reste la source "
+        "de vérité même si le WebSocket est indisponible."
+    ),
+    security=JWT_SECURITY,
+    manual_parameters=REPORT_ALERT_LIST_PARAMETERS,
+    responses={200: AgentRequestPageSerializer()},
+)
+
+agent_report_alert_ack_schema = swagger_auto_schema(
+    tags=["Agent - Alerting"],
+    operation_id="agent_report_alert_acknowledge",
+    operation_summary="Prendre en charge une alerte de signalement (F86)",
+    operation_description="Accusé de prise en charge persistant et idempotent.",
+    security=JWT_SECURITY,
+    auto_schema=NoBodyAutoSchema,
+    responses={200: AgentCitizenRequestDetailSerializer()},
+)
+
+admin_report_alert_list_schema = swagger_auto_schema(
+    tags=["Administration - Alerting"],
+    operation_id="admin_report_alert_list",
+    operation_summary="File des signalements urgents (F86)",
+    security=JWT_SECURITY,
+    manual_parameters=REPORT_ALERT_LIST_PARAMETERS,
+    responses={200: AgentRequestPageSerializer()},
+)
+
+admin_report_alert_ack_schema = swagger_auto_schema(
+    tags=["Administration - Alerting"],
+    operation_id="admin_report_alert_acknowledge",
+    operation_summary="Prendre en charge une alerte de signalement (F86)",
+    security=JWT_SECURITY,
+    auto_schema=NoBodyAutoSchema,
+    responses={200: AgentCitizenRequestDetailSerializer()},
+)
 
 
 REQUEST_SIMILAR_PARAMETERS = [

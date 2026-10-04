@@ -294,6 +294,17 @@ class CitizenRequest(models.Model):
         HIGH = "high", "Haute"
         URGENT = "urgent", "Urgente"
 
+    class HandlingRoute(models.TextChoices):
+        STANDARD = "standard", "Circuit standard"
+        PRIORITY = "priority", "Circuit prioritaire"
+        EMERGENCY = "emergency", "Circuit d’urgence"
+
+    class AlertStatus(models.TextChoices):
+        NONE = "none", "Aucune alerte"
+        PENDING = "pending", "Diffusion en attente"
+        DISPATCHED = "dispatched", "Diffusée"
+        ACKNOWLEDGED = "acknowledged", "Prise en charge"
+
     reference = models.CharField(max_length=32, unique=True, editable=False)
     citizen = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -342,6 +353,21 @@ class CitizenRequest(models.Model):
     duplicate_of = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='duplicates')
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING)
     priority = models.CharField(max_length=12, choices=Priority.choices, default=Priority.NORMAL)
+    handling_route = models.CharField(
+        max_length=16, choices=HandlingRoute.choices, default=HandlingRoute.STANDARD, db_index=True
+    )
+    alert_status = models.CharField(
+        max_length=16, choices=AlertStatus.choices, default=AlertStatus.NONE, db_index=True
+    )
+    alert_triggered_at = models.DateTimeField(null=True, blank=True)
+    alert_acknowledged_at = models.DateTimeField(null=True, blank=True)
+    alert_acknowledged_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="acknowledged_report_alerts",
+    )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -354,7 +380,12 @@ class CitizenRequest(models.Model):
 
     class Meta:
         ordering = ("-updated_at", "-created_at")
-        indexes = [models.Index(fields=['citizen', 'request_type', 'created_at']), models.Index(fields=['request_type', 'status', 'incident_category'])]
+        indexes = [
+            models.Index(fields=['citizen', 'request_type', 'created_at']),
+            models.Index(fields=['request_type', 'status', 'incident_category']),
+            models.Index(fields=['handling_route', 'alert_status', 'created_at'], name='city_req_alert_route_idx'),
+            models.Index(fields=['request_type', 'priority', 'status'], name='city_req_priority_idx'),
+        ]
         verbose_name = "demande citoyenne"
         verbose_name_plural = "demandes citoyennes"
 
@@ -365,6 +396,45 @@ class CitizenRequest(models.Model):
 
     def __str__(self):
         return f"{self.reference} — {self.title}"
+
+
+class ReportAlertDispatch(models.Model):
+    """Outbox durable pour les alertes issues d'un signalement F86.
+
+    Le signalement reste la source de vérité. Cette table garantit qu'une panne
+    Redis/WebSocket au moment de la création ne fait pas perdre l'alerte : elle
+    peut être retentée par la commande ``retry_report_alerts``.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "En attente"
+        RETRY = "retry", "À retenter"
+        DISPATCHED = "dispatched", "Diffusée"
+        CANCELLED = "cancelled", "Annulée"
+
+    request = models.OneToOneField(
+        CitizenRequest, on_delete=models.CASCADE, related_name="alert_dispatch"
+    )
+    event_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now, db_index=True)
+    last_error = models.TextField(blank=True)
+    dispatched_at = models.DateTimeField(null=True, blank=True)
+    payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("next_attempt_at", "id")
+        indexes = [
+            models.Index(fields=("status", "next_attempt_at"), name="report_alert_retry_idx"),
+        ]
+        verbose_name = "diffusion d'alerte signalement"
+        verbose_name_plural = "diffusions d'alertes signalement"
+
+    def __str__(self):
+        return f"{self.request.reference} — {self.status}"
 
 
 class CitizenPreference(models.Model):
