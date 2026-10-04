@@ -1,4 +1,7 @@
 from decimal import Decimal
+from datetime import timedelta
+
+from django.utils import timezone
 
 from django.urls import reverse
 from rest_framework import status
@@ -6,7 +9,7 @@ from rest_framework.test import APITestCase
 
 from apps.users.models import User
 
-from .models import CityLocation, MunicipalService, StaffAuditEvent
+from .models import CityLocation, MunicipalService, NewsArticle, StaffAuditEvent
 
 
 class CityLocationApiTests(APITestCase):
@@ -86,6 +89,37 @@ class CityLocationApiTests(APITestCase):
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["locations"][0]["transport_lines"], ["T1", "T2"])
         self.assertEqual(response.data["locations"][0]["timetable"][0]["departure"], "06:30")
+
+    def test_f97_transport_disruption_exposes_replacement_solution(self):
+        NewsArticle.objects.create(
+            title="Interruption T1",
+            slug="test-interruption-t1",
+            category="Transport",
+            excerpt="La ligne T1 est interrompue.",
+            content="Incident sur la ligne T1.",
+            publication_type="alert",
+            severity="critical",
+            is_published=True,
+            is_important=True,
+            notify_residents=False,
+            published_at=timezone.now() - timedelta(minutes=5),
+            expires_at=timezone.now() + timedelta(hours=2),
+            affected_areas="Ligne T1 — Nova Centre",
+            instructions="Utilisez une ligne de substitution.",
+            audience_guidance=[
+                {
+                    "audience": "Ligne T1",
+                    "instructions": "Utilisez la ligne T3 depuis le Pôle Nova Centre.",
+                }
+            ],
+            service=self.transport,
+            source_name="Service Mobilité",
+        )
+        response = self.client.get(reverse("city:city-transport-info"), {"line": "T1"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["has_disruptions"])
+        self.assertEqual(response.data["disruptions"][0]["slug"], "test-interruption-t1")
+        self.assertIn("ligne T3", response.data["replacement_options"][0])
 
     def test_emergency_endpoint_only_returns_hospital_and_emergency(self):
         response = self.client.get(reverse("city:city-emergency-location-list"))

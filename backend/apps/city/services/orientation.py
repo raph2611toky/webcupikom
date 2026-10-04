@@ -98,6 +98,16 @@ CATEGORY_HINTS = {
         "insecurite", "insécurité", "danger rue", "zone dangereuse", "securite publique",
         "sécurité publique", "unsafe", "public safety",
     ],
+    "transport_disruption": [
+        "ligne interrompue", "transport interrompu", "ligne coupee", "ligne coupée",
+        "bus interrompu", "transport perturbe", "transport perturbé", "service suspendu",
+        "line disruption", "transport disruption", "service interruption",
+    ],
+    "power_outage": [
+        "panne electrique", "panne électrique", "coupure courant", "coupure de courant",
+        "plus de courant", "electricite coupee", "électricité coupée", "power outage",
+        "blackout", "electricity outage",
+    ],
     "medical_emergency": [
         "urgence medicale", "urgence médicale", "ne respire plus", "inconscient",
         "inconsciente", "malaise grave", "saigne beaucoup", "medical emergency",

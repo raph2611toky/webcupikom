@@ -17,6 +17,12 @@ EMERGENCY_CATEGORY_CODES = {
 }
 
 
+PRIORITY_CATEGORY_CODES = {
+    "transport_disruption",
+    "power_outage",
+}
+
+
 def classify_report(*, incident_category="", severity="moderate", danger_present=False):
     """Return (handling_route, priority) for a citizen report.
 
@@ -28,7 +34,7 @@ def classify_report(*, incident_category="", severity="moderate", danger_present
     severity = str(severity or "moderate").strip().lower()
     if category in EMERGENCY_CATEGORY_CODES or bool(danger_present) or severity == "critical":
         return CitizenRequest.HandlingRoute.EMERGENCY, CitizenRequest.Priority.URGENT
-    if severity == "major":
+    if category in PRIORITY_CATEGORY_CODES or severity == "major":
         return CitizenRequest.HandlingRoute.PRIORITY, CitizenRequest.Priority.HIGH
     return CitizenRequest.HandlingRoute.STANDARD, CitizenRequest.Priority.NORMAL
 

@@ -35,6 +35,8 @@ CATEGORIES = [
     {'code': 'green_spaces', 'label': 'Espaces verts', 'service_slug': 'environnement', 'aliases': ['arbre', 'espaces verts']},
     {'code': 'accessibility', 'label': 'Accessibilité des espaces publics', 'service_slug': 'transport', 'aliases': ['accessibilité', 'accessibilite']},
     {'code': 'public_safety', 'label': 'Sécurité de l’espace public', 'service_slug': 'securite', 'aliases': ['sécurité', 'securite']},
+    {'code': 'transport_disruption', 'label': 'Transport interrompu / perturbé', 'service_slug': 'transport', 'aliases': ['transport interrompu', 'ligne interrompue', 'ligne coupée', 'bus interrompu', 'transport perturbé'], 'alerting': 'priority'},
+    {'code': 'power_outage', 'label': 'Panne électrique', 'service_slug': 'energie', 'aliases': ['panne électrique', 'panne electrique', 'coupure de courant', 'coupure électrique', 'plus de courant'], 'alerting': 'priority'},
     {'code': 'medical_emergency', 'label': 'Urgence médicale', 'service_slug': 'sante', 'aliases': ['urgence médicale', 'urgence medicale', 'medical'], 'alerting': 'emergency'},
     {'code': 'fire_emergency', 'label': 'Incendie / départ de feu', 'service_slug': 'securite', 'aliases': ['incendie', 'feu'], 'alerting': 'emergency'},
     {'code': 'immediate_danger', 'label': 'Danger immédiat', 'service_slug': 'securite', 'aliases': ['danger immédiat', 'danger immediat'], 'alerting': 'emergency'},

@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.core import mail
 from django.core.management import call_command
 from django.test import override_settings
 from rest_framework.test import APITestCase
@@ -12,6 +13,8 @@ from .models import CitizenNotification, CitizenRequest, ReportAlertDispatch
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     REALTIME_ENABLED=True,
+    REPORT_EMAIL_FALLBACK_ENABLED=True,
+    REPORT_EMAIL_FALLBACK_ALL_REPORTS=True,
 )
 class ReportAlertingF86Tests(APITestCase):
     def setUp(self):
@@ -56,6 +59,34 @@ class ReportAlertingF86Tests(APITestCase):
         self.assertEqual(item.alert_status, CitizenRequest.AlertStatus.NONE)
         self.assertEqual(item.priority, CitizenRequest.Priority.NORMAL)
         self.assertFalse(ReportAlertDispatch.objects.filter(request=item).exists())
+
+    def test_every_new_report_is_duplicated_to_staff_by_email(self):
+        mail.outbox.clear()
+        response = self.create_report(
+            title="Coupure locale",
+            description="Un incident doit être transmis aux équipes.",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        item = CitizenRequest.objects.get(pk=response.data["id"])
+        notices = CitizenNotification.objects.filter(
+            related_request=item, notification_code=f"report:new:{item.pk}"
+        )
+        self.assertEqual(notices.count(), 2)
+        recipients = {message.to[0] for message in mail.outbox}
+        self.assertIn(self.agent.email, recipients)
+        self.assertIn(self.admin.email, recipients)
+
+    def test_power_outage_is_automatically_priority(self):
+        response = self.create_report(
+            title="Panne électrique",
+            description="Le secteur est sans courant.",
+            incident_category="power_outage",
+            severity="moderate",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        item = CitizenRequest.objects.get(pk=response.data["id"])
+        self.assertEqual(item.handling_route, CitizenRequest.HandlingRoute.PRIORITY)
+        self.assertEqual(item.priority, CitizenRequest.Priority.HIGH)
 
     @patch("apps.city.services.report_alerting.publish_event_now", return_value=True)
     def test_medical_emergency_enters_durable_emergency_circuit(self, publish):

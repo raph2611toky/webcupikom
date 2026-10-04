@@ -65,7 +65,7 @@ class ReportCategorySerializer(serializers.Serializer):
     suggested_service = serializers.IntegerField(allow_null=True)
     suggested_service_name = serializers.CharField(allow_null=True)
     needs_triage = serializers.BooleanField()
-    alerting = serializers.ChoiceField(choices=["standard", "emergency"])
+    alerting = serializers.ChoiceField(choices=["standard", "priority", "emergency"])
     emergency = serializers.BooleanField()
 
 

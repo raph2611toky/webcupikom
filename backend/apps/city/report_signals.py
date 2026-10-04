@@ -12,8 +12,11 @@ def remove_private_image(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=CitizenRequest)
-def ensure_emergency_alert_outbox(sender, instance, **kwargs):
-    # Import local pour garder les signaux légers au démarrage de Django.
+def ensure_emergency_alert_outbox(sender, instance, created=False, **kwargs):
+    # Imports locaux pour garder les signaux légers au démarrage de Django.
     from .services.report_alerting import ensure_report_alert_dispatch
+    from .services.report_email import notify_staff_new_report
 
     ensure_report_alert_dispatch(instance)
+    if created and instance.request_type == CitizenRequest.RequestType.REPORT:
+        notify_staff_new_report(instance)

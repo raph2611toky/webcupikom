@@ -24,7 +24,12 @@ class Command(BaseCommand):
         # Les seeders remplissent la base ; ils ne doivent pas lancer de tâches
         # WebSocket asynchrones qui peuvent survivre à la commande manage.py.
         realtime_enabled = bool(options.get("with_realtime"))
-        with override_settings(REALTIME_ENABLED=realtime_enabled):
+        # Un seeder ne doit jamais déclencher de diffusion externe involontaire.
+        # Le realtime et le fallback email des signalements sont neutralisés ici.
+        with override_settings(
+            REALTIME_ENABLED=realtime_enabled,
+            REPORT_EMAIL_FALLBACK_ENABLED=False,
+        ):
             self.stdout.write("1/3 — Lieux municipaux")
             call_command("seed_city_locations", verbosity=options.get("verbosity", 1))
 

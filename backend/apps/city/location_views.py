@@ -12,13 +12,14 @@ from rest_framework.views import APIView
 
 from helpers.permissions import IsAuthenticatedAdmin
 
-from .models import CityLocation, MunicipalService
+from .models import CityLocation, MunicipalService, NewsArticle
 from .serializers import (
     AdminCityLocationSerializer,
     CityLocationSerializer,
     MunicipalServiceSerializer,
 )
 from .services.audit import record_staff_audit
+from .services.news import active_news, ordered_news
 
 
 def _bool_param(value):
@@ -174,7 +175,7 @@ class TransportInfoView(APIView):
     @swagger_auto_schema(
         operation_id="city_transport_info",
         summary="Consulter les transports municipaux",
-        description="F36 : informations de mobilité, horaires et points de transport.",
+        description="F36 + F97 : informations de mobilité, horaires, interruptions actives et solutions de remplacement.",
         manual_parameters=[
             openapi.Parameter("district", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=False),
             openapi.Parameter("line", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=False,
@@ -192,6 +193,58 @@ class TransportInfoView(APIView):
                 if any(str(value).strip().lower() == line for value in (item.transport_lines or []))
             ]
         transport_service = MunicipalService.objects.filter(slug="transport").first()
+
+        disruptions_qs = NewsArticle.objects.filter(
+            active_news(),
+            publication_type="alert",
+        ).filter(
+            Q(category__iexact="transport")
+            | Q(category__iexact="mobilité")
+            | Q(service__slug__in=["transport", "mobilite"])
+        ).select_related("service")
+
+        disruptions = []
+        replacement_options = []
+        for article in ordered_news(disruptions_qs):
+            guidance = []
+            for row in article.audience_guidance or []:
+                if not isinstance(row, dict):
+                    continue
+                audience = str(row.get("audience", "") or "").strip()
+                instructions = str(row.get("instructions", "") or "").strip()
+                if audience and instructions:
+                    guidance.append({"audience": audience, "instructions": instructions})
+
+            if line:
+                matched = [
+                    row for row in guidance
+                    if line in row["audience"].casefold() or line in row["instructions"].casefold()
+                ]
+                haystack = " ".join([article.title, article.excerpt, article.affected_areas, article.instructions]).casefold()
+                if not matched and line not in haystack:
+                    continue
+                alternatives = matched or guidance
+            else:
+                alternatives = guidance
+
+            for row in alternatives:
+                if row["instructions"] not in replacement_options:
+                    replacement_options.append(row["instructions"])
+
+            disruptions.append({
+                "id": article.pk,
+                "slug": article.slug,
+                "title": article.title,
+                "severity": article.severity,
+                "affected_areas": article.affected_areas,
+                "instructions": article.instructions,
+                "alternatives": alternatives,
+                "published_at": article.published_at,
+                "expires_at": article.expires_at,
+                "action_label": article.action_label,
+                "action_url": article.action_url or f"/news/{article.slug}",
+            })
+
         return Response({
             "service": (
                 MunicipalServiceSerializer(transport_service, context={"request": request}).data
@@ -199,6 +252,9 @@ class TransportInfoView(APIView):
             ),
             "count": len(items),
             "locations": CityLocationSerializer(items, many=True, context={"request": request}).data,
+            "has_disruptions": bool(disruptions),
+            "disruptions": disruptions,
+            "replacement_options": replacement_options,
         })
 
 
