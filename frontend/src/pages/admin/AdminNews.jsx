@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { createAdminNews, deleteAdminNews, getAdminNews, getAdminNewsItem, unpublishAdminNews, updateAdminNews } from "../../api/news.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 
@@ -30,6 +31,7 @@ export default function AdminNews(){
   const [query,setQuery]=useState("");
   const [filter,setFilter]=useState("Toutes");
   const [typeFilter,setTypeFilter]=useState("all");
+  const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
@@ -53,6 +55,12 @@ export default function AdminNews(){
       return state&&type&&(!q||`${item.title} ${item.category} ${item.excerpt}`.toLowerCase().includes(q));
     });
   },[items,query,filter,typeFilter]);
+
+  const perPage=8;
+  const totalPages=Math.max(1,Math.ceil(rows.length/perPage));
+  const pageRows=rows.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>{setPage(1)},[query,filter,typeFilter]);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
 
   function openCreate(){setForm({...EMPTY});setModal({type:"create"});setNotice("")}
   async function openEdit(item){
@@ -126,7 +134,7 @@ export default function AdminNews(){
 
       <section className="portal-card">
         {loading?<div className="loading-card">Chargement…</div>:<div className="admin-news-list">
-          {rows.map(n=><article key={n.slug}>
+          {pageRows.map(n=><article key={n.slug}>
             <div>
               <div className="publication-admin-badges"><span className={`publication-type-chip type-${n.publicationType}`}>{TYPE_LABELS[n.publicationType]||"Publication"}</span>{n.publicationType==="alert"?<span className={`publication-severity severity-${n.severity}`}>{SEVERITY_LABELS[n.severity]||n.severity}</span>:null}{n.important?<span className="publication-important">Important</span>:null}</div>
               <h3>{n.title}</h3><p>{n.excerpt}</p>
@@ -134,6 +142,7 @@ export default function AdminNews(){
             <div><time>{n.date||"—"}</time><em>{n.published?"Publié":"Brouillon"}</em><button onClick={()=>openEdit(n)}>Modifier</button>{n.published?<button onClick={()=>unpublish(n)}>Dépublier</button>:null}<button className="text-danger" onClick={()=>remove(n)}>Supprimer</button></div>
           </article>)}
           {!rows.length?<div className="dashboard-empty">Aucune publication.</div>:null}
+          {rows.length?<PortalPagination page={page} totalPages={totalPages} totalItems={rows.length} perPage={perPage} onPageChange={setPage} itemLabel="publication" itemLabelPlural="publications"/>:null}
         </div>}
       </section>
 

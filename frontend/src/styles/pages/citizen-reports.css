@@ -24,3 +24,22 @@ body[data-route-group="portal"] .report-review-grid b { font-size: .875rem; }
 body[data-route-group="portal"] .report-review-grid .span-2 { grid-column: 1 / -1; }
 @media (max-width: 1050px) { body[data-route-group="portal"] .report-layout--wizard { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { body[data-route-group="portal"] :is(.report-location-grid, .report-description-grid, .report-review-grid) { grid-template-columns: 1fr; } body[data-route-group="portal"] .report-form--wizard { padding: 18px; } }
+
+/* Backend-driven report catalogue: compact enough for the complete category list. */
+body[data-route-group="portal"] .report-type-grid--wizard{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+body[data-route-group="portal"] .report-type-grid--wizard>button{min-height:74px;padding:10px 11px;border-radius:11px}
+body[data-route-group="portal"] .report-type-grid--wizard>button>i{width:34px;height:34px;min-width:34px;font-size:.95rem}
+body[data-route-group="portal"] .report-type-grid--wizard b{display:flex;align-items:center;gap:6px;font-size:.8rem;line-height:1.25}
+body[data-route-group="portal"] .report-type-grid--wizard b em{font-style:normal;padding:2px 5px;border-radius:999px;background:#ffedf0;color:#b82742;font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+body[data-route-group="portal"] .report-type-grid--wizard span{font-size:.7rem;line-height:1.35}
+body[data-route-group="portal"] .report-type-grid--wizard>button.is-emergency{border-color:#efc8d0;background:#fff9fa}
+body[data-route-group="portal"] .report-type-grid--wizard>button.is-emergency>i{background:#ffedf0;color:#bc2945}
+body[data-route-group="portal"] .report-type-grid--wizard>button.is-emergency.is-active{border-color:#bd2946;background:#fff3f5;box-shadow:0 0 0 2px rgba(189,41,70,.08)}
+body[data-route-group="portal"] .report-priority button:disabled{opacity:.42;cursor:not-allowed}
+body[data-route-group="portal"] .report-emergency-note{display:grid;gap:3px;margin-top:12px;padding:10px 12px;border:1px solid #efc8d0;border-radius:10px;background:#fff7f8;color:#8f263a}
+body[data-route-group="portal"] .report-emergency-note b{font-size:.78rem}
+body[data-route-group="portal"] .report-emergency-note span{font-size:.7rem;line-height:1.4;color:#7a4c56}
+html[data-contrast="high"] body[data-route-group="portal"] .report-type-grid--wizard>button.is-emergency,
+html[data-contrast="high"] body[data-route-group="portal"] .report-emergency-note{border:2px solid currentColor;background:Canvas;color:CanvasText}
+@media(max-width:880px){body[data-route-group="portal"] .report-type-grid--wizard{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){body[data-route-group="portal"] .report-type-grid--wizard{grid-template-columns:1fr}}

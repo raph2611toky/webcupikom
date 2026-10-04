@@ -234,6 +234,22 @@ export async function updateServiceAvailability(slug, payload, { role = "agent" 
   return normalizeService(data);
 }
 
+export async function getServiceHighlights({ limit = 4, force = false } = {}) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 4, 1), 20);
+  const load = async () => {
+    const { data } = await api.get("/city/services/highlights/", {
+      params: { limit: safeLimit },
+      skipAccessToken: true,
+    });
+    return {
+      featured: (Array.isArray(data?.featured) ? data.featured : []).map(normalizeService),
+      popular: (Array.isArray(data?.popular) ? data.popular : []).map(normalizeService),
+    };
+  };
+  if (force) return load();
+  return cachedRequest(`services:highlights:${getLocale()}:${safeLimit}`, load, { ttl: 60_000 });
+}
+
 export async function getServiceCategories() {
   const items = await getServices();
   return ["Tous", ...Array.from(new Set(items.map((item) => item.category).filter(Boolean)))];

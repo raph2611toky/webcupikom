@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import {
   getAdminAppointments,
   getAdminAppointmentSummary,
@@ -16,11 +17,17 @@ export default function AdminAppointments(){
   const [summary,setSummary]=useState({});
   const [filter,setFilter]=useState("all");
   const [query,setQuery]=useState("");
+  const [page,setPage]=useState(1);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
   const [saving,setSaving]=useState("");
 
   const visible=useMemo(()=>appointments.filter(item=>(filter==="all"||item.status===filter)&&(!query||`${item.reference} ${item.citizenName} ${item.citizenEmail} ${item.serviceName} ${item.agentName}`.toLowerCase().includes(query.toLowerCase()))),[appointments,filter,query]);
+  const perPage=10;
+  const totalPages=Math.max(1,Math.ceil(visible.length/perPage));
+  const pageRows=visible.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>{setPage(1)},[filter,query]);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
 
   async function loadCore(){
     const [rows,nextSummary]=await Promise.all([getAdminAppointments(),getAdminAppointmentSummary()]);
@@ -50,7 +57,7 @@ export default function AdminAppointments(){
       {notice?<div className="success-inline" role="status">{notice}</div>:null}{error?<div className="error-card" role="alert">{error}</div>:null}
       <section className="metric-grid metric-grid--4"><article><span>Total</span><strong>{summary.total||appointments.length}</strong><small>{summary.today||0} aujourd’hui</small></article><article><span>En attente</span><strong>{summary.requested||0}</strong><small>À organiser</small></article><article><span>Confirmés</span><strong>{summary.confirmed||0}</strong><small>{summary.upcoming||0} à venir</small></article><article><span>Terminés</span><strong>{summary.completed||0}</strong><small>{summary.cancelled||0} annulés</small></article></section>
       <section className="toolbar-card"><div className="toolbar-line"><label className="portal-search"><span aria-hidden="true">⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Référence, citoyen, service, agent..."/></label><button type="button" className="secondary-action" onClick={()=>loadCore().catch(err=>setError(getApiErrorMessage(err,"Impossible d’actualiser.")))}>Actualiser</button></div><div className="filter-row filter-row--portal">{FILTERS.map(([value,label])=><button key={value} type="button" className={filter===value?"is-active":""} onClick={()=>setFilter(value)}>{label}</button>)}</div></section>
-      <section className="portal-card"><div className="accessible-table-wrap"><table className="accessible-table"><caption className="sr-only">Tous les rendez-vous</caption><thead><tr><th>Référence</th><th>Citoyen</th><th>Agent</th><th>Service</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead><tbody>{visible.map(item=><tr key={item.reference}><td className="mono">{item.reference}</td><td><strong>{item.citizenName}</strong><small>{item.citizenEmail}</small></td><td>{item.agentName}</td><td>{item.serviceName}</td><td>{item.date} · {item.startTime}</td><td><span className={`status-pill status-${item.status}`}>{getAppointmentStatusLabel(item.status)}</span></td><td><div className="admin-appointment-inline-actions">{item.status==="requested"?<><button disabled={saving===item.reference} onClick={()=>setStatus(item,"confirmed")}>Confirmer</button><button className="text-danger" disabled={saving===item.reference} onClick={()=>setStatus(item,"declined")}>Refuser</button></>:null}{item.status==="confirmed"?<><button disabled={saving===item.reference} onClick={()=>setStatus(item,"completed")}>Terminer</button><button className="text-danger" disabled={saving===item.reference} onClick={()=>setStatus(item,"cancelled")}>Annuler</button></>:null}</div></td></tr>)}</tbody></table>{!visible.length?<div className="dashboard-empty">Aucun rendez-vous.</div>:null}</div></section>
+      <section className="portal-card"><div className="accessible-table-wrap"><table className="accessible-table"><caption className="sr-only">Tous les rendez-vous</caption><thead><tr><th>Référence</th><th>Citoyen</th><th>Agent</th><th>Service</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead><tbody>{pageRows.map(item=><tr key={item.reference}><td className="mono">{item.reference}</td><td><strong>{item.citizenName}</strong><small>{item.citizenEmail}</small></td><td>{item.agentName}</td><td>{item.serviceName}</td><td>{item.date} · {item.startTime}</td><td><span className={`status-pill status-${item.status}`}>{getAppointmentStatusLabel(item.status)}</span></td><td><div className="admin-appointment-inline-actions">{item.status==="requested"?<><button disabled={saving===item.reference} onClick={()=>setStatus(item,"confirmed")}>Confirmer</button><button className="text-danger" disabled={saving===item.reference} onClick={()=>setStatus(item,"declined")}>Refuser</button></>:null}{item.status==="confirmed"?<><button disabled={saving===item.reference} onClick={()=>setStatus(item,"completed")}>Terminer</button><button className="text-danger" disabled={saving===item.reference} onClick={()=>setStatus(item,"cancelled")}>Annuler</button></>:null}</div></td></tr>)}</tbody></table>{!visible.length?<div className="dashboard-empty">Aucun rendez-vous.</div>:null}{visible.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visible.length} perPage={perPage} onPageChange={setPage} itemLabel="rendez-vous" itemLabelPlural="rendez-vous"/>:null}</div></section>
     </main>
   </div></div>;
 }

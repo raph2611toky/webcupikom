@@ -113,16 +113,70 @@ const REPORT_LABELS = {
 };
 
 function labelReport(item, locale){
-  return REPORT_LABELS[locale]?.[item.label] || item.label;
+  return DYNAMIC_LABELS[locale]?.[item.value] || REPORT_LABELS[locale]?.[item.label] || item.label;
+}
+
+const BACKEND_REPORT_UI = {
+  street_lighting:{icon:"✦",helper:"Lampadaire éteint, clignotant ou endommagé"},
+  road_damage:{icon:"⌁",helper:"Trou, obstacle, trottoir ou chaussée dégradée"},
+  waste:{icon:"▧",helper:"Dépôt, collecte ou problème de propreté"},
+  water_leak:{icon:"◒",helper:"Fuite, écoulement ou canalisation endommagée"},
+  green_spaces:{icon:"♧",helper:"Arbre, parc ou espace vert à entretenir"},
+  accessibility:{icon:"♿",helper:"Obstacle ou équipement qui limite l’accessibilité"},
+  public_safety:{icon:"!",helper:"Situation dangereuse dans l’espace public"},
+  medical_emergency:{icon:"+",helper:"Urgence médicale nécessitant une intervention prioritaire"},
+  fire_emergency:{icon:"△",helper:"Incendie, fumée ou départ de feu"},
+  immediate_danger:{icon:"!",helper:"Danger immédiat pour les personnes ou les biens"},
+  building:{icon:"⌂",helper:"Bâtiment ou équipement municipal dégradé"},
+  other:{icon:"+",helper:"Tout autre problème à signaler à la ville"},
+};
+
+const DYNAMIC_LABELS = {
+  en:{
+    street_lighting:"Street lighting",road_damage:"Road and pavement",waste:"Waste and cleanliness",water_leak:"Water leak",green_spaces:"Green spaces",
+    accessibility:"Public-space accessibility",public_safety:"Public safety",medical_emergency:"Medical emergency",fire_emergency:"Fire emergency",
+    immediate_danger:"Immediate danger",building:"Municipal building / equipment",other:"Other problem"
+  },
+  mg:{
+    street_lighting:"Jiro an-dalambe",road_damage:"Lalana sy arabe",waste:"Fako sy fahadiovana",water_leak:"Fivoahan-drano",green_spaces:"Toerana maitso",
+    accessibility:"Fahafahana miditra amin'ny toerana ho an'ny daholobe",public_safety:"Fiarovana eny amin'ny toerana ho an'ny daholobe",
+    medical_emergency:"Vonjy taitra ara-pahasalamana",fire_emergency:"Afo / firehetana",immediate_danger:"Loza eo noho eo",building:"Trano na fitaovan'ny tanàna",other:"Olana hafa"
+  }
+};
+
+function backendReportType(item){
+  const preset=BACKEND_REPORT_UI[item?.code]||BACKEND_REPORT_UI.other;
+  return {
+    value:item?.code||"other",
+    label:item?.label||"Autre problème",
+    icon:preset.icon,
+    category:item?.label||"Autre",
+    service:item?.suggested_service||"",
+    serviceName:item?.suggested_service_name||"",
+    helper:preset.helper,
+    emergency:Boolean(item?.emergency),
+    alerting:item?.alerting||"standard",
+    needsTriage:Boolean(item?.needs_triage),
+  };
+}
+
+function getReportPrefill(){
+  const params=new URLSearchParams(window.location.search);
+  return {
+    category:params.get("category")||"",
+    message:params.get("message")||"",
+    subject:params.get("subject")||"",
+  };
 }
 
 export default function CitizenReports(){
   const {user}=useAuth();
   const [locale]=useLocale();
   const copy=COPY[locale]||COPY.fr;
-  const [reportType,setReportType]=useState(REPORT_TYPES[0].value);
-  const [subject,setSubject]=useState("");
-  const [message,setMessage]=useState("");
+  const prefill=useMemo(()=>getReportPrefill(),[]);
+  const [reportType,setReportType]=useState(prefill.category||REPORT_TYPES[0].value);
+  const [subject,setSubject]=useState(prefill.subject);
+  const [message,setMessage]=useState(prefill.message);
   const [sector,setSector]=useState("");
   const [location,setLocation]=useState("");
   const [coordinates,setCoordinates]=useState(null);
@@ -137,9 +191,14 @@ export default function CitizenReports(){
   const [reportMeta,setReportMeta]=useState({categories:[],limits:{},locationRule:"",dangerGuidance:""});
   const fileRef=useRef(null);
 
+  const reportTypes=useMemo(()=>{
+    if(reportMeta.categories.length) return reportMeta.categories.map(backendReportType);
+    return REPORT_TYPES.map(item=>({...item,emergency:false,serviceName:item.service}));
+  },[reportMeta.categories]);
+
   const selected=useMemo(
-    ()=>REPORT_TYPES.find(item=>item.value===reportType)||REPORT_TYPES[0],
-    [reportType]
+    ()=>reportTypes.find(item=>item.value===reportType)||reportTypes[0]||REPORT_TYPES[0],
+    [reportType,reportTypes]
   );
 
   async function refresh(){
@@ -153,6 +212,16 @@ export default function CitizenReports(){
     refresh();
     getCitizenReportCategories().then(setReportMeta).catch(()=>{});
   },[]);
+
+  useEffect(()=>{
+    if(reportTypes.length&&!reportTypes.some(item=>item.value===reportType)){
+      setReportType(reportTypes[0].value);
+    }
+  },[reportTypes,reportType]);
+
+  useEffect(()=>{
+    if(selected?.emergency) setPriority("danger");
+  },[selected?.value,selected?.emergency]);
 
   function usePosition(){
     setError("");
@@ -191,7 +260,7 @@ export default function CitizenReports(){
     try{
       const label=[sector.trim(),location.trim()].filter(Boolean).join(" · ") || "Position GPS transmise";
       const normalized=(value)=>String(value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-      const backendCategory=reportMeta.categories.find(item=>{
+      const backendCategory=reportMeta.categories.find(item=>item.code===selected.value)||reportMeta.categories.find(item=>{
         const hay=[item.code,item.label].map(normalized);
         const wanted=[selected.value,selected.label,selected.category].map(normalized);
         return hay.some(a=>wanted.some(b=>a===b||a.includes(b)||b.includes(a)));
@@ -288,15 +357,15 @@ export default function CitizenReports(){
 
               {step===1 ? <section className="report-step report-step--active">
                 <div className="report-type-grid report-type-grid--wizard">
-                  {REPORT_TYPES.map(item=><button
+                  {reportTypes.map(item=><button
                     type="button"
                     key={item.value}
-                    className={reportType===item.value?"is-active":""}
+                    className={`${reportType===item.value?"is-active":""}${item.emergency?" is-emergency":""}`}
                     aria-pressed={reportType===item.value}
                     onClick={()=>setReportType(item.value)}
                   >
                     <i aria-hidden="true">{item.icon}</i>
-                    <div><b>{labelReport(item,locale)}</b><span>{helperReport(item,locale)}</span></div>
+                    <div><b>{labelReport(item,locale)}{item.emergency?<em>Urgence</em>:null}</b><span>{helperReport(item,locale)}</span></div>
                   </button>)}
                 </div>
               </section> : null}
@@ -323,9 +392,10 @@ export default function CitizenReports(){
                 <div className="report-priority">
                   <span>{copy.priority}</span>
                   <div>
-                    {[["normal",copy.normal],["important",copy.important],["danger",copy.danger]].map(([value,label])=><button type="button" key={value} className={priority===value?"is-active":""} aria-pressed={priority===value} onClick={()=>setPriority(value)}>{label}</button>)}
+                    {[["normal",copy.normal],["important",copy.important],["danger",copy.danger]].map(([value,label])=><button type="button" key={value} className={priority===value?"is-active":""} aria-pressed={priority===value} disabled={selected.emergency&&value!=="danger"} onClick={()=>setPriority(value)}>{label}</button>)}
                   </div>
                 </div>
+                {selected.emergency?<div className="report-emergency-note" role="status"><b>Priorité critique automatique</b><span>{reportMeta.dangerGuidance||"Cette catégorie déclenche un circuit municipal prioritaire."}</span></div>:null}
 
                 <div className="report-file">
                   <div><b>{copy.photo}</b><span>{reportMeta.limits?.image_max_bytes?`${copy.photoHelp} · max ${Math.round(reportMeta.limits.image_max_bytes/1024/1024)} Mo`:copy.photoHelp}</span></div>
@@ -338,7 +408,7 @@ export default function CitizenReports(){
                 <div className="report-review-grid">
                   <div><span>{copy.type}</span><b>{labelReport(selected,locale)}</b></div>
                   <div><span>{copy.place}</span><b>{[sector,location].filter(Boolean).join(" · ")||copy.positionReady}</b></div>
-                  <div><span>{copy.service}</span><b>{selected.service}</b></div>
+                  <div><span>{copy.service}</span><b>{selected.serviceName||selected.service||"Attribution municipale"}</b></div>
                   <div><span>{copy.priority}</span><b>{priority==="danger"?copy.danger:priority==="important"?copy.important:copy.normal}</b></div>
                   <div className="span-2"><span>{copy.details}</span><b>{message}</b></div>
                 </div>

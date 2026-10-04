@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { getMunicipalProjects } from "../../api/projects.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 
@@ -10,6 +11,7 @@ export default function AgentProjects(){
   const [projects,setProjects]=useState([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
+  const [page,setPage]=useState(1);
 
   useEffect(()=>{
     let active=true;
@@ -19,6 +21,11 @@ export default function AgentProjects(){
       .finally(()=>active&&setLoading(false));
     return()=>{active=false};
   },[]);
+
+  const perPage=8;
+  const totalPages=Math.max(1,Math.ceil(projects.length/perPage));
+  const pageProjects=projects.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
 
   const stats=useMemo(()=>({
     active:projects.filter(p=>!["completed","cancelled"].includes(p.status)).length,
@@ -33,7 +40,7 @@ export default function AgentProjects(){
       {error?<div className="error-card" role="alert">{error}</div>:null}
       <section className="agent-project-readonly-strip" aria-label="Mode de gestion des projets"><div><strong>Consultation Agent</strong><span>Création et publication : Administration → Projets municipaux → Nouveau projet.</span></div><b>Lecture seule</b></section>
       <section className="metric-grid metric-grid--4"><article><span>Actifs</span><strong>{stats.active}</strong><small>projets publiés</small></article><article><span>Consultations</span><strong>{stats.consultations}</strong><small>ouvertes</small></article><article><span>Décisions</span><strong>{stats.decisions}</strong><small>ouvertes</small></article><article><span>Soutiens</span><strong>{stats.supports}</strong><small>citoyens</small></article></section>
-      <section className="portal-card agent-project-list"><div className="portal-card__head"><div><h3>Projets visibles par les citoyens</h3><p className="detail-copy">Cette vue utilise uniquement les informations publiques exposées par le backend.</p></div></div>{loading?<div className="loading-card">Chargement…</div>:projects.map(project=><article key={project.id||project.slug} className="agent-project-row"><div><span className={`project-status status-${project.status}`}>{project.statusLabel||STATUS[project.status]||project.status}</span><h4>{project.title}</h4><p>{project.district||"Nova Terra"} · {project.progress}% · {project.participation_type==="none"?"Information":project.participation_type==="decision"?"Décision citoyenne":"Consultation"}</p></div><div className="agent-project-row__numbers"><span><b>{project.supportCount||0}</b> soutiens</span><span><b>{project.participation_type!=="none"?(project.participationIsOpen?"Ouverte":"Fermée"):"—"}</b> participation</span></div></article>)}{!loading&&!projects.length?<p className="detail-copy">Aucun projet publié actuellement.</p>:null}</section>
+      <section className="portal-card agent-project-list"><div className="portal-card__head"><div><h3>Projets visibles par les citoyens</h3><p className="detail-copy">Cette vue utilise uniquement les informations publiques exposées par le backend.</p></div></div>{loading?<div className="loading-card">Chargement…</div>:pageProjects.map(project=><article key={project.id||project.slug} className="agent-project-row"><div><span className={`project-status status-${project.status}`}>{project.statusLabel||STATUS[project.status]||project.status}</span><h4>{project.title}</h4><p>{project.district||"Nova Terra"} · {project.progress}% · {project.participation_type==="none"?"Information":project.participation_type==="decision"?"Décision citoyenne":"Consultation"}</p></div><div className="agent-project-row__numbers"><span><b>{project.supportCount||0}</b> soutiens</span><span><b>{project.participation_type!=="none"?(project.participationIsOpen?"Ouverte":"Fermée"):"—"}</b> participation</span></div></article>)}{!loading&&!projects.length?<p className="detail-copy">Aucun projet publié actuellement.</p>:null}{!loading&&projects.length?<PortalPagination page={page} totalPages={totalPages} totalItems={projects.length} perPage={perPage} onPageChange={setPage} itemLabel="projet" itemLabelPlural="projets"/>:null}</section>
     </main>
   </div></div>;
 }

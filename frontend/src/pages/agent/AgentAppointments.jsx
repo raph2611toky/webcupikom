@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { getAgentAppointments, getAgentAppointmentSummary, getAppointmentStatusLabel, updateAgentAppointment } from "../../api/appointments.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
@@ -14,6 +15,7 @@ export default function AgentAppointments(){
   const [appointments,setAppointments]=useState([]),[summary,setSummary]=useState({}),[loading,setLoading]=useState(true),[savingReference,setSavingReference]=useState(""),[notice,setNotice]=useState(""),[error,setError]=useState("");
   const [filters,setFilters]=useState({status:"",search:"",upcoming:"",date_from:"",date_to:""});
   const [rescheduleTarget,setRescheduleTarget]=useState(null);
+  const [page,setPage]=useState(1);
   const [rescheduleForm,setRescheduleForm]=useState({starts_at:"",ends_at:""});
 
   async function loadSummary(){try{setSummary(await getAgentAppointmentSummary())}catch{}}
@@ -21,6 +23,11 @@ export default function AgentAppointments(){
   useEffect(()=>{let active=true;const timer=window.setTimeout(()=>{setLoading(true);setError("");getAgentAppointments({...filters,upcoming:filters.upcoming||undefined}).then(rows=>active&&setAppointments(rows)).catch(err=>active&&setError(getApiErrorMessage(err,"Impossible de charger les rendez-vous."))).finally(()=>active&&setLoading(false))},180);return()=>{active=false;window.clearTimeout(timer)}},[filters]);
 
   const visible=useMemo(()=>appointments,[appointments]);
+  const perPage=8;
+  const totalPages=Math.max(1,Math.ceil(visible.length/perPage));
+  const pageRows=visible.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>{setPage(1)},[filters.status,filters.search,filters.upcoming,filters.date_from,filters.date_to]);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
   async function setStatus(item,status){
     setError("");setNotice("");setSavingReference(item.reference);
     try{
@@ -62,11 +69,11 @@ export default function AgentAppointments(){
         <div className="management-filter-row appointment-filter-row">{FILTERS.map(([value,label])=><button type="button" key={value||"all"} className={filters.status===value?"is-active":""} onClick={()=>setFilters(v=>({...v,status:value}))}>{label}</button>)}</div>
       </section>
       <section className="portal-card appointment-agent-list"><div className="portal-card__head"><div><span className="section-label">Agenda agent</span><h3>{visible.length} rendez-vous affiché{visible.length>1?"s":""}</h3></div><span className="request-list-hint">Filtres appliqués par l’API</span></div>
-        {loading?<div className="loading-card">Chargement…</div>:<div className="agent-appointment-list">{visible.length?visible.map(item=><article key={item.reference} className={`agent-appointment status-${item.status}`}>
+        {loading?<div className="loading-card">Chargement…</div>:<div className="agent-appointment-list">{visible.length?pageRows.map(item=><article key={item.reference} className={`agent-appointment status-${item.status}`}>
           <div className="agent-appointment__time"><b>{item.startTime||"—"}</b><span>{formatDate(item.date)}</span></div>
           <div className="agent-appointment__body"><div className="agent-appointment__title"><strong>{item.citizenName}</strong><em>{getAppointmentStatusLabel(item.status)}</em></div><span>{item.serviceName} · {item.reference}</span><p>{item.reason||"Motif non précisé"}</p><div className="agent-appointment__meta"><small>{item.slot||`${item.startTime} - ${item.endTime}`}</small><small>{item.citizenEmail||"—"}</small>{item.location?<small>Lieu : {item.location}</small>:null}{item.preparation?<small>Préparation : {item.preparation}</small>:null}</div>
           <div className="agent-appointment__actions">{item.status==="requested"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"confirmed")}>Confirmer</button><button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"declined")}>Refuser</button></>:null}{item.status==="confirmed"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"completed")}>Terminer</button><button className="secondary-action" disabled={savingReference===item.reference} onClick={()=>openReschedule(item)}>Replanifier</button>{item.canCancel?<button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"cancelled")}>Annuler</button>:null}</>:null}</div></div>
-        </article>):<div className="dashboard-empty">Aucun rendez-vous dans ce filtre.</div>}</div>}
+        </article>):<div className="dashboard-empty">Aucun rendez-vous dans ce filtre.</div>}{visible.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visible.length} perPage={perPage} onPageChange={setPage} itemLabel="rendez-vous" itemLabelPlural="rendez-vous"/>:null}</div>}
       </section>
       {rescheduleTarget?<div className="modal-backdrop" onClick={()=>setRescheduleTarget(null)}><form className="portal-modal compact-note-modal" onClick={e=>e.stopPropagation()} onSubmit={reschedule}><button type="button" className="modal-close" onClick={()=>setRescheduleTarget(null)}>×</button><span className="section-label">Replanification</span><h2>{rescheduleTarget.reference}</h2><label><span>Début</span><input type="datetime-local" required value={rescheduleForm.starts_at} onChange={e=>setRescheduleForm(v=>({...v,starts_at:e.target.value}))}/></label><label><span>Fin</span><input type="datetime-local" required value={rescheduleForm.ends_at} onChange={e=>setRescheduleForm(v=>({...v,ends_at:e.target.value}))}/></label><button className="primary-action" type="submit" disabled={savingReference===rescheduleTarget.reference}>{savingReference===rescheduleTarget.reference?"Enregistrement…":"Enregistrer le nouveau créneau"}</button></form></div>:null}
     </main>

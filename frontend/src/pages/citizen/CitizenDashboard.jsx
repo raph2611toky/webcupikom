@@ -4,12 +4,13 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getCitizenRequests } from "../../api/requests.js";
 import { getCitizenDashboard } from "../../api/dashboards.js";
-import { getServices } from "../../api/services.js";
+import { getServiceHighlights, getServices } from "../../api/services.js";
 import { getNews, getAlerts } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import { useDataMode } from "../../utils/useDataMode.js";
 import { runWhenIdle } from "../../utils/performance.js";
+import CitizenOrientationAssistant from "../../components/ui/CitizenOrientationAssistant.jsx";
 
 const DASH_COPY = {
   fr:{
@@ -61,20 +62,30 @@ export default function CitizenDashboard(){
   const dataProfile = useDataMode();
   const [citizenRequests,setCitizenRequests]=useState([]);
   const [requestSummary,setRequestSummary]=useState(null);
+  const [dashboardSummary,setDashboardSummary]=useState(null);
   const [services,setServices]=useState([]);
+  const [priorityServices,setPriorityServices]=useState([]);
   const [news,setNews]=useState([]);
   const [alerts,setAlerts]=useState([]);
   const [showStartGuide,setShowStartGuide]=useState(()=>localStorage.getItem("nova_terra_first_steps_done")!=="done");
 
   const load = async () => {
-    const [requestsData, servicesData, dashboardData] = await Promise.all([
+    const [requestsData, servicesData, dashboardData, highlightsData] = await Promise.all([
       getCitizenRequests({page_size:10,ordering:"-updated_at"}),
       getServices(),
       getCitizenDashboard().catch(()=>null),
+      getServiceHighlights({limit:4}).catch(()=>null),
     ]);
     setCitizenRequests(requestsData);
     setServices(servicesData);
+    setDashboardSummary(dashboardData);
     setRequestSummary(dashboardData?.requests||null);
+    const highlighted = highlightsData?.featured?.length
+      ? highlightsData.featured
+      : highlightsData?.popular?.length
+        ? highlightsData.popular
+        : servicesData.slice(0,4);
+    setPriorityServices(highlighted.slice(0,4));
 
     const loadSecondary = async () => {
       const [newsData, alertResult] = await Promise.all([
@@ -107,7 +118,8 @@ export default function CitizenDashboard(){
   const actions=requestSummary?Number(requestSummary.action_required||0):citizenRequests.filter(r=>r.statusCode==="action_required").length;
   const availableServices=useMemo(()=>services.filter(service=>service.isAvailable!==false).length,[services]);
   const activeReports=useMemo(()=>citizenRequests.filter(r=>r.requestType==="signalement"&&!r.isClosed),[citizenRequests]);
-  const profileCompletion=Math.round(([user?.first_name,user?.last_name,user?.email,user?.phone_number,user?.locale].filter(Boolean).length/5)*100);
+  const localProfileCompletion=Math.round(([user?.first_name,user?.last_name,user?.email,user?.phone_number,user?.locale].filter(Boolean).length/5)*100);
+  const profileCompletion=Math.max(0,Math.min(100,Number(dashboardSummary?.profile_completion ?? localProfileCompletion)));
   const visibleAlerts=useMemo(()=>[
     ...alerts.map(item=>({id:`official-${item.id||item.slug}`,kind:"official",title:item.title,detail:item.excerpt||"Information importante de la ville.",target:item.slug?`/citizen/news/${item.slug}`:"/citizen/news"})),
     ...activeReports.map(item=>({id:`report-${item.ref}`,kind:"report",title:`Alerte terrain · ${item.title}`,detail:`${item.ref} · ${item.status}`,target:`/citizen/requests/${encodeURIComponent(item.ref)}`})),
@@ -142,6 +154,8 @@ export default function CitizenDashboard(){
             <span>{copy.profile}</span>
           </div>
         </section>
+
+        <CitizenOrientationAssistant compact />
 
         {showStartGuide?<section className="citizen-home-onboarding" aria-label={copy.first}>
           <div className="citizen-home-onboarding__head">
@@ -190,7 +204,7 @@ export default function CitizenDashboard(){
               <button type="button" onClick={()=>navigate('/citizen/services')}>{t("allServices", locale)} →</button>
             </div>
             <div className="citizen-home-services">
-              {services.slice(0,4).map(s=><button key={s.slug} type="button" className={s.isAvailable===false?"is-unavailable":""} onClick={()=>navigate(`/citizen/services/${s.slug}`)}>
+              {priorityServices.map(s=><button key={s.slug} type="button" className={s.isAvailable===false?"is-unavailable":""} onClick={()=>navigate(`/citizen/services/${s.slug}`)}>
                 <i>{s.icon || "◇"}</i><span>{s.name}</span>{s.isAvailable===false?<small>Indisponible</small>:null}
               </button>)}
             </div>

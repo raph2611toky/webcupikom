@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { createAdminUser, getAdminUser, getAdminUsers, updateAdminUser } from "../../api/admin.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 
@@ -10,6 +11,7 @@ export default function AdminUsers(){
   const [items,setItems]=useState([]);
   const [q,setQ]=useState("");
   const [role,setRole]=useState("all");
+  const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [modal,setModal]=useState(null);
@@ -25,6 +27,11 @@ export default function AdminUsers(){
   useEffect(()=>{load()},[]);
 
   const rows=useMemo(()=>items.filter(u=>(role==="all"||u.role===role)&&(!q||`${u.display_name||""} ${u.email} ${u.id}`.toLowerCase().includes(q.toLowerCase()))),[items,q,role]);
+  const perPage=10;
+  const totalPages=Math.max(1,Math.ceil(rows.length/perPage));
+  const pageRows=rows.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>{setPage(1)},[q,role]);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
 
   function openCreate(){setForm(EMPTY);setModal({type:"create"})}
   async function openEdit(user){
@@ -65,13 +72,13 @@ export default function AdminUsers(){
         {loading?<div className="loading-card">Chargement…</div>:<div className="accessible-table-wrap"><table className="accessible-table">
           <caption className="sr-only">Liste des utilisateurs</caption>
           <thead><tr><th scope="col">Utilisateur</th><th scope="col">ID</th><th scope="col">Rôle</th><th scope="col">Statut</th><th scope="col">Actions</th></tr></thead>
-          <tbody>{rows.map(u=><tr key={u.id}>
+          <tbody>{pageRows.map(u=><tr key={u.id}>
             <td><strong>{u.display_name||u.email}</strong><small>{u.email}</small></td>
             <td className="mono">#{u.id}</td><td>{u.role}</td>
             <td><span className={`status-pill ${u.is_active?"status-actif":"status-inactif"}`}>{u.is_active?"Actif":"Inactif"}</span></td>
             <td><button type="button" className="accessible-table__action" onClick={()=>openEdit(u)}>Modifier</button></td>
           </tr>)}</tbody>
-        </table></div>}
+        </table><PortalPagination page={page} totalPages={totalPages} totalItems={rows.length} perPage={perPage} onPageChange={setPage} itemLabel="utilisateur" itemLabelPlural="utilisateurs"/></div>}
       </section>
 
       {modal?<div className="modal-backdrop" onMouseDown={()=>!saving&&setModal(null)}>

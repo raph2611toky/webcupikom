@@ -733,3 +733,16 @@ html[data-data-saver="true"] :where(body[data-route-group="portal"]) .cit-appt-s
   background:#f3eefc;
   box-shadow:none;
 }
+
+/* V94 — la liste reste centrée sur les rendez-vous; le calendrier n'existe que dans la prise de rendez-vous. */
+:where(body[data-route-group="portal"]) .cit-appt-list-layout{
+  grid-template-columns:minmax(0,1fr) minmax(230px,300px);
+}
+:where(body[data-route-group="portal"]) .cit-appt-side-stack{align-content:start}
+:where(body[data-route-group="portal"]) .cit-appt-next-card{position:sticky;top:86px}
+@media(max-width:1200px){
+  :where(body[data-route-group="portal"]) .cit-appt-list-layout{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .cit-appt-next-card{position:static}
+}
+/* V94 — aucune vue calendrier décorative dans la liste : le calendrier est réservé à la prise de rendez-vous. */
+:where(body[data-route-group="portal"]) .cit-appt-hero-grid{grid-template-columns:1fr}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { notifyNotificationStateChanged } from "../../components/ui/NotificationBell.jsx";
 import {
   getCitizenNotification,
@@ -115,6 +116,7 @@ export default function CitizenNotifications(){
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const [filter,setFilter]=useState("Toutes");
+  const [page,setPage]=useState(1);
 
   async function load({silent=false}={}){
     if(!silent)setLoading(true);
@@ -161,6 +163,12 @@ export default function CitizenNotifications(){
     if(filter==="Non lues")return !item.is_read;
     return item.notificationType===filter;
   }),[normalized,filter]);
+
+  const perPage=8;
+  const totalPages=Math.max(1,Math.ceil(visible.length/perPage));
+  const pageItems=visible.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>{setPage(1)},[filter]);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
 
   const overview=useMemo(()=>({
     total:normalized.length,
@@ -270,7 +278,7 @@ export default function CitizenNotifications(){
           {loading&&!items.length?<div className="notification-loading-state"><i/><span>{copy.loading}</span></div>:null}
           {!loading&&!visible.length?<div className="notification-empty-state"><i aria-hidden="true">✓</i><strong>{copy.empty}</strong><span>{filter==="Non lues"?"Tout est à jour.":"Les nouvelles notifications apparaîtront ici."}</span></div>:null}
 
-          {visible.map(item=><button
+          {pageItems.map(item=><button
             key={item.id}
             type="button"
             className={`${item.typeMeta.className} ${!item.is_read?"is-unread":""} ${String(selected?.id)===String(item.id)?"is-selected":""}`}
@@ -291,6 +299,7 @@ export default function CitizenNotifications(){
             </div>
             <span className="notification-arrow" aria-hidden="true">→</span>
           </button>)}
+          {!loading&&visible.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visible.length} perPage={perPage} onPageChange={setPage} itemLabel="notification" itemLabelPlural="notifications"/>:null}
         </div>
 
         {selected?<aside className="portal-card notification-detail-panel" aria-label={copy.detail}>

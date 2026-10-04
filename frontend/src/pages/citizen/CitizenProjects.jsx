@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { getCitizenIdeas, getMunicipalProjects, submitCitizenIdea } from "../../api/projects.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
@@ -28,6 +29,7 @@ export default function CitizenProjects(){
   const {user}=useAuth();
   const [projects,setProjects]=useState([]);
   const [filter,setFilter]=useState("all");
+  const [page,setPage]=useState(1);
   const [ideaOpen,setIdeaOpen]=useState(false);
   const [ideasOpen,setIdeasOpen]=useState(false);
   const [ideas,setIdeas]=useState([]);
@@ -52,6 +54,12 @@ export default function CitizenProjects(){
     if(filter==="participation")return project.participation_type!=="none"&&project.participationIsOpen;
     return project.status===filter;
   }),[projects,filter]);
+
+  const perPage=6;
+  const totalPages=Math.max(1,Math.ceil(visible.length/perPage));
+  const paginatedProjects=visible.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>{setPage(1)},[filter]);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
 
   async function submitIdea(event){
     event.preventDefault();
@@ -88,7 +96,7 @@ export default function CitizenProjects(){
       {!loading&&!visible.length?<section className="portal-card project-empty-state"><i aria-hidden="true">✦</i><strong>Aucun projet dans cette catégorie</strong><span>Les projets publiés par l’administration apparaîtront ici.</span></section>:null}
 
       <section className="project-grid project-grid--compact" aria-label="Liste des projets municipaux">
-        {visible.map(project=><article className="project-card project-card--compact" key={project.id||project.slug}>
+        {paginatedProjects.map(project=><article className="project-card project-card--compact" key={project.id||project.slug}>
           <div className="project-card__top"><span className={`project-status status-${project.status}`}>{project.statusLabel||STATUS[project.status]||project.status}</span>{project.participation_type!=="none"?<span className="project-participation-badge">{project.participation_type==="decision"?"Décision":"Consultation"}</span>:null}</div>
           <div className="project-card__title-row"><div className="project-card__icon" aria-hidden="true">{project.participation_type==="decision"?"◎":project.district.includes("Aster")?"✚":"✦"}</div><div><h3>{project.title}</h3><p>{project.summary||project.description}</p></div></div>
           <div className="project-progress"><div><span>Progression</span><b>{project.progress}%</b></div><progress value={project.progress} max="100">{project.progress}%</progress></div>
@@ -96,6 +104,7 @@ export default function CitizenProjects(){
           <button className="secondary-action" type="button" onClick={()=>navigate(`/citizen/projects/${project.slug}`)}>Voir le projet →</button>
         </article>)}
       </section>
+      {!loading&&visible.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visible.length} perPage={perPage} onPageChange={setPage} itemLabel="projet" itemLabelPlural="projets"/>:null}
 
       {ideaOpen?<div className="project-modal-backdrop" role="presentation" onMouseDown={(e)=>{if(e.target===e.currentTarget)setIdeaOpen(false)}}><section className="project-modal" role="dialog" aria-modal="true" aria-labelledby="idea-title"><div className="project-modal__head"><div><h3 id="idea-title">Proposer une idée</h3><p>Une référence de suivi sera créée par Nova Terra.</p></div><button type="button" aria-label="Fermer" onClick={()=>setIdeaOpen(false)}>×</button></div><form onSubmit={submitIdea} className="project-form">
         <label><span>Titre</span><input value={idea.title} onChange={e=>setIdea(v=>({...v,title:e.target.value}))} placeholder="Ex. Installer des bancs au Jardin Lyra" required/></label>

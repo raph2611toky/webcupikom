@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import {
   createAdminMunicipalProject,
   deleteAdminMunicipalProject,
@@ -88,6 +89,7 @@ export default function AdminProjects(){
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
+  const [page,setPage]=useState(1);
 
   async function load(){
     setLoading(true);setError("");
@@ -131,6 +133,15 @@ export default function AdminProjects(){
       return matchesText&&matchesStatus;
     });
   },[ideas,query,ideaFilter]);
+
+  const perPage=8;
+  const activeRows=tab==="projects"?visibleProjects:tab==="contributions"?visibleContributions:visibleIdeas;
+  const totalPages=Math.max(1,Math.ceil(activeRows.length/perPage));
+  const pageProjects=visibleProjects.slice((page-1)*perPage,page*perPage);
+  const pageContributions=visibleContributions.slice((page-1)*perPage,page*perPage);
+  const pageIdeas=visibleIdeas.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>setPage(1),[tab,query,projectFilter,contributionFilter,ideaFilter]);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
 
   function changeParticipationType(type){
     setEditor(current=>{
@@ -216,18 +227,19 @@ export default function AdminProjects(){
       {loading?<div className="loading-card">Chargement…</div>:null}
 
       {!loading&&tab==="projects"?<section className="project-admin-list" aria-label="Liste des projets administrés">
-        {visibleProjects.map(project=><article className="project-admin-row" key={project.id||project.slug}>
+        {pageProjects.map(project=><article className="project-admin-row" key={project.id||project.slug}>
           <div className="project-admin-row__progress"><strong>{project.progress}%</strong><progress value={project.progress} max="100">{project.progress}%</progress></div>
           <div className="project-admin-row__body"><div className="project-admin-row__badges"><span className={`project-status status-${project.status}`}>{project.statusLabel||STATUS[project.status]||project.status}</span><span className={`project-publish-state ${project.isPublished!==false?"is-published":""}`}>{project.isPublished!==false?"Publié":"Brouillon"}</span>{project.participation_type!=="none"?<span className="project-participation-badge">{project.participation_type==="decision"?"Décision":"Consultation"}</span>:null}</div><h3>{project.title}</h3><p>{project.district||"Nova Terra"}{project.participationIsOpen?" · Participation ouverte":""}</p></div>
           <div className="project-admin-row__counts"><span><b>{project.participationCount||0}</b> participations</span><span><b>{project.supportCount||0}</b> soutiens</span><span><b>{project.ideaCount||0}</b> idées</span></div>
           <div className="project-admin-row__actions"><button className="secondary-action" type="button" onClick={()=>setEditor(editorFromProject(project))}>Modifier</button>{project.isPublished!==false?<button className="danger-action" type="button" disabled={saving} onClick={()=>unpublishProject(project)}>Dépublier</button>:null}</div>
         </article>)}
         {!visibleProjects.length?<div className="portal-card project-empty-state"><strong>Aucun projet correspondant</strong><span>Créez un projet ou modifiez vos filtres.</span></div>:null}
+        {visibleProjects.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visibleProjects.length} perPage={perPage} onPageChange={setPage} itemLabel="projet" itemLabelPlural="projets"/>:null}
       </section>:null}
 
-      {!loading&&tab==="contributions"?<section className="portal-card project-admin-table-card"><div className="portal-card__head"><div><h3>Avis et décisions citoyennes</h3><p>Chaque contribution est unique, datée et conserve la question ainsi que le choix présenté au citoyen.</p></div></div><div className="project-admin-contributions">{visibleContributions.map(item=><article key={item.reference||item.id}><div><strong>{item.projectTitle}</strong><span>{item.citizenName||item.citizenEmail} · {item.citizenEmail}</span>{item.question?<small>{item.question}</small>:null}</div><div><b>{item.choiceLabel||item.choice}</b><span>{item.typeLabel||item.type}</span>{item.comment?<small>« {item.comment} »</small>:null}</div><div><code>{item.reference}</code><span>{formatDate(item.createdAt)}</span></div></article>)}{!visibleContributions.length?<p className="detail-copy">Aucune contribution correspondante.</p>:null}</div></section>:null}
+      {!loading&&tab==="contributions"?<section className="portal-card project-admin-table-card"><div className="portal-card__head"><div><h3>Avis et décisions citoyennes</h3><p>Chaque contribution est unique, datée et conserve la question ainsi que le choix présenté au citoyen.</p></div></div><div className="project-admin-contributions">{pageContributions.map(item=><article key={item.reference||item.id}><div><strong>{item.projectTitle}</strong><span>{item.citizenName||item.citizenEmail} · {item.citizenEmail}</span>{item.question?<small>{item.question}</small>:null}</div><div><b>{item.choiceLabel||item.choice}</b><span>{item.typeLabel||item.type}</span>{item.comment?<small>« {item.comment} »</small>:null}</div><div><code>{item.reference}</code><span>{formatDate(item.createdAt)}</span></div></article>)}{!visibleContributions.length?<p className="detail-copy">Aucune contribution correspondante.</p>:null}{visibleContributions.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visibleContributions.length} perPage={perPage} onPageChange={setPage} itemLabel="contribution" itemLabelPlural="contributions"/>:null}</div></section>:null}
 
-      {!loading&&tab==="ideas"?<section className="project-admin-ideas">{visibleIdeas.map(item=><article className="portal-card" key={item.reference||item.id}><div className="project-admin-idea__head"><div><span className={`idea-status status-${item.status}`}>{item.statusLabel||IDEA_STATUS[item.status]||item.status}</span><h3>{item.title}</h3></div><code>{item.reference}</code></div><p>{item.description}</p><div className="project-admin-idea__meta"><span>{item.projectTitle?`Projet : ${item.projectTitle}`:"Idée générale pour la ville"}</span><span>{item.category}{item.district?` · ${item.district}`:""}</span><span>{item.citizenName||item.citizenEmail} · {formatDate(item.createdAt)}</span>{item.staffNote?<span>Note : {item.staffNote}</span>:null}</div><button type="button" className="secondary-action" onClick={()=>setIdeaEditor({...item})}>Traiter la proposition</button></article>)}{!visibleIdeas.length?<div className="portal-card project-empty-state"><strong>Aucune idée correspondante</strong><span>Les propositions envoyées depuis l’espace citoyen apparaîtront ici.</span></div>:null}</section>:null}
+      {!loading&&tab==="ideas"?<section className="project-admin-ideas">{pageIdeas.map(item=><article className="portal-card" key={item.reference||item.id}><div className="project-admin-idea__head"><div><span className={`idea-status status-${item.status}`}>{item.statusLabel||IDEA_STATUS[item.status]||item.status}</span><h3>{item.title}</h3></div><code>{item.reference}</code></div><p>{item.description}</p><div className="project-admin-idea__meta"><span>{item.projectTitle?`Projet : ${item.projectTitle}`:"Idée générale pour la ville"}</span><span>{item.category}{item.district?` · ${item.district}`:""}</span><span>{item.citizenName||item.citizenEmail} · {formatDate(item.createdAt)}</span>{item.staffNote?<span>Note : {item.staffNote}</span>:null}</div><button type="button" className="secondary-action" onClick={()=>setIdeaEditor({...item})}>Traiter la proposition</button></article>)}{!visibleIdeas.length?<div className="portal-card project-empty-state"><strong>Aucune idée correspondante</strong><span>Les propositions envoyées depuis l’espace citoyen apparaîtront ici.</span></div>:null}{visibleIdeas.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visibleIdeas.length} perPage={perPage} onPageChange={setPage} itemLabel="idée" itemLabelPlural="idées"/>:null}</section>:null}
 
       {editor?<div className="project-modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setEditor(null)}}><section className="project-modal project-modal--wide project-admin-editor" role="dialog" aria-modal="true" aria-labelledby="project-editor-title"><div className="project-modal__head"><div><h3 id="project-editor-title">{editor.slug?"Modifier le projet":"Nouveau projet"}</h3><p>Le brouillon reste interne. En mode publié, la fiche devient visible des citoyens.</p></div><button type="button" aria-label="Fermer" onClick={()=>setEditor(null)}>×</button></div><form className="project-form" onSubmit={saveProject}>
         <div className="project-form__row"><label><span>Titre</span><input value={editor.title} onChange={e=>setEditor(v=>({...v,title:e.target.value}))} required/></label><label><span>Quartier</span><input value={editor.district} onChange={e=>setEditor(v=>({...v,district:e.target.value}))}/></label></div>

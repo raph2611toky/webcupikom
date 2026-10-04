@@ -1,0 +1,60 @@
+:where(body[data-route-group="portal"]) .portal-pagination{
+  width:100%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 2px 2px;
+  color:#756d80;
+  font-size:.8125rem;
+}
+:where(body[data-route-group="portal"]) .portal-pagination__count{min-width:0}
+:where(body[data-route-group="portal"]) .portal-pagination__controls{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex:0 0 auto;
+}
+:where(body[data-route-group="portal"]) .portal-pagination__controls button{
+  width:34px;
+  height:34px;
+  border:1px solid #e5deea;
+  border-radius:10px;
+  background:#fff;
+  color:#322a3d;
+  font:inherit;
+  font-size:1.05rem;
+  cursor:pointer;
+}
+:where(body[data-route-group="portal"]) .portal-pagination__controls button:disabled{opacity:.38;cursor:not-allowed}
+:where(body[data-route-group="portal"]) .portal-pagination__controls span{
+  min-width:54px;
+  text-align:center;
+  color:#44384f;
+  font-weight:750;
+}
+:where(body[data-route-group="portal"]) .portal-pagination__controls button:focus-visible{
+  outline:3px solid color-mix(in srgb,#6b18df 35%,transparent);
+  outline-offset:2px;
+}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination__controls span{color:#fff!important}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination__controls button{background:#000!important;color:#fff!important;border-color:#fff!important}
+@media(max-width:560px){
+  :where(body[data-route-group="portal"]) .portal-pagination{align-items:flex-start;flex-direction:column}
+}
+:where(body[data-route-group="portal"]) .project-admin-ideas>.portal-pagination{grid-column:1/-1}
+
+/* Pagination spanning project administration grids. */
+:where(body[data-route-group="portal"]) .project-admin-ideas > .portal-pagination,
+:where(body[data-route-group="portal"]) .project-admin-list > .portal-pagination{
+  grid-column:1 / -1;
+  width:100%;
+}
+:where(body[data-route-group="portal"]) .portal-table > .portal-pagination,
+:where(body[data-route-group="portal"]) .project-admin-contributions > .portal-pagination,
+:where(body[data-route-group="portal"]) .agent-project-list > .portal-pagination{
+  grid-column:1 / -1;
+  width:100%;
+}

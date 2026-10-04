@@ -323,14 +323,6 @@ export default function CitizenAppointments() {
   const slotDuration = selectedSlot?.durationMinutes || availability[0]?.durationMinutes || 60;
   const allAppointments = useMemo(() => [...upcoming, ...history].sort((a, b) => String(b.startsAt || "").localeCompare(String(a.startsAt || ""))), [upcoming, history]);
   const nextAppointment = useMemo(() => [...upcoming].sort((a, b) => String(a.startsAt || "").localeCompare(String(b.startsAt || "")))[0] || null, [upcoming]);
-  const appointmentDates = useMemo(() => {
-    const map = new Map();
-    allAppointments.forEach((item) => {
-      if (!item?.date) return;
-      map.set(item.date, appointmentCategory(item));
-    });
-    return map;
-  }, [allAppointments]);
   const listCounts = useMemo(() => ({
     all: allAppointments.length,
     upcoming: allAppointments.filter((item) => appointmentCategory(item) === "upcoming").length,
@@ -404,12 +396,6 @@ export default function CitizenAppointments() {
     return date === dateKey(day) ? "selected" : "available";
   }
 
-  function listDayState(day) {
-    const key = dateKey(day);
-    if (!sameMonth(day, month)) return "outside";
-    if (nextAppointment?.date === key) return "next";
-    return appointmentDates.get(key) || "default";
-  }
 
   function moveMonth(delta) {
     setMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1, 12));
@@ -554,9 +540,6 @@ export default function CitizenAppointments() {
                   </div>
                   <button type="button" className="cit-appt-primary" onClick={openBooking}>{copy.bookNow}</button>
                 </article>
-                <aside className="cit-appt-hero-visual" aria-hidden="true">
-                  <div className="cit-appt-hero-visual__calendar">▦</div>
-                </aside>
               </section>
 
               <section className="portal-card cit-appt-list-toolbar">
@@ -677,26 +660,7 @@ export default function CitizenAppointments() {
                         <button type="button" className="cit-appt-next-link" onClick={() => navigate(`/citizen/appointments/${encodeURIComponent(nextAppointment.reference)}`)}>→</button>
                       </>
                     ) : <div className="cit-appt-empty compact">{copy.empty}</div>}
-                  </section>
-
-                  <section className="portal-card cit-appt-calendar-card">
-                    <div className="cit-appt-calendar-head">
-                      <h3>{copy.calendar}</h3>
-                    </div>
-                    <div className="cit-appt-calendar-toolbar">
-                      <button type="button" aria-label={copy.previous} onClick={() => moveMonth(-1)}>←</button>
-                      <strong>{titleCase(monthLabel(month, locale))}</strong>
-                      <button type="button" aria-label={copy.next} onClick={() => moveMonth(1)}>→</button>
-                    </div>
-                    <div className="cit-appt-calendar-weekdays">{copy.weekdays.map((day) => <span key={day}>{day}</span>)}</div>
-                    <div className="cit-appt-calendar-grid">
-                      {monthDays.map((day) => {
-                        const state = listDayState(day);
-                        return <div key={`list-${dateKey(day)}`} className={`cit-appt-calendar-day state-${state} ${!sameMonth(day, month) ? "is-outside" : ""}`}><span>{day.getDate()}</span></div>;
-                      })}
-                    </div>
-                  </section>
-                </aside>
+                  </section>                </aside>
               </section>
             </>
           ) : (

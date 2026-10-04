@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { getAgentAudit, getAgentAuditEvent } from "../../api/audit.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 
@@ -63,13 +64,15 @@ export default function AgentAudit() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const perPage = 20;
 
   useEffect(() => {
     let active = true;
     const timer = window.setTimeout(() => {
       setLoading(true);
       setError("");
-      getAgentAudit({ ...filters, mine: filters.mine ? "true" : undefined, page_size: 100 })
+      getAgentAudit({ ...filters, mine: filters.mine ? "true" : undefined, page, page_size: perPage })
         .then((page) => {
           if (!active) return;
           setItems(page.results);
@@ -82,7 +85,7 @@ export default function AgentAudit() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [filters]);
+  }, [filters, page]);
 
   async function openEvent(item) {
     try {
@@ -93,6 +96,9 @@ export default function AgentAudit() {
   }
 
   const activeFilters = useMemo(() => Object.values(filters).filter(Boolean).length, [filters]);
+  const totalPages = Math.max(1, Math.ceil(count / perPage));
+  useEffect(() => setPage(1), [filters.search, filters.resource_type, filters.resource_id, filters.action, filters.mine, filters.date_from, filters.date_to]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
 
   return <div className="portal-layout"><AgentSidebar /><div className="portal-main">
     <PortalTopbar eyebrow="Traçabilité" title="Journal d’activité" />
@@ -131,6 +137,7 @@ export default function AgentAudit() {
               <em>{formatAuditValue(item.action)}</em>
             </button>)}
             {!items.length ? <p className="detail-copy">Aucune action correspondant aux filtres.</p> : null}
+            {count ? <PortalPagination page={page} totalPages={totalPages} totalItems={count} perPage={perPage} onPageChange={(next) => { setPage(next); setSelected(null); }} itemLabel="événement" itemLabelPlural="événements" /> : null}
           </div>}
         </article>
 

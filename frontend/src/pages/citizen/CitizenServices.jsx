@@ -1,10 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { getServices } from "../../api/services.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import { useDataMode } from "../../utils/useDataMode.js";
+import CitizenOrientationAssistant from "../../components/ui/CitizenOrientationAssistant.jsx";
 import cityArt from "../../assets/services/city.webp";
 import adminArt from "../../assets/services/administration.webp";
 import energyArt from "../../assets/services/energy.webp";
@@ -137,6 +139,7 @@ export default function CitizenServices() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [availability, setAvailability] = useState("all");
+  const [page, setPage] = useState(1);
   const [view, setView] = useState(() => localStorage.getItem("nova_terra_services_view") || "cards");
 
   useEffect(() => {
@@ -177,6 +180,12 @@ export default function CitizenServices() {
   }, [rows, query, category, availability]);
 
   const visibleSlugs = useMemo(() => new Set(filtered.map((item) => item.slug)), [filtered]);
+  const perPage = 6;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const paginated = filtered.slice((page - 1) * perPage, page * perPage);
+
+  useEffect(() => { setPage(1); }, [query, category, availability]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
 
   function setDisplay(next) {
     if (profile.reduced && next === "map") return;
@@ -199,6 +208,8 @@ export default function CitizenServices() {
             </div>
             {!profile.reduced ? <img className="svc84-hero__art" src={cityArt} alt="" aria-hidden="true" decoding="async" /> : null}
           </section>
+
+          <CitizenOrientationAssistant compact />
 
           <section className="svc84-toolbar" aria-label="Recherche et filtres des services">
             <label className="svc84-search">
@@ -233,8 +244,9 @@ export default function CitizenServices() {
               <NovaTerraMap services={rows} visibleSlugs={visibleSlugs} locale={locale} />
             </Suspense>
           ) : filtered.length ? (
+            <>
             <section className="svc84-grid">
-              {filtered.map((service) => (
+              {paginated.map((service) => (
                 <article key={service.slug} className={`svc84-card tone-${service.visual.tone} state-${service.availabilityState}`}>
                   <div className="svc84-card__body">
                     <div className="svc84-card__head">
@@ -260,6 +272,8 @@ export default function CitizenServices() {
                 </article>
               ))}
             </section>
+            <PortalPagination page={page} totalPages={totalPages} totalItems={filtered.length} perPage={perPage} onPageChange={setPage} itemLabel={copy.result} itemLabelPlural={copy.results}/>
+            </>
           ) : (
             <div className="svc84-empty"><span>⌕</span><strong>{copy.empty}</strong></div>
           )}
