@@ -8556,3 +8556,405 @@ html[data-contrast="high"] .service-availability-filters button,html[data-contra
 @media(max-width:1100px){.service-management-summary{grid-template-columns:90px 110px 1fr}.service-management-filters{grid-column:1/-1;justify-content:flex-start}.services-filter-summary--availability{grid-template-columns:auto 1fr}.services-filter-summary--availability>button:last-child{grid-column:1/-1;width:max-content}}
 @media(max-width:760px){.service-management-summary{grid-template-columns:1fr 1fr}.service-management-summary .portal-search{grid-column:1/-1}.service-availability-filters{justify-content:flex-start;overflow-x:auto}.services-filter-summary--availability{grid-template-columns:1fr}.services-filter-summary--availability>button:last-child{grid-column:auto}.citizen-service-card__statusline{align-items:flex-start;flex-direction:column}}
 .quick-services--compact>button{position:relative}.quick-services--compact>button.is-unavailable{border-color:#efd3ce!important;background:#fff8f6!important}.quick-services--compact>button.is-unavailable small{position:absolute;right:7px;top:6px;padding:2px 5px;border-radius:999px;background:#fff0ed;color:#ae463a;font-size:.43rem;font-weight:850}.quick-services--compact>button.is-unavailable i{color:#ae463a!important}html[data-contrast="high"] .quick-services--compact>button.is-unavailable{background:#000!important;border-color:#f2d34b!important}html[data-contrast="high"] .quick-services--compact>button.is-unavailable small{background:#f2d34b!important;color:#000!important}
+
+/* -------------------- V80 Services immersive catalogue -------------------- */
+.citizen-services-page--immersive {
+  gap: 18px;
+}
+
+.citizen-services-page--immersive .service-catalog-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr);
+  align-items: center;
+  gap: 20px;
+  overflow: hidden;
+  padding: 22px 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(128, 94, 255, 0.10);
+  background: linear-gradient(180deg, rgba(138,116,255,0.11), rgba(138,116,255,0.08));
+  box-shadow: 0 18px 40px rgba(62, 34, 131, 0.08);
+}
+
+.citizen-services-page--immersive .service-catalog-hero__copy {
+  display: grid;
+  gap: 10px;
+  max-width: 620px;
+}
+
+.citizen-services-page--immersive .service-catalog-hero__eyebrow {
+  font-size: .83rem;
+  letter-spacing: .18em;
+  font-weight: 800;
+  color: #6636ff;
+}
+
+.citizen-services-page--immersive .service-catalog-hero h2 {
+  margin: 0;
+  font-size: clamp(2rem, 2.6vw, 3.2rem);
+  line-height: 1.02;
+  color: #0e1330;
+}
+
+.citizen-services-page--immersive .service-catalog-hero p {
+  margin: 0;
+  max-width: 640px;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: #6b6f95;
+}
+
+.citizen-services-page--immersive .service-catalog-hero__hint {
+  display: inline-flex;
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(115, 93, 255, 0.09);
+  color: #593dd6;
+  font-size: .84rem;
+  font-weight: 600;
+}
+
+.citizen-services-page--immersive .service-catalog-hero__art {
+  display: flex;
+  justify-content: flex-end;
+  align-self: stretch;
+  min-height: 188px;
+}
+
+.citizen-services-page--immersive .service-catalog-hero__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+  border-radius: 18px;
+  opacity: .96;
+}
+
+.citizen-services-page--immersive .services-view-toolbar--catalog {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 1.8fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--portal-line);
+  background: rgba(255,255,255,0.88);
+  box-shadow: 0 12px 28px rgba(26, 22, 61, 0.05);
+}
+
+.citizen-services-page--immersive .services-search-field {
+  min-height: 58px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.citizen-services-page--immersive .services-search-field input {
+  font-size: 1rem;
+}
+
+.citizen-services-page--immersive .services-category-filters,
+.citizen-services-page--immersive .services-view-switch {
+  gap: 10px;
+}
+
+.citizen-services-page--immersive .services-category-filters button,
+.citizen-services-page--immersive .services-view-switch button,
+.citizen-services-page--immersive .service-availability-filters--legend button {
+  min-height: 50px;
+  padding: 0 16px;
+  border-radius: 16px;
+  font-size: .95rem;
+  font-weight: 700;
+}
+
+.citizen-services-page--immersive .services-category-filters {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.citizen-services-page--immersive .services-category-filters button,
+.citizen-services-page--immersive .services-view-switch button {
+  border: 1px solid rgba(91, 91, 140, 0.15);
+  background: #fff;
+  color: #4a4d71;
+}
+
+.citizen-services-page--immersive .services-category-filters button.is-active,
+.citizen-services-page--immersive .services-view-switch button.is-active,
+.citizen-services-page--immersive .service-availability-filters--legend button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #6e2fff, #8a42ff);
+  border-color: transparent;
+  box-shadow: 0 12px 24px rgba(110, 47, 255, 0.18);
+}
+
+.citizen-services-page--immersive .services-filter-summary--catalog {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: .98rem;
+}
+
+.citizen-services-page--immersive .services-filter-summary--catalog > span {
+  color: #61668a;
+  font-weight: 700;
+}
+
+.citizen-services-page--immersive .service-availability-filters--legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.citizen-services-page--immersive .service-availability-filters--legend button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(91, 91, 140, 0.12);
+  background: #fff;
+  color: #4d5375;
+}
+
+.citizen-services-page--immersive .service-availability-filters--legend button b {
+  font-size: .95em;
+}
+
+.citizen-services-page--immersive .service-availability-filters--legend .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  flex: 0 0 12px;
+  display: inline-block;
+}
+
+.citizen-services-page--immersive .service-availability-filters--legend .dot-ok { background: #31c96f; }
+.citizen-services-page--immersive .service-availability-filters--legend .dot-warn { background: #f8ab1f; }
+.citizen-services-page--immersive .service-availability-filters--legend .dot-down { background: #ff5163; }
+.citizen-services-page--immersive .service-availability-filters--legend .dot-all { background: #8768ff; }
+
+.citizen-services-page--immersive .services-filter-summary--catalog > button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(91, 91, 140, 0.14);
+  background: #fff;
+  color: #51479a;
+  font-weight: 700;
+}
+
+body[data-route-group="portal"] .citizen-services-page--immersive .citizen-service-grid--catalog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.citizen-services-page--immersive .citizen-service-card--immersive {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 210px);
+  gap: 10px;
+  align-items: stretch;
+  min-height: 232px;
+  padding: 22px;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid rgba(124, 111, 181, 0.12);
+  background: #fff;
+  box-shadow: 0 18px 36px rgba(23, 22, 51, 0.06);
+}
+
+.citizen-services-page--immersive .citizen-service-card__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: space-between;
+  gap: 14px;
+}
+
+.citizen-services-page--immersive .citizen-service-card__toprow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.citizen-services-page--immersive .citizen-service-card__icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #5d32f6;
+  background: rgba(122, 88, 255, 0.13);
+  box-shadow: inset 0 0 0 1px rgba(122, 88, 255, 0.10);
+}
+
+.citizen-services-page--immersive .citizen-service-card__heading {
+  display: grid;
+  gap: 6px;
+}
+
+.citizen-services-page--immersive .citizen-service-card__category {
+  font-size: .78rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #5d32f6;
+}
+
+.citizen-services-page--immersive .citizen-service-card h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.6vw, 2rem);
+  line-height: 1.1;
+  color: #111730;
+}
+
+.citizen-services-page--immersive .citizen-service-card p {
+  margin: 0;
+  max-width: 420px;
+  font-size: 1rem;
+  line-height: 1.68;
+  color: #697091;
+}
+
+.citizen-services-page--immersive .citizen-service-card__alternative {
+  display: inline-flex;
+  max-width: 430px;
+  font-size: .92rem;
+  line-height: 1.5;
+  color: #7d6182;
+}
+
+.citizen-services-page--immersive .citizen-service-card__cta {
+  width: fit-content;
+  min-height: 48px;
+  padding: 0 0;
+  border: 0;
+  background: transparent;
+  color: #642fff;
+  font-size: 1rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.citizen-services-page--immersive .citizen-service-card__art {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 170px;
+}
+
+.citizen-services-page--immersive .citizen-service-card__art img {
+  width: 100%;
+  max-width: 220px;
+  object-fit: contain;
+  object-position: right bottom;
+}
+
+.citizen-services-page--immersive .service-skin-lavender { background: linear-gradient(180deg, #fbf8ff 0%, #f4efff 100%); }
+.citizen-services-page--immersive .service-skin-gold { background: linear-gradient(180deg, #fffaf0 0%, #fff1d7 100%); }
+.citizen-services-page--immersive .service-skin-sky { background: linear-gradient(180deg, #f5fbff 0%, #e9f4ff 100%); }
+.citizen-services-page--immersive .service-skin-mint { background: linear-gradient(180deg, #f4fff8 0%, #e7f8eb 100%); }
+.citizen-services-page--immersive .service-skin-rose { background: linear-gradient(180deg, #fff7f8 0%, #ffe9ed 100%); }
+.citizen-services-page--immersive .service-skin-ocean { background: linear-gradient(180deg, #f7f9ff 0%, #edf2ff 100%); }
+
+.citizen-services-page--immersive .service-skin-gold .citizen-service-card__icon {
+  color: #ee9711;
+  background: rgba(255, 181, 52, 0.18);
+}
+.citizen-services-page--immersive .service-skin-sky .citizen-service-card__icon {
+  color: #2d92ff;
+  background: rgba(61, 167, 255, 0.16);
+}
+.citizen-services-page--immersive .service-skin-mint .citizen-service-card__icon {
+  color: #27bf5b;
+  background: rgba(55, 214, 101, 0.15);
+}
+.citizen-services-page--immersive .service-skin-rose .citizen-service-card__icon {
+  color: #ff4f64;
+  background: rgba(255, 90, 103, 0.14);
+}
+.citizen-services-page--immersive .service-skin-ocean .citizen-service-card__icon {
+  color: #3770ff;
+  background: rgba(55, 112, 255, 0.12);
+}
+.citizen-services-page--immersive .service-skin-gold .citizen-service-card__category { color: #ba7a0b; }
+.citizen-services-page--immersive .service-skin-sky .citizen-service-card__category { color: #3472da; }
+.citizen-services-page--immersive .service-skin-mint .citizen-service-card__category { color: #208c49; }
+.citizen-services-page--immersive .service-skin-rose .citizen-service-card__category { color: #dc4668; }
+.citizen-services-page--immersive .service-skin-ocean .citizen-service-card__category { color: #295fdd; }
+
+.citizen-services-page--immersive .service-status-unavailable .service-availability-badge.is-compact {
+  background: rgba(255, 82, 104, 0.13);
+}
+
+@media (max-width: 1240px) {
+  .citizen-services-page--immersive .service-catalog-hero,
+  .citizen-services-page--immersive .services-view-toolbar--catalog,
+  body[data-route-group="portal"] .citizen-services-page--immersive .citizen-service-grid--catalog,
+  .citizen-services-page--immersive .citizen-service-card--immersive {
+    grid-template-columns: 1fr;
+  }
+
+  .citizen-services-page--immersive .service-catalog-hero__art {
+    min-height: 160px;
+  }
+
+  .citizen-services-page--immersive .services-view-switch {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 860px) {
+  .citizen-services-page--immersive .service-catalog-hero {
+    padding: 18px;
+    gap: 16px;
+  }
+
+  .citizen-services-page--immersive .service-catalog-hero h2 {
+    font-size: 2rem;
+  }
+
+  .citizen-services-page--immersive .services-search-field,
+  .citizen-services-page--immersive .services-category-filters button,
+  .citizen-services-page--immersive .services-view-switch button,
+  .citizen-services-page--immersive .service-availability-filters--legend button {
+    min-height: 46px;
+  }
+
+  .citizen-services-page--immersive .citizen-service-card--immersive {
+    padding: 18px;
+    min-height: auto;
+  }
+
+  .citizen-services-page--immersive .citizen-service-card__toprow {
+    grid-template-columns: auto 1fr;
+  }
+
+  .citizen-services-page--immersive .citizen-service-card__toprow .service-availability-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .citizen-services-page--immersive .citizen-service-card__art {
+    min-height: 120px;
+  }
+
+  .citizen-services-page--immersive .citizen-service-card__art img {
+    max-width: 190px;
+  }
+}
+
+html[data-data-mode="reduced"] .citizen-services-page--immersive .service-catalog-hero,
+html[data-data-mode="reduced"] .citizen-services-page--immersive .citizen-service-card--immersive {
+  background-image: none;
+}
