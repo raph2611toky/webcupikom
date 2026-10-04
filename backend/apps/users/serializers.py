@@ -339,7 +339,18 @@ class SensitiveActionAuthSerializer(serializers.Serializer):
             raise serializers.ValidationError('Utilisez une seule preuve MFA.')
         request = self.context.get('request')
         if request is not None:
-            attrs['_security_binding'] = str(request.auth.get('sid', '')) + ':' + request.path
+            auth = getattr(request, 'auth', None)
+            sid = ''
+            if auth is not None:
+                getter = getattr(auth, 'get', None)
+                if callable(getter):
+                    sid = getter('sid', '')
+                else:
+                    try:
+                        sid = auth['sid']
+                    except (KeyError, TypeError, AttributeError):
+                        sid = ''
+            attrs['_security_binding'] = f"{sid}:{request.path}"
         current_password = attrs.get("current_password")
         credential = attrs.get("credential")
         code = attrs.get("code")

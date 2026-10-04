@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import RestrictedError
@@ -17,6 +18,10 @@ class ServiceFeedbackF76Tests(APITestCase):
     """F76 isolé : avis uniquement après utilisation vérifiable d'un service."""
 
     def setUp(self):
+        # Les throttles DRF utilisent le cache global. APITestCase recrée la base
+        # entre les tests, mais pas le cache : sans ce reset, les requêtes de tests
+        # précédents s'accumulent et provoquent de faux 429.
+        cache.clear()
         self.citizen = User.objects.create_user(
             email="f76-citizen@example.com",
             password="StrongPass123!",
