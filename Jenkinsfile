@@ -145,6 +145,26 @@ pipeline {
             }
         }
 
+        stage('Verify Backend Revision') {
+            when {
+                branch 'backend'
+            }
+            steps {
+                sh '''
+                set -eu
+                LOCAL_SHA="$(git rev-parse HEAD)"
+                REMOTE_SHA="$(git rev-parse refs/remotes/origin/backend)"
+                echo "Jenkins checkout : $LOCAL_SHA"
+                echo "origin/backend   : $REMOTE_SHA"
+                if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
+                    echo "ERREUR: Jenkins essaie de déployer un commit backend obsolète."
+                    echo "Un nouveau build doit être lancé pour le HEAD actuel de origin/backend."
+                    exit 42
+                fi
+            '''
+            }
+        }
+
         stage('Build Backend') {
             when { branch 'backend' }
             steps {
@@ -170,7 +190,7 @@ pipeline {
                     # settings.py bascule déjà explicitement sur SQLite en mémoire.
                     run_django() {
                         docker run --rm \
-                          -e SECRET_KEY=jenkins-ci-secret \
+                          -e SECRET_KEY=jenkins-ci-secret-key-2026-at-least-32-bytes \
                           -e MODE_DEV=False \
                           -e DEBUG=False \
                           -e CORS_ALLOW_ALL_ORIGINS=False \
@@ -211,7 +231,27 @@ pipeline {
                         -type f \
                         \\( -name "*.pyc" -o -name "*.pyo" \\) \
                         -delete || true
-                '''
+                
+            # PIPELINE_SAFETY_RUNTIME_ONLY
+            # Production receives runtime files only. Keep documentation and tests in Git/Jenkins.
+            DEPLOY_DIR="${WORKSPACE}/deploy-backend"
+            rm -rf "$DEPLOY_DIR/docs"
+            find "$DEPLOY_DIR" -type f \( \
+              -name 'test*.py' -o \
+              -name '*_test.py' -o \
+              -name 'PATCH_FILES*.txt' -o \
+              -name '*.md' \
+            \) -delete
+            rm -f "$DEPLOY_DIR/.env.example" "$DEPLOY_DIR/.env.production.example"
+
+            # Fail before FTP if the runtime package is incomplete.
+            test -f "$DEPLOY_DIR/manage.py"
+            test -f "$DEPLOY_DIR/requirements.txt"
+            test -f "$DEPLOY_DIR/config/settings.py"
+            test -f "$DEPLOY_DIR/passenger_wsgi.py"
+            test -d "$DEPLOY_DIR/apps/city/migrations"
+            test -d "$DEPLOY_DIR/apps/users/migrations"
+'''
             }
         }
 

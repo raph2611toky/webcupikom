@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "helpers.security_headers.APISecurityHeadersMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -132,18 +133,25 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["helpers.permissions.IsAuthenticatedAnyRole"],
     "EXCEPTION_HANDLER": "helpers.api_exception_handler.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
-    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "helpers.throttles.SensitiveMutationRateThrottle",
+        "helpers.throttles.SensitiveReadRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
     "DEFAULT_THROTTLE_RATES": {
         "auth": os.getenv("THROTTLE_AUTH", "20/min"),
         "auth_email": os.getenv("THROTTLE_AUTH_EMAIL", "5/min"),
         "mfa": os.getenv("THROTTLE_MFA", "10/min"),
         "password_reset": os.getenv("THROTTLE_PASSWORD_RESET", "5/min"),
+        "sensitive_account": os.getenv("THROTTLE_SENSITIVE_ACCOUNT", "10/min"),
         "contact": os.getenv("THROTTLE_CONTACT", "10/min"),
         "webcup": os.getenv("THROTTLE_WEBCUP", "60/min"),
         "realtime_ticket": os.getenv("THROTTLE_REALTIME_TICKET", "12/min"),
         "citizen_participation": os.getenv("THROTTLE_CITIZEN_PARTICIPATION", "30/min"),
         "service_feedback": os.getenv("THROTTLE_SERVICE_FEEDBACK", "10/hour"),
         "privacy_concern": os.getenv("THROTTLE_PRIVACY_CONCERN", "5/hour"),
+        "f69_sensitive_write": os.getenv("THROTTLE_F69_SENSITIVE_WRITE", "30/min"),
+        "f69_sensitive_read": os.getenv("THROTTLE_F69_SENSITIVE_READ", "120/min"),
     },
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
@@ -198,6 +206,11 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = env_bool("USE_X_FORWARDED_HOST", True)
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = os.getenv("SECURE_REFERRER_POLICY", "no-referrer")
+SECURE_CROSS_ORIGIN_OPENER_POLICY = os.getenv("SECURE_CROSS_ORIGIN_OPENER_POLICY", "same-origin")
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
+SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", False)
 X_FRAME_OPTIONS = "DENY"
 
 LANGUAGE_CODE = "fr-fr"
@@ -221,7 +234,7 @@ CORS_ALLOWED_ORIGINS = env_list(
 )
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_PRIVATE_NETWORK = True
+CORS_ALLOW_PRIVATE_NETWORK = env_bool("CORS_ALLOW_PRIVATE_NETWORK", False)
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS",
     "https://ikomholala.madagascar.webcup.hodi.cloud,https://api.ikomholala.madagascar.webcup.hodi.cloud,http://localhost:5173",

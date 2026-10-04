@@ -96,6 +96,7 @@ from .services.google_identity import (
     exchange_google_authorization_code,
     verify_google_credential,
 )
+from .services.security_events import record_security_event
 from .services.mfa import (
     MFAError,
     build_otpauth_uri,
@@ -634,6 +635,7 @@ class MFAStatusView(APIView):
 
 
 class MFASetupView(APIView):
+    throttle_scope = "mfa"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
@@ -699,6 +701,7 @@ class MFAConfirmView(APIView):
                 if counter is None:
                     raise ValidationError({"code": "Code Google Authenticator invalide ou expiré."})
                 recovery_codes = mark_mfa_enabled(user, secret=secret)
+                record_security_event(user=user, kind="mfa_enabled", request=request)
                 transaction.on_commit(
                     lambda: send_security_alert(
                         user,
@@ -722,6 +725,7 @@ class MFAConfirmView(APIView):
 
 
 class MFADisableView(APIView):
+    throttle_scope = "mfa"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
@@ -736,6 +740,7 @@ class MFADisableView(APIView):
                     raise ValidationError({"mfa": "Le MFA n'est pas activé."})
                 verify_sensitive_action_identity(user, serializer.validated_data, require_mfa=True)
                 clear_mfa(user)
+                record_security_event(user=user, kind="mfa_disabled", request=request)
                 transaction.on_commit(
                     lambda: send_security_alert(
                         user,
@@ -753,6 +758,7 @@ class MFADisableView(APIView):
 
 
 class MFARecoveryCodesRegenerateView(APIView):
+    throttle_scope = "mfa"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
@@ -771,6 +777,7 @@ class MFARecoveryCodesRegenerateView(APIView):
                 recovery_codes, hashes = generate_recovery_codes()
                 user.mfa_recovery_codes = hashes
                 user.save(update_fields=["mfa_recovery_codes", "updated_at"])
+                record_security_event(user=user, kind="mfa_recovery_codes_regenerated", request=request)
                 transaction.on_commit(
                     lambda: send_security_alert(
                         user,
@@ -795,6 +802,7 @@ from django.views.decorators.csrf import csrf_protect
 
 @method_decorator(csrf_protect, name="dispatch")
 class LogoutView(APIView):
+    throttle_scope = "auth"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -828,6 +836,7 @@ class LogoutView(APIView):
 
 @method_decorator(csrf_protect, name="dispatch")
 class RefreshView(APIView):
+    throttle_scope = "auth"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -897,6 +906,7 @@ class PasswordResetRequestView(APIView):
 
 
 class PasswordResetConfirmView(APIView):
+    throttle_scope = "password_reset"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -916,6 +926,7 @@ class PasswordResetConfirmView(APIView):
                 user.save(update_fields=["password", "auth_provider", "updated_at"])
                 from .services.sessions import revoke_all
                 revoke_all(user, "password_change")
+                record_security_event(user=user, kind="password_reset_completed", request=request)
                 transaction.on_commit(lambda: send_password_changed_email(user), robust=True)
             return Response({
                 "message": "Mot de passe réinitialisé. Vous pouvez maintenant vous connecter."
@@ -958,6 +969,7 @@ class ProfileView(APIView):
 
 
 class ChangePasswordView(APIView):
+    throttle_scope = "sensitive_account"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
@@ -975,6 +987,7 @@ class ChangePasswordView(APIView):
                 user.save(update_fields=["password", "auth_provider", "updated_at"])
                 from .services.sessions import revoke_all
                 revoke_all(user, "password_change")
+                record_security_event(user=user, kind="password_changed", request=request)
                 update_session_auth_hash(request, user)
                 transaction.on_commit(
                     lambda: send_password_changed_email(user), robust=True
@@ -987,6 +1000,7 @@ class ChangePasswordView(APIView):
 
 
 class SetPasswordView(APIView):
+    throttle_scope = "sensitive_account"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
@@ -1003,6 +1017,7 @@ class SetPasswordView(APIView):
                 user.save(update_fields=["password", "auth_provider", "updated_at"])
                 from .services.sessions import revoke_all
                 revoke_all(user, "password_change")
+                record_security_event(user=user, kind="password_set", request=request)
                 transaction.on_commit(
                     lambda: send_password_changed_email(user), robust=True
                 )
@@ -1014,6 +1029,7 @@ class SetPasswordView(APIView):
 
 
 class ChangeEmailRequestView(APIView):
+    throttle_scope = "sensitive_account"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
@@ -1027,6 +1043,10 @@ class ChangeEmailRequestView(APIView):
                 verify_sensitive_action_identity(user, serializer.validated_data)
             new_email = serializer.validated_data["new_email"]
             send_change_email_confirmation(request.user, new_email)
+            record_security_event(
+                user=request.user, kind="email_change_requested", request=request,
+                details={"new_email_domain": new_email.rsplit("@", 1)[-1].lower() if "@" in new_email else ""},
+            )
             send_security_alert(
                 request.user,
                 f"Une demande de changement d'adresse email vers {new_email} a été effectuée.",
@@ -1039,6 +1059,7 @@ class ChangeEmailRequestView(APIView):
 
 
 class ChangeEmailConfirmView(APIView):
+    throttle_scope = "sensitive_account"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -1056,6 +1077,7 @@ class ChangeEmailConfirmView(APIView):
                 user.save(update_fields=["email", "email_verified", "updated_at"])
                 from .services.sessions import revoke_all
                 revoke_all(user, 'email_change')
+                record_security_event(user=user, kind="email_changed", request=request)
                 transaction.on_commit(
                     lambda: send_email_changed_notice(old_email=old_email, user=user),
                     robust=True,
@@ -1068,6 +1090,7 @@ class ChangeEmailConfirmView(APIView):
 
 
 class DeleteAccountView(APIView):
+    throttle_scope = "sensitive_account"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     permission_classes = [IsAuthenticatedAnyRole]
 
@@ -1081,6 +1104,10 @@ class DeleteAccountView(APIView):
                 verify_sensitive_action_identity(user, serializer.validated_data)
                 email = user.email
                 display_name = user.get_full_name().strip() or email.split("@", 1)[0]
+                record_security_event(
+                    user=user, kind="account_deleted", request=request,
+                    details={"deleted_user_id": user.pk},
+                )
                 user.delete()
                 transaction.on_commit(
                     lambda: send_account_deleted_email(email, display_name),
