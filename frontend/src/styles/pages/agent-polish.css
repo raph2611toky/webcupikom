@@ -213,7 +213,6 @@ body[data-route-group="portal"] .portal-sidebar--agent .portal-sidebar__bottom{
 
 /* Requests / reports / citizens / messages: compact filter bar. */
 .portal-sidebar--agent ~ .portal-main .agent-requests-v50,
-.portal-sidebar--agent ~ .portal-main .agent-report-page,
 .portal-sidebar--agent ~ .portal-main .agent-citizens-v50,
 .portal-sidebar--agent ~ .portal-main .agent-messages-v50,
 .portal-sidebar--agent ~ .portal-main .appointment-agent-page,

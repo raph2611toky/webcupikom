@@ -16,7 +16,7 @@ import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
-import "../../styles/pages/citizen-appointments-v82.css";
+import "../../styles/pages/citizen-appointments-v86.css";
 
 const COPY = {
   fr: {
@@ -541,16 +541,8 @@ export default function CitizenAppointments() {
     <div className="portal-layout">
       <CitizenSidebar />
       <div className="portal-main">
-        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} />
-        <main className="portal-content citizen-appointments-v82">
-          <section className="cit-appt-page-head">
-            <div>
-              <div className="cit-appt-breadcrumb">{copy.eyebrow} / <strong>{copy.title}</strong></div>
-              <h1>{copy.title}</h1>
-              <p>{pageMode === "list" ? copy.listSubtitle : copy.bookingSubtitle}</p>
-            </div>
-          </section>
-
+        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} subtitle={pageMode === "list" ? copy.listSubtitle : copy.bookingSubtitle} />
+        <main className="portal-content citizen-appointments-v86">
           {notice ? <div className="success-inline" role="status">{notice}</div> : null}
           {error ? <div className="error-card" role="alert">{error}</div> : null}
 

@@ -199,19 +199,17 @@ body[data-route-group="portal"] .portal-sidebar--citizen .portal-sidebar__bottom
 .portal-sidebar--citizen ~ .portal-main .report-history-list small{font-size:.48rem!important}
 
 /* Appointments */
-.portal-sidebar--citizen ~ .portal-main .appointment-redesign-page{gap:8px!important;padding-top:10px!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-redesign-header{min-height:58px!important;padding:9px 12px!important;border-radius:13px!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-redesign-header h2{font-size:.9rem!important;margin:2px 0!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-redesign-header p{font-size:.53rem!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-redesign-grid{gap:8px!important;grid-template-columns:minmax(0,1.65fr) minmax(270px,.58fr)!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-main-card,
-.portal-sidebar--citizen ~ .portal-main .appointment-summary-card,
-.portal-sidebar--citizen ~ .portal-main .appointment-upcoming-card{padding:11px!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-section-heading{margin-bottom:7px!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-section-heading h3{font-size:.68rem!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-time-grid{gap:5px!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-time-grid button{min-height:38px!important}
-.portal-sidebar--citizen ~ .portal-main .appointment-time-grid b{font-size:.62rem!important}
+
+
+
+
+
+
+
+
+
+
+
 
 /* News */
 .portal-sidebar--citizen ~ .portal-main .citizen-news-page{gap:8px!important}
@@ -265,7 +263,6 @@ html[data-font-size="xlarge"] .portal-sidebar--citizen ~ .portal-main .portal-co
   .portal-sidebar--citizen ~ .portal-main .citizen-service-grid--v39,
   .portal-sidebar--citizen ~ .portal-main .project-grid--compact,
   .portal-sidebar--citizen ~ .portal-main .citizen-news-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  .portal-sidebar--citizen ~ .portal-main .appointment-redesign-grid,
   .portal-sidebar--citizen ~ .portal-main .report-layout--wizard{grid-template-columns:1fr!important}
   .portal-sidebar--citizen ~ .portal-main .report-history-list{max-height:none}
 }
