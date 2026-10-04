@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.utils import timezone
@@ -549,6 +549,27 @@ class Command(BaseCommand):
             result[ref] = obj
         return result
 
+    @staticmethod
+    def _validate_audience_guidance(value):
+        """Valide le JSON seedé avec le même contrat que l'API publique/admin."""
+        if not isinstance(value, list):
+            raise CommandError("audience_guidance doit être une liste.")
+        for index, item in enumerate(value, start=1):
+            if not isinstance(item, dict):
+                raise CommandError(
+                    f"audience_guidance[{index}] doit être un objet avec audience et instructions."
+                )
+            audience = item.get("audience")
+            instructions = item.get("instructions")
+            if not isinstance(audience, str) or not audience.strip():
+                raise CommandError(f"audience_guidance[{index}].audience est requis.")
+            if not isinstance(instructions, str) or not instructions.strip():
+                raise CommandError(f"audience_guidance[{index}].instructions est requis.")
+            if len(audience.strip()) > 120:
+                raise CommandError(f"audience_guidance[{index}].audience dépasse 120 caractères.")
+            if len(instructions.strip()) > 5000:
+                raise CommandError(f"audience_guidance[{index}].instructions dépasse 5000 caractères.")
+
     # ------------------------------------------------------------------
     # Actualités / annonces / alertes publiques — sans image et sans email
     # ------------------------------------------------------------------
@@ -628,6 +649,7 @@ class Command(BaseCommand):
         ]
         for row in publications:
             slug = row.pop("slug")
+            self._validate_audience_guidance(row.get("audience_guidance", []))
             defaults = {
                 "is_published": True,
                 "notify_residents": False,

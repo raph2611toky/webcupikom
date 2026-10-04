@@ -142,9 +142,24 @@ class NewsTests(APITestCase):
         self.assertEqual(self.client.get('/api/city/news/?severity=invalid').status_code,400)
 
     def test_url_dates_and_guidance_validation(self):
-        for data in [{'source_url':'http://example.com'}, {'action_label':'Cliquez'}, {'expires_at':(timezone.now()-timedelta(days=1)).isoformat()}, {'audience_guidance':[{'audience':'Tous'}]}]:
+        for data in [
+            {'source_url':'http://example.com'},
+            {'action_label':'Cliquez'},
+            {'expires_at':(timezone.now()-timedelta(days=1)).isoformat()},
+            {'audience_guidance':[{'audience':'Tous'}]},
+            {'audience_guidance':['Tous']},
+        ]:
             data.update(title='Test',content='Contenu')
             self.assertEqual(self.client.post('/api/admin/news/',data,format='json').status_code,400)
+
+    def test_legacy_audience_guidance_is_safe_on_read_but_never_accepted_on_write(self):
+        self.article(audience_guidance=['Habitants de Nova Sud'])
+        response = self.client.get('/api/city/news/publication/')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(
+            response.data['audience_guidance'],
+            [{'audience': 'Habitants de Nova Sud', 'instructions': ''}],
+        )
 
     def test_cover_is_private_until_publication_and_decoded(self):
         item=self.article(is_published=False)

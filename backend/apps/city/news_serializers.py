@@ -10,15 +10,15 @@ from .models import NewsArticle, MunicipalService
 
 class AudienceGuidanceSerializer(serializers.Serializer):
     audience = serializers.CharField(max_length=120)
-    instructions = serializers.CharField(max_length=5000, required=False, allow_blank=True)
+    instructions = serializers.CharField(max_length=5000)
 
 
 class AudienceGuidanceListField(serializers.Field):
     """Liste JSON rétrocompatible pour le guidage par public.
 
     Les premières données de démonstration stockaient parfois simplement des
-    chaînes. On les normalise à la lecture et à l'écriture afin qu'une ancienne
-    ligne ne puisse plus faire tomber toute la sérialisation d'une publication.
+    chaînes. On les normalise uniquement à la lecture afin qu'une ancienne ligne
+    ne fasse pas tomber la sérialisation. Les écritures API restent strictes.
     """
 
     def to_representation(self, value):
@@ -37,32 +37,17 @@ class AudienceGuidanceListField(serializers.Field):
         return normalized
 
     def to_internal_value(self, data):
-        if data in (None, ""):
-            return []
+        # IMPORTANT : la rétrocompatibilité ne concerne que la LECTURE.
+        # Les écritures API restent strictes afin de ne jamais stocker de
+        # nouvelles valeurs legacy (chaînes seules, instructions absentes, etc.).
         if not isinstance(data, list):
             raise serializers.ValidationError("Une liste de publics est attendue.")
         if len(data) > 20:
             raise serializers.ValidationError("Maximum 20 publics.")
 
-        normalized = []
-        for index, item in enumerate(data):
-            if isinstance(item, str):
-                audience = item.strip()
-                instructions = ""
-            elif isinstance(item, dict):
-                audience = str(item.get("audience", "") or "").strip()
-                instructions = str(item.get("instructions", "") or "").strip()
-            else:
-                raise serializers.ValidationError(f"Élément {index + 1} invalide.")
-
-            if not audience:
-                raise serializers.ValidationError(f"Le public de l'élément {index + 1} est requis.")
-            if len(audience) > 120:
-                raise serializers.ValidationError(f"Le public de l'élément {index + 1} dépasse 120 caractères.")
-            if len(instructions) > 5000:
-                raise serializers.ValidationError(f"Les instructions de l'élément {index + 1} dépassent 5000 caractères.")
-            normalized.append({"audience": audience, "instructions": instructions})
-        return normalized
+        nested = AudienceGuidanceSerializer(data=data, many=True)
+        nested.is_valid(raise_exception=True)
+        return list(nested.validated_data)
 
 
 PUBLIC_FIELDS = ('id', 'title', 'slug', 'category', 'excerpt', 'content', 'publication_type', 'severity',
