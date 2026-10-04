@@ -8,6 +8,7 @@ import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
+import "../../styles/pages/citizen-requests.css";
 
 const filters = ["Toutes", "Envoyée", "En attente", "En traitement", "Action requise", "Terminée"];
 const emptyDraft = { type: "question", category: "État civil", subject: "", message: "", location: "" };
@@ -224,11 +225,20 @@ export default function CitizenRequests() {
       <CitizenSidebar />
       <div className="portal-main">
         <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button>} />
-        <main className="portal-content">
+        <main className="portal-content citizen-requests-page">
           {error && !showForm ? <div className="error-card" role="alert">{error}</div> : null}
-          <section className="toolbar-card">
-            <label className="portal-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label={copy.search} placeholder={copy.search} /></label>
-            <div className="filter-row filter-row--portal">{filters.map((item) => <button className={item === filter ? "is-active" : ""} aria-pressed={item === filter} key={item} onClick={() => setFilter(item)}>{statusLabel(item, locale)}</button>)}</div>
+          <section className="portal-card requests-intro-card" aria-labelledby="requests-intro-title">
+            <div className="requests-intro-card__icon" aria-hidden="true">🗎</div>
+            <div className="requests-intro-card__copy">
+              <span className="section-label">{copy.eyebrow}</span>
+              <h2 id="requests-intro-title">Toutes mes demandes</h2>
+              <p className="detail-copy">Suivez l’état de vos demandes et exportez leurs détails quand vous en avez besoin.</p>
+            </div>
+          </section>
+
+          <section className="toolbar-card requests-toolbar-card">
+            <label className="portal-search requests-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label={copy.search} placeholder={copy.search} /></label>
+            <div className="filter-row filter-row--portal requests-filter-row">{filters.map((item) => <button className={item === filter ? "is-active" : ""} aria-pressed={item === filter} key={item} onClick={() => setFilter(item)}>{statusLabel(item, locale)}</button>)}</div>
           </section>
 
           <section className="portal-card request-export-panel" aria-labelledby="request-export-title">
@@ -244,16 +254,23 @@ export default function CitizenRequests() {
             </div>
           </section>
 
-          <section className="portal-card">
+          <section className="portal-card request-list-card" aria-labelledby="request-list-title">
+            <div className="request-list-card__head">
+              <div>
+                <span className="section-label">Liste de mes demandes</span>
+                <h3 id="request-list-title">Voici toutes les demandes que vous avez créées.</h3>
+              </div>
+              <b>{rows.length} demande(s)</b>
+            </div>
             <div className="accessible-table-wrap">
-              <table className="accessible-table">
+              <table className="accessible-table request-table">
                 <caption className="sr-only">{copy.tableCaption}</caption>
                 <thead><tr><th scope="col">{copy.ref}</th><th scope="col">{copy.request}</th><th scope="col">{copy.service}</th><th scope="col">{copy.status}</th><th scope="col">{copy.updated}</th><th scope="col">{copy.action}</th></tr></thead>
                 <tbody>
                   {rows.map((row) => (
                     <tr key={row.id}>
                       <td className="mono">{row.id}</td>
-                      <td><strong>{row.title}</strong></td>
+                      <td><div className="request-title-cell"><strong>{row.title}</strong><small>{row.category || row.service}</small></div></td>
                       <td>{row.service}</td>
                       <td><span className={`status-pill status-${String(row.status).replaceAll(" ", "-").toLowerCase()}`}>{statusLabel(row.status,locale)}</span></td>
                       <td>{row.updated}</td>
@@ -262,7 +279,7 @@ export default function CitizenRequests() {
                   ))}
                 </tbody>
               </table>
-              {!rows.length ? <div className="dashboard-empty">{copy.empty}</div> : null}
+              {!rows.length ? <div className="dashboard-empty">{copy.empty}</div> : <div className="request-list-foot">Affichage de {rows.length} demande(s)</div>}
             </div>
           </section>
 

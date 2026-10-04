@@ -280,9 +280,28 @@ export async function createCitizenRequest(payload) {
   return normalizeCitizen(data);
 }
 
+function filterCitizenRequestRows(rows, params = {}) {
+  const wantedType = params.request_type || params.requestType || params.type || "";
+  const normalizedType = ["report", "signalement"].includes(String(wantedType).toLowerCase())
+    ? "report"
+    : ["procedure", "demarche", "démarche"].includes(String(wantedType).toLowerCase())
+      ? "procedure"
+      : "";
+  if (!normalizedType) return rows;
+  return rows.filter((row) => row.requestTypeCode === normalizedType || (normalizedType === "report" && row.requestType === "signalement"));
+}
+
+function citizenListParams(params = {}) {
+  // Le backend documenté ne promet pas de filtres sur GET /citizen/requests/.
+  // On ne lui transmet donc que la pagination/tri éventuellement acceptés, puis on
+  // sépare procédures et signalements côté frontend avec request_type renvoyé.
+  const { type, request_type, requestType, ...rest } = params;
+  return cleanParams(rest);
+}
+
 export async function getCitizenRequests(params = {}) {
-  const { data } = await api.get("/citizen/requests/", { params: cleanParams(params) });
-  return unwrapList(data).map(normalizeCitizen);
+  const { data } = await api.get("/citizen/requests/", { params: citizenListParams(params) });
+  return filterCitizenRequestRows(unwrapList(data).map(normalizeCitizen), params);
 }
 
 export async function getAllCitizenRequests(params = {}) {
@@ -290,13 +309,13 @@ export async function getAllCitizenRequests(params = {}) {
   let page = 1;
   for (let guard = 0; guard < 100; guard += 1) {
     const { data } = await api.get("/citizen/requests/", {
-      params: cleanParams({ ...params, page, page_size: params.page_size || 100 }),
+      params: citizenListParams({ ...params, page, page_size: params.page_size || 100 }),
     });
     rows.push(...unwrapList(data).map(normalizeCitizen));
     if (!data?.next || !Array.isArray(data?.results)) break;
     page += 1;
   }
-  return rows;
+  return filterCitizenRequestRows(rows, params);
 }
 
 export async function getAgentRequestsPage(params = {}) {
@@ -462,17 +481,19 @@ export async function addCitizenRequestMessage(reference, { message = "", images
 
 export async function addRequestInformation(reference, message, images = []) {
   try {
-    return await addCitizenRequestMessage(reference, { message, images });
+    const event = await addCitizenRequestMessage(reference, { message, images });
+    return { channel: "request", event };
   } catch (error) {
     if (![400, 404, 405].includes(error?.response?.status)) throw error;
     const [request, profile] = await Promise.all([getCitizenRequestById(reference), getProfile()]);
-    return sendContactMessage({
+    const contact = await sendContactMessage({
       name: profile?.display_name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Citoyen",
       email: profile?.email || "",
       service: Number(request.serviceId) || undefined,
       subject: `Complément — ${reference}`,
       message: `Information complémentaire liée à la demande ${reference} :\n\n${message}`,
     });
+    return { channel: "contact", contact };
   }
 }
 

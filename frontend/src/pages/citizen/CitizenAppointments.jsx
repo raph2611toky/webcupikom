@@ -9,8 +9,8 @@ import {
   getAppointmentStatusLabel,
   getCitizenAppointmentAgents,
   getCitizenAppointmentAvailability,
-  getCitizenAppointmentHistory,
-  getCitizenUpcomingAppointments,
+  getCitizenAppointmentCollections,
+  updateCitizenAppointment,
 } from "../../api/appointments.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
@@ -79,6 +79,7 @@ export default function CitizenAppointments(){
   const [accessibilityNeeds,setAccessibilityNeeds]=useState("");
   const [preferredLanguage,setPreferredLanguage]=useState(locale);
   const [reminderEnabled,setReminderEnabled]=useState(true);
+  const [reminderMinutes,setReminderMinutes]=useState(60);
   const [upcoming,setUpcoming]=useState([]);
   const [history,setHistory]=useState([]);
   const [listMode,setListMode]=useState("upcoming");
@@ -96,8 +97,8 @@ export default function CitizenAppointments(){
 
   async function loadLists(){
     try{
-      const [nextUpcoming,nextHistory]=await Promise.all([getCitizenUpcomingAppointments(),getCitizenAppointmentHistory()]);
-      setUpcoming(nextUpcoming);setHistory(nextHistory);
+      const collections=await getCitizenAppointmentCollections();
+      setUpcoming(collections.upcoming);setHistory(collections.history);
     }catch(err){setError(getApiErrorMessage(err,copy.error))}
   }
 
@@ -106,7 +107,8 @@ export default function CitizenAppointments(){
     setAvailabilityLoading(true);setError("");
     try{
       const agent=agents.find(item=>String(item.id)===String(nextAgent));
-      const rows=await getCitizenAppointmentAvailability({agent:nextAgent,date:nextDate,agentName:agent?.name||""});
+      const service=services.find(item=>String(item.id)===String(serviceId));
+      const rows=await getCitizenAppointmentAvailability({agent:nextAgent,date:nextDate,agentName:agent?.name||"",openingHours:service?.openingHours||""});
       setAvailability(rows);
     }catch(err){setAvailability([]);setError(getApiErrorMessage(err,copy.availabilityError))}
     finally{setAvailabilityLoading(false)}
@@ -116,8 +118,9 @@ export default function CitizenAppointments(){
     let mounted=true;
     Promise.all([getServices(),getCitizenAppointmentAgents()]).then(([serviceRows,agentRows])=>{
       if(!mounted)return;
-      setServices(serviceRows);setAgents(agentRows);
-      if(serviceRows[0])setServiceId(String(serviceRows[0].id));
+      const bookableServices=serviceRows.filter(service=>service.isAvailable!==false);
+      setServices(bookableServices);setAgents(agentRows);
+      if(bookableServices[0])setServiceId(String(bookableServices[0].id));
       if(agentRows[0])setAgentId(String(agentRows[0].id));
     }).catch(err=>mounted&&setError(getApiErrorMessage(err,copy.error)));
     loadLists();
@@ -126,7 +129,7 @@ export default function CitizenAppointments(){
 
   useEffect(()=>{setContactPhone(user?.phone_number||"")},[user?.phone_number]);
   useEffect(()=>{setPreferredLanguage(locale)},[locale]);
-  useEffect(()=>{setSlotId("");if(agentId&&date)loadAvailability(agentId,date);else setAvailability([])},[agentId,date]);
+  useEffect(()=>{setSlotId("");if(agentId&&date)loadAvailability(agentId,date);else setAvailability([])},[agentId,date,serviceId]);
 
   function dayState(day){
     if(startOfDay(day)<today||!sameMonth(day,month))return "unavailable";
@@ -137,7 +140,7 @@ export default function CitizenAppointments(){
   function selectDay(day){if(dayState(day)==="unavailable")return;setDate(dateKey(day))}
   function onCalendarKey(event,day){const keys={ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7};if(!(event.key in keys))return;event.preventDefault();const next=new Date(day);next.setDate(day.getDate()+keys[event.key]);if(!sameMonth(next,month))setMonth(new Date(next.getFullYear(),next.getMonth(),1,12));window.requestAnimationFrame(()=>document.querySelector(`[data-calendar-date="${dateKey(next)}"]`)?.focus())}
 
-  function bookAnother(){setConfirmedAppointment(null);setNotice("");setError("");setReason("");setNotes("");setDate("");setSlotId("");setAvailability([]);window.scrollTo({top:0,behavior:"smooth"})}
+  function bookAnother(){setConfirmedAppointment(null);setNotice("");setError("");setReason("");setNotes("");setDate("");setSlotId("");setAvailability([]);setReminderEnabled(true);setReminderMinutes(60);window.scrollTo({top:0,behavior:"smooth"})}
 
   async function submit(event){
     event.preventDefault();setError("");setNotice("");
@@ -147,7 +150,7 @@ export default function CitizenAppointments(){
       const details=[notes.trim(),accessibilityNeeds.trim()?`Accessibilité: ${accessibilityNeeds.trim()}`:"",contactPhone.trim()?`Téléphone: ${contactPhone.trim()}`:"",preferredLanguage?`Langue: ${preferredLanguage}`:""].filter(Boolean).join("\n");
       const created=await createCitizenAppointment({
         agent:selectedAgent.id,service:selectedService.id,starts_at:selectedSlot.startsAt,ends_at:selectedSlot.endsAt,
-        reason:reason.trim(),details,reminder_enabled:reminderEnabled,reminder_minutes_before:60,
+        reason:reason.trim(),details,reminder_enabled:reminderEnabled,reminder_minutes_before:reminderMinutes,
       });
       setConfirmedAppointment(created);await Promise.all([loadLists(),loadAvailability(agentId,date)]);
     }catch(err){
@@ -162,6 +165,15 @@ export default function CitizenAppointments(){
     catch(err){setError(getApiErrorMessage(err,copy.error))}
   }
 
+  async function toggleReminder(item){
+    try{
+      const nextEnabled=!item.reminderEnabled;
+      await updateCitizenAppointment(item.reference,{reminder_enabled:nextEnabled,reminder_minutes_before:item.reminderMinutesBefore||60});
+      setNotice(nextEnabled?"Rappel activé.":"Rappel désactivé.");
+      await loadLists();
+    }catch(err){setError(getApiErrorMessage(err,copy.error))}
+  }
+
   const shownList=listMode==="upcoming"?upcoming:history;
   const isConfirmed=confirmedAppointment?.status==="confirmed";
 
@@ -171,6 +183,7 @@ export default function CitizenAppointments(){
       <header className="appointment-redesign-header"><div><span className="section-label">F39 · F40</span><h2>{copy.hero}</h2><p>{copy.intro}</p></div><div className="appointment-header-mark" aria-hidden="true"><span>▦</span><i>◷</i></div></header>
       {notice?<div className="success-inline" role="status">{notice}</div>:null}
       {error?<div className="error-card" role="alert">{error}</div>:null}
+      {!services.length?<div className="error-card" role="status">Aucun service actuellement disponible ne peut recevoir de rendez-vous. Consultez la page Services pour voir les alternatives ou la date de rétablissement.</div>:null}
 
       <form className="appointment-redesign-grid" onSubmit={submit}>
         <section className="portal-card appointment-main-card">
@@ -206,19 +219,19 @@ export default function CitizenAppointments(){
             <div className="appointment-summary-card__head"><div><span className="section-label">03</span><h3>{copy.summary}</h3></div>{date&&selectedSlot?<i aria-hidden="true">✓</i>:null}</div>
             {!date||!selectedSlot?<div className="appointment-summary-empty"><i aria-hidden="true">◷</i><p>{copy.noSelection}</p></div>:<div className="appointment-summary-modern"><div className="appointment-summary-date"><strong>{selectedDate?.getDate()}</strong><span>{shortDate(selectedDate,locale)}</span><b>{selectedSlot.startTime}</b></div><div className="appointment-summary-facts"><div><span>{copy.service}</span><b>{selectedService?.name||"—"}</b></div><div><span>{copy.agent}</span><b>{selectedAgent?.name||"—"}</b></div><div><span>{copy.duration}</span><b>{selectedSlot.startTime}–{selectedSlot.endTime}</b></div></div></div>}
             <details className="appointment-preferences-details"><summary>{copy.preferences}</summary><div className="appointment-preferences-grid"><label><span>{copy.phone}</span><input value={contactPhone} onChange={e=>setContactPhone(e.target.value)} placeholder="+261..."/></label><label><span>{copy.language}</span><select value={preferredLanguage} onChange={e=>setPreferredLanguage(e.target.value)}><option value="fr">Français</option><option value="en">English</option><option value="mg">Malagasy</option></select></label><label className="span-2"><span>{copy.accessibility}</span><input value={accessibilityNeeds} onChange={e=>setAccessibilityNeeds(e.target.value)} placeholder="Ex. accès sans escalier, accompagnement..."/></label><label className="span-2"><span>{copy.notes}</span><textarea rows="2" value={notes} onChange={e=>setNotes(e.target.value)}/></label></div></details>
-            <label className="appointment-reminder-modern appointment-reminder-toggle"><span className="appointment-reminder-icon" aria-hidden="true">◌</span><div><b>{copy.reminder}</b><span>{copy.reminderHelp}</span></div><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)} aria-label={copy.reminderOn}/><i aria-hidden="true"/></label>
+            <div className="appointment-reminder-modern appointment-reminder-settings"><label className="appointment-reminder-toggle"><span className="appointment-reminder-icon" aria-hidden="true">◌</span><div><b>{copy.reminder}</b><span>{copy.reminderHelp}</span></div><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)} aria-label={copy.reminderOn}/><i aria-hidden="true"/></label>{reminderEnabled?<label className="appointment-reminder-delay"><span>Délai</span><select value={reminderMinutes} onChange={e=>setReminderMinutes(Number(e.target.value))}><option value={30}>30 min avant</option><option value={60}>1 h avant</option><option value={120}>2 h avant</option></select></label>:null}</div>
             <div className="appointment-prepare-modern"><span aria-hidden="true">✓</span><div><b>{copy.prepare}</b><p>{copy.prepareText}</p>{(selectedService?.requiredDocuments||[]).length?<ul>{selectedService.requiredDocuments.slice(0,3).map(item=><li key={item}>{item}</li>)}</ul>:null}</div></div>
             <button className="primary-action appointment-confirm-modern" type="submit" disabled={saving||!selectedService||!selectedAgent||!date||!selectedSlot||!reason.trim()}>{saving?copy.confirming:`${copy.confirm} →`}</button>
           </section>
 
           <section className="portal-card appointment-upcoming-card">
             <div className="appointment-list-tabs"><button type="button" className={listMode==="upcoming"?"is-active":""} onClick={()=>setListMode("upcoming")}>{copy.upcoming}</button><button type="button" className={listMode==="history"?"is-active":""} onClick={()=>setListMode("history")}>{copy.history}</button></div>
-            <div className="appointment-upcoming-list">{shownList.slice(0,4).map(item=><article key={item.reference}><div className="appointment-upcoming-date"><b>{item.date?parseDate(item.date).getDate():"—"}</b><span>{item.date?shortDate(parseDate(item.date),locale).split(" ").slice(1).join(" "):""}</span></div><div><strong>{item.serviceName}</strong><span>{item.startTime} · {getAppointmentStatusLabel(item.status)}</span><small>{item.reason}</small></div><div className="appointment-upcoming-actions">{listMode==="upcoming"&&item.canCancel?<button type="button" title={copy.cancel} onClick={()=>cancel(item)}>×</button>:null}</div></article>)}{!shownList.length?<div className="appointment-upcoming-empty"><i aria-hidden="true">◷</i><span>{listMode==="upcoming"?copy.empty:copy.emptyHistory}</span></div>:null}</div>
+            <div className="appointment-upcoming-list">{shownList.slice(0,4).map(item=><article key={item.reference}><div className="appointment-upcoming-date"><b>{item.date?parseDate(item.date).getDate():"—"}</b><span>{item.date?shortDate(parseDate(item.date),locale).split(" ").slice(1).join(" "):""}</span></div><div><strong>{item.serviceName}</strong><span>{item.startTime} · {getAppointmentStatusLabel(item.status)}</span><small>{item.reason}</small>{listMode==="upcoming"?<small>{item.reminderEnabled?`Rappel ${item.reminderMinutesBefore||60} min avant`:"Rappel désactivé"}</small>:null}</div><div className="appointment-upcoming-actions"><button type="button" title="Voir le rendez-vous" onClick={()=>navigate(`/citizen/appointments/${encodeURIComponent(item.reference)}`)}>→</button>{listMode==="upcoming"?<button type="button" title={item.reminderEnabled?"Désactiver le rappel":"Activer le rappel"} onClick={()=>toggleReminder(item)}>◌</button>:null}{listMode==="upcoming"&&item.canCancel?<button type="button" title={copy.cancel} onClick={()=>cancel(item)}>×</button>:null}</div></article>)}{!shownList.length?<div className="appointment-upcoming-empty"><i aria-hidden="true">◷</i><span>{listMode==="upcoming"?copy.empty:copy.emptyHistory}</span></div>:null}</div>
           </section>
         </aside>
       </form>
 
-      {confirmedAppointment?<div className="appointment-confirmation-backdrop" role="presentation"><section className="appointment-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="appointment-confirmation-title"><div className="appointment-confirmation-check" aria-hidden="true">✓</div><span className="section-label">{getAppointmentStatusLabel(confirmedAppointment.status)}</span><h2 id="appointment-confirmation-title">{isConfirmed?copy.createdConfirmed:copy.createdPending}</h2><p>{isConfirmed?copy.createdTextConfirmed:copy.createdTextPending}</p><div className="appointment-confirmation-facts"><div><span>{copy.service}</span><b>{confirmedAppointment.serviceName}</b></div><div><span>{copy.agent}</span><b>{confirmedAppointment.agentName}</b></div><div><span>{copy.calendar}</span><b>{confirmedAppointment.date?longDate(parseDate(confirmedAppointment.date),locale):"—"}</b></div><div><span>{copy.slots}</span><b>{confirmedAppointment.startTime}</b></div><div><span>{copy.reference}</span><b>{confirmedAppointment.reference}</b></div><div><span>{copy.status}</span><b>{getAppointmentStatusLabel(confirmedAppointment.status)}</b></div></div><div className="appointment-confirmation-actions"><button type="button" className="secondary-action" onClick={()=>navigate("/citizen")}>{copy.leavePage}</button><button type="button" className="primary-action" onClick={bookAnother}>{copy.another}</button></div></section></div>:null}
+      {confirmedAppointment?<div className="appointment-confirmation-backdrop" role="presentation"><section className="appointment-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="appointment-confirmation-title"><div className="appointment-confirmation-check" aria-hidden="true">✓</div><span className="section-label">{getAppointmentStatusLabel(confirmedAppointment.status)}</span><h2 id="appointment-confirmation-title">{isConfirmed?copy.createdConfirmed:copy.createdPending}</h2><p>{isConfirmed?copy.createdTextConfirmed:copy.createdTextPending}</p><div className="appointment-confirmation-facts"><div><span>{copy.service}</span><b>{confirmedAppointment.serviceName}</b></div><div><span>{copy.agent}</span><b>{confirmedAppointment.agentName}</b></div><div><span>{copy.calendar}</span><b>{confirmedAppointment.date?longDate(parseDate(confirmedAppointment.date),locale):"—"}</b></div><div><span>{copy.slots}</span><b>{confirmedAppointment.startTime}</b></div><div><span>{copy.reference}</span><b>{confirmedAppointment.reference}</b></div><div><span>{copy.status}</span><b>{getAppointmentStatusLabel(confirmedAppointment.status)}</b></div></div><div className="appointment-confirmation-actions"><button type="button" className="secondary-action" onClick={()=>navigate("/citizen")}>{copy.leavePage}</button><button type="button" className="secondary-action" onClick={()=>navigate(`/citizen/appointments/${encodeURIComponent(confirmedAppointment.reference)}`)}>Voir le rendez-vous</button><button type="button" className="primary-action" onClick={bookAnother}>{copy.another}</button></div></section></div>:null}
     </main>
   </div></div>;
 }
