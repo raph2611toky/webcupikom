@@ -198,6 +198,10 @@ export default function InscriptionPage() {
   }
 
   async function handleGoogle() {
+    if (!captchaValid) {
+      setStatus({ type: "error", message: copy.captchaRequired });
+      return;
+    }
     setGoogleLoading(true);
     setStatus(null);
     try {
@@ -265,7 +269,9 @@ export default function InscriptionPage() {
             </div>
 
             <form className="auth-modern-form" onSubmit={handleAccountSubmit}>
-              <button className="auth-google-modern" type="button" onClick={handleGoogle} disabled={busy}>
+              <HumanCheckCaptcha locale={locale} disabled={busy} onValidChange={setCaptchaValid} />
+
+              <button className="auth-google-modern" type="button" onClick={handleGoogle} disabled={busy || !captchaValid} aria-disabled={busy || !captchaValid}>
                 <GoogleIcon />
                 <span>{googleLoading ? copy.redirect : copy.google}</span>
               </button>
@@ -307,8 +313,6 @@ export default function InscriptionPage() {
                 </label>
                 <label className="auth-modern-field"><span>{copy.confirm}</span><input type={showPassword ? "text" : "password"} name="passwordConfirm" autoComplete="new-password" placeholder={copy.confirmPh} minLength="8" disabled={busy} required /></label>
               </div>
-
-              <HumanCheckCaptcha locale={locale} disabled={busy} onValidChange={setCaptchaValid} />
 
               <label className="auth-checkbox auth-checkbox--terms"><input type="checkbox" disabled={busy} required/><span>{copy.accept} <a href="#conditions">{copy.terms}</a> {copy.and} <a href="#confidentialite">{copy.privacy}</a>.</span></label>
 

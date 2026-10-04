@@ -157,6 +157,10 @@ export default function LoginPage() {
   }
 
   async function handleGoogle() {
+    if (!captchaValid) {
+      setStatus({ type: "error", message: copy.captchaRequired });
+      return;
+    }
     setGoogleLoading(true);
     setStatus(null);
     try {
@@ -319,7 +323,9 @@ export default function LoginPage() {
               </div>
 
               <form className="auth-modern-form" onSubmit={handleSubmit}>
-                <button className="auth-google-modern" type="button" onClick={handleGoogle} disabled={busy}>
+                <HumanCheckCaptcha locale={locale} disabled={busy} onValidChange={setCaptchaValid} />
+
+                <button className="auth-google-modern" type="button" onClick={handleGoogle} disabled={busy || !captchaValid} aria-disabled={busy || !captchaValid}>
                   <GoogleIcon />
                   <span>{googleLoading ? copy.redirect : copy.google}</span>
                 </button>
@@ -340,8 +346,6 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </label>
-
-                <HumanCheckCaptcha locale={locale} disabled={busy} onValidChange={setCaptchaValid} />
 
                 <div className="auth-form-meta">
                   <label className="auth-checkbox"><input type="checkbox" checked={remember} onChange={(event)=>setRemember(event.target.checked)} disabled={busy}/><span>{copy.remember}</span></label>

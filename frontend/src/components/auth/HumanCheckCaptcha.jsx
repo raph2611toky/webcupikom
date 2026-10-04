@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 const CAPTCHA_COPY = {
   fr: {
     label: "Vérification de sécurité",
-    hint: "Résolvez ce calcul pour confirmer que vous êtes une personne.",
+    hint: "Résolvez ce calcul avant de continuer.",
     placeholder: "Votre réponse",
     refresh: "Changer le calcul",
     valid: "Vérification réussie",
@@ -11,7 +11,7 @@ const CAPTCHA_COPY = {
   },
   en: {
     label: "Security check",
-    hint: "Solve this calculation to confirm you are a person.",
+    hint: "Solve this calculation before continuing.",
     placeholder: "Your answer",
     refresh: "Change the calculation",
     valid: "Verification successful",
@@ -19,7 +19,7 @@ const CAPTCHA_COPY = {
   },
   mg: {
     label: "Fanamarinana fiarovana",
-    hint: "Valio ity kajy ity hanamarinana fa olona ianao.",
+    hint: "Valio ity kajy ity alohan’ny hanohizana.",
     placeholder: "Valiny",
     refresh: "Hanova ny kajy",
     valid: "Vita ny fanamarinana",
