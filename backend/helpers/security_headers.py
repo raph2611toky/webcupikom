@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from django.conf import settings
-
 
 class APISecurityHeadersMiddleware:
     """F69 — ajoute des en-têtes défensifs aux réponses API.
 
-    Le middleware reste volontairement neutre vis-à-vis du frontend : pas de
-    CSP globale sur Django Admin/Swagger, seulement sur /api/ où les réponses
-    sont des données et non des pages applicatives.
+    Les politiques très restrictives (Referrer-Policy et CSP) restent limitées
+    aux routes /api/. Les pages HTML Django, notamment /admin/, doivent conserver
+    la politique définie par SecurityMiddleware afin de ne pas casser la
+    validation CSRF des formulaires HTTPS.
     """
 
     SENSITIVE_PREFIXES = (
@@ -26,11 +25,9 @@ class APISecurityHeadersMiddleware:
         response = self.get_response(request)
         path = request.path or ""
 
-        # Défense en profondeur. SecurityMiddleware/XFrameOptionsMiddleware
-        # conservent leur rôle ; ces valeurs rendent la politique API explicite.
+        # En-têtes défensifs compatibles avec les pages HTML Django.
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Referrer-Policy", "no-referrer")
         response.headers.setdefault("X-Permitted-Cross-Domain-Policies", "none")
         response.headers.setdefault(
             "Permissions-Policy",
@@ -38,7 +35,11 @@ class APISecurityHeadersMiddleware:
         )
 
         if path.startswith("/api/"):
-            # Les endpoints API ne doivent pas être embarqués comme documents.
+            # Les endpoints API sont des réponses de données et peuvent utiliser
+            # une politique plus restrictive. Ne pas appliquer no-referrer à
+            # /admin/ : cela peut produire Origin: null lors du POST du formulaire
+            # de connexion et faire échouer la vérification CSRF Django.
+            response.headers.setdefault("Referrer-Policy", "no-referrer")
             response.headers.setdefault(
                 "Content-Security-Policy",
                 "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
@@ -46,7 +47,7 @@ class APISecurityHeadersMiddleware:
 
         if path.startswith(self.SENSITIVE_PREFIXES):
             # Empêche les caches navigateur/proxy de conserver les données de
-            # compte, d'administration, d'agent ou les réponses d'authentification.
+            # compte, d'administration API, d'agent ou d'authentification.
             response.headers["Cache-Control"] = "no-store, private, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
