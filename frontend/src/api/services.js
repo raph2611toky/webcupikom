@@ -238,3 +238,34 @@ export async function getServiceCategories() {
   const items = await getServices();
   return ["Tous", ...Array.from(new Set(items.map((item) => item.category).filter(Boolean)))];
 }
+
+// F76 — Avis citoyen sur un service après usage vérifié.
+export async function getServiceFeedbackState(slug) {
+  const { data } = await api.get(`/citizen/services/${encodeURIComponent(slug)}/feedback/`);
+  return {
+    eligible: Boolean(data?.eligible),
+    canCreate: Boolean(data?.can_create),
+    canUpdate: Boolean(data?.can_update),
+    eligibilityReason: String(data?.eligibility_reason || ""),
+    eligibleSources: Array.isArray(data?.eligible_sources) ? data.eligible_sources : [],
+    feedback: data?.feedback || null,
+  };
+}
+
+export async function saveServiceFeedback(slug, payload, { update = false } = {}) {
+  const body = {
+    rating: Number(payload.rating),
+    comment: String(payload.comment || "").trim(),
+  };
+  if (payload.requestReference) body.request_reference = payload.requestReference;
+  if (payload.appointmentReference) body.appointment_reference = payload.appointmentReference;
+
+  const path = `/citizen/services/${encodeURIComponent(slug)}/feedback/`;
+  const { data } = update ? await api.patch(path, body) : await api.post(path, body);
+  return data;
+}
+
+export async function getAdminServiceFeedback(params = {}) {
+  const { data } = await api.get("/admin/service-feedback/", { params });
+  return unwrapList(data);
+}

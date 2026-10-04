@@ -430,3 +430,93 @@ html[data-contrast="high"] :where(body[data-route-group="portal"]) .svc84-status
 :where(body[data-route-group="portal"]) .svc84-card .svc84-badge>i{width:8px;height:8px;min-width:8px;min-height:8px;padding:0;margin:0;display:block;border-radius:999px;background:currentColor;box-shadow:none}
 :where(body[data-route-group="portal"]) .svc84-card__art{mix-blend-mode:multiply;opacity:.82;border:0;background:transparent}
 :where(body[data-route-group="portal"]) .svc84-hero__art{mix-blend-mode:multiply;opacity:.78}
+
+/* F76 — avis service : intégré à la fiche existante, sans surcharge globale. */
+:where(body[data-route-group="portal"]) .svc-feedback{
+  margin-top:12px;
+  padding:20px;
+  display:grid;
+  gap:16px;
+}
+:where(body[data-route-group="portal"]) .svc-feedback__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+}
+:where(body[data-route-group="portal"]) .svc-feedback__head h3{margin:5px 0 4px;font-size:1.05rem;letter-spacing:-.02em;color:#242039}
+:where(body[data-route-group="portal"]) .svc-feedback__head p{margin:0;max-width:720px;color:#777188;font-size:.84rem;line-height:1.55}
+:where(body[data-route-group="portal"]) .svc-feedback__verified{
+  flex:0 0 auto;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#edf9f2;
+  color:#197346;
+  font-size:.78rem;
+  font-weight:800;
+}
+:where(body[data-route-group="portal"]) .svc-feedback__state{
+  min-height:62px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:13px 15px;
+  border:1px solid #e9e4ef;
+  border-radius:14px;
+  background:#faf9fc;
+  color:#625b70;
+  font-size:.84rem;
+}
+:where(body[data-route-group="portal"]) .svc-feedback__state>strong{color:#302a3a}
+:where(body[data-route-group="portal"]) .svc-feedback__state--error{border-color:#f0d2d5;background:#fff8f8;color:#8a3c43}
+:where(body[data-route-group="portal"]) .svc-feedback__form{display:grid;gap:14px}
+:where(body[data-route-group="portal"]) .svc-feedback__receipt{
+  display:grid;
+  grid-template-columns:auto auto 1fr;
+  align-items:center;
+  gap:8px 14px;
+  padding:11px 13px;
+  border-radius:13px;
+  background:#f3effc;
+  color:#514665;
+  font-size:.8rem;
+}
+:where(body[data-route-group="portal"]) .svc-feedback__receipt strong{color:#4f22a8}
+:where(body[data-route-group="portal"]) .svc-feedback__receipt small{color:#746c81}
+:where(body[data-route-group="portal"]) .svc-feedback__rating{margin:0;padding:0;border:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+:where(body[data-route-group="portal"]) .svc-feedback__rating legend{float:left;margin-right:4px;color:#4b4559;font-size:.8rem;font-weight:800}
+:where(body[data-route-group="portal"]) .svc-feedback__rating>div{display:flex;gap:3px}
+:where(body[data-route-group="portal"]) .svc-feedback__rating button{
+  width:40px;height:40px;border:1px solid #e2dce9;border-radius:10px;background:#fff;color:#c5bdcf;
+  font-size:1.28rem;line-height:1;cursor:pointer;transition:border-color .15s ease,color .15s ease,background .15s ease;
+}
+:where(body[data-route-group="portal"]) .svc-feedback__rating button:hover,
+:where(body[data-route-group="portal"]) .svc-feedback__rating button.is-active{border-color:#7a3df0;background:#f5f0ff;color:#6b25e8}
+:where(body[data-route-group="portal"]) .svc-feedback__rating button:focus-visible{outline:3px solid rgba(106,35,231,.2);outline-offset:2px}
+:where(body[data-route-group="portal"]) .svc-feedback__rating output{color:#6c6577;font-size:.8rem;font-weight:800}
+:where(body[data-route-group="portal"]) .svc-feedback__field{display:grid;gap:7px}
+:where(body[data-route-group="portal"]) .svc-feedback__field>span{color:#4c4659;font-size:.8rem;font-weight:800}
+:where(body[data-route-group="portal"]) .svc-feedback__field select,
+:where(body[data-route-group="portal"]) .svc-feedback__field textarea{
+  width:100%;border:1px solid #e3ddea;border-radius:12px;background:#fff;color:#292437;font:inherit;font-size:.86rem;outline:none;
+}
+:where(body[data-route-group="portal"]) .svc-feedback__field select{min-height:44px;padding:0 12px}
+:where(body[data-route-group="portal"]) .svc-feedback__field textarea{resize:vertical;min-height:96px;padding:11px 12px;line-height:1.5}
+:where(body[data-route-group="portal"]) .svc-feedback__field select:focus,
+:where(body[data-route-group="portal"]) .svc-feedback__field textarea:focus{border-color:#7a3df0;box-shadow:0 0 0 3px rgba(106,35,231,.08)}
+:where(body[data-route-group="portal"]) .svc-feedback__source-note{margin:0;color:#7a7384;font-size:.8rem}
+:where(body[data-route-group="portal"]) .svc-feedback__actions{display:flex;justify-content:flex-end}
+:where(body[data-route-group="portal"]) .svc-feedback__actions .primary-action{min-width:180px}
+html[data-contrast="high"] body[data-route-group="portal"] .svc-feedback,
+html[data-contrast="high"] body[data-route-group="portal"] .svc-feedback__state,
+html[data-contrast="high"] body[data-route-group="portal"] .svc-feedback__field select,
+html[data-contrast="high"] body[data-route-group="portal"] .svc-feedback__field textarea{border:2px solid #111!important;background:#fff!important;color:#000!important}
+@media(max-width:700px){
+  :where(body[data-route-group="portal"]) .svc-feedback{padding:16px}
+  :where(body[data-route-group="portal"]) .svc-feedback__head{display:grid}
+  :where(body[data-route-group="portal"]) .svc-feedback__verified{width:max-content}
+  :where(body[data-route-group="portal"]) .svc-feedback__receipt{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .svc-feedback__rating button{width:42px;height:42px}
+  :where(body[data-route-group="portal"]) .svc-feedback__actions .primary-action{width:100%}
+}
