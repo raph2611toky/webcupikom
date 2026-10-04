@@ -51,6 +51,8 @@ export default function AdminDashboard(){
             <div className="admin-shortcuts">
               <button onClick={()=>navigate("/admin/requests")}><i>▤</i><div><b>Demandes citoyennes</b><span>{r.total||0} dossiers · {r.needs_agent_action||0} à traiter</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/services")}><i>◇</i><div><b>Services municipaux</b><span>{s.active||0} actifs</span></div><em>→</em></button>
+              <button onClick={()=>navigate("/admin/service-usage")}><i>▥</i><div><b>Usage des services</b><span>Classement et lecture utile</span></div><em>→</em></button>
+              <button onClick={()=>navigate("/admin/partners")}><i>◎</i><div><b>Services partenaires</b><span>Disponibilité et prochaine action</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/appointments")}><i>◷</i><div><b>Rendez-vous</b><span>Agenda et créneaux municipaux</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/news")}><i>▤</i><div><b>Actualités</b><span>{n.published||0} publications</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/projects")}><i>✦</i><div><b>Projets municipaux</b><span>Projets, participations et idées</span></div><em>→</em></button>

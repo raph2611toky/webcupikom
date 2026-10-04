@@ -10,6 +10,7 @@ const paths = {
   notifications: 'M5 17h14l-2-3V9a5 5 0 0 0-10 0v5ZM10 21h4M12 2v2',
   news: 'M4 3h16v18H4ZM8 7h8M8 11h8M8 15h3M14 15h2M8 18h3M14 18h2',
   projects: 'm12 3 3 6 6 3-6 3-3 6-3-6-6-3 6-3Z',
+  partners: 'M7 11a4 4 0 1 1 3.4-6.1M17 11a4 4 0 1 0-3.4-6.1M3 21v-1a5 5 0 0 1 5-5h2M21 21v-1a5 5 0 0 0-5-5h-2M9 21v-1a3 3 0 0 1 6 0v1',
   profile: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
   settings: 'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',
 };

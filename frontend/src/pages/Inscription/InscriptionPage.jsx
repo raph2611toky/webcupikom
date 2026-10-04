@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage, register, resendVerification, startGoogleAuth } from "../../api/auth.js";
 import LanguageSwitcher from "../../components/ui/LanguageSwitcher.jsx";
+import HumanCheckCaptcha from "../../components/auth/HumanCheckCaptcha.jsx";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../auth.css";
@@ -24,7 +25,10 @@ const COPY = {
     spam:"Pensez à vérifier vos courriers indésirables.", privacyShort:"Confidentialité", termsShort:"Conditions d’utilisation",
     mismatch:"Les mots de passe ne correspondent pas.", registerError:"Inscription impossible.",
     googleError:"Inscription Google impossible.", resendError:"Impossible de renvoyer l’e-mail.",
-    created:"Compte créé. Vérifiez maintenant votre e-mail."
+    created:"Compte créé. Vérifiez maintenant votre e-mail.", captchaRequired:"Validez la vérification de sécurité avant de créer votre compte.",
+    weakPassword:"Ce mot de passe est trop faible. Utilisez au moins 8 caractères et mélangez au moins 3 types : minuscules, majuscules, chiffres et caractères spéciaux.",
+    passwordStrength:"Sécurité", weak:"Faible", fair:"Correct", strong:"Fort",
+    passwordHint:"8 caractères minimum et au moins 3 types de caractères."
   },
   en: {
     back:"Back to home", kicker:"CITIZEN SPACE", title:"Create your account",
@@ -43,7 +47,10 @@ const COPY = {
     spam:"Remember to check your spam folder.", privacyShort:"Privacy", termsShort:"Terms of use",
     mismatch:"Passwords do not match.", registerError:"Unable to create your account.",
     googleError:"Google sign-up is unavailable.", resendError:"Unable to resend the email.",
-    created:"Account created. Check your email now."
+    created:"Account created. Check your email now.", captchaRequired:"Complete the security check before creating your account.",
+    weakPassword:"This password is too weak. Use at least 8 characters and combine at least 3 types: lowercase, uppercase, numbers and special characters.",
+    passwordStrength:"Security", weak:"Weak", fair:"Good", strong:"Strong",
+    passwordHint:"At least 8 characters and at least 3 character types."
   },
   mg: {
     back:"Hiverina amin'ny fandraisana", kicker:"HABAKA MPONINA", title:"Hamorona kaonty",
@@ -62,9 +69,28 @@ const COPY = {
     spam:"Jereo koa ny lahatahiry spam.", privacyShort:"Tsiambaratelo", termsShort:"Fepetra fampiasana",
     mismatch:"Tsy mitovy ny teny miafina.", registerError:"Tsy afaka mamorona kaonty.",
     googleError:"Tsy afaka misoratra amin'ny Google.", resendError:"Tsy afaka mandefa indray ny mailaka.",
-    created:"Vita ny kaonty. Hamarino izao ny mailakao."
+    created:"Vita ny kaonty. Hamarino izao ny mailakao.", captchaRequired:"Ataovy aloha ny fanamarinana fiarovana vao mamorona kaonty.",
+    weakPassword:"Malemy loatra ity teny miafina ity. Mampiasà tarehintsoratra 8 farafahakeliny ary afangaro karazana 3: litera kely, litera lehibe, isa ary marika manokana.",
+    passwordStrength:"Fiarovana", weak:"Malemy", fair:"Mety", strong:"Matanjaka",
+    passwordHint:"Tarehintsoratra 8 farafahakeliny ary karazana tarehintsoratra 3 farafahakeliny."
   },
 };
+
+
+function evaluatePassword(password = "") {
+  const categories = [
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+  const categoryCount = categories.filter(Boolean).length;
+  const hasMinimumLength = password.length >= 8;
+  const isAcceptable = hasMinimumLength && categoryCount >= 3;
+  const score = Number(hasMinimumLength) + categoryCount + Number(password.length >= 12);
+  const level = !isAcceptable ? "weak" : score >= 5 ? "strong" : "fair";
+  return { categoryCount, hasMinimumLength, isAcceptable, level };
+}
 
 function useViewportBox() {
   const read = () => ({ width: window.innerWidth, height: window.innerHeight });
@@ -120,19 +146,31 @@ export default function InscriptionPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordValue, setPasswordValue] = useState("");
   const [email, setEmail] = useState("");
+  const [captchaValid, setCaptchaValid] = useState(false);
 
   const pageStyle = useMemo(() => ({
     "--auth-screen-w": `${viewport.width}px`,
     "--auth-screen-h": `${viewport.height}px`,
   }), [viewport]);
+  const passwordStrength = useMemo(() => evaluatePassword(passwordValue), [passwordValue]);
 
   async function handleAccountSubmit(event) {
     event.preventDefault();
+    if (!captchaValid) {
+      setStatus({ type: "error", message: copy.captchaRequired });
+      return;
+    }
     const form = new FormData(event.currentTarget);
     const password = String(form.get("password") || "");
     const confirmation = String(form.get("passwordConfirm") || "");
     const nextEmail = String(form.get("email") || "");
+
+    if (!evaluatePassword(password).isAcceptable) {
+      setStatus({ type: "error", message: copy.weakPassword });
+      return;
+    }
 
     if (password !== confirmation) {
       setStatus({ type: "error", message: copy.mismatch });
@@ -245,16 +283,36 @@ export default function InscriptionPage() {
                 <label className="auth-modern-field">
                   <span>{copy.password}</span>
                   <div className="auth-input-with-action">
-                    <input type={showPassword ? "text" : "password"} name="password" autoComplete="new-password" placeholder={copy.passwordPh} minLength="8" disabled={busy} required />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      autoComplete="new-password"
+                      placeholder={copy.passwordPh}
+                      minLength="8"
+                      value={passwordValue}
+                      onChange={(event) => setPasswordValue(event.target.value)}
+                      aria-describedby="register-password-strength register-password-hint"
+                      aria-invalid={passwordValue.length > 0 && !passwordStrength.isAcceptable}
+                      disabled={busy}
+                      required
+                    />
                     <button type="button" className="auth-eye" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}><EyeIcon open={showPassword}/></button>
                   </div>
+                  <div className={`auth-password-strength is-${passwordStrength.level}`} id="register-password-strength" aria-live="polite">
+                    <span>{copy.passwordStrength}</span>
+                    <div className="auth-password-strength__bars" aria-hidden="true"><i/><i/><i/></div>
+                    <strong>{copy[passwordStrength.level]}</strong>
+                  </div>
+                  <small id="register-password-hint">{copy.passwordHint}</small>
                 </label>
                 <label className="auth-modern-field"><span>{copy.confirm}</span><input type={showPassword ? "text" : "password"} name="passwordConfirm" autoComplete="new-password" placeholder={copy.confirmPh} minLength="8" disabled={busy} required /></label>
               </div>
 
+              <HumanCheckCaptcha locale={locale} disabled={busy} onValidChange={setCaptchaValid} />
+
               <label className="auth-checkbox auth-checkbox--terms"><input type="checkbox" disabled={busy} required/><span>{copy.accept} <a href="#conditions">{copy.terms}</a> {copy.and} <a href="#confidentialite">{copy.privacy}</a>.</span></label>
 
-              <button className="auth-primary-button" type="submit" disabled={busy}><span>{loading ? copy.creating : copy.create}</span><span className="auth-button-arrow">→</span></button>
+              <button className="auth-primary-button" type="submit" disabled={busy || !captchaValid || !passwordStrength.isAcceptable}><span>{loading ? copy.creating : copy.create}</span><span className="auth-button-arrow">→</span></button>
               {status ? <p className={`auth-feedback auth-feedback--${status.type}`} role={status.type==="error" ? "alert" : "status"} aria-live="polite">{status.message}</p> : null}
             </form>
 

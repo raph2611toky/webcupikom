@@ -197,7 +197,7 @@ export default function CitizenServices() {
     <div className="portal-layout">
       <CitizenSidebar />
       <div className="portal-main">
-        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} />
+        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button type="button" className="topbar-ghost" onClick={()=>navigate("/citizen/partners")}>Services partenaires →</button>} />
         <main className="portal-content svc84-page">
           <section className="svc84-hero">
             <div className="svc84-hero__copy">

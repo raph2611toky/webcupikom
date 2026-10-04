@@ -17,6 +17,7 @@ export default function CitizenSidebar() {
     ["/citizen/signalements", "reports", t("reports", locale)],
     ["/citizen/services", "services", t("services", locale)],
     ["/citizen/transport", "transport", locale === "en" ? "Transport" : locale === "mg" ? "Fitaterana" : "Transport"],
+    ["/citizen/partners", "partners", locale === "en" ? "Partners" : locale === "mg" ? "Mpiara-miombon'antoka" : "Partenaires"],
     ["/citizen/appointments", "appointments", t("appointments", locale)],
     ["/citizen/messages", "messages", t("messages", locale)],
     ["/citizen/notifications", "notifications", t("notifications", locale)],

@@ -11,13 +11,14 @@ import {
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getRoleSafeNextPath, navigate } from "../../utils/navigation.js";
 import LanguageSwitcher from "../../components/ui/LanguageSwitcher.jsx";
+import HumanCheckCaptcha from "../../components/auth/HumanCheckCaptcha.jsx";
 import { useLocale } from "../../utils/i18n.js";
 import "../auth.css";
 
 const LOGIN_COPY={
-  fr:{visualEyebrow:"PORTAIL CITOYEN · NOVA TERRA",visualTitle:<>La ville,<br/><strong>plus proche de vous.</strong></>,visualText:"Retrouvez vos démarches, vos services et les informations de Nova Terra au même endroit.",back:"Retour à l’accueil",kicker:"ESPACE SÉCURISÉ",title:"Heureux de vous revoir",intro:"Connectez-vous à votre espace Nova Terra.",google:"Continuer avec Google",redirect:"Redirection…",or:"ou",email:"Adresse e-mail",password:"Mot de passe",remember:"Se souvenir de moi",forgot:"Mot de passe oublié ?",login:"Se connecter",loading:"Connexion…",resend:"Renvoyer l’e-mail de vérification",noAccount:"Pas encore de compte ?",register:"Créer un compte",privacy:"Confidentialité",terms:"Conditions d’utilisation",tracked:"Démarches suivies",services:"Services accessibles",alerts:"Alertes reçues",mfaKicker:"DOUBLE VÉRIFICATION",mfaTitle:"Confirmez votre identité",mfaIntro:"Votre compte utilise une vérification en deux étapes. Choisissez une méthode puis saisissez votre code.",authenticator:"Application d’authentification",emailCode:"Code par e-mail",recovery:"Code de récupération",mfaCode:"Code à 6 chiffres",recoveryCode:"Code de récupération",sendCode:"Envoyer le code",sendingCode:"Envoi…",verify:"Vérifier et continuer",verifying:"Vérification…",backLogin:"Revenir à la connexion",codeSent:"Un code de vérification a été envoyé par e-mail."},
-  en:{visualEyebrow:"CITIZEN PORTAL · NOVA TERRA",visualTitle:<>The city,<br/><strong>closer to you.</strong></>,visualText:"Find your requests, services and Nova Terra information in one place.",back:"Back to home",kicker:"SECURE SPACE",title:"Welcome back",intro:"Sign in to your Nova Terra space.",google:"Continue with Google",redirect:"Redirecting…",or:"or",email:"Email address",password:"Password",remember:"Remember me",forgot:"Forgot password?",login:"Sign in",loading:"Signing in…",resend:"Resend verification email",noAccount:"No account yet?",register:"Create account",privacy:"Privacy",terms:"Terms of use",tracked:"Tracked requests",services:"Accessible services",alerts:"Alerts received",mfaKicker:"TWO-STEP VERIFICATION",mfaTitle:"Confirm your identity",mfaIntro:"Your account uses two-step verification. Choose a method and enter your code.",authenticator:"Authenticator app",emailCode:"Email code",recovery:"Recovery code",mfaCode:"6-digit code",recoveryCode:"Recovery code",sendCode:"Send code",sendingCode:"Sending…",verify:"Verify and continue",verifying:"Verifying…",backLogin:"Back to sign in",codeSent:"A verification code was sent by email."},
-  mg:{visualEyebrow:"HABAKA MPONINA · NOVA TERRA",visualTitle:<>Ny tanàna,<br/><strong>akaiky kokoa anao.</strong></>,visualText:"Tadiavo amin'ny toerana iray ny fangatahanao, ny sampan-draharaha ary ny vaovao ao Nova Terra.",back:"Hiverina amin'ny fandraisana",kicker:"HABAKA VOARO",title:"Faly mahita anao indray",intro:"Midira ao amin'ny habakao Nova Terra.",google:"Hiditra amin'ny Google",redirect:"Mampifandray…",or:"na",email:"Adiresy mailaka",password:"Teny miafina",remember:"Tsarovy aho",forgot:"Hadinonao ny teny miafina?",login:"Hiditra",loading:"Miditra…",resend:"Alefa indray ny mailaka fanamarinana",noAccount:"Tsy mbola manana kaonty?",register:"Hamorona kaonty",privacy:"Tsiambaratelo",terms:"Fepetra fampiasana",tracked:"Fangatahana arahina",services:"Sampan-draharaha azo idirana",alerts:"Fampitandremana voaray",mfaKicker:"FANAMARINANA ROA",mfaTitle:"Hamarino fa ianao marina",mfaIntro:"Mampiasa fanamarinana roa dingana ny kaontinao. Safidio ny fomba ary ampidiro ny kaody.",authenticator:"Application authenticator",emailCode:"Kaody amin’ny mailaka",recovery:"Kaody fanarenana",mfaCode:"Kaody 6 isa",recoveryCode:"Kaody fanarenana",sendCode:"Handefa kaody",sendingCode:"Mandefa…",verify:"Hanamarina sy hanohy",verifying:"Manamarina…",backLogin:"Hiverina amin’ny fidirana",codeSent:"Nalefa tamin’ny mailaka ny kaody fanamarinana."},
+  fr:{visualEyebrow:"PORTAIL CITOYEN · NOVA TERRA",visualTitle:<>La ville,<br/><strong>plus proche de vous.</strong></>,visualText:"Retrouvez vos démarches, vos services et les informations de Nova Terra au même endroit.",back:"Retour à l’accueil",kicker:"ESPACE SÉCURISÉ",title:"Heureux de vous revoir",intro:"Connectez-vous à votre espace Nova Terra.",google:"Continuer avec Google",redirect:"Redirection…",or:"ou",email:"Adresse e-mail",password:"Mot de passe",remember:"Se souvenir de moi",forgot:"Mot de passe oublié ?",login:"Se connecter",loading:"Connexion…",resend:"Renvoyer l’e-mail de vérification",noAccount:"Pas encore de compte ?",register:"Créer un compte",privacy:"Confidentialité",terms:"Conditions d’utilisation",tracked:"Démarches suivies",services:"Services accessibles",alerts:"Alertes reçues",mfaKicker:"DOUBLE VÉRIFICATION",mfaTitle:"Confirmez votre identité",mfaIntro:"Votre compte utilise une vérification en deux étapes. Choisissez une méthode puis saisissez votre code.",authenticator:"Application d’authentification",emailCode:"Code par e-mail",recovery:"Code de récupération",mfaCode:"Code à 6 chiffres",recoveryCode:"Code de récupération",sendCode:"Envoyer le code",sendingCode:"Envoi…",verify:"Vérifier et continuer",verifying:"Vérification…",backLogin:"Revenir à la connexion",codeSent:"Un code de vérification a été envoyé par e-mail.",captchaRequired:"Validez la vérification de sécurité avant de vous connecter.",successTitle:"Connexion réussie",successText:"Préparation de votre espace Nova Terra…"},
+  en:{visualEyebrow:"CITIZEN PORTAL · NOVA TERRA",visualTitle:<>The city,<br/><strong>closer to you.</strong></>,visualText:"Find your requests, services and Nova Terra information in one place.",back:"Back to home",kicker:"SECURE SPACE",title:"Welcome back",intro:"Sign in to your Nova Terra space.",google:"Continue with Google",redirect:"Redirecting…",or:"or",email:"Email address",password:"Password",remember:"Remember me",forgot:"Forgot password?",login:"Sign in",loading:"Signing in…",resend:"Resend verification email",noAccount:"No account yet?",register:"Create account",privacy:"Privacy",terms:"Terms of use",tracked:"Tracked requests",services:"Accessible services",alerts:"Alerts received",mfaKicker:"TWO-STEP VERIFICATION",mfaTitle:"Confirm your identity",mfaIntro:"Your account uses two-step verification. Choose a method and enter your code.",authenticator:"Authenticator app",emailCode:"Email code",recovery:"Recovery code",mfaCode:"6-digit code",recoveryCode:"Recovery code",sendCode:"Send code",sendingCode:"Sending…",verify:"Verify and continue",verifying:"Verifying…",backLogin:"Back to sign in",codeSent:"A verification code was sent by email.",captchaRequired:"Complete the security check before signing in.",successTitle:"Signed in",successText:"Preparing your Nova Terra space…"},
+  mg:{visualEyebrow:"HABAKA MPONINA · NOVA TERRA",visualTitle:<>Ny tanàna,<br/><strong>akaiky kokoa anao.</strong></>,visualText:"Tadiavo amin'ny toerana iray ny fangatahanao, ny sampan-draharaha ary ny vaovao ao Nova Terra.",back:"Hiverina amin'ny fandraisana",kicker:"HABAKA VOARO",title:"Faly mahita anao indray",intro:"Midira ao amin'ny habakao Nova Terra.",google:"Hiditra amin'ny Google",redirect:"Mampifandray…",or:"na",email:"Adiresy mailaka",password:"Teny miafina",remember:"Tsarovy aho",forgot:"Hadinonao ny teny miafina?",login:"Hiditra",loading:"Miditra…",resend:"Alefa indray ny mailaka fanamarinana",noAccount:"Tsy mbola manana kaonty?",register:"Hamorona kaonty",privacy:"Tsiambaratelo",terms:"Fepetra fampiasana",tracked:"Fangatahana arahina",services:"Sampan-draharaha azo idirana",alerts:"Fampitandremana voaray",mfaKicker:"FANAMARINANA ROA",mfaTitle:"Hamarino fa ianao marina",mfaIntro:"Mampiasa fanamarinana roa dingana ny kaontinao. Safidio ny fomba ary ampidiro ny kaody.",authenticator:"Application authenticator",emailCode:"Kaody amin’ny mailaka",recovery:"Kaody fanarenana",mfaCode:"Kaody 6 isa",recoveryCode:"Kaody fanarenana",sendCode:"Handefa kaody",sendingCode:"Mandefa…",verify:"Hanamarina sy hanohy",verifying:"Manamarina…",backLogin:"Hiverina amin’ny fidirana",codeSent:"Nalefa tamin’ny mailaka ny kaody fanamarinana.",captchaRequired:"Ataovy aloha ny fanamarinana fiarovana vao miditra.",successTitle:"Tafiditra soa aman-tsara",successText:"Manomana ny habakao Nova Terra…"},
 };
 
 function useViewportBox() {
@@ -91,6 +92,8 @@ export default function LoginPage() {
   const [emailChallengeId, setEmailChallengeId] = useState("");
   const [mfaLoading, setMfaLoading] = useState(false);
   const [mfaEmailLoading, setMfaEmailLoading] = useState(false);
+  const [captchaValid, setCaptchaValid] = useState(false);
+  const [successLoading, setSuccessLoading] = useState(false);
 
   const shellStyle = useMemo(() => ({
     "--auth-screen-w": `${viewport.width}px`,
@@ -108,8 +111,19 @@ export default function LoginPage() {
     }
   }, [mfa]);
 
+  async function finishAuthentication(role) {
+    setSuccessLoading(true);
+    // Laisse le temps au loader de rendre une transition visible, sans ralentir le traitement réseau.
+    await new Promise((resolve) => window.setTimeout(resolve, 650));
+    navigate(getRoleSafeNextPath(role), { replace: true });
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
+    if (!captchaValid) {
+      setStatus({ type: "error", message: copy.captchaRequired });
+      return;
+    }
     setLoading(true);
     setStatus(null);
     setCanResend(false);
@@ -133,7 +147,7 @@ export default function LoginPage() {
         setStatus(null);
         return;
       }
-      navigate(getRoleSafeNextPath(data.user?.role), { replace: true });
+      await finishAuthentication(data.user?.role);
     } catch (error) {
       setCanResend(isEmailNotVerifiedError(error));
       setStatus({ type: "error", message: getApiErrorMessage(error, "Connexion impossible pour le moment.") });
@@ -201,7 +215,7 @@ export default function LoginPage() {
       }
       const data = await verifyMfa(payload);
       setMfa(null);
-      navigate(getRoleSafeNextPath(data.user?.role), { replace: true });
+      await finishAuthentication(data.user?.role);
     } catch (error) {
       setStatus({ type: "error", message: getApiErrorMessage(error, "Code invalide ou expiré.") });
     } finally {
@@ -220,7 +234,7 @@ export default function LoginPage() {
     window.history.replaceState({}, "", `${url.pathname}${url.search}`);
   }
 
-  const busy = loading || googleLoading || mfaLoading || mfaEmailLoading;
+  const busy = loading || googleLoading || mfaLoading || mfaEmailLoading || successLoading;
 
   return (
     <main className="auth-screen auth-screen--login" style={shellStyle}>
@@ -327,12 +341,14 @@ export default function LoginPage() {
                   </div>
                 </label>
 
+                <HumanCheckCaptcha locale={locale} disabled={busy} onValidChange={setCaptchaValid} />
+
                 <div className="auth-form-meta">
                   <label className="auth-checkbox"><input type="checkbox" checked={remember} onChange={(event)=>setRemember(event.target.checked)} disabled={busy}/><span>{copy.remember}</span></label>
                   <a href="/mot-de-passe-oublie" onClick={(event)=>{event.preventDefault();navigate('/mot-de-passe-oublie')}}>{copy.forgot}</a>
                 </div>
 
-                <button className="auth-primary-button" type="submit" disabled={busy}>
+                <button className="auth-primary-button" type="submit" disabled={busy || !captchaValid}>
                   <span>{loading ? copy.loading : copy.login}</span>
                   <span className="auth-button-arrow">→</span>
                 </button>
@@ -348,6 +364,21 @@ export default function LoginPage() {
           <div className="auth-legal"><a href="#confidentialite">{copy.privacy}</a><span>•</span><a href="#conditions">{copy.terms}</a></div>
         </section>
       </div>
+
+      {successLoading ? (
+        <div className="auth-success-loader" role="status" aria-live="polite" aria-label={copy.successText}>
+          <div className="auth-success-loader__content">
+            <div className="auth-success-loader__mark" aria-hidden="true">
+              <span className="auth-success-loader__ring auth-success-loader__ring--outer" />
+              <span className="auth-success-loader__ring auth-success-loader__ring--inner" />
+              <span className="auth-success-loader__dot" />
+            </div>
+            <strong>{copy.successTitle}</strong>
+            <p>{copy.successText}</p>
+            <div className="auth-success-loader__progress" aria-hidden="true"><i /></div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

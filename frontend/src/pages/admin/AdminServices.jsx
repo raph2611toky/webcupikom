@@ -5,6 +5,7 @@ import { ServiceAvailabilityBadge } from "../../components/ui/ServiceAvailabilit
 import ServiceAvailabilityEditor from "../../components/ui/ServiceAvailabilityEditor.jsx";
 import { createService, getServices, updateService } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
+import { navigate } from "../../utils/navigation.js";
 
 const EMPTY={icon:"◇",name:"",category:"Administration",shortDescription:"",description:"",openingHours:"",phone:"",email:"",address:"",actions:[],requiredDocuments:[],faq:[],published:true,sortOrder:0,isFeatured:false,priorityOrder:0};
 
@@ -45,7 +46,7 @@ export default function AdminServices(){
   };
 
   return <div className="portal-layout"><AdminSidebar/><div className="portal-main">
-    <PortalTopbar eyebrow="Catalogue municipal" title="Services municipaux" actions={<button className="topbar-cta" onClick={openCreate}>+ Nouveau service</button>}/>
+    <PortalTopbar eyebrow="Catalogue municipal" title="Services municipaux" actions={<div className="topbar-action-group"><button className="topbar-ghost" onClick={()=>navigate("/admin/service-usage")}>Analyse d’usage</button><button className="topbar-cta" onClick={openCreate}>+ Nouveau service</button></div>}/>
     <main className="portal-content management-page service-management-page">
       {error?<div className="error-card" role="alert">{error}</div>:null}{notice?<div className="success-inline" role="status">✓ {notice}</div>:null}
       <section className="service-management-summary">

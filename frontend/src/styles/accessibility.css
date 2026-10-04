@@ -7,11 +7,11 @@ html {
 }
 
 html[data-font-size="large"] {
-  font-size: 106.25%;
+  font-size: 125%;
 }
 
 html[data-font-size="xlarge"] {
-  font-size: 112.5%;
+  font-size: 150%;
 }
 
 .skip-link {
@@ -952,4 +952,19 @@ html[data-contrast="high"] .portal-main :is(.portal-card,.toolbar-card,[class$="
   color:#fff!important;
   border-color:#fff!important;
   box-shadow:none!important;
+}
+
+
+/* V97 — agrandissement réellement perceptible sans chevauchement. */
+html[data-font-size="large"] body[data-route-group="portal"] { --portal-sidebar-width: 270px; }
+html[data-font-size="xlarge"] body[data-route-group="portal"] { --portal-sidebar-width: 300px; }
+html:is([data-font-size="large"],[data-font-size="xlarge"]) body[data-route-group="portal"] :is(button,a,input,select,textarea,th,td,dd,p,span,strong,small) { overflow-wrap:anywhere; }
+html[data-font-size="xlarge"] body[data-route-group="portal"] :is(.portal-grid--2,.management-form-grid,.settings-data-grid,.usage-layout) { grid-template-columns:1fr !important; }
+html[data-font-size="xlarge"] body[data-route-group="portal"] :is(.portal-topbar__right,.management-row__actions,.usage-filters,.partner-card__actions) { width:100%; justify-content:flex-start; }
+@media (min-width:701px) and (max-width:1100px){
+  html:is([data-font-size="large"],[data-font-size="xlarge"]) body[data-route-group="portal"] { --portal-sidebar-width: 88px; }
+}
+@media (max-width:700px){
+  html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-sidebar { height:104px !important; }
+  html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-layout { padding-bottom:104px; }
 }

@@ -30,6 +30,7 @@ const CitizenRequestDetails = lazy(() => import("./pages/citizen/CitizenRequestD
 const CitizenServices = lazy(() => import("./pages/citizen/CitizenServices.jsx"));
 const CitizenServiceDetails = lazy(() => import("./pages/citizen/CitizenServiceDetails.jsx"));
 const CitizenTransport = lazy(() => import("./pages/citizen/CitizenTransport.jsx"));
+const CitizenPartners = lazy(() => import("./pages/citizen/CitizenPartners.jsx"));
 const CitizenAppointments = lazy(() => import("./pages/citizen/CitizenAppointments.jsx"));
 const CitizenAppointmentDetails = lazy(() => import("./pages/citizen/CitizenAppointmentDetails.jsx"));
 const CitizenNotifications = lazy(() => import("./pages/citizen/CitizenNotifications.jsx"));
@@ -66,6 +67,8 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.jsx"));
 const AdminRequests = lazy(() => import("./pages/admin/AdminRequests.jsx"));
 const AdminRequestDetails = lazy(() => import("./pages/admin/AdminRequestDetails.jsx"));
 const AdminServices = lazy(() => import("./pages/admin/AdminServices.jsx"));
+const AdminServiceUsage = lazy(() => import("./pages/admin/AdminServiceUsage.jsx"));
+const AdminPartners = lazy(() => import("./pages/admin/AdminPartners.jsx"));
 const AdminTransport = lazy(() => import("./pages/admin/AdminTransport.jsx"));
 const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments.jsx"));
 const AdminNews = lazy(() => import("./pages/admin/AdminNews.jsx"));
@@ -259,6 +262,7 @@ export default function App() {
       "/citizen/signalements":<Protected roles={["citizen"]}><CitizenReports/></Protected>,
       "/citizen/services":<Protected roles={["citizen"]}><CitizenServices/></Protected>,
       "/citizen/transport":<Protected roles={["citizen"]}><CitizenTransport/></Protected>,
+      "/citizen/partners":<Protected roles={["citizen"]}><CitizenPartners/></Protected>,
       "/citizen/appointments":<Protected roles={["citizen"]}><CitizenAppointments/></Protected>,
       "/citizen/news":<Protected roles={["citizen"]}><CitizenNews/></Protected>,
       "/citizen/notifications":<Protected roles={["citizen"]}><CitizenNotifications/></Protected>,
@@ -287,6 +291,8 @@ export default function App() {
       "/admin/users":<Protected roles={["admin"]}><AdminUsers/></Protected>,
       "/admin/requests":<Protected roles={["admin"]}><AdminRequests/></Protected>,
       "/admin/services":<Protected roles={["admin"]}><AdminServices/></Protected>,
+      "/admin/service-usage":<Protected roles={["admin"]}><AdminServiceUsage/></Protected>,
+      "/admin/partners":<Protected roles={["admin"]}><AdminPartners/></Protected>,
       "/admin/transport":<Protected roles={["admin"]}><AdminTransport/></Protected>,
       "/admin/appointments":<Protected roles={["admin"]}><AdminAppointments/></Protected>,
       "/admin/news":<Protected roles={["admin"]}><AdminNews/></Protected>,
@@ -333,9 +339,9 @@ export default function App() {
         <div className="a11y-setting">
           <span className="a11y-setting__label">Taille du texte</span>
           <div className="a11y-size-buttons" role="group" aria-label="Taille du texte">
-            <button type="button" aria-pressed={a11y.fontSize==="normal"} onClick={()=>updateAccessibility({fontSize:"normal"})}>A</button>
-            <button type="button" aria-pressed={a11y.fontSize==="large"} onClick={()=>updateAccessibility({fontSize:"large"})}>A+</button>
-            <button type="button" aria-pressed={a11y.fontSize==="xlarge"} onClick={()=>updateAccessibility({fontSize:"xlarge"})}>A++</button>
+            <button type="button" aria-pressed={a11y.fontSize==="normal"} onClick={()=>updateAccessibility({fontSize:"normal"})}>A · 100%</button>
+            <button type="button" aria-pressed={a11y.fontSize==="large"} onClick={()=>updateAccessibility({fontSize:"large"})}>A+ · 125%</button>
+            <button type="button" aria-pressed={a11y.fontSize==="xlarge"} onClick={()=>updateAccessibility({fontSize:"xlarge"})}>A++ · 150%</button>
           </div>
         </div>
 
