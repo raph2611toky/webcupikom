@@ -167,6 +167,54 @@ class NewsTests(APITestCase):
         self.assertEqual(deliver_news(important.pk), 2)
         self.assertEqual(len(mail.outbox), 2)
 
+    def test_f104_space_weather_reuses_critical_alert_delivery(self):
+        data = {
+            'title': 'Tempête solaire — perturbations possibles des communications',
+            'content': 'Une tempête solaire pourrait perturber temporairement les communications.',
+            'category': 'space_weather',
+            'is_published': True,
+            'affected_areas': 'Ensemble de Nova Terra — réseaux de communication',
+            'instructions': 'Gardez votre téléphone chargé, limitez les appels non essentiels et suivez les consignes officielles.',
+            'source_name': 'Centre d’alerte spatiale',
+            'expires_at': (timezone.now() + timedelta(hours=4)).isoformat(),
+        }
+        response = self.client.post('/api/admin/news/', data, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data['publication_type'], 'alert')
+        self.assertEqual(response.data['severity'], 'critical')
+        self.assertTrue(response.data['is_important'])
+        self.assertTrue(response.data['is_pinned'])
+        self.assertTrue(response.data['notify_residents'])
+        self.assertEqual(response.data['crisis_type'], 'space_weather')
+
+        item = NewsArticle.objects.get(pk=response.data['id'])
+        # La diffusion reste celle déjà utilisée par toutes les alertes :
+        # notifications citoyennes puis duplication email idempotente.
+        mail.outbox.clear()
+        self.assertEqual(deliver_news(item.pk), 2)
+        self.assertEqual(item.notifications.count(), 2)
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_f104_published_space_weather_cannot_silently_disable_delivery(self):
+        data = {
+            'title': 'Tempête solaire',
+            'content': 'Perturbations possibles.',
+            'category': 'Tempête solaire',
+            'publication_type': 'alert',
+            'severity': 'critical',
+            'is_published': True,
+            'is_important': True,
+            'is_pinned': True,
+            'notify_residents': False,
+            'affected_areas': 'Nova Terra',
+            'instructions': 'Suivez les consignes officielles et gardez vos moyens de communication chargés.',
+            'source_name': 'Centre d’alerte spatiale',
+            'expires_at': (timezone.now() + timedelta(hours=4)).isoformat(),
+        }
+        response = self.client.post('/api/admin/news/', data, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn('notify_residents', response.data)
+
     def test_filters_priority_pagination(self):
         self.article()
         self.article(slug='critical',title='Priorité',severity='critical',target_districts=['sud'])

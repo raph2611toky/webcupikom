@@ -1,4 +1,6 @@
 from urllib.parse import urlsplit
+import re
+import unicodedata
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -50,7 +52,27 @@ class AudienceGuidanceListField(serializers.Field):
         return list(nested.validated_data)
 
 
-PUBLIC_FIELDS = ('id', 'title', 'slug', 'category', 'excerpt', 'content', 'publication_type', 'severity',
+SPACE_WEATHER_CATEGORY_ALIASES = {
+    "space_weather",
+    "solar_storm",
+    "tempete_solaire",
+    "alerte_spatiale",
+    "meteo_spatiale",
+}
+
+
+def normalize_publication_category(value):
+    """Normalise une catégorie libre sans modifier la valeur stockée en base."""
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    return re.sub(r"[^a-z0-9]+", "_", text.casefold()).strip("_")
+
+
+def is_space_weather_category(value):
+    return normalize_publication_category(value) in SPACE_WEATHER_CATEGORY_ALIASES
+
+
+PUBLIC_FIELDS = ('id', 'title', 'slug', 'category', 'excerpt', 'content', 'publication_type', 'crisis_type', 'severity',
     'published_at', 'expires_at', 'updated_at', 'is_pinned', 'is_important', 'target_districts',
     'affected_areas', 'instructions', 'audience_guidance', 'source_name', 'source_url', 'contact_phone',
     'action_label', 'action_url', 'service', 'cover_alt', 'cover_url', 'publication_state')
@@ -59,6 +81,7 @@ PUBLIC_FIELDS = ('id', 'title', 'slug', 'category', 'excerpt', 'content', 'publi
 class PublicationSerializer(serializers.ModelSerializer):
     cover_url = serializers.SerializerMethodField()
     publication_state = serializers.SerializerMethodField()
+    crisis_type = serializers.SerializerMethodField()
     audience_guidance = AudienceGuidanceListField(read_only=True)
 
     class Meta:
@@ -78,6 +101,13 @@ class PublicationSerializer(serializers.ModelSerializer):
         if obj.expires_at and obj.expires_at <= timezone.now():
             return 'expired'
         return 'scheduled' if obj.published_at > timezone.now() else 'published'
+
+    def get_crisis_type(self, obj):
+        # F104 : indicateur uniquement dérivé des données existantes. Aucun
+        # nouveau modèle ni nouvelle branche de diffusion n'est introduit.
+        if obj.publication_type == 'alert' and is_space_weather_category(obj.category):
+            return 'space_weather'
+        return None
 
 
 class PublicationAdminSerializer(PublicationSerializer):
@@ -102,6 +132,34 @@ class PublicationAdminSerializer(PublicationSerializer):
 
     def validate(self, attrs):
         get = lambda key, default=None: attrs.get(key, getattr(self.instance, key, default))
+
+        # F104 — tempête solaire / météo spatiale. On réutilise strictement le
+        # pipeline d'alerte existant (broadcast + email) au lieu d'en créer un
+        # second. Les valeurs sûres sont proposées par défaut à la création,
+        # mais une publication explicitement incohérente est refusée.
+        if is_space_weather_category(get('category', '')):
+            if self.instance is None:
+                attrs.setdefault('publication_type', 'alert')
+                attrs.setdefault('severity', 'critical')
+                attrs.setdefault('is_important', True)
+                attrs.setdefault('is_pinned', True)
+                attrs.setdefault('notify_residents', True)
+
+            get = lambda key, default=None: attrs.get(key, getattr(self.instance, key, default))
+            if get('is_published', False):
+                errors = {}
+                if get('publication_type', 'news') != 'alert':
+                    errors['publication_type'] = 'Une alerte spatiale publiée doit utiliser le type alert.'
+                if get('severity', 'info') != 'critical':
+                    errors['severity'] = 'Une alerte spatiale publiée doit être critique.'
+                if not get('is_important', False):
+                    errors['is_important'] = 'Une alerte spatiale publiée doit rester importante.'
+                if not get('is_pinned', False):
+                    errors['is_pinned'] = 'Une alerte spatiale publiée doit rester mise en avant.'
+                if not get('notify_residents', True):
+                    errors['notify_residents'] = 'F104 exige la diffusion aux habitants.'
+                if errors:
+                    raise serializers.ValidationError(errors)
         for field, maximum in (('content', 100000), ('instructions', 20000), ('affected_areas', 5000)):
             if len(get(field, '') or '') > maximum:
                 raise serializers.ValidationError({field: f'Maximum {maximum} caractères.'})
