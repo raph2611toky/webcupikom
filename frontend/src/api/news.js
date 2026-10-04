@@ -43,6 +43,7 @@ function normalizeNews(item) {
     content: item.content || item.body || "",
     image: item.cover_url || item.image_url || item.image || FALLBACK_IMAGES[item.category] || fallbackCitizen,
     coverAlt: item.cover_alt || "",
+    cover_alt: item.cover_alt || "",
     date: item.date || formatDate(item.published_at),
     published: item.is_published !== false && item.publication_state !== "draft",
     important: Boolean(item.is_important),
@@ -51,6 +52,13 @@ function normalizeNews(item) {
     targetDistricts: Array.isArray(item.target_districts) ? item.target_districts : [],
     affectedAreas: item.affected_areas || "",
     instructions: item.instructions || "",
+    audienceGuidance: item.audience_guidance || "",
+    sourceName: item.source_name || "",
+    sourceUrl: item.source_url || "",
+    contactPhone: item.contact_phone || "",
+    actionLabel: item.action_label || "",
+    actionUrl: item.action_url || "",
+    serviceId: item.service ?? null,
     expiresAt: item.expires_at || "",
     publishedAt: item.published_at || "",
     publicationState: item.publication_state || "",
@@ -87,16 +95,22 @@ export async function getNewsItem(slug, { includeDrafts = false, force = false }
   return cachedRequest(`news:item:${slug}`, load, { ttl: 60_000 });
 }
 
+function splitDistricts(payload) {
+  if (Array.isArray(payload.target_districts)) return payload.target_districts.filter(Boolean);
+  if (Array.isArray(payload.targetDistricts)) return payload.targetDistricts.filter(Boolean);
+  return String(payload.target_districts || payload.targetDistricts || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function setOptional(payload, key, value) {
+  if (value === undefined || value === null || value === "") return;
+  payload[key] = value;
+}
+
 function toBackendPayload(payload) {
-  const districts = Array.isArray(payload.target_districts)
-    ? payload.target_districts
-    : Array.isArray(payload.targetDistricts)
-      ? payload.targetDistricts
-      : String(payload.target_districts || payload.targetDistricts || "")
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean);
-  return {
+  const data = {
     title: payload.title,
     category: payload.category || "Information",
     excerpt: payload.excerpt || "",
@@ -107,19 +121,42 @@ function toBackendPayload(payload) {
     is_important: payload.is_important ?? payload.important ?? false,
     is_pinned: payload.is_pinned ?? payload.pinned ?? false,
     notify_residents: payload.notify_residents ?? payload.notifyResidents ?? true,
-    target_districts: districts,
+    target_districts: splitDistricts(payload),
     affected_areas: payload.affected_areas ?? payload.affectedAreas ?? "",
     instructions: payload.instructions || "",
-    ...(payload.published_at || payload.publishedAt ? { published_at: payload.published_at || payload.publishedAt } : {}),
-    ...(payload.expires_at || payload.expiresAt ? { expires_at: payload.expires_at || payload.expiresAt } : { expires_at: null }),
+    audience_guidance: payload.audience_guidance ?? payload.audienceGuidance ?? "",
+    source_name: payload.source_name ?? payload.sourceName ?? "",
+    contact_phone: payload.contact_phone ?? payload.contactPhone ?? "",
+    action_label: payload.action_label ?? payload.actionLabel ?? "",
+    cover_alt: payload.cover_alt ?? payload.coverAlt ?? "",
+    expires_at: payload.expires_at || payload.expiresAt || null,
   };
+
+  setOptional(data, "slug", payload.slug);
+  setOptional(data, "published_at", payload.published_at || payload.publishedAt);
+  setOptional(data, "source_url", payload.source_url || payload.sourceUrl);
+  setOptional(data, "action_url", payload.action_url || payload.actionUrl);
+
+  const rawService = payload.service ?? payload.serviceId;
+  if (rawService !== undefined && rawService !== null && rawService !== "") {
+    const service = Number(rawService);
+    if (Number.isFinite(service)) data.service = service;
+  } else {
+    data.service = null;
+  }
+
+  return data;
+}
+
+function newsUpdated() {
+  invalidateCache("news:");
+  invalidateCache("alerts:");
+  window.dispatchEvent(new Event("terra-news-updated"));
 }
 
 export async function createNews(payload) {
   const { data } = await api.post("/admin/news/", toBackendPayload(payload));
-  invalidateCache("news:");
-  invalidateCache("alerts:");
-  window.dispatchEvent(new Event("terra-news-updated"));
+  newsUpdated();
   return normalizeNews(data);
 }
 
@@ -136,9 +173,7 @@ export async function updateNews(idOrSlug, patch) {
   if (!current) throw new Error("Publication introuvable.");
   const payload = toBackendPayload({ ...current, ...patch });
   const { data } = await api.patch(`/admin/news/${encodeURIComponent(current.slug)}/`, payload);
-  invalidateCache("news:");
-  invalidateCache("alerts:");
-  window.dispatchEvent(new Event("terra-news-updated"));
+  newsUpdated();
   return normalizeNews(data);
 }
 
@@ -146,12 +181,9 @@ export async function deleteNews(idOrSlug) {
   const current = await resolveAdminNews(idOrSlug);
   if (!current) return false;
   await api.delete(`/admin/news/${encodeURIComponent(current.slug)}/`);
-  invalidateCache("news:");
-  invalidateCache("alerts:");
-  window.dispatchEvent(new Event("terra-news-updated"));
+  newsUpdated();
   return true;
 }
-
 
 /* Native backend naming, used by admin pages. */
 export async function getAdminNews(params = {}) {
@@ -166,32 +198,40 @@ export async function getAdminNewsItem(slug) {
 
 export async function createAdminNews(payload) {
   const { data } = await api.post("/admin/news/", toBackendPayload(payload));
-  invalidateCache("news:");
-  invalidateCache("alerts:");
-  window.dispatchEvent(new Event("terra-news-updated"));
+  newsUpdated();
   return normalizeNews(data);
 }
 
 export async function updateAdminNews(slug, payload) {
   const { data } = await api.patch(`/admin/news/${encodeURIComponent(slug)}/`, toBackendPayload(payload));
-  invalidateCache("news:");
-  invalidateCache("alerts:");
-  window.dispatchEvent(new Event("terra-news-updated"));
+  newsUpdated();
   return normalizeNews(data);
+}
+
+export async function uploadAdminNewsCover(slug, image, coverAlt) {
+  if (!image) return null;
+  if (!coverAlt?.trim()) throw new Error("Le texte alternatif de l’image est obligatoire.");
+  const form = new FormData();
+  form.append("image", image);
+  form.append("cover_alt", coverAlt.trim());
+  const { data } = await api.post(`/admin/news/${encodeURIComponent(slug)}/cover/`, form);
+  newsUpdated();
+  return data;
+}
+
+export async function getAdminNewsDelivery(slug) {
+  const { data } = await api.get(`/admin/news/${encodeURIComponent(slug)}/delivery/`);
+  return data;
 }
 
 export async function unpublishAdminNews(slug) {
   const { data } = await api.patch(`/admin/news/${encodeURIComponent(slug)}/`, { is_published: false });
-  invalidateCache("news:");
-  invalidateCache("alerts:");
-  window.dispatchEvent(new Event("terra-news-updated"));
+  newsUpdated();
   return normalizeNews(data);
 }
 
 export async function deleteAdminNews(slug) {
   await api.delete(`/admin/news/${encodeURIComponent(slug)}/`);
-  invalidateCache("news:");
-  invalidateCache("alerts:");
-  window.dispatchEvent(new Event("terra-news-updated"));
+  newsUpdated();
   return true;
 }

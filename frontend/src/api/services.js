@@ -4,6 +4,7 @@ import { unwrapList } from "./helpers.js";
 import { SERVICE_TRANSLATIONS } from "../data/serviceTranslations.js";
 import { getLocale } from "../utils/i18n.js";
 import { cachedRequest, invalidateCache } from "./cache.js";
+import { GEMINI_HIGHLIGHTS_CONFIG } from "../config/gemini.js";
 
 const presentationBySlug = new Map(presentationServices.map((item) => [item.slug, item]));
 
@@ -234,17 +235,143 @@ export async function updateServiceAvailability(slug, payload, { role = "agent" 
   return normalizeService(data);
 }
 
+function deterministicHighlights(items = [], limit = 4) {
+  const rows = items.map(normalizeService);
+  const byPriority = [...rows].sort((a, b) =>
+    Number(b.isFeatured) - Number(a.isFeatured) ||
+    Number(a.priorityOrder ?? 999) - Number(b.priorityOrder ?? 999) ||
+    Number(b.usageCount ?? 0) - Number(a.usageCount ?? 0) ||
+    String(a.name || "").localeCompare(String(b.name || ""))
+  );
+  const popular = [...rows].sort((a, b) =>
+    Number(b.usageCount ?? 0) - Number(a.usageCount ?? 0) ||
+    Number(b.isFeatured) - Number(a.isFeatured) ||
+    Number(a.priorityOrder ?? 999) - Number(b.priorityOrder ?? 999)
+  ).slice(0, limit);
+
+  const featured = byPriority.filter((item) => item.isFeatured).slice(0, limit);
+  if (featured.length < limit) {
+    for (const item of byPriority) {
+      if (featured.some((entry) => String(entry.slug) === String(item.slug))) continue;
+      featured.push(item);
+      if (featured.length >= limit) break;
+    }
+  }
+
+  return { featured, popular, source: "local" };
+}
+
+function parseGeminiJson(value) {
+  if (typeof value !== "string") return null;
+  const cleaned = value.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+  try { return JSON.parse(cleaned); } catch { return null; }
+}
+
+async function getGeminiHighlights(items = [], limit = 4) {
+  const token = String(GEMINI_HIGHLIGHTS_CONFIG.token || "").trim();
+  if (!token || !Array.isArray(items) || items.length === 0) return null;
+
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), GEMINI_HIGHLIGHTS_CONFIG.timeoutMs || 4500);
+  try {
+    const servicesForPrompt = items.map((item) => ({
+      slug: item.slug,
+      name: item.name,
+      category: item.category,
+      short_description: item.shortDescription || item.short_description || "",
+      is_featured: Boolean(item.isFeatured ?? item.is_featured),
+      priority_order: Number(item.priorityOrder ?? item.priority_order ?? 0),
+      usage_count: Number(item.usageCount ?? item.usage_count ?? 0),
+      availability: item.isAvailable === false ? "indisponible" : "disponible",
+    }));
+
+    const prompt = [
+      "Tu aides une plateforme municipale à sélectionner les services à mettre en avant.",
+      `Retourne uniquement un JSON valide avec featured_slugs, popular_slugs et reasons. Chaque tableau doit contenir au maximum ${limit} slugs.`,
+      "Contraintes : n'invente jamais de slug ; privilégie is_featured=true puis priority_order faible pour featured_slugs ; classe popular_slugs principalement avec usage_count décroissant ; évite les services indisponibles quand une alternative disponible existe.",
+      "reasons doit être un objet {slug: raison courte en français}.",
+      `Services : ${JSON.stringify(servicesForPrompt)}`,
+    ].join("\n");
+
+    const headers = { "Content-Type": "application/json" };
+    if (/^AIza/i.test(token)) headers["x-goog-api-key"] = token;
+    else headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_HIGHLIGHTS_CONFIG.model)}:generateContent`,
+      {
+        method: "POST",
+        headers,
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
+        }),
+      },
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    const rawText = data?.candidates?.[0]?.content?.parts?.map((part) => part?.text || "").join("") || "";
+    const parsed = parseGeminiJson(rawText);
+    if (!parsed) return null;
+
+    const bySlug = new Map(items.map((item) => [String(item.slug), normalizeService(item)]));
+    const reasons = parsed?.reasons && typeof parsed.reasons === "object" ? parsed.reasons : {};
+    const pick = (slugs) => (Array.isArray(slugs) ? slugs : [])
+      .map((slug) => bySlug.get(String(slug)))
+      .filter(Boolean)
+      .slice(0, limit)
+      .map((item) => ({ ...item, highlightReason: String(reasons[item.slug] || "") }));
+
+    const featured = pick(parsed.featured_slugs);
+    const popular = pick(parsed.popular_slugs);
+    if (!featured.length && !popular.length) return null;
+
+    const local = deterministicHighlights(items, limit);
+    return {
+      featured: featured.length ? featured : local.featured,
+      popular: popular.length ? popular : local.popular,
+      source: "gemini",
+    };
+  } catch {
+    return null;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+function highlightsEndpointUnavailable(error) {
+  const status = Number(error?.response?.status || 0);
+  return !error?.response || status === 404 || status === 405 || status === 408 || status === 429 || status === 501 || status >= 500;
+}
+
 export async function getServiceHighlights({ limit = 4, force = false } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 4, 1), 20);
   const load = async () => {
-    const { data } = await api.get("/city/services/highlights/", {
-      params: { limit: safeLimit },
-      skipAccessToken: true,
-    });
-    return {
-      featured: (Array.isArray(data?.featured) ? data.featured : []).map(normalizeService),
-      popular: (Array.isArray(data?.popular) ? data.popular : []).map(normalizeService),
-    };
+    try {
+      const { data } = await api.get("/city/services/highlights/", {
+        params: { limit: safeLimit },
+        skipAccessToken: true,
+        timeout: 3000,
+      });
+      return {
+        featured: (Array.isArray(data?.featured) ? data.featured : []).map(normalizeService),
+        popular: (Array.isArray(data?.popular) ? data.popular : []).map(normalizeService),
+        source: "backend",
+      };
+    } catch (error) {
+      if (!highlightsEndpointUnavailable(error)) throw error;
+
+      // Fallback 1 : Gemini analyse la liste réelle des services lorsque
+      // /city/services/highlights/ est indisponible.
+      const services = await getServices({ force: true });
+      const gemini = await getGeminiHighlights(services, safeLimit);
+      if (gemini) return gemini;
+
+      // Fallback 2 : tri local déterministe. L'interface reste utilisable même
+      // si Gemini est lui aussi indisponible.
+      return deterministicHighlights(services, safeLimit);
+    }
   };
   if (force) return load();
   return cachedRequest(`services:highlights:${getLocale()}:${safeLimit}`, load, { ttl: 60_000 });
