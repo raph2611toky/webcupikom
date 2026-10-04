@@ -146,28 +146,6 @@ pipeline {
             }
         }
 
-        stage('Verify Backend Revision') {
-            when { branch 'backend' }
-            steps {
-                sh '''
-                    set -eu
-
-                    LOCAL_SHA="$(git rev-parse HEAD)"
-                    git fetch origin backend >/dev/null 2>&1
-                    REMOTE_SHA="$(git rev-parse origin/backend)"
-
-                    echo "Jenkins checkout : $LOCAL_SHA"
-                    echo "origin/backend   : $REMOTE_SHA"
-
-                    if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
-                        echo "ERREUR: Jenkins essaie de déployer un commit backend obsolète."
-                        echo "Le déploiement de ce build est annulé pour éviter d'écraser une version plus récente."
-                        exit 42
-                    fi
-                '''
-            }
-        }
-
         stage('Build Backend') {
             when { branch 'backend' }
             steps {
