@@ -1,0 +1,504 @@
+
+/* Mes demandes — single visual source of truth. */
+:where(body[data-route-group="portal"]) .citizen-requests-page{
+  display:grid;
+  grid-template-rows:auto auto auto minmax(0,1fr);
+  gap:1rem;
+  overflow:auto;
+  padding-bottom:1.25rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card,
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel{
+  position:relative;
+  overflow:hidden;
+  border:1px solid #e9e3f4;
+  background:var(--tn-card);
+  box-shadow:0 14px 34px rgba(43,26,88,.055);
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:url("../../assets/dashboard/request-soft-bg.png") right center/cover no-repeat;
+  opacity:.96;
+  pointer-events:none;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card>*,
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel>*{
+  position:relative;
+  z-index:1;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card{
+  min-height:9rem;
+  display:grid;
+  grid-template-columns:5.5rem minmax(0,1fr);
+  align-items:center;
+  gap:1.5rem;
+  padding:1.5rem 1.75rem;
+  border-radius:1.55rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__icon{
+  width:5rem;
+  height:5rem;
+  display:grid;
+  place-items:center;
+  border-radius:1.45rem;
+  border:1px solid #e7d8ff;
+  background:rgba(248,244,255,.88);
+  box-shadow:0 .75rem 2rem rgba(117,68,235,.09);
+  color:#7a36ff;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__icon span{
+  font-size:2rem;
+  line-height:1;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__copy{
+  display:grid;
+  gap:.35rem;
+  max-width:49rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__copy .section-label,
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__copy .section-label,
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-card__head .section-label{
+  display:block!important;
+  color:#6d43ee;
+  font-size:.8125rem;
+  line-height:1.1;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  font-weight:800;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__copy h2{
+  margin:.25rem 0 .25rem!important;
+  font-size:1.6rem!important;
+  line-height:1.03;
+  letter-spacing:-.04em;
+  color:#10122e;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__copy .detail-copy{
+  display:block!important;
+  margin:0!important;
+  max-width:44rem;
+  color:#655f77;
+  font-size:.94rem;
+  line-height:1.55;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-toolbar-card{
+  display:grid;
+  grid-template-columns:minmax(18rem,1fr) auto;
+  align-items:center;
+  gap:1rem;
+  min-height:5.5rem;
+  padding:1rem 1.15rem;
+  margin:0;
+  border-radius:1.45rem;
+  border:1px solid #ece7f3;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(30,24,58,.045);
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-search{
+  min-width:0;
+  height:3.15rem;
+  border-radius:1rem;
+  border:1px solid #e5dfef;
+  background:#fbfaff;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-search input{
+  font-size:.9rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-filter-row{
+  display:flex;
+  justify-content:flex-end;
+  gap:.55rem;
+  flex-wrap:wrap;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-filter-row button{
+  min-height:2.75rem;
+  padding:0 .95rem;
+  border:1px solid #e4deec;
+  border-radius:999px;
+  background:#fff;
+  color:#4a4560;
+  font-size:.8125rem;
+  font-weight:700;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .requests-filter-row button.is-active{
+  color:#fff;
+  border-color:#17131e;
+  background:#17131e;
+  box-shadow:none;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel{
+  display:grid!important;
+  grid-template-columns:4.5rem minmax(0,1fr);
+  grid-template-areas:
+    "icon copy"
+    "icon actions";
+  align-items:center!important;
+  justify-content:stretch!important;
+  gap:.8rem 1.2rem!important;
+  min-height:auto;
+  padding:1.15rem 1.4rem!important;
+  border-radius:1.4rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__icon{
+  grid-area:icon;
+  width:4.5rem;
+  height:4.5rem;
+  display:grid;
+  place-items:center;
+  align-self:center;
+  border-radius:1.2rem;
+  background:rgba(239,231,255,.92);
+  color:#7136ff;
+  border:1px solid #e6d9ff;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__icon span{
+  font-size:2rem;
+  transform:translateY(-1px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__copy{
+  grid-area:copy;
+  display:grid!important;
+  gap:.22rem!important;
+  min-width:0;
+  max-width:49rem!important;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__copy h3{
+  display:block!important;
+  margin:.2rem 0 .15rem!important;
+  color:#171832;
+  font-size:1.35rem!important;
+  line-height:1.15;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__copy p{
+  display:block!important;
+  margin:0!important;
+  max-width:48rem;
+  color:#655f77;
+  font-size:.86rem;
+  line-height:1.45;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__actions{
+  grid-area:actions;
+  display:flex!important;
+  justify-content:flex-start!important;
+  align-items:center;
+  gap:.65rem!important;
+  flex-wrap:wrap!important;
+  min-width:0;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel__actions button{
+  min-height:2.8rem;
+  padding:0 1.05rem;
+  border-radius:.85rem;
+  font-size:.8125rem;
+  font-weight:800;
+  flex:0 0 auto!important;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-card{
+  min-height:15rem;
+  padding:1.35rem 1.45rem;
+  border-radius:1.45rem;
+  border:1px solid #ebe6f0;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(30,24,58,.04);
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-card__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:1rem;
+  margin-bottom:1rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-card__head h3{
+  margin:.32rem 0 0!important;
+  font-size:.9rem!important;
+  line-height:1.4;
+  font-weight:500;
+  color:#655f77;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-card__head>b{
+  color:#111225;
+  font-size:1rem;
+  white-space:nowrap;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .accessible-table-wrap{
+  max-height:none!important;
+  overflow:auto;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  background:transparent;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-table thead th{
+  position:static!important;
+  padding:.7rem .7rem!important;
+  background:transparent!important;
+  color:#655f77;
+  font-size:.8125rem!important;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  font-weight:800;
+  text-align:left;
+  border-bottom:1px solid #eae5ef;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-table tbody td{
+  padding:1rem .7rem!important;
+  color:#24253e;
+  font-size:.82rem!important;
+  vertical-align:middle;
+  background:rgba(248,246,252,.72);
+  border-bottom:1px solid #eee9f4;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-ref-cell{
+  display:flex;
+  align-items:center;
+  gap:.65rem;
+  min-width:0;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-ref-cell span{
+  width:2.15rem;
+  height:2.15rem;
+  flex:0 0 2.15rem;
+  display:grid;
+  place-items:center;
+  border-radius:.75rem;
+  color:#7139ff;
+  background:#efe8ff;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-ref-cell b{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:#655f77;
+  font-size:.8125rem;
+  font-weight:700;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-title-cell{
+  display:grid;
+  gap:.2rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-title-cell strong{
+  color:#111225;
+  font-size:.95rem;
+  line-height:1.25;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-title-cell small{
+  color:#655f77;
+  font-size:.8125rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-table .status-pill{
+  min-height:1.9rem;
+  padding:0 .72rem;
+  font-size:.8125rem;
+  font-weight:800;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-table .accessible-table__action{
+  min-height:2.7rem;
+  padding:0 1rem;
+  border:1px solid #dfd9e9;
+  border-radius:.9rem;
+  background:#fff;
+  color:#171829;
+  font-size:.8125rem;
+  font-weight:800;
+}
+
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-foot{
+  padding-top:.85rem;
+  color:#655f77;
+  font-size:.8125rem;
+}
+
+html[data-data-mode="reduced"] :where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card::after{
+  background-image:none;
+}
+
+@media(max-width:1100px){
+  :where(body[data-route-group="portal"]) .citizen-requests-page .requests-toolbar-card{
+    grid-template-columns:1fr;
+  }
+  :where(body[data-route-group="portal"]) .citizen-requests-page .requests-filter-row{
+    justify-content:flex-start;
+  }
+}
+
+@media(max-width:760px){
+  :where(body[data-route-group="portal"]) .citizen-requests-page{
+    overflow:visible;
+  }
+  :where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card{
+    grid-template-columns:1fr;
+    min-height:9rem;
+  }
+  :where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__icon{
+    width:4rem;
+    height:4rem;
+  }
+  :where(body[data-route-group="portal"]) .citizen-requests-page .requests-intro-card__copy h2{
+    font-size:1.6rem!important;
+  }
+  :where(body[data-route-group="portal"]) .citizen-requests-page .request-export-panel{
+    grid-template-columns:1fr;
+    grid-template-areas:"icon" "copy" "actions";
+  }
+  :where(body[data-route-group="portal"]) .citizen-requests-page .request-table{
+    min-width:760px;
+  }
+}
+
+:where(body[data-route-group="portal"]) .request-detail-hero--soft{background:linear-gradient(135deg,#0e0922 0%,#1b1440 45%,#25175c 100%);position:relative;overflow:hidden;border-radius:1.75rem;padding:1.25rem 1.5rem 1.35rem;grid-template-columns:auto 1fr auto;display:grid;align-items:flex-start;gap:1.1rem;border:1px solid rgba(255,255,255,.06)}
+:where(body[data-route-group="portal"]) .request-detail-hero--soft::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 88% 18%,rgba(148,96,255,.28),transparent 18%),radial-gradient(circle at 72% 85%,rgba(92,51,195,.22),transparent 22%),linear-gradient(0deg,rgba(255,255,255,.03),rgba(255,255,255,0));pointer-events:none}
+:where(body[data-route-group="portal"]) .request-detail-hero__icon,:where(body[data-route-group="portal"]) .action-required-card::before{position:relative;z-index:1}
+:where(body[data-route-group="portal"]) .request-detail-hero__icon{width:4.8rem;height:4.8rem;border-radius:1.2rem;display:grid;place-items:center;font-size:2rem;background:rgba(14,8,37,.5);border:1px solid rgba(170,130,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
+:where(body[data-route-group="portal"]) .request-detail-hero__content{position:relative;z-index:1;min-width:0}
+:where(body[data-route-group="portal"]) .request-detail-hero__content h2{margin:.35rem 0 .5rem;font-size:2rem;line-height:1.05;color:#fff}
+:where(body[data-route-group="portal"]) .request-detail-hero__meta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.55rem;color:rgba(255,255,255,.82)}
+:where(body[data-route-group="portal"]) .request-detail-hero__meta small{font-size:.95rem}
+:where(body[data-route-group="portal"]) .request-detail-hero--soft p{max-width:46rem;color:rgba(255,255,255,.78);font-size:1rem;line-height:1.55}
+:where(body[data-route-group="portal"]) .request-detail-hero--soft .status-pill{align-self:flex-start;margin-top:.1rem}
+:where(body[data-route-group="portal"]) .action-required-card{display:grid;grid-template-columns:1fr auto;gap:.9rem;align-items:center;padding:1.3rem 1.5rem}
+:where(body[data-route-group="portal"]) .action-required-card h3{margin:.35rem 0 0;color:#11122d;font-size:1.2rem}
+:where(body[data-route-group="portal"]) .request-detail-grid{grid-template-columns:minmax(0,1.08fr) minmax(19rem,.92fr);align-items:start}
+:where(body[data-route-group="portal"]) .request-history-card,:where(body[data-route-group="portal"]) .request-details-card{min-height:100%}
+:where(body[data-route-group="portal"]) .citizen-request-timeline{display:grid;gap:1rem;margin-top:1rem}
+:where(body[data-route-group="portal"]) .citizen-request-timeline>div{position:relative;display:grid;grid-template-columns:2rem 1fr;gap:.85rem;padding-bottom:.85rem}
+:where(body[data-route-group="portal"]) .citizen-request-timeline>div:not(:last-child)::after{content:"";position:absolute;left:.92rem;top:2rem;bottom:.1rem;width:2px;background:linear-gradient(180deg,#dccfff 0%,#eee8fb 100%)}
+:where(body[data-route-group="portal"]) .citizen-request-timeline i{width:1.85rem;height:1.85rem;border-radius:999px;display:grid;place-items:center;background:#7b2cff;color:#fff;font-style:normal;font-size:.8125rem;box-shadow:0 0 0 .35rem #f2ebff}
+:where(body[data-route-group="portal"]) .citizen-request-timeline b{display:block;font-size:1rem;color:#151736;margin-bottom:.22rem}
+:where(body[data-route-group="portal"]) .citizen-request-timeline small{display:block;color:#65708f;font-size:.9rem;line-height:1.45}
+:where(body[data-route-group="portal"]) .citizen-request-timeline span{display:block;color:#655f77;font-size:.84rem;margin-top:.28rem}
+:where(body[data-route-group="portal"]) .request-details-card .detail-list{display:grid;gap:0}
+:where(body[data-route-group="portal"]) .request-details-card .detail-list>div{display:grid;grid-template-columns:12rem 1fr;gap:1rem;padding:.95rem 0;border-top:1px solid #efeaf8}
+:where(body[data-route-group="portal"]) .request-details-card .detail-list>div:first-child{border-top:0}
+:where(body[data-route-group="portal"]) .request-details-card .detail-list span{font-size:.95rem;color:#655f77}
+:where(body[data-route-group="portal"]) .request-details-card .detail-list b{font-size:1rem;color:#17193a;justify-self:end;text-align:right}
+:where(body[data-route-group="portal"]) .request-location-chip{margin-top:1rem;background:#f7f2ff;color:#6a53a7;border:1px solid #eadfff;border-radius:.9rem;padding:.75rem .9rem;width:fit-content}
+:where(body[data-route-group="portal"]) .request-attachments-card .portal-card__head,:where(body[data-route-group="portal"]) .request-single-export{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+:where(body[data-route-group="portal"]) .request-single-export h3{margin:.35rem 0 .3rem;color:#161739}
+:where(body[data-route-group="portal"]) .request-single-export .detail-copy{max-width:42rem}
+:where(body[data-route-group="portal"]) .request-single-export__actions{display:flex;gap:.75rem;flex-wrap:wrap}
+:where(body[data-route-group="portal"]) .action-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.1rem 1.25rem;border:1px solid #ece6fa;border-radius:1.35rem;background:#fff}
+:where(body[data-route-group="portal"]) .action-bar>div:last-child{display:flex;gap:.7rem;flex-wrap:wrap;justify-content:flex-end}
+
+@media (max-width: 1100px){
+  :where(body[data-route-group="portal"]) .request-detail-grid{grid-template-columns:1fr}
+}
+@media (max-width: 900px){
+  :where(body[data-route-group="portal"]) .citizen-requests-page,:where(body[data-route-group="portal"]) .citizen-request-detail-page{overflow:visible}
+  :where(body[data-route-group="portal"]) .requests-intro-card{grid-template-columns:1fr;min-height:9rem}
+  :where(body[data-route-group="portal"]) .request-export-panel,:where(body[data-route-group="portal"]) .request-single-export,:where(body[data-route-group="portal"]) .action-required-card,:where(body[data-route-group="portal"]) .action-bar{grid-template-columns:1fr;display:grid}
+  :where(body[data-route-group="portal"]) .request-list-card__head,:where(body[data-route-group="portal"]) .request-attachments-card .portal-card__head{flex-direction:column;align-items:flex-start}
+  :where(body[data-route-group="portal"]) .request-detail-hero--soft{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .request-detail-hero__meta{gap:.6rem}
+  :where(body[data-route-group="portal"]) .request-details-card .detail-list>div{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .request-details-card .detail-list b{justify-self:start;text-align:left}
+}
+
+/* V90 — Demandes : états serveur, pagination et réponses municipales */
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-loading{padding:1rem 0;color:#655f77;font-size:.875rem}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-reply-hint{display:inline-flex!important;width:max-content;margin-top:.3rem!important;padding:.22rem .48rem;border-radius:999px;background:#f1eaff;color:#6544a4!important;font-weight:750}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination{display:flex;align-items:center;justify-content:flex-end;gap:.65rem;padding-top:1rem;border-top:1px solid #eee9f3}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination span{color:#655f77;font-size:.8125rem}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination button{min-height:2.5rem;padding:0 .85rem;border:1px solid #e1d9e8;border-radius:.8rem;background:#fff;color:#302739;font-size:.8125rem;font-weight:800}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination button:disabled{opacity:.45;cursor:not-allowed}
+:where(body[data-route-group="portal"]) .municipal-replies-card{display:grid;gap:1rem;border-color:#dfd3f3;background:linear-gradient(180deg,#fff 0%,#fcfaff 100%)}
+:where(body[data-route-group="portal"]) .municipal-replies-card__head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+:where(body[data-route-group="portal"]) .municipal-replies-card__head>span{color:#72677c;font-size:.8125rem;white-space:nowrap}
+:where(body[data-route-group="portal"]) .municipal-reply-list{display:grid;gap:.75rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list>article{display:grid;grid-template-columns:2.45rem minmax(0,1fr);gap:.8rem;padding:.85rem;border:1px solid #e9e1ef;border-radius:1rem;background:#fff}
+:where(body[data-route-group="portal"]) .municipal-reply-avatar{width:2.35rem;height:2.35rem;border-radius:.75rem;display:grid;place-items:center;background:#eee6fb;color:#5e3ca5;font-size:.76rem;font-weight:900}
+:where(body[data-route-group="portal"]) .municipal-reply-list>article>div:last-child>div{display:flex;align-items:center;justify-content:space-between;gap:.8rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list strong{color:#25202d;font-size:.875rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list span,:where(body[data-route-group="portal"]) .municipal-reply-list small{color:#766b7f;font-size:.8125rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list p{margin:.38rem 0 0;color:#4b4352;font-size:.875rem;line-height:1.55;white-space:pre-wrap}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .municipal-replies-card,html[data-contrast="high"] :where(body[data-route-group="portal"]) .municipal-reply-list>article{background:#000!important;color:#fff!important;border-color:#fff!important}
+@media(max-width:700px){:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination{justify-content:stretch;flex-wrap:wrap}:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination button{flex:1}:where(body[data-route-group="portal"]) .municipal-replies-card__head,:where(body[data-route-group="portal"]) .municipal-reply-list>article>div:last-child>div{flex-direction:column;align-items:flex-start}:where(body[data-route-group="portal"]) .municipal-reply-list>article{grid-template-columns:1fr}:where(body[data-route-group="portal"]) .municipal-reply-avatar{display:none}}
+
+/* V91 — F52 : soutien public aux demandes/signalements éligibles */
+:where(body[data-route-group="portal"]) .request-support-page{display:grid;gap:12px;align-content:start;padding-top:12px!important;padding-bottom:18px!important}
+:where(body[data-route-group="portal"]) .request-support-intro{
+  display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:17px 18px;border-radius:18px;border:1px solid #e7e0ec;background:#fff;
+}
+:where(body[data-route-group="portal"]) .request-support-intro__icon{width:52px;height:52px;display:grid;place-items:center;border-radius:15px;background:#f4effa;color:#6b18df;font-size:1.35rem}
+:where(body[data-route-group="portal"]) .request-support-intro h2{margin:4px 0 5px;font-size:1.08rem;color:#201a25}
+:where(body[data-route-group="portal"]) .request-support-intro p{max-width:760px;margin:0;color:#706675;font-size:.84rem;line-height:1.55}
+:where(body[data-route-group="portal"]) .request-support-intro__count{display:grid;justify-items:end;min-width:112px}
+:where(body[data-route-group="portal"]) .request-support-intro__count strong{font-size:1.55rem;line-height:1;color:#2b2430}
+:where(body[data-route-group="portal"]) .request-support-intro__count span{margin-top:4px;color:#746a7c;font-size:.76rem}
+:where(body[data-route-group="portal"]) .request-support-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) 190px 210px;gap:9px;padding:8px;border:1px solid #e8e1ec;border-radius:15px;background:#fff}
+:where(body[data-route-group="portal"]) .request-support-toolbar .portal-search{min-height:42px;margin:0}
+:where(body[data-route-group="portal"]) .request-support-toolbar select{min-height:42px;padding:0 10px;border:1px solid #e1dae6;border-radius:11px;background:#fbfafc;color:#4c4252;font:inherit;font-size:.8125rem}
+:where(body[data-route-group="portal"]) .request-support-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+:where(body[data-route-group="portal"]) .request-support-card{display:grid;grid-template-rows:auto 1fr auto;gap:12px;min-width:0;padding:15px;border:1px solid #e8e1ec;border-radius:17px;background:#fff;box-shadow:0 7px 18px rgba(31,23,41,.035)}
+:where(body[data-route-group="portal"]) .request-support-card.is-supported{border-color:#d7c7e9;background:#fdfbff}
+:where(body[data-route-group="portal"]) .request-support-card__top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+:where(body[data-route-group="portal"]) .request-support-card__top code{max-width:55%;overflow:hidden;text-overflow:ellipsis;color:#766b7f;font-size:.72rem;white-space:nowrap}
+:where(body[data-route-group="portal"]) .request-support-card__body{display:grid;align-content:start;gap:7px}
+:where(body[data-route-group="portal"]) .request-support-category{width:max-content;max-width:100%;padding:4px 7px;border-radius:999px;background:#f2edf5;color:#66586e;font-size:.72rem;font-weight:800}
+:where(body[data-route-group="portal"]) .request-support-card h3{margin:0;color:#29222e;font-size:.92rem;line-height:1.3}
+:where(body[data-route-group="portal"]) .request-support-meta{display:grid;gap:4px;margin-top:3px}
+:where(body[data-route-group="portal"]) .request-support-meta span{color:#786e80;font-size:.77rem;line-height:1.35}
+:where(body[data-route-group="portal"]) .request-support-card__footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid #eee8f2}
+:where(body[data-route-group="portal"]) .request-support-card__footer>div{display:grid;gap:1px}
+:where(body[data-route-group="portal"]) .request-support-card__footer>div strong{font-size:1rem;color:#2f2734}
+:where(body[data-route-group="portal"]) .request-support-card__footer>div span{font-size:.72rem;color:#766c7d}
+:where(body[data-route-group="portal"]) .request-support-card__footer button{min-height:36px;padding:0 11px;border-radius:10px;font-size:.78rem}
+:where(body[data-route-group="portal"]) .request-support-empty{display:grid;gap:5px;padding:22px;text-align:center}
+:where(body[data-route-group="portal"]) .request-support-empty span{color:#766b7d;font-size:.82rem}
+:where(body[data-route-group="portal"]) .request-support-pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+:where(body[data-route-group="portal"]) .request-support-pagination span{color:#746a7c;font-size:.8rem}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-intro,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-toolbar,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-card,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-empty{background:#000!important;color:#fff!important;border-color:#fff!important}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-intro h2,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-intro p,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-card h3,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-meta span,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-card__footer strong,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-card__footer span{color:#fff!important}
+@media(max-width:1050px){:where(body[data-route-group="portal"]) .request-support-grid{grid-template-columns:repeat(2,minmax(0,1fr))}:where(body[data-route-group="portal"]) .request-support-toolbar{grid-template-columns:1fr 1fr}:where(body[data-route-group="portal"]) .request-support-toolbar .portal-search{grid-column:1/-1}}
+@media(max-width:700px){:where(body[data-route-group="portal"]) .request-support-intro{grid-template-columns:46px 1fr}:where(body[data-route-group="portal"]) .request-support-intro__count{grid-column:1/-1;justify-items:start}:where(body[data-route-group="portal"]) .request-support-grid{grid-template-columns:1fr}:where(body[data-route-group="portal"]) .request-support-toolbar{grid-template-columns:1fr}:where(body[data-route-group="portal"]) .request-support-toolbar .portal-search{grid-column:auto}:where(body[data-route-group="portal"]) .request-support-card__footer{align-items:stretch;flex-direction:column}:where(body[data-route-group="portal"]) .request-support-card__footer button{width:100%}:where(body[data-route-group="portal"]) .request-support-pagination{justify-content:stretch;flex-wrap:wrap}:where(body[data-route-group="portal"]) .request-support-pagination button{flex:1}}

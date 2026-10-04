@@ -1,0 +1,132 @@
+/* V87 Citizen shell only. Page design belongs to each page's dedicated CSS. */
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat::-webkit-scrollbar{display:none}
+
+/* Settings / Mes données — a single, calm reading column with explicit form styling. */
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .settings-data-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:16px;
+  align-items:start;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .settings-data-grid>.portal-card{
+  width:100%;
+  min-width:0;
+  padding:24px;
+  border-radius:16px;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .settings-data-grid h3{
+  margin:4px 0 7px;
+  font-size:1.06rem;
+  line-height:1.35;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .settings-data-grid .detail-copy{
+  max-width:920px;
+  margin:0;
+  color:#6b6274;
+  line-height:1.55;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .data-export-card{
+  display:grid;
+  gap:12px;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .data-export-card>.primary-action{
+  width:max-content;
+  min-width:172px;
+  margin-top:2px;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-card{
+  display:grid;
+  gap:18px;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-head .text-action{
+  min-height:38px;
+  padding:8px 12px;
+  border:1px solid #e4dbea;
+  border-radius:10px;
+  background:#fff;
+  color:#5f21c7;
+  font-weight:750;
+  white-space:nowrap;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-head .text-action:hover{
+  border-color:#cdb9df;
+  background:#faf7ff;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-use-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-use-grid>div{
+  min-width:0;
+  display:grid;
+  align-content:start;
+  gap:5px;
+  min-height:92px;
+  padding:14px;
+  border:1px solid #ebe4ef;
+  border-radius:12px;
+  background:#fbfafc;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-use-grid strong{font-size:.84rem;color:#2d2533}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-use-grid span{font-size:.8rem;color:#655f77;line-height:1.45}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form{
+  display:grid;
+  grid-template-columns:minmax(230px,.7fr) minmax(340px,1.3fr) auto;
+  gap:12px;
+  align-items:end;
+  padding-top:2px;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form label{display:grid;gap:7px;min-width:0}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form label>span{font-size:.78rem;font-weight:800;color:#5e5668}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form :is(select,textarea){
+  width:100%;
+  min-width:0;
+  border:1px solid #ded7e4;
+  border-radius:10px;
+  outline:none;
+  background:#fff;
+  color:#29222f;
+  font:inherit;
+  font-size:.83rem;
+  transition:border-color .16s ease,box-shadow .16s ease;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form select{height:44px;padding:0 12px}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form textarea{min-height:92px;resize:vertical;padding:11px 12px;line-height:1.45}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form :is(select,textarea):focus{
+  border-color:#7527df;
+  box-shadow:0 0 0 3px rgba(107,24,223,.08);
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form>.secondary-action{
+  min-height:44px;
+  padding-inline:16px;
+  white-space:nowrap;
+}
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-history{display:grid;gap:6px}
+
+@media(max-width:1180px){
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-use-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form{grid-template-columns:minmax(210px,.8fr) minmax(0,1.2fr)}
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form>.secondary-action{grid-column:2;justify-self:start}
+}
+@media(max-width:760px){
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .settings-data-grid>.portal-card{padding:18px}
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-head{flex-direction:column;align-items:stretch}
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-head .text-action{width:max-content}
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-use-grid,
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-concern-form>.secondary-action{grid-column:auto;justify-self:stretch}
+  :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .data-export-card>.primary-action{width:100%}
+}
+@media(max-width:700px){
+  body[data-route-group="portal"] .portal-sidebar--citizen nav{display:flex;gap:5px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  body[data-route-group="portal"] .portal-sidebar--citizen nav::-webkit-scrollbar{display:none}
+  body[data-route-group="portal"] .portal-sidebar--citizen nav button{flex:0 0 54px;width:54px;height:50px;justify-content:center;padding:0}
+  body[data-route-group="portal"] .portal-sidebar--citizen nav button span{display:none}
+}

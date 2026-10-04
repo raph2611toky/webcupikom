@@ -95,7 +95,7 @@ body {
 }
 
 .kamo-nav a {
-  font-size: clamp(14px, min(1.02vw, 1.82svh), 17px);
+  font-size: clamp(0.875rem, min(1.02vw, 1.82svh), 1.0625rem);
   line-height: 1;
   font-weight: 500;
   letter-spacing: -0.018em;
@@ -107,7 +107,7 @@ body {
   top: 5.7%;
   left: 49.15%;
   transform: translateX(-50%);
-  font-size: clamp(42px, min(3.55vw, 6.31svh), 60px);
+  font-size: clamp(2.625rem, min(3.55vw, 6.31svh), 3.75rem);
   line-height: .9;
   font-weight: 400;
   letter-spacing: -0.075em;
@@ -132,7 +132,7 @@ body {
   border: 2px solid var(--kamo-border);
   border-radius: 10px;
   background: rgba(255,255,255,.89);
-  font-size: clamp(14px, min(.96vw, 1.70svh), 17px);
+  font-size: clamp(0.875rem, min(.96vw, 1.70svh), 1.0625rem);
   line-height: 1;
   font-weight: 500;
   letter-spacing: -0.018em;
@@ -310,7 +310,7 @@ body {
 
 .kamo-orbit text {
   font-family: var(--kamo-body-font);
-  font-size: 11.0px;
+  font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: 1.55px;
   fill: #050507;
@@ -400,13 +400,13 @@ body {
 .spark-big {
   left: 0;
   top: 7px;
-  font-size: 39px;
+  font-size: 2.4375rem;
 }
 
 .spark-small {
   left: 29px;
   top: -1px;
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 
 .start-button {
@@ -484,7 +484,7 @@ body {
 
   .kamo-header { height: 110px; }
   .kamo-nav { display: none; }
-  .kamo-logo { left: 26px; top: 28px; transform: none; font-size: 48px; }
+  .kamo-logo { left: 26px; top: 28px; transform: none; font-size: 3rem; }
   .kamo-login { left: auto; right: 22px; top: 28px; width: 140px; min-width: 0; height: 48px; }
   .hero-top-right { width: 280px; height: 230px; min-width: 0; min-height: 0; }
   .hero-photo--right { right: -10px; width: 248px; height: 176px; transform: rotate(8.4deg); }
@@ -497,11 +497,11 @@ body {
   .hero-title__band { width: 96vw; min-height: 13.5vw; margin-top: 10px; margin-bottom: 11px; }
   .hero-title__band-text { font-size: 8.05vw; letter-spacing: -0.015em; transform: rotate(.55deg) scaleX(1.035); }
   .hero-title__bottom { font-size: 8.45vw; margin-top: 11px; letter-spacing: -0.006em; padding-inline: 3vw; transform: scaleX(1.05); }
-  .hero-subtitle { margin-top: 34px; font-size: 18px; }
+  .hero-subtitle { margin-top: 34px; font-size: 1.125rem; }
   .hero-subtitle br { display: none; }
   .hero-wave { top: 90px; height: 840px; }
-  .demo-link { top: auto; bottom: 48px; left: 46px; font-size: 30px; }
-  .start-button { left: auto; right: 54px; top: auto; bottom: 42px; width: 190px; font-size: 20px; }
+  .demo-link { top: auto; bottom: 48px; left: 46px; font-size: 1.875rem; }
+  .start-button { left: auto; right: 54px; top: auto; bottom: 42px; width: 190px; font-size: 1.25rem; }
 }
 
 @media (min-width: 761px) {
@@ -513,9 +513,9 @@ body {
 }
 
 
-/* Terra Nova wordmark/content adjustments — hero geometry preserved */
+/* Nova Terra wordmark/content adjustments — hero geometry preserved */
 .kamo-logo {
-  font-size: clamp(32px, min(2.55vw, 4.55svh), 46px);
+  font-size: clamp(2rem, min(2.55vw, 4.55svh), 2.875rem);
   letter-spacing: -0.065em;
 }
 
@@ -529,6 +529,77 @@ body {
 }
 
 @media (max-width: 760px) {
-  .kamo-logo { font-size: 36px; }
-  .start-button { width: 210px; min-width: 0; font-size: 17px; }
+  .kamo-logo { font-size: 2.25rem; }
+  .start-button { width: 210px; min-width: 0; font-size: 1.0625rem; }
 }
+
+/* V29 — language choice visible from the first screen; approved geometry preserved */
+.hero-language-switcher {
+  position: absolute;
+  pointer-events: auto;
+  top: 5.15%;
+  right: 4.9%;
+  z-index: 60;
+}
+@media (max-width: 760px) {
+  .hero-language-switcher { top: 84px; right: 22px; }
+}
+
+
+/* ==========================================================================
+   V42 — landing high contrast: no black-on-black text
+   ========================================================================== */
+html[data-contrast="high"] .kamo-hero{
+  --hero-hc-accent:var(--tn-purple,#f2d34b);
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .kamo-hero,
+html[data-contrast="high"] .kamo-hero .hero-title,
+html[data-contrast="high"] .kamo-hero .hero-title__top,
+html[data-contrast="high"] .kamo-hero .hero-title__bottom,
+html[data-contrast="high"] .kamo-hero .hero-subtitle,
+html[data-contrast="high"] .kamo-hero .kamo-nav a,
+html[data-contrast="high"] .kamo-hero .kamo-logo,
+html[data-contrast="high"] .kamo-hero .demo-link,
+html[data-contrast="high"] .kamo-hero .kamo-orbit text{
+  color:#fff!important;
+  fill:#fff!important;
+  text-shadow:none!important;
+}
+
+html[data-contrast="high"] .kamo-hero .kamo-logo span,
+html[data-contrast="high"] .kamo-hero .demo-sparkles{
+  color:var(--hero-hc-accent)!important;
+}
+
+html[data-contrast="high"] .kamo-hero .hero-title__band{
+  background:var(--hero-hc-accent)!important;
+  color:#111!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .kamo-hero .hero-title__band-text,
+html[data-contrast="high"] .kamo-hero .hero-title__band-text *{
+  color:#111!important;
+}
+
+html[data-contrast="high"] .kamo-hero .kamo-login{
+  background:#000!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+}
+
+html[data-contrast="high"] .kamo-hero .start-button{
+  background:var(--hero-hc-accent)!important;
+  color:#111!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .kamo-hero .hero-photo{
+  border:2px solid #fff!important;
+}
+.hero-low-data-note{position:absolute;z-index:18;left:50%;bottom:8.5%;transform:translateX(-50%);padding:7px 11px;border:1px solid rgba(102,0,252,.14);border-radius:999px;background:rgba(255,255,255,.84);color:#6f6477;font-size:.64rem;font-weight:700;backdrop-filter:blur(6px)}
+html[data-data-mode="reduced"] .kamo-hero__glow{display:none!important}
+@media(max-width:700px){.hero-low-data-note{bottom:5%;white-space:nowrap;font-size:.58rem}}

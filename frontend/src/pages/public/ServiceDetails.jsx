@@ -1,46 +1,39 @@
 import { useEffect, useState } from "react";
 import PublicHeader from "../../components/ui/PublicHeader.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
+import { ServiceAvailabilityBadge, ServiceAvailabilityNotice } from "../../components/ui/ServiceAvailability.jsx";
+import { useAuth } from "../../auth/AuthContext.jsx";
 import { getService } from "../../api/services.js";
+import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/public-pages.css";
 
-export default function ServiceDetails({ params }) {
-  const [service, setService] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+const COPY={
+  fr:{missing:"Service introuvable",back:"Retour aux services",all:"Tous les services",request:"Faire une demande",unavailable:"Démarche indisponible",steps:"Démarches",can:"Ce que vous pouvez faire",hours:"Horaires",confirm:"À confirmer",contact:"Coordonnées",docs:"Documents nécessaires",prepare:"Préparez votre dossier"},
+  en:{missing:"Service not found",back:"Back to services",all:"All services",request:"Start a request",unavailable:"Procedure unavailable",steps:"Procedures",can:"What you can do",hours:"Opening hours",confirm:"To confirm",contact:"Contact",docs:"Required documents",prepare:"Prepare your request"},
+  mg:{missing:"Tsy hita ny sampan-draharaha",back:"Hiverina amin'ny sampan-draharaha",all:"Sampan-draharaha rehetra",request:"Hanao fangatahana",unavailable:"Tsy azo atao izao",steps:"Dingana",can:"Ireo azonao atao",hours:"Ora fiasana",confirm:"Mbola hohamafisina",contact:"Fifandraisana",docs:"Taratasy ilaina",prepare:"Omano ny fangatahanao"},
+};
 
-  useEffect(() => {
-    let mounted = true;
-    getService(params.slug)
-      .then((data) => mounted && setService(data))
-      .catch(() => mounted && setError("Service introuvable."))
-      .finally(() => mounted && setLoading(false));
-    return () => { mounted = false; };
-  }, [params.slug]);
+export default function ServiceDetails({params}){
+  const {isAuthenticated,user}=useAuth();
+  const [locale]=useLocale();
+  const copy=COPY[locale]||COPY.fr;
+  const [service,setService]=useState(undefined);
 
-  if (loading) return <div className="public-page"><PublicHeader/><main className="public-content"><div className="loading-card">Chargement…</div></main><Footer/></div>;
-  if (error || !service) return <div className="public-page"><PublicHeader/><main className="public-content"><div className="empty-state"><h1>Service introuvable</h1><button className="primary-button" onClick={()=>navigate('/services')}>Retour aux services</button></div></main><Footer/></div>;
+  useEffect(()=>{setService(undefined);getService(params.slug,{force:true}).then(setService).catch(()=>setService(null))},[params.slug,locale]);
+  if(service===undefined)return null;
+  if(!service)return <div className="public-page public-page--service-detail"><PublicHeader/><main className="public-content"><div className="empty-state"><h1>{copy.missing}</h1><button className="primary-button" onClick={()=>navigate('/services')}>{copy.back}</button></div></main><Footer/></div>;
 
-  return <div className="public-page">
-    <PublicHeader />
-    <main>
-      <section className="service-detail-hero">
-        <button className="text-link" onClick={()=>navigate('/services')}>← Tous les services</button>
-        <div className="service-detail-hero__icon">{service.icon}</div>
-        <span>{service.category}</span>
-        <h1>{service.name}</h1>
-        <p>{service.description}</p>
-        <button className="primary-button" onClick={()=>navigate('/login?next=/citizen/requests')}>Faire une demande</button>
-      </section>
-      <section className="service-detail-grid public-content">
-        <article className="info-panel info-panel--large"><span className="panel-kicker">Démarches</span><h2>Ce que vous pouvez faire</h2><div className="action-list">{service.actions.length ? service.actions.map((item,i)=><div key={item}><b>{String(i+1).padStart(2,'0')}</b><span>{item}</span><i>→</i></div>) : <p>Les démarches seront proposées depuis votre espace citoyen.</p>}</div></article>
-        <article className="info-panel"><span className="panel-kicker">Horaires</span><h3>{service.openingHours || "—"}</h3><p>{service.address || "—"}</p></article>
-        <article className="info-panel"><span className="panel-kicker">Coordonnées</span><h3>{service.phone || "—"}</h3><p>{service.email || "—"}</p></article>
-        <article className="info-panel info-panel--large"><span className="panel-kicker">Documents nécessaires</span><h2>Préparez votre dossier</h2>{service.requiredDocuments.length ? <ul>{service.requiredDocuments.map(item=><li key={item}>{item}</li>)}</ul> : <p>Aucun document spécifique indiqué.</p>}</article>
-        <article className="info-panel info-panel--large"><span className="panel-kicker">Questions fréquentes</span><h2>Besoin de précisions ?</h2><div className="faq-list">{service.faq.length ? service.faq.map(item=><details key={item.question}><summary>{item.question}</summary><p>{item.answer}</p></details>) : <p>Contactez le service pour plus d’informations.</p>}</div></article>
-      </section>
-    </main>
-    <Footer />
-  </div>;
+  const available=service.isAvailable!==false;
+  function start(){if(!available)return;const next=`/citizen/requests?new=1&subject=${encodeURIComponent(service.name)}`;navigate(isAuthenticated&&user?.role==="citizen"?next:`/login?next=${encodeURIComponent(next)}`)}
+
+  return <div className="public-page public-page--service-detail"><PublicHeader/><main>
+    <section className="service-detail-hero"><button className="text-link" onClick={()=>navigate('/services')}>← {copy.all}</button><div className="service-detail-hero__icon" aria-hidden="true">{service.icon}</div><div className="public-service-detail-status"><span>{service.category}</span><ServiceAvailabilityBadge service={service}/></div><h1>{service.name}</h1><p>{service.description}</p><ServiceAvailabilityNotice service={service} compact showAvailable={false}/><button className={`primary-button ${!available?"is-disabled":""}`} disabled={!available} onClick={start}>{available?copy.request:copy.unavailable}</button></section>
+    <section className="service-detail-grid public-content">
+      <article className="info-panel info-panel--large"><span className="panel-kicker">{copy.steps}</span><h2>{copy.can}</h2><div className="action-list">{(service.actions||[]).map((item,i)=><div key={`${item}-${i}`}><b>{String(i+1).padStart(2,'0')}</b><span>{String(item)}</span><i aria-hidden="true">→</i></div>)}</div></article>
+      <article className="info-panel"><span className="panel-kicker">{copy.hours}</span><h3>{service.openingHours||copy.confirm}</h3><p>{service.address}</p></article>
+      <article className="info-panel"><span className="panel-kicker">{copy.contact}</span><h3>{service.phone||"—"}</h3><p>{service.email}</p></article>
+      <article className="info-panel info-panel--large"><span className="panel-kicker">{copy.docs}</span><h2>{copy.prepare}</h2><ul>{(service.requiredDocuments||[]).map((item,i)=><li key={`${item}-${i}`}>{String(item)}</li>)}</ul></article>
+    </section>
+  </main><Footer/></div>;
 }

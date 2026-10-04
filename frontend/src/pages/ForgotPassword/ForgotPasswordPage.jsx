@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
   return (
     <main className="auth-page">
       <section className="auth-shell auth-shell--compact" aria-labelledby="forgot-title">
-        <a className="auth-brand" href="/">Terra<span>Nova</span></a>
+        <a className="auth-brand" href="/">Nova<span>Terra</span></a>
         <div className="auth-intro">
           <span className="auth-kicker">Récupération</span>
           <h1 id="forgot-title">Mot de passe oublié</h1>

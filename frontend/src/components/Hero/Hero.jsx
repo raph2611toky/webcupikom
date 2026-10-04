@@ -7,6 +7,9 @@ import {
 } from "framer-motion";
 import "./Hero.css";
 import CoreEffect from "./CoreEffect.jsx";
+import LanguageSwitcher from "../ui/LanguageSwitcher.jsx";
+import { useLocale } from "../../utils/i18n.js";
+import { useDataMode } from "../../utils/useDataMode.js";
 
 import heroPhone from "../../assets/hero/hero-phone.webp";
 import hero1 from "../../assets/hero/hero-1.webp";
@@ -18,7 +21,25 @@ const IMAGE_INTERVAL_LEFT = 7200;
 const IMAGE_INTERVAL_RIGHT = 8800;
 const EASE = [0.16, 1, 0.3, 1];
 
-function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 5600, active = true }) {
+const HERO_TEXT = {
+  fr: {
+    nav:["Accueil","Services","Actualités","Contact"], login:"Se connecter", top:"BIENVENUE", bottom:["LA","VILLE","ÉVOLUE"],
+    subtitle1:"Accédez aux services de la ville, informez-vous, communiquez", subtitle2:"et faites remonter vos besoins depuis un même espace.",
+    discover:"Découvrir", start:"Créer mon espace", altLeft:"Habitante utilisant les services numériques de Nova Terra", altRight:"Habitante connectée aux services de Nova Terra",
+  },
+  en: {
+    nav:["Home","Services","News","Contact"], login:"Sign in", top:"WELCOME", bottom:["THE","CITY","EVOLVES"],
+    subtitle1:"Access city services, stay informed and communicate", subtitle2:"from one place while sharing the needs that matter to you.",
+    discover:"Discover", start:"Create my space", altLeft:"Resident using Nova Terra digital services", altRight:"Resident connected to Nova Terra services",
+  },
+  mg: {
+    nav:["Fandraisana","Sampan-draharaha","Vaovao","Fifandraisana"], login:"Hiditra", top:"TONGASOA", bottom:["MIVOATRA","NY","TANÀNA"],
+    subtitle1:"Midira amin'ny sampan-draharahan'ny tanàna, araho ny vaovao", subtitle2:"ary ampitao amin'ny toerana iray ihany ny filànareo.",
+    discover:"Hijery", start:"Hamorona ny habakako", altLeft:"Mponina mampiasa ny tolotra nomerika Nova Terra", altRight:"Mponina mifandray amin'ny sampan-draharaha Nova Terra",
+  },
+};
+
+function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 5600, active = true, priority = false }) {
   const [index, setIndex] = useState(start);
   const reduceMotion = useReducedMotion();
 
@@ -52,7 +73,11 @@ function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 56
               : { opacity: 0, scale: 0.997 }
           }
           transition={{ duration: 0.52, ease: EASE }}
+          loading={priority ? "eager" : "lazy"}
           decoding="async"
+          fetchPriority={priority ? "high" : "low"}
+          width="960"
+          height="720"
         />
       </AnimatePresence>
     </div>
@@ -88,7 +113,7 @@ function OrbitText({ active = true }) {
       </defs>
       <text>
         <textPath href={`#${id}`} startOffset="1%">
-          TERRA NOVA · SERVICES · CITOYENS · VILLE · TERRA NOVA ·
+          NOVA TERRA · SERVICES · CITOYENS · VILLE · NOVA TERRA ·
         </textPath>
       </text>
       <circle className="dot d1" cx="49" cy="114" r="4.1" />
@@ -178,15 +203,19 @@ function AnimatedWords({ words, delay = 0 }) {
 
 export default function Hero() {
   const reduceMotion = useReducedMotion();
+  const dataProfile = useDataMode();
+  const [locale] = useLocale();
+  const copy = HERO_TEXT[locale] || HERO_TEXT.fr;
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { amount: 0.2, initial: true });
+  const richMotionActive = heroInView && !dataProfile.reduced;
   return (
     <main ref={heroRef} className="kamo-hero">
       <div className="kamo-hero__glow kamo-hero__glow--tl" />
       <div className="kamo-hero__glow kamo-hero__glow--right" />
       <div className="kamo-hero__glow kamo-hero__glow--br" />
 
-      <CoreEffect active={heroInView} />
+      <CoreEffect active={richMotionActive} />
 
       <motion.header
         className="kamo-header"
@@ -195,57 +224,62 @@ export default function Hero() {
         transition={{ duration: 0.75, delay: 0.08, ease: EASE }}
       >
         <nav className="kamo-nav" aria-label="Navigation principale">
-          <a href="#home">Accueil</a>
-          <a href="/services">Services</a>
-          <a href="/news">Actualités</a>
-          <a href="/contact">Contact</a>
+          <a href="#home">{copy.nav[0]}</a>
+          <a href="/services">{copy.nav[1]}</a>
+          <a href="/news">{copy.nav[2]}</a>
+          <a href="/contact">{copy.nav[3]}</a>
         </nav>
 
-        <a className="kamo-logo" href="/" aria-label="Terra Nova, accueil">
-          Terra<span>Nova</span>
+        <a className="kamo-logo" href="/" aria-label="Nova Terra, accueil">
+          Nova<span>Terra</span>
         </a>
 
         <a className="kamo-login" href="/login">
-          Se connecter
+          {copy.login}
         </a>
+
+        <LanguageSwitcher className="hero-language-switcher" compact />
       </motion.header>
 
-      <motion.div
-        className="hero-photo-motion hero-photo-motion--left"
-        initial={reduceMotion ? false : { opacity: 0, x: -45 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.95, delay: reduceMotion ? 0 : 3.42, ease: EASE }}
-      >
-        <RotatingImage
-          className="hero-photo hero-photo--left"
-          images={LEFT_IMAGES}
-          start={0}
-          alt="Habitante utilisant les services numériques de Terra Nova"
-          intervalMs={IMAGE_INTERVAL_LEFT}
-          active={heroInView}
-        />
-      </motion.div>
-
-      <motion.div
-        className="hero-top-right-motion"
-        initial={reduceMotion ? false : { opacity: 0, x: 45, y: -20 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        transition={{ duration: 1.0, delay: reduceMotion ? 0 : 3.58, ease: EASE }}
-      >
-        <div className="hero-top-right" aria-hidden="true">
-          <OrbitText active={heroInView} />
+      {!dataProfile.reduced ? <>
+        <motion.div
+          className="hero-photo-motion hero-photo-motion--left"
+          initial={reduceMotion ? false : { opacity: 0, x: -45 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.95, delay: reduceMotion ? 0 : 3.42, ease: EASE }}
+        >
           <RotatingImage
-            className="hero-photo hero-photo--right"
-            images={RIGHT_IMAGES}
+            className="hero-photo hero-photo--left"
+            images={LEFT_IMAGES}
             start={0}
-            alt="Habitante connectée aux services de Terra Nova"
-            intervalMs={IMAGE_INTERVAL_RIGHT}
-            active={heroInView}
+            alt={copy.altLeft}
+            intervalMs={IMAGE_INTERVAL_LEFT}
+            active={richMotionActive}
+            priority
           />
-        </div>
-      </motion.div>
+        </motion.div>
 
-      <Scribbles />
+        <motion.div
+          className="hero-top-right-motion"
+          initial={reduceMotion ? false : { opacity: 0, x: 45, y: -20 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          transition={{ duration: 1.0, delay: reduceMotion ? 0 : 3.58, ease: EASE }}
+        >
+          <div className="hero-top-right" aria-hidden="true">
+            <OrbitText active={richMotionActive} />
+            <RotatingImage
+              className="hero-photo hero-photo--right"
+              images={RIGHT_IMAGES}
+              start={0}
+              alt={copy.altRight}
+              intervalMs={IMAGE_INTERVAL_RIGHT}
+              active={richMotionActive}
+            />
+          </div>
+        </motion.div>
+
+        <Scribbles />
+      </> : <div className="hero-low-data-note" role="status">Mode léger : visuels décoratifs différés.</div>}
 
       <section className="hero-copy" id="home" aria-labelledby="hero-title">
         <h1 className="hero-title" id="hero-title">
@@ -260,7 +294,7 @@ export default function Hero() {
               animate={{ y: "0%", opacity: 1, scale: 1 }}
               transition={{ duration: 0.82, delay: reduceMotion ? 0 : 2.86, ease: EASE }}
             >
-              <span className="hero-title__top">BIENVENUE</span>
+              <span className="hero-title__top">{copy.top}</span>
             </motion.span>
           </span>
 
@@ -283,13 +317,13 @@ export default function Hero() {
             transition={{ duration: 0.72, delay: reduceMotion ? 0 : 2.94, ease: EASE }}
           >
             <span className="hero-title__band-text">
-              <AnimatedWords words={["TERRA", "NOVA"]} delay={reduceMotion ? 0 : 3.10} />
+              <AnimatedWords words={["NOVA", "TERRA"]} delay={reduceMotion ? 0 : 3.10} />
             </span>
           </motion.span>
 
           <span className="hero-title__mask hero-title__mask--bottom">
             <span className="hero-title__bottom">
-              <AnimatedWords words={["LA", "VILLE", "ÉVOLUE"]} delay={reduceMotion ? 0 : 3.18} />
+              <AnimatedWords words={copy.bottom} delay={reduceMotion ? 0 : 3.18} />
             </span>
           </span>
         </h1>
@@ -300,9 +334,9 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.72, delay: reduceMotion ? 0 : 3.56, ease: EASE }}
         >
-          Accédez aux services de la ville, informez-vous, communiquez
+          {copy.subtitle1}
           <br />
-          et faites remonter vos besoins depuis un même espace.
+          {copy.subtitle2}
         </motion.p>
       </section>
 
@@ -336,8 +370,8 @@ export default function Hero() {
         whileHover={reduceMotion ? undefined : { x: 4, scale: 1.025 }}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
       >
-        <span>Découvrir</span>
-        <Sparkles active={heroInView} />
+        <span>{copy.discover}</span>
+        <Sparkles active={richMotionActive} />
       </motion.a>
 
       <motion.a
@@ -357,7 +391,7 @@ export default function Hero() {
         }
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
       >
-        Créer mon espace
+        {copy.start}
       </motion.a>
     </main>
   );

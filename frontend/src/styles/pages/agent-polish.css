@@ -1,0 +1,25 @@
+/* V87 Agent shell only. Individual pages own their layout and typography. */
+body[data-route-group="portal"] .portal-sidebar--agent nav{min-height:0;display:grid;gap:10px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;overscroll-behavior:contain}
+body[data-route-group="portal"] .portal-sidebar--agent nav::-webkit-scrollbar{display:none}
+:where(body[data-route-group="portal"]) .agent-nav-group{display:grid;gap:3px;min-width:0}:where(body[data-route-group="portal"]) .agent-nav-group__label{padding:0 10px 3px;color:rgba(255,255,255,.34);font-size:.8125rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}:where(body[data-route-group="portal"]) .agent-nav-group__items{display:grid;gap:2px;min-width:0}
+body[data-route-group="portal"] .portal-sidebar--agent nav button{min-width:0;min-height:38px;height:38px;padding:0 9px;gap:9px;border-radius:9px;font-size:.8125rem;font-weight:650;white-space:nowrap;overflow:hidden}
+body[data-route-group="portal"] .portal-sidebar--agent nav button span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+body[data-route-group="portal"] .portal-sidebar--agent nav button i{flex:0 0 23px;width:23px;height:23px;border-radius:7px;font-size:.8125rem}
+body[data-route-group="portal"] .portal-sidebar--agent nav button.is-active{background:#20142d;box-shadow:inset 2px 0 0 #7727ee}
+
+/* Keep long data sets scrollable without compressing the text. */
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .accessible-table-wrap,
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .portal-table,
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .management-list,
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .appointment-agent-list,
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .audit-list,
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .agent-project-list{scrollbar-width:thin}
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .accessible-table-wrap{overflow:auto}
+:where(body[data-route-group="portal"]) .portal-sidebar--agent ~ .portal-main .accessible-table th{position:sticky;top:0;z-index:2;background:#fff}
+
+@media(max-width:700px){
+  :where(body[data-route-group="portal"]) .agent-nav-group__label{display:none}
+  body[data-route-group="portal"] .portal-sidebar--agent nav,:where(body[data-route-group="portal"]) .agent-nav-group,:where(body[data-route-group="portal"]) .agent-nav-group__items{display:flex;gap:5px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  body[data-route-group="portal"] .portal-sidebar--agent nav button{flex:0 0 54px;width:54px;height:50px;justify-content:center;padding:0}
+  body[data-route-group="portal"] .portal-sidebar--agent nav button span{display:none}
+}

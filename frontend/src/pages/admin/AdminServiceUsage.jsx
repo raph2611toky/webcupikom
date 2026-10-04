@@ -1,0 +1,36 @@
+import { useEffect, useMemo, useState } from "react";
+import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
+import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
+import { getServices } from "../../api/services.js";
+import { getApiErrorMessage } from "../../api/auth.js";
+import "../../styles/pages/partners-usage-v97.css";
+
+function percent(value,total){return total>0?Math.round((value/total)*100):0}
+function statusLabel(value,max,average){if(value<=0)return "Aucun usage";if(max>0&&value>=max*.7)return "Très sollicité";if(value>=average)return "Usage soutenu";return "Usage modéré"}
+
+export default function AdminServiceUsage(){
+  const [items,setItems]=useState([]); const [loading,setLoading]=useState(true); const [error,setError]=useState(""); const [query,setQuery]=useState(""); const [category,setCategory]=useState(""); const [page,setPage]=useState(1); const perPage=8;
+  async function load(){setLoading(true);setError("");try{setItems(await getServices({publishedOnly:false,force:true}))}catch(e){setError(getApiErrorMessage(e,"Impossible de charger les statistiques d’usage."))}finally{setLoading(false)}}
+  useEffect(()=>{load()},[]);
+  const stats=useMemo(()=>{
+    const sorted=[...items].sort((a,b)=>b.usageCount-a.usageCount||a.name.localeCompare(b.name)); const total=sorted.reduce((sum,s)=>sum+s.usageCount,0); const top=sorted[0]||null; const top3=sorted.slice(0,3).reduce((sum,s)=>sum+s.usageCount,0); const average=sorted.length?total/sorted.length:0; const max=top?.usageCount||0;
+    const categories=[...new Set(sorted.map(s=>s.category).filter(Boolean))].map(name=>({name,usage:sorted.filter(s=>s.category===name).reduce((sum,s)=>sum+s.usageCount,0)})).sort((a,b)=>b.usage-a.usage);
+    return {sorted,total,top,top3,average,max,categories,unused:sorted.filter(s=>s.usageCount===0).length};
+  },[items]);
+  const categories=useMemo(()=>[...new Set(items.map(i=>i.category).filter(Boolean))].sort(),[items]);
+  const filtered=useMemo(()=>{const q=query.trim().toLowerCase();return stats.sorted.filter(s=>(!category||s.category===category)&&(!q||`${s.name} ${s.category}`.toLowerCase().includes(q)))},[stats.sorted,query,category]);
+  const totalPages=Math.max(1,Math.ceil(filtered.length/perPage)); useEffect(()=>setPage(1),[query,category]); useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]); const rows=filtered.slice((page-1)*perPage,page*perPage);
+  const topShare=percent(stats.top?.usageCount||0,stats.total); const top3Share=percent(stats.top3,stats.total); const leadingCategory=stats.categories[0];
+  const insight1=stats.total===0?"Aucun usage n’est encore enregistré : il faut d’abord laisser les habitants utiliser les démarches et rendez-vous pour obtenir un classement significatif.":stats.top?`${stats.top.name} est le service le plus sollicité avec ${stats.top.usageCount} usages, soit ${topShare}% du total enregistré.`:"Aucune donnée exploitable.";
+  const insight2=stats.total>0?`Les trois premiers services représentent ${top3Share}% des usages. ${top3Share>=60?"La demande est concentrée : ces services méritent une attention prioritaire sur la capacité et l’information.":"La demande est relativement répartie entre plusieurs services."}`:"";
+  const insight3=stats.unused?`${stats.unused} service${stats.unused>1?"s":""} n’a encore aucun usage enregistré : vérifiez sa visibilité, son contenu ou son accessibilité depuis le parcours citoyen.`:(leadingCategory?`La catégorie la plus utilisée est « ${leadingCategory.name} » avec ${percent(leadingCategory.usage,stats.total)}% des usages.`:"");
+
+  return <div className="portal-layout"><AdminSidebar/><div className="portal-main"><PortalTopbar eyebrow="Pilotage des services" title="Services les plus utilisés" actions={<button className="topbar-ghost" onClick={load}>Actualiser</button>}/><main className="portal-content service-usage-page">
+    {error?<div className="error-card" role="alert">{error}</div>:null}{loading?<div className="loading-card" role="status">Chargement de l’analyse…</div>:<>
+      <section className="usage-kpis"><article><span>Usages enregistrés</span><strong>{stats.total}</strong><small>Cumul backend `usage_count`</small></article><article><span>Service n°1</span><strong>{stats.top?.name||"—"}</strong><small>{stats.top?`${topShare}% du total`:"Pas encore de données"}</small></article><article><span>Concentration Top 3</span><strong>{top3Share}%</strong><small>{stats.top3} usages cumulés</small></article><article><span>Sans usage</span><strong>{stats.unused}</strong><small>À vérifier côté visibilité</small></article></section>
+      <section className="usage-layout"><article className="portal-card usage-insights"><div className="portal-card__head"><div><span className="section-label">Lecture utile</span><h3>Ce que les données indiquent</h3></div></div><ol><li>{insight1}</li>{insight2?<li>{insight2}</li>:null}{insight3?<li>{insight3}</li>:null}</ol><div className="usage-note">Cette vue exploite le compteur cumulé renvoyé par le backend. Elle mesure la fréquence d’usage enregistrée, pas une évolution dans le temps.</div></article><article className="portal-card usage-category-card"><span className="section-label">Répartition</span><h3>Catégories les plus sollicitées</h3><div className="usage-category-list">{stats.categories.slice(0,5).map(c=><div key={c.name}><span>{c.name}</span><div><i style={{width:`${percent(c.usage,Math.max(stats.categories[0]?.usage||1,1))}%`}}/><b>{c.usage}</b></div></div>)}{!stats.categories.length?<p>Aucune catégorie disponible.</p>:null}</div></article></section>
+      <section className="portal-card usage-ranking"><div className="portal-card__head"><div><span className="section-label">Classement exploitable</span><h3>Usage par service</h3></div><div className="usage-filters"><label className="portal-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher un service"/></label><select value={category} onChange={e=>setCategory(e.target.value)}><option value="">Toutes les catégories</option>{categories.map(c=><option key={c}>{c}</option>)}</select></div></div><div className="usage-ranking-list">{rows.map((s,index)=>{const rank=(page-1)*perPage+index+1;const share=percent(s.usageCount,stats.total);return <article key={s.slug}><span className="usage-rank">#{rank}</span><div className="usage-service"><div><strong>{s.name}</strong><small>{s.category}</small></div><div className="usage-bar" role="img" aria-label={`${s.name}: ${s.usageCount} usages, ${share}% du total`}><i style={{width:`${stats.max?Math.max(3,(s.usageCount/stats.max)*100):0}%`}}/></div></div><div className="usage-value"><strong>{s.usageCount}</strong><span>{share}%</span></div><b className={`usage-level ${s.usageCount===0?"is-zero":s.usageCount>=stats.average?"is-high":""}`}>{statusLabel(s.usageCount,stats.max,stats.average)}</b></article>})}{!rows.length?<div className="partner-empty">Aucun service ne correspond aux filtres.</div>:null}</div>{filtered.length?<PortalPagination page={page} totalPages={totalPages} totalItems={filtered.length} perPage={perPage} onPageChange={setPage} itemLabel="service" itemLabelPlural="services"/>:null}</section>
+    </>}
+  </main></div></div>;
+}

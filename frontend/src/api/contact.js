@@ -7,6 +7,16 @@ export const CONTACT_STATUS_LABEL = Object.freeze({
   closed: "Clôturé",
 });
 
+function toFormData(payload = {}) {
+  const form = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    if (value === "" && key !== "assigned_to") return;
+    form.append(key, typeof value === "boolean" ? String(value) : value);
+  });
+  return form;
+}
+
 function normalizeContact(item) {
   return {
     ...item,
@@ -18,13 +28,25 @@ function normalizeContact(item) {
 }
 
 export async function sendContactMessage(payload) {
-  const { data } = await api.post("/city/contact/", payload);
+  const { data } = await api.post("/city/contact/", toFormData(payload));
   return data;
 }
 
 export async function getCitizenContactMessages(params = {}) {
   const { data } = await api.get("/citizen/contact-messages/", { params });
   return unwrapList(data).map(normalizeContact);
+}
+
+export async function getAllCitizenContactMessages(params = {}) {
+  const rows = [];
+  let page = 1;
+  for (let guard = 0; guard < 100; guard += 1) {
+    const { data } = await api.get("/citizen/contact-messages/", { params: { ...params, page, page_size: params.page_size || 100 } });
+    rows.push(...unwrapList(data).map(normalizeContact));
+    if (!data?.next || !Array.isArray(data?.results)) break;
+    page += 1;
+  }
+  return rows;
 }
 
 export async function getCitizenContactMessage(reference) {
@@ -43,7 +65,7 @@ export async function getAgentContactMessage(reference) {
 }
 
 export async function updateAgentContactMessage(reference, payload) {
-  const { data } = await api.patch(`/agent/contact-messages/${encodeURIComponent(reference)}/`, payload);
+  const { data } = await api.patch(`/agent/contact-messages/${encodeURIComponent(reference)}/`, toFormData(payload));
   return normalizeContact(data);
 }
 
@@ -58,6 +80,6 @@ export async function getAdminContactMessage(reference) {
 }
 
 export async function updateAdminContactMessage(reference, payload) {
-  const { data } = await api.patch(`/admin/contact-messages/${encodeURIComponent(reference)}/`, payload);
+  const { data } = await api.patch(`/admin/contact-messages/${encodeURIComponent(reference)}/`, toFormData(payload));
   return normalizeContact(data);
 }

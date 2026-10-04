@@ -1,0 +1,73 @@
+/* ==========================================================================\n   V43 — scroll safety + editable profile\n   The desktop shell keeps the Nova Terra sidebar/topbar fixed, while the\n   current page becomes the scroll container instead of clipping overflow.\n   ========================================================================== */
+
+/* Small screens use the browser page scroll naturally. */
+
+/* Long dialogs stay usable on short displays. */
+.portal-help,
+.portal-voice-panel,
+.a11y-panel,
+.appointment-confirmation-dialog,
+.management-modal,
+.request-studio {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Profile: mutable information is directly editable. */
+.profile-page {
+  padding-bottom: 2rem !important;
+}
+
+.profile-page .profile-form-grid input:not(.profile-readonly-field),
+.profile-page .profile-form-grid select {
+  background: var(--tn-card, #fff);
+  color: var(--tn-text, #0a0710);
+  border-color: var(--tn-line, #ebe7ef);
+}
+
+.profile-page .profile-form-grid input:not(.profile-readonly-field):focus,
+.profile-page .profile-form-grid select:focus {
+  border-color: var(--tn-purple);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tn-purple) 14%, transparent);
+  outline: none;
+}
+
+.profile-page .profile-readonly-field {
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--tn-card) 88%, var(--tn-line)) !important;
+  color: var(--tn-muted) !important;
+}
+
+/* Any page-specific horizontal data region gets its own scroll instead of\n   forcing the whole portal outside the viewport. */
+.accessible-table-wrap,
+.portal-table,
+.filter-row--portal,
+.notification-filter-row {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tn-purple) transparent;
+}
+
+html[data-contrast="high"] .profile-page .profile-readonly-field {
+  background: #151515 !important;
+  color: #d7d7d7 !important;
+  border-color: #ffffff !important;
+}
+
+/* Public sub-pages can also scroll when their content is taller than the screen. */
+@media (min-width: 901px) {
+  body[data-route-group="public"] .public-page > main,
+  body[data-route-group="public"] .news-page-shell,
+  body[data-route-group="public"] .news-page-content,
+  body[data-route-group="public"] .article-page {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--tn-purple) color-mix(in srgb, var(--tn-card) 86%, var(--tn-line));
+  }
+
+  body[data-route-group="public"] .public-page--service-detail .info-panel {
+    overflow-y: auto !important;
+  }
+}

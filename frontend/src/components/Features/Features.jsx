@@ -1,4 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
+import { useLocale } from "../../utils/i18n.js";
+import { useDataMode } from "../../utils/useDataMode.js";
 import "./Features.css";
 
 import avatarOne from "../../assets/hero/hero-1.webp";
@@ -6,6 +8,40 @@ import avatarTwo from "../../assets/hero/hero-2.webp";
 import avatarThree from "../../assets/hero/hero-3.webp";
 
 const EASE = [0.16, 1, 0.3, 1];
+
+const FEATURES_TEXT = {
+  fr: {
+    kicker:"Services", titleStart:"Une ville", titleAccent:"qui évolue",
+    lead:"Nova Terra centralise les services, l’information et les besoins de ses habitants.",
+    leadSoft:"Un espace numérique qui accompagne la ville à mesure qu’elle grandit.",
+    stageKicker:"NOVA TERRA, AU PLUS PRÈS DU QUOTIDIEN", stageLines:["Des services","pour chaque","besoin","de la ville"],
+    cards:[
+      {title:"Services de la ville",description:<>Accédez aux services,<br/>informations utiles et<br/>contenus de la ville.</>,preview:["Informations locales","Services de la ville"]},
+      {title:"Exprimer un besoin",description:<>Faites remonter un besoin,<br/>communiquez ou signalez<br/>un problème simplement.</>,preview:["Besoin citoyen","Envoyer une demande"]},
+      {title:"Rester informé",description:<>Suivez les informations<br/>et les nouveaux services<br/>de Nova Terra.</>,preview:["Haut Conseil · Information"]},
+    ], stat:"ville en évolution", flow:"Flux vivant de besoins", note:<>Plus simple<br/>pour vivre la ville</>, aria:"Exemples de services de Nova Terra",
+  },
+  en: {
+    kicker:"Services", titleStart:"A city", titleAccent:"that evolves",
+    lead:"Nova Terra brings city services, information and residents’ needs together.", leadSoft:"A digital space that grows with the city.",
+    stageKicker:"NOVA TERRA, CLOSER TO EVERYDAY LIFE", stageLines:["Services","for every","city","need"],
+    cards:[
+      {title:"City services",description:<>Access services,<br/>useful information and<br/>city content.</>,preview:["Local information","City services"]},
+      {title:"Share a need",description:<>Ask a question,<br/>communicate or report<br/>an issue simply.</>,preview:["Citizen request","Send a request"]},
+      {title:"Stay informed",description:<>Follow city information<br/>and new services<br/>in Nova Terra.</>,preview:["High Council · Information"]},
+    ], stat:"evolving city", flow:"Live flow of needs", note:<>A simpler way<br/>to live the city</>, aria:"Examples of Nova Terra services",
+  },
+  mg: {
+    kicker:"Sampan-draharaha", titleStart:"Tanàna", titleAccent:"mivoatra",
+    lead:"Nova Terra dia manangona amin’ny toerana iray ny sampan-draharaha, ny vaovao ary ny filàn’ny mponina.", leadSoft:"Habaka nomerika iray izay miara-mivoatra amin’ny tanàna.",
+    stageKicker:"NOVA TERRA, AKAIKY NY FIAINANA ANDAVANANDRO", stageLines:["Tolotra","ho an'ny","filàna","rehetra"],
+    cards:[
+      {title:"Sampan-draharahan'ny tanàna",description:<>Midira amin'ny tolotra,<br/>vaovao ilaina ary<br/>votoatin'ny tanàna.</>,preview:["Vaovao eo an-toerana","Sampan-draharaha"]},
+      {title:"Ampitao ny filàna",description:<>Mametraha fanontaniana,<br/>mifandraisa na mitatitra<br/>olana mora foana.</>,preview:["Filàn'ny mponina","Handefa fangatahana"]},
+      {title:"Mahazoa vaovao",description:<>Araho ny vaovao<br/>sy ny tolotra vaovao<br/>ao Nova Terra.</>,preview:["Filankevitra Ambony · Vaovao"]},
+    ], stat:"tanàna mivoatra", flow:"Filàna havaozina hatrany", note:<>Mora kokoa<br/>ny miaina an-tanàna</>, aria:"Ohatra amin'ny sampan-draharaha Nova Terra",
+  },
+};
 
 /* Inclinaison des cartes, calée sur la maquette */
 const CARD_ROTATE = { calendar: -14, travel: 0, mail: 14 };
@@ -71,7 +107,7 @@ function AutomationSeal() {
           <path id="seal-bottom" d="M85,85 m-66,0 a66,66 0 1,0 132,0 a66,66 0 1,0 -132,0" />
         </defs>
         <text>
-          <textPath href="#seal-top" startOffset="25%" textAnchor="middle">TERRA NOVA</textPath>
+          <textPath href="#seal-top" startOffset="25%" textAnchor="middle">NOVA TERRA</textPath>
         </text>
         <text>
           <textPath href="#seal-bottom" startOffset="25%" textAnchor="middle">VILLE · CITOYENS</textPath>
@@ -121,7 +157,11 @@ function HeaderSparkles() {
 }
 
 export default function Features() {
-  const reduceMotion = useReducedMotion();
+  const systemReduceMotion = useReducedMotion();
+  const dataProfile = useDataMode();
+  const reduceMotion = systemReduceMotion || dataProfile.reduced;
+  const [locale] = useLocale();
+  const copy = FEATURES_TEXT[locale] || FEATURES_TEXT.fr;
 
   return (
     <section className="features-section" id="fonctionnalites" aria-labelledby="features-title">
@@ -134,15 +174,13 @@ export default function Features() {
         viewport={{ once: true, amount: 0.55 }}
         transition={{ duration: 0.8, ease: EASE }}
       >
-        <span className="features-kicker">Services</span>
-        <h2 id="features-title">
-          Une ville <span>qui évolue</span>
-        </h2>
-        <p className="features-lead">Terra Nova centralise les services, l’information et les besoins de ses habitants.</p>
-        <p className="features-lead features-lead--soft">Un espace numérique qui accompagne la ville à mesure qu’elle grandit.</p>
+        <span className="features-kicker">{copy.kicker}</span>
+        <h2 id="features-title">{copy.titleStart} <span>{copy.titleAccent}</span></h2>
+        <p className="features-lead">{copy.lead}</p>
+        <p className="features-lead features-lead--soft">{copy.leadSoft}</p>
       </motion.div>
 
-      <HeaderSparkles />
+      {!dataProfile.reduced ? <HeaderSparkles /> : null}
 
       <motion.div
         className="features-stage"
@@ -152,12 +190,9 @@ export default function Features() {
         transition={{ duration: 0.85, delay: 0.12, ease: EASE }}
       >
         <div className="features-stage__intro">
-          <span>TERRA NOVA, AU PLUS PRÈS DU QUOTIDIEN</span>
+          <span>{copy.stageKicker}</span>
           <h3 className="features-stage__title">
-            <span>Des services</span>
-            <span>pour chaque</span>
-            <span>besoin</span>
-            <span>de la ville</span>
+            {copy.stageLines.map((line)=><span key={line}>{line}</span>)}
           </h3>
           <i aria-hidden="true" />
         </div>
@@ -180,32 +215,32 @@ export default function Features() {
           />
         </svg>
 
-        <div className="features-cards" aria-label="Exemples de services de Terra Nova">
+        <div className="features-cards" aria-label={copy.aria}>
           <FeatureCard
             type="calendar"
             icon={<CalendarIcon />}
-            title="Services de la ville"
-            description={<>Accédez aux services,<br />informations utiles et<br />contenus de la ville.</>}
+            title={copy.cards[0].title}
+            description={copy.cards[0].description}
             delay={0.18}
           >
             <div className="calendar-preview">
-              <div><strong>01</strong><span className="calendar-preview__dot" />Informations locales</div>
-              <div><strong>02</strong><span className="calendar-preview__dot" />Services de la ville</div>
+              <div><strong>01</strong><span className="calendar-preview__dot" />{copy.cards[0].preview[0]}</div>
+              <div><strong>02</strong><span className="calendar-preview__dot" />{copy.cards[0].preview[1]}</div>
             </div>
           </FeatureCard>
 
           <FeatureCard
             type="travel"
             icon={<RequestIcon />}
-            title="Exprimer un besoin"
-            description={<>Faites remonter un besoin,<br />communiquez ou signalez<br />un problème simplement.</>}
+            title={copy.cards[1].title}
+            description={copy.cards[1].description}
             delay={0.31}
           >
             <div className="travel-preview">
               <span className="terra-request-thumb" aria-hidden="true"><RequestIcon /></span>
               <div>
-                <strong>Besoin citoyen</strong>
-                <span>Envoyer une demande</span>
+                <strong>{copy.cards[1].preview[0]}</strong>
+                <span>{copy.cards[1].preview[1]}</span>
               </div>
               <ArrowCircle />
             </div>
@@ -215,14 +250,14 @@ export default function Features() {
           <FeatureCard
             type="mail"
             icon={<CouncilIcon />}
-            title="Rester informé"
-            description={<>Suivez les informations<br />et les nouveaux services<br />de Terra Nova.</>}
+            title={copy.cards[2].title}
+            description={copy.cards[2].description}
             delay={0.44}
           >
             <div className="mail-preview">
               <span className="gmail-mark" aria-hidden="true"><CouncilIcon /></span>
               <div>
-                <strong>Haut Conseil · Information</strong>
+                <strong>{copy.cards[2].preview[0]}</strong>
                 <span />
                 <span />
               </div>
@@ -241,14 +276,14 @@ export default function Features() {
           transition={{ duration: 0.7, delay: 0.55, ease: EASE }}
         >
           <div className="features-stats__top">
-            <div className="features-avatars" aria-hidden="true">
-              <img src={avatarOne} alt="" />
-              <img src={avatarTwo} alt="" />
-              <img src={avatarThree} alt="" />
-            </div>
-            <p><strong>Terra Nova</strong><span>ville en évolution</span></p>
+            {dataProfile.reduced ? <div className="features-avatars features-avatars--light" aria-hidden="true"><span>NT</span><span>+</span></div> : <div className="features-avatars" aria-hidden="true">
+              <img src={avatarOne} alt="" loading="lazy" decoding="async" width="960" height="720" fetchPriority="low" />
+              <img src={avatarTwo} alt="" loading="lazy" decoding="async" width="960" height="720" fetchPriority="low" />
+              <img src={avatarThree} alt="" loading="lazy" decoding="async" width="960" height="720" fetchPriority="low" />
+            </div>}
+            <p><strong>Nova Terra</strong><span>{copy.stat}</span></p>
           </div>
-          <p className="features-stats__tasks"><i /> Flux vivant de besoins</p>
+          <p className="features-stats__tasks"><i /> {copy.flow}</p>
         </motion.div>
 
         <motion.div
@@ -258,7 +293,7 @@ export default function Features() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.66, ease: EASE }}
         >
-          <span>Plus simple<br />pour vivre la ville</span>
+          <span>{copy.note}</span>
           <svg viewBox="0 0 90 70" aria-hidden="true">
             <path d="M80 4C76 38 50 62 10 58" />
             <path d="M24 46 9 58l15 9" />

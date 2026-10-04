@@ -1,0 +1,970 @@
+/* ==========================================================================
+   Nova Terra — Accessibilité globale (F21 / F23 / F24)
+   ========================================================================== */
+
+html {
+  font-size: 100%;
+}
+
+html[data-font-size="large"] {
+  font-size: 125%;
+}
+
+html[data-font-size="xlarge"] {
+  font-size: 150%;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 10000;
+  padding: .75rem 1rem;
+  border: 2px solid currentColor;
+  border-radius: .65rem;
+  background: #ffffff;
+  color: #111111;
+  font-weight: 800;
+  text-decoration: none;
+  transition: top .15s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+:focus-visible {
+  outline: 3px solid #6b13fc !important;
+  outline-offset: 3px !important;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.a11y-dock {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 9000;
+  display: grid;
+  justify-items: end;
+  gap: .55rem;
+  font-family: var(--kamo-body-font, "Plus Jakarta Sans", sans-serif);
+}
+
+.a11y-trigger {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 0 .9rem;
+  border: 1px solid #ded8e4;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .96);
+  color: #211a28;
+  box-shadow: 0 .75rem 2rem rgba(25, 12, 38, .14);
+  font-size: .75rem;
+  font-weight: 800;
+  backdrop-filter: blur(12px);
+}
+
+.a11y-trigger__icon {
+  font-size: 1rem;
+}
+
+.a11y-panel {
+  width: min(23rem, calc(100vw - 2rem));
+  max-height: min(78vh, 38rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+  border: 1px solid #e3dde8;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .98);
+  color: #17111e;
+  box-shadow: 0 1.4rem 4rem rgba(20, 9, 32, .2);
+}
+
+.a11y-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .8rem;
+}
+
+.a11y-panel__head strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.a11y-panel__head span {
+  display: block;
+  margin-top: .2rem;
+  color: #716879;
+  font-size: .75rem;
+}
+
+.a11y-panel__close {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: #f1edf4;
+  color: #302737;
+  font-size: 1rem;
+}
+
+.a11y-setting {
+  padding: .8rem 0;
+  border-top: 1px solid #eee9f1;
+}
+
+.a11y-setting:first-of-type {
+  border-top: 0;
+}
+
+.a11y-setting__label {
+  display: block;
+  margin-bottom: .55rem;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.a11y-size-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .45rem;
+}
+
+.a11y-spacing-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .45rem;
+}
+
+.a11y-spacing-buttons button {
+  padding-inline: .45rem;
+  line-height: 1.25;
+}
+
+.a11y-size-buttons button,
+.a11y-spacing-buttons button,
+.a11y-contrast-button,
+.a11y-reset {
+  min-height: 2.5rem;
+  border: 1px solid #ded7e4;
+  border-radius: .65rem;
+  background: #ffffff;
+  color: #241c2b;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.a11y-size-buttons button[aria-pressed="true"],
+.a11y-spacing-buttons button[aria-pressed="true"],
+.a11y-contrast-button[aria-pressed="true"] {
+  border-color: #6600fc;
+  background: #efe7ff;
+  color: #5c08d8;
+}
+
+.a11y-contrast-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 .75rem;
+}
+
+.a11y-reset {
+  width: 100%;
+  margin-top: .7rem;
+  background: #151119;
+  color: #ffffff;
+  border-color: #151119;
+}
+
+/* F24 — laisser les blocs grandir quand le texte augmente. */
+html[data-font-size="large"] body,
+html[data-font-size="xlarge"] body {
+  overflow-y: auto !important;
+}
+
+html[data-font-size="large"] .portal-layout,
+html[data-font-size="xlarge"] .portal-layout,
+html[data-font-size="large"] .portal-main,
+html[data-font-size="xlarge"] .portal-main,
+html[data-font-size="large"] .portal-content,
+html[data-font-size="xlarge"] .portal-content,
+html[data-font-size="large"] .news-page-shell,
+html[data-font-size="xlarge"] .news-page-shell,
+html[data-font-size="large"] .news-page-content,
+html[data-font-size="xlarge"] .news-page-content,
+html[data-font-size="large"] .auth-screen,
+html[data-font-size="xlarge"] .auth-screen,
+html[data-font-size="large"] .auth-form-panel,
+html[data-font-size="xlarge"] .auth-form-panel {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+html[data-font-size="large"] .portal-layout,
+html[data-font-size="xlarge"] .portal-layout,
+html[data-font-size="large"] .portal-main,
+html[data-font-size="xlarge"] .portal-main {
+  min-height: 100dvh;
+}
+
+html[data-font-size="large"] .portal-topbar,
+html[data-font-size="xlarge"] .portal-topbar,
+html[data-font-size="large"] .portal-card,
+html[data-font-size="xlarge"] .portal-card,
+html[data-font-size="large"] .welcome-banner,
+html[data-font-size="xlarge"] .welcome-banner,
+html[data-font-size="large"] .metric-grid > article,
+html[data-font-size="xlarge"] .metric-grid > article,
+html[data-font-size="large"] .news-visual-card,
+html[data-font-size="xlarge"] .news-visual-card {
+  height: auto !important;
+  max-height: none !important;
+}
+
+html[data-font-size="large"] .portal-topbar__right,
+html[data-font-size="xlarge"] .portal-topbar__right,
+html[data-font-size="large"] .toolbar-line,
+html[data-font-size="xlarge"] .toolbar-line,
+html[data-font-size="large"] .portal-card__head,
+html[data-font-size="xlarge"] .portal-card__head,
+html[data-font-size="large"] .management-row__actions,
+html[data-font-size="xlarge"] .management-row__actions {
+  flex-wrap: wrap;
+}
+
+html[data-font-size="large"] .news-visual-grid,
+html[data-font-size="xlarge"] .news-visual-grid,
+html[data-font-size="large"] .citizen-news-grid,
+html[data-font-size="xlarge"] .citizen-news-grid {
+  overflow: visible;
+}
+
+/* Vrais tableaux sémantiques pour les listes importantes. */
+.accessible-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.accessible-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  color: #302a36;
+  text-align: left;
+}
+
+.accessible-table caption {
+  text-align: left;
+}
+
+.accessible-table th {
+  padding: .7rem .65rem;
+  border-bottom: 1px solid var(--tn-line, #ebe7ef);
+  color: #817887;
+  font-size: .6875rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 800;
+}
+
+.accessible-table td {
+  padding: .75rem .65rem;
+  border-bottom: 1px solid #f1eef4;
+  font-size: .8125rem;
+  vertical-align: middle;
+}
+
+.accessible-table tbody tr:hover {
+  background: #fbf9ff;
+}
+
+.accessible-table td small {
+  display: block;
+  margin-top: .2rem;
+  color: #8f8796;
+  font-size: .6875rem;
+}
+
+.accessible-table__action {
+  min-height: 2.25rem;
+  padding: 0 .7rem;
+  border: 1px solid var(--tn-line, #ebe7ef);
+  border-radius: .55rem;
+  background: #ffffff;
+  color: #3c3344;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+
+
+
+/* F24+ — Espacement des caractères.
+   Appliqué globalement sans modifier les tailles ni les dimensions fixes. */
+html[data-character-spacing="normal"] {
+  --a11y-character-spacing: normal;
+}
+
+html[data-character-spacing="wide"] {
+  --a11y-character-spacing: .04em;
+}
+
+html[data-character-spacing="xwide"] {
+  --a11y-character-spacing: .08em;
+}
+
+html[data-character-spacing="wide"] body :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,b,small,label,a,button,input,textarea,select,option,li,td,th,code
+),
+html[data-character-spacing="xwide"] body :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,b,small,label,a,button,input,textarea,select,option,li,td,th,code
+) {
+  letter-spacing: var(--a11y-character-spacing) !important;
+}
+
+/* Les champs et boutons peuvent grandir au lieu de couper le texte espacé. */
+html[data-character-spacing="wide"] button,
+html[data-character-spacing="xwide"] button,
+html[data-character-spacing="wide"] input,
+html[data-character-spacing="xwide"] input,
+html[data-character-spacing="wide"] select,
+html[data-character-spacing="xwide"] select {
+  min-width: 0;
+  white-space: normal;
+}
+
+html[data-character-spacing="wide"] .portal-content,
+html[data-character-spacing="xwide"] .portal-content,
+html[data-character-spacing="wide"] .auth-screen,
+html[data-character-spacing="xwide"] .auth-screen {
+  overflow-wrap: anywhere;
+}
+
+/* F23 — contraste renforcé jaune / noir.
+   Retour au mode haute visibilité historique de Nova Terra. */
+html[data-contrast="high"] {
+  --tn-bg: #000000;
+  --tn-card: #000000;
+  --tn-text: #ffffff;
+  --tn-muted: #ffffff;
+  --tn-line: #ffffff;
+  --tn-purple: #f2d34b;
+  --tn-purple-soft: #1a1a00;
+  --kamo-bg: #000000;
+  --kamo-purple: #f2d34b;
+  --kamo-purple-2: #f2d34b;
+  --kamo-purple-3: #f2d34b;
+  --kamo-purple-line: #f2d34b;
+  color-scheme: dark;
+}
+
+html[data-contrast="high"] body,
+html[data-contrast="high"] #root,
+html[data-contrast="high"] .public-page,
+html[data-contrast="high"] .portal-layout,
+html[data-contrast="high"] .portal-main,
+html[data-contrast="high"] .portal-content,
+html[data-contrast="high"] .auth-screen,
+html[data-contrast="high"] .auth-form-panel,
+html[data-contrast="high"] .news-page-shell,
+html[data-contrast="high"] .news-page-content {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+html[data-contrast="high"] body * {
+  text-shadow: none !important;
+}
+
+/* Surfaces principales : noir + bordures blanches franches. */
+html[data-contrast="high"] .public-header,
+html[data-contrast="high"] .portal-topbar,
+html[data-contrast="high"] .portal-card,
+html[data-contrast="high"] .toolbar-card,
+html[data-contrast="high"] .portal-modal,
+html[data-contrast="high"] .a11y-panel,
+html[data-contrast="high"] .a11y-trigger,
+html[data-contrast="high"] .news-visual-card,
+html[data-contrast="high"] .citizen-news-card,
+html[data-contrast="high"] .article-visual,
+html[data-contrast="high"] .citizen-news-detail,
+html[data-contrast="high"] .contact-form-panel,
+html[data-contrast="high"] .smart-request-panel,
+html[data-contrast="high"] .metric-grid > article,
+html[data-contrast="high"] .quick-services button,
+html[data-contrast="high"] .request-stack > button,
+html[data-contrast="high"] .notification-list > button,
+html[data-contrast="high"] .toggle-line,
+html[data-contrast="high"] .setting-line,
+html[data-contrast="high"] .agent-queue button,
+html[data-contrast="high"] .activity-feed > div,
+html[data-contrast="high"] .citizen-service-grid article,
+html[data-contrast="high"] .service-card,
+html[data-contrast="high"] .info-panel,
+html[data-contrast="high"] .management-row,
+html[data-contrast="high"] .profile-hero,
+html[data-contrast="high"] .request-studio-grid--extras,
+html[data-contrast="high"] .management-image-upload,
+html[data-contrast="high"] .management-news-thumb,
+html[data-contrast="high"] .appointment-redesign-header,
+html[data-contrast="high"] .appointment-mini-calendar,
+html[data-contrast="high"] .appointment-summary-empty,
+html[data-contrast="high"] .appointment-reminder-modern,
+html[data-contrast="high"] .appointment-prepare-modern,
+html[data-contrast="high"] .appointment-upcoming-card,
+html[data-contrast="high"] .notification-overview > div,
+html[data-contrast="high"] .notification-detail-panel,
+html[data-contrast="high"] .notification-list--backend,
+html[data-contrast="high"] .notification-empty-state,
+html[data-contrast="high"] .notification-loading-state {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* Zones déjà sombres : même logique, sans changement de palette. */
+html[data-contrast="high"] .portal-sidebar,
+html[data-contrast="high"] .welcome-banner,
+html[data-contrast="high"] .terra-footer,
+html[data-contrast="high"] .features-stage,
+html[data-contrast="high"] .auth-visual {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+/* Texte : blanc partout sauf sur les boutons jaunes. */
+html[data-contrast="high"] .portal-main p,
+html[data-contrast="high"] .portal-main small,
+html[data-contrast="high"] .portal-main label,
+html[data-contrast="high"] .portal-main td,
+html[data-contrast="high"] .portal-main th,
+html[data-contrast="high"] .portal-main span,
+html[data-contrast="high"] .portal-main strong,
+html[data-contrast="high"] .portal-main b,
+html[data-contrast="high"] .public-page p,
+html[data-contrast="high"] .public-page small,
+html[data-contrast="high"] .public-page label,
+html[data-contrast="high"] .auth-form-panel p,
+html[data-contrast="high"] .auth-form-panel label,
+html[data-contrast="high"] .auth-form-panel span,
+html[data-contrast="high"] .a11y-panel,
+html[data-contrast="high"] .a11y-panel span,
+html[data-contrast="high"] .a11y-panel strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Liens et accents = jaune haute visibilité. */
+html[data-contrast="high"] a,
+html[data-contrast="high"] .text-link,
+html[data-contrast="high"] .back-link,
+html[data-contrast="high"] .portal-card__head button,
+html[data-contrast="high"] .news-read-link,
+html[data-contrast="high"] .setting-line > button,
+html[data-contrast="high"] .section-label,
+html[data-contrast="high"] .portal-topbar__eyebrow,
+html[data-contrast="high"] .portal-breadcrumb button,
+html[data-contrast="high"] .portal-breadcrumb b {
+  color: #f2d34b !important;
+}
+
+html[data-contrast="high"] a,
+html[data-contrast="high"] .text-link,
+html[data-contrast="high"] .back-link {
+  text-decoration: underline !important;
+  text-underline-offset: .18em;
+}
+
+/* Navigation latérale : actif jaune. */
+html[data-contrast="high"] .portal-sidebar nav button,
+html[data-contrast="high"] .portal-sidebar__bottom button {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+html[data-contrast="high"] .portal-sidebar nav button i,
+html[data-contrast="high"] .portal-sidebar__bottom button i,
+html[data-contrast="high"] .portal-sidebar__brand,
+html[data-contrast="high"] .portal-sidebar__role {
+  color: #f2d34b !important;
+}
+
+html[data-contrast="high"] .portal-sidebar nav button.is-active {
+  background: #f2d34b !important;
+  color: #000000 !important;
+  border: 2px solid #f2d34b !important;
+}
+
+html[data-contrast="high"] .portal-sidebar nav button.is-active * {
+  color: #000000 !important;
+}
+
+/* Actions principales = jaune avec texte noir. */
+html[data-contrast="high"] .primary-action,
+html[data-contrast="high"] .primary-button,
+html[data-contrast="high"] .topbar-cta,
+html[data-contrast="high"] .public-header__cta,
+html[data-contrast="high"] .auth-primary-button,
+html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"],
+html[data-contrast="high"] .a11y-spacing-buttons button[aria-pressed="true"],
+html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"],
+html[data-contrast="high"] .filter-row button.is-active,
+html[data-contrast="high"] .management-filter-row button.is-active,
+html[data-contrast="high"] .request-studio-types button.is-active,
+html[data-contrast="high"] .smart-request-types button.is-active,
+html[data-contrast="high"] .appointment-calendar-day.is-selected,
+html[data-contrast="high"] .appointment-time-grid button.is-selected {
+  background: #f2d34b !important;
+  color: #000000 !important;
+  border: 2px solid #f2d34b !important;
+  box-shadow: none !important;
+}
+
+html[data-contrast="high"] .primary-action *,
+html[data-contrast="high"] .primary-button *,
+html[data-contrast="high"] .topbar-cta *,
+html[data-contrast="high"] .public-header__cta *,
+html[data-contrast="high"] .auth-primary-button *,
+html[data-contrast="high"] .filter-row button.is-active *,
+html[data-contrast="high"] .management-filter-row button.is-active *,
+html[data-contrast="high"] .request-studio-types button.is-active *,
+html[data-contrast="high"] .smart-request-types button.is-active *,
+html[data-contrast="high"] .appointment-calendar-day.is-selected *,
+html[data-contrast="high"] .appointment-time-grid button.is-selected * {
+  color: #000000 !important;
+}
+
+/* Actions secondaires et contrôles. */
+html[data-contrast="high"] .secondary-action,
+html[data-contrast="high"] .secondary-button,
+html[data-contrast="high"] .topbar-ghost,
+html[data-contrast="high"] .filter-row button,
+html[data-contrast="high"] .management-filter-row button,
+html[data-contrast="high"] .accessible-table__action,
+html[data-contrast="high"] .a11y-trigger,
+html[data-contrast="high"] .a11y-size-buttons button,
+html[data-contrast="high"] .a11y-spacing-buttons button,
+html[data-contrast="high"] .a11y-contrast-button,
+html[data-contrast="high"] .a11y-reset,
+html[data-contrast="high"] .auth-google-modern,
+html[data-contrast="high"] .appointment-today-button,
+html[data-contrast="high"] .appointment-calendar-toolbar button {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Formulaires. */
+html[data-contrast="high"] input,
+html[data-contrast="high"] textarea,
+html[data-contrast="high"] select {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: none !important;
+}
+
+html[data-contrast="high"] input::placeholder,
+html[data-contrast="high"] textarea::placeholder {
+  color: #ffffff !important;
+  opacity: .82;
+}
+
+/* Tableaux, séparateurs et statuts. */
+html[data-contrast="high"] .accessible-table,
+html[data-contrast="high"] .accessible-table th,
+html[data-contrast="high"] .accessible-table td,
+html[data-contrast="high"] .request-stack > button,
+html[data-contrast="high"] .notification-list > button,
+html[data-contrast="high"] .agent-queue button,
+html[data-contrast="high"] .detail-list > div,
+html[data-contrast="high"] .account-facts > div,
+html[data-contrast="high"] .notification-detail-facts > div {
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+html[data-contrast="high"] .accessible-table tbody tr:hover,
+html[data-contrast="high"] .notification-list--backend > button:hover,
+html[data-contrast="high"] .notification-list--backend > button.is-selected {
+  background: #171700 !important;
+}
+
+html[data-contrast="high"] .status-pill,
+html[data-contrast="high"] .priority-pill,
+html[data-contrast="high"] .notification-type-badge,
+html[data-contrast="high"] .notification-event-status,
+html[data-contrast="high"] .notification-read-state {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Calendrier en contraste renforcé. */
+html[data-contrast="high"] .appointment-calendar-weekdays span,
+html[data-contrast="high"] .appointment-selected-date,
+html[data-contrast="high"] .appointment-calendar-legend span,
+html[data-contrast="high"] .appointment-time-grid button span,
+html[data-contrast="high"] .appointment-summary-facts span,
+html[data-contrast="high"] .appointment-reminder-modern span,
+html[data-contrast="high"] .appointment-prepare-modern p,
+html[data-contrast="high"] .appointment-prepare-modern li,
+html[data-contrast="high"] .appointment-upcoming-list span,
+html[data-contrast="high"] .appointment-upcoming-list small {
+  color: #ffffff !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-day {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-day.state-available > i {
+  background: #f2d34b !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-day.state-full:not(.is-selected) {
+  background: #000000 !important;
+  color: #f2d34b !important;
+  border-style: dashed !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-day.state-unavailable:not(.is-selected),
+html[data-contrast="high"] .appointment-calendar-day.is-outside {
+  background: #111111 !important;
+  color: #bdbdbd !important;
+  border-color: #8d8d8d !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-legend i.state-available {
+  background: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-legend i.state-selected {
+  background: #f2d34b !important;
+  border-color: #f2d34b !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-legend i.state-full {
+  background: #000000 !important;
+  border: 2px dashed #f2d34b !important;
+}
+
+html[data-contrast="high"] .appointment-calendar-legend i.state-unavailable {
+  background: #555555 !important;
+  border-color: #ffffff !important;
+}
+
+html[data-contrast="high"] .appointment-time-grid button {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+html[data-contrast="high"] .appointment-time-grid button.is-unavailable {
+  background: #111111 !important;
+  color: #bdbdbd !important;
+  border-color: #8d8d8d !important;
+}
+
+/* Notifications backend : accents jaunes, contenu blanc sur noir. */
+html[data-contrast="high"] .notification-type-icon,
+html[data-contrast="high"] .notification-detail-icon {
+  background: #000000 !important;
+  color: #f2d34b !important;
+  border: 2px solid #f2d34b !important;
+}
+
+html[data-contrast="high"] .notification-new-dot {
+  background: #f2d34b !important;
+  box-shadow: 0 0 0 3px #000000 !important;
+}
+
+html[data-contrast="high"] .notification-main p,
+html[data-contrast="high"] .notification-meta span,
+html[data-contrast="high"] .notification-detail-message,
+html[data-contrast="high"] .notification-empty-state span,
+html[data-contrast="high"] .notification-overview small {
+  color: #ffffff !important;
+}
+
+html[data-contrast="high"] .portal-notification-bell > b {
+  background: #f2d34b !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+/* Panneau accessibilité lui-même. */
+html[data-contrast="high"] .a11y-panel,
+html[data-contrast="high"] .a11y-trigger {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+html[data-contrast="high"] .a11y-panel__close {
+  background: #f2d34b !important;
+  color: #000000 !important;
+  border: 2px solid #f2d34b !important;
+}
+
+html[data-contrast="high"] .a11y-setting {
+  border-color: #ffffff !important;
+}
+
+/* Focus jaune extrêmement visible. */
+html[data-contrast="high"] :focus-visible {
+  outline: 4px solid #f2d34b !important;
+  outline-offset: 3px !important;
+}
+
+html[data-contrast="high"] .skip-link {
+  background: #f2d34b !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+@media (max-width: 700px) {
+  .a11y-dock {
+    right: .65rem;
+    bottom: .65rem;
+  }
+
+  .a11y-trigger__label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ==========================================================================
+   V39 — correctifs ciblés du contraste renforcé
+   ========================================================================== */
+html[data-contrast="high"]{
+  --hc-yellow:#f2d34b;
+}
+
+/* Les aides contextuelles et le mode vocal restent sombres :
+   aucun texte blanc ne se retrouve sur un fond blanc. */
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-context-guide,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-voice-panel,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-voice-panel__status{
+  background:#000!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-context-guide__body>strong,
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-context-guide__body>p,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-voice-panel__head span,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-voice-panel__head small,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-voice-panel__status{
+  color:#fff!important;
+  opacity:1!important;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-context-guide__icon,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-voice-trigger>span{
+  background:#000!important;
+  color:var(--hc-yellow)!important;
+  border:2px solid var(--hc-yellow)!important;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .citizen-context-guide__close,
+html[data-contrast="high"] .a11y-panel__close{
+  background:var(--hc-yellow)!important;
+  color:#000!important;
+  border:2px solid var(--hc-yellow)!important;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .guide-dismiss{
+  color:var(--hc-yellow)!important;
+  background:transparent!important;
+}
+
+/* Services : on conserve la structure colorée en mode normal,
+   mais en contraste on revient à noir/blanc avec seulement quelques accents jaunes. */
+html[data-contrast="high"] .citizen-services-intro,
+html[data-contrast="high"] .citizen-service-grid--v39 .citizen-service-card{
+  background:#000!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .citizen-services-intro h2,
+html[data-contrast="high"] .citizen-services-intro p,
+html[data-contrast="high"] .citizen-service-grid--v39 h2,
+html[data-contrast="high"] .citizen-service-grid--v39 p{
+  color:#fff!important;
+  opacity:1!important;
+}
+
+html[data-contrast="high"] .citizen-service-card__decor,
+html[data-contrast="high"] .citizen-service-card__watermark{
+  display:none!important;
+}
+
+html[data-contrast="high"] .citizen-service-card__icon{
+  background:#000!important;
+  color:var(--hc-yellow)!important;
+  border:2px solid var(--hc-yellow)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .citizen-service-grid--v39 .citizen-service-card__category,
+html[data-contrast="high"] .citizen-service-grid--v39 .citizen-service-card__cta{
+  color:var(--hc-yellow)!important;
+}
+
+html[data-contrast="high"] .citizen-service-card__cta>span{
+  color:var(--hc-yellow)!important;
+}
+
+html[data-contrast="high"] .citizen-service-card__cta>i{
+  background:var(--hc-yellow)!important;
+  color:#000!important;
+  border:1px solid var(--hc-yellow)!important;
+}
+
+html[data-contrast="high"] .citizen-service-grid--v39 .citizen-service-card:hover{
+  background:#0c0c00!important;
+  border-color:var(--hc-yellow)!important;
+}
+
+
+/* ==========================================================================
+   V42 — final high-contrast consistency layer
+   ========================================================================== */
+html[data-contrast="high"]{
+  --tn-bg:#000000;
+  --tn-card:#080808;
+  --tn-text:#ffffff;
+  --tn-muted:#e2e2e2;
+  --tn-line:#ffffff;
+  --tn-purple:#f2d34b;
+  --tn-purple-soft:#24200b;
+  --tn-green:#8bd7a5;
+  --tn-red:#ff9299;
+  --tn-amber:#f2d34b;
+}
+
+html[data-contrast="high"] .portal-card,
+html[data-contrast="high"] .toolbar-card,
+html[data-contrast="high"] .portal-topbar,
+html[data-contrast="high"] .public-header,
+html[data-contrast="high"] .info-panel,
+html[data-contrast="high"] .contact-form-panel,
+html[data-contrast="high"] .news-visual-card,
+html[data-contrast="high"] .citizen-news-card{
+  background:var(--tn-card)!important;
+  color:var(--tn-text)!important;
+  border-color:var(--tn-line)!important;
+}
+
+html[data-contrast="high"] .portal-card h1,
+html[data-contrast="high"] .portal-card h2,
+html[data-contrast="high"] .portal-card h3,
+html[data-contrast="high"] .portal-card h4,
+html[data-contrast="high"] .portal-card p,
+html[data-contrast="high"] .portal-card strong,
+html[data-contrast="high"] .portal-card b,
+html[data-contrast="high"] .portal-card small,
+html[data-contrast="high"] .portal-card label{
+  color:var(--tn-text)!important;
+}
+
+html[data-contrast="high"] .section-label,
+html[data-contrast="high"] .panel-kicker,
+html[data-contrast="high"] .portal-topbar__eyebrow,
+html[data-contrast="high"] .text-link,
+html[data-contrast="high"] .back-link{
+  color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] input,
+html[data-contrast="high"] select,
+html[data-contrast="high"] textarea{
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}
+
+html[data-contrast="high"] input::placeholder,
+html[data-contrast="high"] textarea::placeholder{
+  color:#d0d0d0!important;
+  opacity:1!important;
+}
+
+/* Yellow is an accent, not the default text color. */
+html[data-contrast="high"] .primary-action,
+html[data-contrast="high"] .topbar-cta,
+html[data-contrast="high"] .a11y-size-buttons button[aria-pressed="true"],
+html[data-contrast="high"] .a11y-spacing-buttons button[aria-pressed="true"],
+html[data-contrast="high"] .a11y-contrast-button[aria-pressed="true"]{
+  background:var(--tn-purple)!important;
+  color:#111!important;
+  border-color:var(--tn-purple)!important;
+}
+
+html[data-contrast="high"] .primary-action *,
+html[data-contrast="high"] .topbar-cta *{
+  color:#111!important;
+}
+
+/* V60 — safety: high contrast never falls back to light cards. */
+html[data-contrast="high"] .portal-main :is(.portal-card,.toolbar-card,[class$="-panel"],[class*="-panel "]){
+  background:#050505!important;
+  color:#fff!important;
+  border-color:#fff!important;
+  box-shadow:none!important;
+}
+
+
+/* V97 — agrandissement réellement perceptible sans chevauchement. */
+html[data-font-size="large"] body[data-route-group="portal"] { --portal-sidebar-width: 270px; }
+html[data-font-size="xlarge"] body[data-route-group="portal"] { --portal-sidebar-width: 300px; }
+html:is([data-font-size="large"],[data-font-size="xlarge"]) body[data-route-group="portal"] :is(button,a,input,select,textarea,th,td,dd,p,span,strong,small) { overflow-wrap:anywhere; }
+html[data-font-size="xlarge"] body[data-route-group="portal"] :is(.portal-grid--2,.management-form-grid,.settings-data-grid,.usage-layout) { grid-template-columns:1fr !important; }
+html[data-font-size="xlarge"] body[data-route-group="portal"] :is(.portal-topbar__right,.management-row__actions,.usage-filters,.partner-card__actions) { width:100%; justify-content:flex-start; }
+@media (min-width:701px) and (max-width:1100px){
+  html:is([data-font-size="large"],[data-font-size="xlarge"]) body[data-route-group="portal"] { --portal-sidebar-width: 88px; }
+}
+@media (max-width:700px){
+  html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-sidebar { height:104px !important; }
+  html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-layout { padding-bottom:104px; }
+}

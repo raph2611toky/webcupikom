@@ -1,0 +1,748 @@
+:where(body[data-route-group="portal"]) .citizen-appointments-v86{
+  display:grid;
+  gap:.85rem;
+  padding-bottom:1rem;
+  font-family:var(--portal-font, "Plus Jakarta Sans", "Helvetica Neue", Arial, sans-serif);
+  font-size:14px;
+}
+:where(body[data-route-group="portal"]) .citizen-appointments-v86 h2,:where(body[data-route-group="portal"]) .citizen-appointments-v86 h3,:where(body[data-route-group="portal"]) .citizen-appointments-v86 strong,:where(body[data-route-group="portal"]) .citizen-appointments-v86 b,:where(body[data-route-group="portal"]) .citizen-appointments-v86 button,:where(body[data-route-group="portal"]) .citizen-appointments-v86 input,:where(body[data-route-group="portal"]) .citizen-appointments-v86 select{font-family:inherit}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-grid,
+:where(body[data-route-group="portal"]) .cit-appt-list-layout,
+:where(body[data-route-group="portal"]) .cit-appt-booking-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1.65fr) minmax(320px,.62fr);
+  gap:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-card{
+  min-height:96px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:1rem;
+  align-items:center;
+  border-radius:1.65rem;
+  padding:1rem 1.25rem;
+  background:linear-gradient(180deg,#f4efff 0%,#efe8ff 100%);
+  box-shadow:0 14px 34px rgba(112,68,198,.08);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-card__icon,
+:where(body[data-route-group="portal"]) .cit-appt-side-visual{
+  width:58px;
+  height:58px;
+  border-radius:1.25rem;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(180deg,#ffffff,#efe6ff);
+  box-shadow:0 10px 22px rgba(118,70,218,.16);
+  font-size:1.18rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-card__content h2{
+  margin:0;
+  font-size:.88rem;
+  color:#11132d;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-card__content p{
+  margin:.35rem 0 0;
+  color:#71698a;
+  line-height:1.45;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-visual{
+  min-height:96px;
+  border-radius:1.65rem;
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(180deg,#f4edff 0%,#eee7fb 100%);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-visual::before,
+:where(body[data-route-group="portal"]) .cit-appt-hero-visual::after{
+  content:"";
+  position:absolute;
+  border-radius:999px;
+  background:rgba(149,99,255,.09);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-visual::before{width:190px;height:190px;right:-40px;top:18px}
+:where(body[data-route-group="portal"]) .cit-appt-hero-visual::after{width:130px;height:130px;left:24px;bottom:-45px}
+
+:where(body[data-route-group="portal"]) .cit-appt-hero-visual__calendar{
+  position:absolute;
+  right:42px;
+  top:18px;
+  font-size:5rem;
+  color:#bfa2ff;
+  line-height:1;
+  opacity:.75;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-primary,
+:where(body[data-route-group="portal"]) .cit-appt-secondary,
+:where(body[data-route-group="portal"]) .cit-appt-view-btn,
+:where(body[data-route-group="portal"]) .cit-appt-menu-btn{
+  border:0;
+  cursor:pointer;
+  font:inherit;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-primary{
+  height:52px;
+  padding:0 1.35rem;
+  border-radius:1rem;
+  color:#fff;
+  font-weight:700;
+  background:linear-gradient(90deg,#6d1dff,#7a2fff);
+  box-shadow:0 16px 30px rgba(103,44,245,.22);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-primary.wide,
+:where(body[data-route-group="portal"]) .cit-appt-secondary.wide{
+  width:100%;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-secondary{
+  height:52px;
+  padding:0 1.15rem;
+  border-radius:1rem;
+  color:#373152;
+  font-weight:700;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #e4dff0;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-list-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:1rem 1.1rem;
+  border-radius:1.5rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.65rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button{
+  border:0;
+  cursor:pointer;
+  min-height:40px;
+  padding:0 .9rem;
+  border-radius:1rem;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #e8e2f1;
+  color:#5e5876;
+  display:inline-flex;
+  align-items:center;
+  gap:.6rem;
+  font-weight:700;
+  font-size:.86rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button i{
+  font-style:normal;
+  min-width:1.45rem;
+  height:1.45rem;
+  padding:0 .25rem;
+  border-radius:999px;
+  background:#eeebf6;
+  display:grid;
+  place-items:center;
+  font-size:.8125rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button.is-active{
+  color:#fff;
+  background:linear-gradient(90deg,#6422f8,#7d35ff);
+  box-shadow:none;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button.is-active i{background:rgba(255,255,255,.24);color:#fff}
+
+:where(body[data-route-group="portal"]) .cit-appt-toolbar-controls{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-search-field,
+:where(body[data-route-group="portal"]) .cit-appt-date-filter{
+  min-height:38px;
+  border-radius:1rem;
+  background:#fbf9fe;
+  box-shadow:inset 0 0 0 1px #e8e2f1;
+  display:flex;
+  align-items:center;
+  gap:.65rem;
+  padding:0 .95rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-search-field{min-width:250px}
+:where(body[data-route-group="portal"]) .cit-appt-search-field input,
+:where(body[data-route-group="portal"]) .cit-appt-date-filter select{
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  font:inherit;
+  color:#3b3456;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-list-layout{align-items:start}
+
+:where(body[data-route-group="portal"]) .cit-appt-table-card,
+:where(body[data-route-group="portal"]) .cit-appt-next-card,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-card,
+:where(body[data-route-group="portal"]) .cit-appt-booking-main,
+:where(body[data-route-group="portal"]) .cit-appt-booking-side{
+  border-radius:1.55rem;
+  box-shadow:0 12px 32px rgba(49,35,94,.06);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-table-card{
+  padding:.85rem .9rem .7rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-table-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:1rem;
+  padding:.2rem .25rem .85rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-table-head strong{
+  color:#10122c;
+  font-size:.92rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-table-head span{
+  color:#5a5475;
+  font-weight:700;
+  font-size:.86rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-table-wrap{overflow:auto}
+
+:where(body[data-route-group="portal"]) .cit-appt-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-table th{
+  text-align:left;
+  padding:.75rem .7rem;
+  font-size:.8125rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#655f77;
+  background:#fbf9fd;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-table th:first-child{border-top-left-radius:1rem}
+:where(body[data-route-group="portal"]) .cit-appt-table th:last-child{border-top-right-radius:1rem}
+
+:where(body[data-route-group="portal"]) .cit-appt-table td{
+  padding:.8rem .7rem;
+  border-bottom:1px solid #efeaf5;
+  color:#2f2c46;
+  vertical-align:middle;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-date-cell strong{display:block;font-size:1rem;color:#12142d;line-height:1}
+:where(body[data-route-group="portal"]) .cit-appt-date-cell span{display:block;margin-top:.3rem;color:#6f6886}
+
+:where(body[data-route-group="portal"]) .cit-appt-service-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:.75rem;
+  font-weight:700;
+  font-size:.86rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-service-chip i{
+  width:2.3rem;
+  height:2.3rem;
+  border-radius:.8rem;
+  display:block;
+  background:#ece8f8;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-service-chip.theme-administration i{background:linear-gradient(180deg,#f3e8ff,#ead8ff)}
+:where(body[data-route-group="portal"]) .cit-appt-service-chip.theme-energy i{background:linear-gradient(180deg,#fff0cf,#ffe2a0)}
+:where(body[data-route-group="portal"]) .cit-appt-service-chip.theme-transport i{background:linear-gradient(180deg,#deebff,#bfd5ff)}
+:where(body[data-route-group="portal"]) .cit-appt-service-chip.theme-health i{background:linear-gradient(180deg,#dff1ff,#c5e3ff)}
+:where(body[data-route-group="portal"]) .cit-appt-service-chip.theme-safety i{background:linear-gradient(180deg,#ffe1e8,#ffc7d5)}
+:where(body[data-route-group="portal"]) .cit-appt-service-chip.theme-housing i{background:linear-gradient(180deg,#e0fbec,#c2f0d6)}
+
+:where(body[data-route-group="portal"]) .cit-appt-status-pill{
+  display:inline-flex;
+  align-items:center;
+  min-height:1.85rem;
+  padding:0 .72rem;
+  border-radius:999px;
+  font-weight:700;
+  font-size:.86rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-status-pill.is-upcoming{background:#dbf6e8;color:#1f8a55}
+:where(body[data-route-group="portal"]) .cit-appt-status-pill.is-past{background:#eceaf4;color:#6f6982}
+:where(body[data-route-group="portal"]) .cit-appt-status-pill.is-cancelled{background:#ffe3e3;color:#e03e3e}
+
+:where(body[data-route-group="portal"]) .cit-appt-row-actions{
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-view-btn{
+  min-height:38px;
+  padding:0 .9rem;
+  border-radius:.95rem;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #dfdaec;
+  color:#1d1933;
+  font-weight:700;
+  font-size:.86rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-menu-btn{
+  width:38px;
+  height:38px;
+  border-radius:.95rem;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #dfdaec;
+  color:#393451;
+  font-size:1.3rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-empty{
+  min-height:120px;
+  display:grid;
+  place-items:center;
+  text-align:center;
+  color:#655f77;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-empty.compact{min-height:80px}
+
+:where(body[data-route-group="portal"]) .cit-appt-pagination{
+  padding:.9rem .2rem 0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  color:#655f77;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-pagination > div{
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-pagination button,
+:where(body[data-route-group="portal"]) .cit-appt-pagination b{
+  width:2.2rem;
+  height:2.2rem;
+  border-radius:.8rem;
+  display:grid;
+  place-items:center;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-pagination button{
+  border:0;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #dfdaec;
+  cursor:pointer;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-pagination b{
+  color:#fff;
+  background:linear-gradient(90deg,#6d1dff,#7a2fff);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-side-stack{display:grid;gap:1rem}
+
+:where(body[data-route-group="portal"]) .cit-appt-next-card,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-card,
+:where(body[data-route-group="portal"]) .cit-appt-booking-side{
+  padding:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-next-card h3,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-card h3,
+:where(body[data-route-group="portal"]) .cit-appt-booking-side h3{
+  margin:0 0 1rem;
+  font-size:1rem;
+  color:#12142c;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-next-date{
+  font-size:1.18rem;
+  font-weight:800;
+  color:#12142c;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-next-info{display:grid;gap:.9rem;margin-top:1rem}
+:where(body[data-route-group="portal"]) .cit-appt-next-info div{display:grid;gap:.18rem;padding-bottom:.8rem;border-bottom:1px solid #eee8f6}
+:where(body[data-route-group="portal"]) .cit-appt-next-info span,:where(body[data-route-group="portal"]) .cit-appt-summary-list span{color:#655f77;font-size:.9rem}
+:where(body[data-route-group="portal"]) .cit-appt-next-info b,:where(body[data-route-group="portal"]) .cit-appt-summary-list b{color:#171931;font-size:1rem}
+
+:where(body[data-route-group="portal"]) .cit-appt-next-link{
+  margin-top:1rem;
+  width:44px;
+  height:44px;
+  border-radius:999px;
+  border:0;
+  color:#6e26fb;
+  background:#f4efff;
+  font-size:1.3rem;
+  cursor:pointer;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-head{display:flex;align-items:center;justify-content:space-between}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.8rem;
+  margin-bottom:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-toolbar button{
+  width:2.3rem;
+  height:2.3rem;
+  border:0;
+  cursor:pointer;
+  border-radius:.85rem;
+  color:#332d4d;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #e5e0ef;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-toolbar strong{
+  color:#1a1d34;
+  font-size:.92rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-weekdays,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:.45rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-weekdays{
+  margin-bottom:.55rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-weekdays span{
+  text-align:center;
+  font-size:.8125rem;
+  font-weight:800;
+  color:#655f77;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day{
+  min-height:2.5rem;
+  border-radius:.85rem;
+  display:grid;
+  place-items:center;
+  background:#f7f3fd;
+  color:#2b2940;
+  font-weight:700;
+  border:0;
+  box-shadow:none;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.is-outside{opacity:.4}
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.state-upcoming,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.state-past,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.state-cancelled,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.state-default{background:#f7f3fd}
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.state-next,
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.is-selected{background:linear-gradient(180deg,#7b34ff,#5f19ef);color:#fff;box-shadow:0 12px 24px rgba(104,34,245,.24)}
+:where(body[data-route-group="portal"]) .cit-appt-calendar-day.state-unavailable{opacity:.4;cursor:not-allowed}
+
+:where(body[data-route-group="portal"]) .cit-appt-booking-main{padding:1rem 1.1rem}
+
+:where(body[data-route-group="portal"]) .cit-appt-stepper{
+  display:grid;
+  grid-template-columns:auto minmax(20px,1fr) auto minmax(20px,1fr) auto;
+  align-items:center;
+  gap:.7rem;
+  margin-bottom:1.3rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-stepper i{
+  display:block;
+  height:2px;
+  background:#ddd8e8;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-stepper > div{
+  display:grid;
+  justify-items:center;
+  gap:.5rem;
+  color:#655f77;
+  font-weight:700;
+  font-size:.86rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-stepper > div b{
+  width:2.3rem;
+  height:2.3rem;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:#e8e5ef;
+  color:#655f77;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-stepper > div.is-active{color:#5d23f4}
+:where(body[data-route-group="portal"]) .cit-appt-stepper > div.is-active b{background:linear-gradient(180deg,#7431ff,#6421f5);color:#fff}
+
+:where(body[data-route-group="portal"]) .cit-appt-booking-fields{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1rem;
+  margin-bottom:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-booking-fields label,
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap{
+  display:grid;
+  gap:.45rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-booking-fields label > span{
+  color:#12142c;
+  font-weight:700;
+  font-size:.86rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-booking-fields label.full{grid-column:1 / -1}
+
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap{
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  min-height:3rem;
+  padding:0 .95rem;
+  border-radius:1rem;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #e4dff0;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap i{
+  width:2.2rem;
+  height:2.2rem;
+  border-radius:.85rem;
+  background:#f1e8ff;
+  position:relative;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap i.service::before,
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap i.agent::before,
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap i.reason::before{
+  content:"";
+  position:absolute;
+  inset:.55rem;
+  border-radius:.35rem;
+  background:#7a34ff;
+  opacity:.82;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap input,
+:where(body[data-route-group="portal"]) .cit-appt-input-wrap select{
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  font:inherit;
+  color:#24233a;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-booking-panels{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-panel{
+  border-top:1px solid #ede7f6;
+  padding-top:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-panel-title{
+  display:flex;
+  gap:.85rem;
+  align-items:flex-start;
+  margin-bottom:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-panel-title b{
+  width:2.4rem;
+  height:2.4rem;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:#f1e8ff;
+  color:#6a22fb;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-panel-title h3{
+  margin:0;
+  font-size:.92rem;
+  color:#13152d;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-panel-title p,
+:where(body[data-route-group="portal"]) .cit-appt-selected-day{
+  margin:.2rem 0 0;
+  color:#7a7392;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-duration-banner{
+  min-height:3rem;
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  padding:0 .9rem;
+  border-radius:1rem;
+  background:#eef4ff;
+  color:#2156a8;
+  margin-bottom:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-slot-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:.95rem;
+  margin-top:1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-slot-grid button{
+  min-height:4rem;
+  border-radius:1rem;
+  border:0;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #e5dff0;
+  color:#22223a;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  gap:.1rem;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-slot-grid button strong{font-size:1rem}
+:where(body[data-route-group="portal"]) .cit-appt-slot-grid button span{color:#5b5670}
+:where(body[data-route-group="portal"]) .cit-appt-slot-grid button:disabled{opacity:.4;cursor:not-allowed}
+:where(body[data-route-group="portal"]) .cit-appt-slot-grid button.is-selected{background:linear-gradient(180deg,#7b34ff,#6320f4);color:#fff;box-shadow:none}
+:where(body[data-route-group="portal"]) .cit-appt-slot-grid button.is-selected span{color:rgba(255,255,255,.92)}
+
+:where(body[data-route-group="portal"]) .cit-appt-slot-legend{
+  display:flex;
+  gap:1rem;
+  flex-wrap:wrap;
+  margin-top:1rem;
+  color:#6d6784;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-slot-legend span{display:flex;align-items:center;gap:.45rem}
+:where(body[data-route-group="portal"]) .cit-appt-slot-legend i{
+  width:1rem;
+  height:1rem;
+  border-radius:999px;
+  display:block;
+}
+:where(body[data-route-group="portal"]) .cit-appt-slot-legend i.available{box-shadow:inset 0 0 0 2px #8e58ff;background:transparent}
+:where(body[data-route-group="portal"]) .cit-appt-slot-legend i.selected{background:#6d1dff}
+:where(body[data-route-group="portal"]) .cit-appt-slot-legend i.unavailable{background:#d8d4e3}
+
+:where(body[data-route-group="portal"]) .cit-appt-booking-side{
+  display:grid;
+  align-content:start;
+  gap:1rem;
+  background:#fff;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-summary-list{display:grid;gap:.9rem}
+:where(body[data-route-group="portal"]) .cit-appt-summary-list > div{display:grid;gap:.2rem;padding-bottom:.9rem;border-bottom:1px solid #eee8f6}
+
+:where(body[data-route-group="portal"]) .cit-appt-note-box{
+  border-radius:1rem;
+  padding:1rem;
+  color:#2854aa;
+  background:#eef4ff;
+  line-height:1.45;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-backdrop{position:fixed;inset:0;background:rgba(18,14,35,.46);display:grid;place-items:center;padding:1rem;z-index:50}
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog{width:min(720px,100%);border-radius:1.5rem;background:#fff;padding:1.5rem;box-shadow:0 28px 60px rgba(21,15,41,.24)}
+:where(body[data-route-group="portal"]) .appointment-confirmation-check{width:3.5rem;height:3.5rem;border-radius:999px;display:grid;place-items:center;background:#ecfff4;color:#1ca861;font-size:1.5rem;margin-bottom:.7rem}
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog h2{margin:.25rem 0 .35rem;color:#111228}
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog p{margin:0 0 1rem;color:#706987}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem 1rem;margin:1rem 0}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div{padding:.85rem 1rem;border-radius:1rem;background:#f8f5fd;display:grid;gap:.22rem}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts span{color:#655f77;font-size:.9rem}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts b{color:#12142d}
+:where(body[data-route-group="portal"]) .appointment-confirmation-actions{display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap}
+
+@media (max-width: 1200px){
+  :where(body[data-route-group="portal"]) .cit-appt-hero-grid,
+  :where(body[data-route-group="portal"]) .cit-appt-list-layout,
+  :where(body[data-route-group="portal"]) .cit-appt-booking-layout,
+  :where(body[data-route-group="portal"]) .cit-appt-booking-panels{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .cit-appt-hero-visual{min-height:140px}
+}
+
+@media (max-width: 900px){
+  :where(body[data-route-group="portal"]) .cit-appt-list-toolbar{flex-direction:column;align-items:stretch}
+  :where(body[data-route-group="portal"]) .cit-appt-toolbar-controls{flex-direction:column;align-items:stretch}
+  :where(body[data-route-group="portal"]) .cit-appt-search-field{min-width:0}
+  :where(body[data-route-group="portal"]) .cit-appt-hero-card{grid-template-columns:1fr;justify-items:start}
+  :where(body[data-route-group="portal"]) .cit-appt-booking-fields,
+  :where(body[data-route-group="portal"]) .cit-appt-slot-grid{grid-template-columns:1fr 1fr}
+  :where(body[data-route-group="portal"]) .appointment-confirmation-facts{grid-template-columns:1fr}
+}
+
+@media (max-width: 700px){
+  :where(body[data-route-group="portal"]) .cit-appt-booking-fields,
+  :where(body[data-route-group="portal"]) .cit-appt-slot-grid{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .cit-appt-stepper{grid-template-columns:1fr;justify-items:start}
+  :where(body[data-route-group="portal"]) .cit-appt-stepper i{display:none}
+  :where(body[data-route-group="portal"]) .cit-appt-filter-tabs{overflow:auto;flex-wrap:nowrap;padding-bottom:.3rem}
+  :where(body[data-route-group="portal"]) .cit-appt-table th:nth-child(4),
+  :where(body[data-route-group="portal"]) .cit-appt-table td:nth-child(4),
+  :where(body[data-route-group="portal"]) .cit-appt-table th:nth-child(5),
+  :where(body[data-route-group="portal"]) .cit-appt-table td:nth-child(5){display:none}
+}
+
+html[data-data-saver="true"] :where(body[data-route-group="portal"]) .cit-appt-hero-visual,
+html[data-data-saver="true"] :where(body[data-route-group="portal"]) .cit-appt-side-visual{
+  background:#f3eefc;
+  box-shadow:none;
+}
+
+/* V94 — la liste reste centrée sur les rendez-vous; le calendrier n'existe que dans la prise de rendez-vous. */
+:where(body[data-route-group="portal"]) .cit-appt-list-layout{
+  grid-template-columns:minmax(0,1fr) minmax(230px,300px);
+}
+:where(body[data-route-group="portal"]) .cit-appt-side-stack{align-content:start}
+:where(body[data-route-group="portal"]) .cit-appt-next-card{position:sticky;top:86px}
+@media(max-width:1200px){
+  :where(body[data-route-group="portal"]) .cit-appt-list-layout{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .cit-appt-next-card{position:static}
+}
+/* V94 — aucune vue calendrier décorative dans la liste : le calendrier est réservé à la prise de rendez-vous. */
+:where(body[data-route-group="portal"]) .cit-appt-hero-grid{grid-template-columns:1fr}

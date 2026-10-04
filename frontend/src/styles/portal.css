@@ -1,0 +1,21 @@
+/* Authenticated UI: one deterministic stylesheet entry point. */
+@import "./app-shell.css";
+@import "./pages/dashboard.css";
+@import "./pages/agent-polish.css";
+@import "./pages/agent.css";
+@import "./pages/agent-reports-v85.css";
+@import "./pages/citizen-appointments-flow.css";
+@import "./pages/citizen-appointments-v86.css";
+@import "./pages/citizen-dashboard-reference.css";
+@import "./pages/citizen-notifications-v83.css";
+@import "./pages/citizen-polish.css";
+@import "./pages/citizen-requests.css";
+@import "./pages/citizen-services-v84.css";
+@import "./pages/projects.css";
+@import "./pages/transport-v87.css";
+@import "./pages/citizen-reports.css";
+@import "./pages/citizen-news-v94.css";
+@import "./pages/partners-usage-v97.css";
+@import "./portal-layout.css";
+@import "./portal-accessibility.css";
+@import "./portal-pagination.css";
