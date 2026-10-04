@@ -6,6 +6,7 @@ import { navigate } from "../../utils/navigation.js";
 const items = [
   ["/admin", "◫", "Tableau de bord"],
   ["/admin/users", "◉", "Utilisateurs"],
+  ["/admin/requests", "▤", "Demandes"],
   ["/admin/services", "◇", "Services"],
   ["/admin/transport", "⇄", "Transport"],
   ["/admin/appointments", "◷", "Rendez-vous"],

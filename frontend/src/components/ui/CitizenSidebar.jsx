@@ -45,11 +45,11 @@ export default function CitizenSidebar() {
       })}
     </nav>
 
-    {/* <div className="citizen-sidebar-note" aria-hidden="true">
+    <div className="citizen-sidebar-note" aria-hidden="true">
       <span>{locale === "en" ? "A cleaner," : locale === "mg" ? "Tanàna madio," : "Une ville"}</span>
       <strong>{locale === "en" ? "safer, smarter" : locale === "mg" ? "azo antoka kokoa" : "plus simple, plus sûre"}</strong>
       <small>Nova Terra.</small>
-    </div> */}
+    </div>
 
     <div className="portal-sidebar__bottom">
       <button onClick={() => navigate("/citizen/help")}><i aria-hidden="true">?</i><span>{t("contact", locale)}</span></button>

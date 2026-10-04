@@ -1,15 +1,5 @@
-import { useEffect, useState } from "react";
-import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
-import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { getAdminRequest, updateAdminRequest } from "../../api/requests.js";
-import { getAssignees } from "../../api/citizens.js";
-import { getApiErrorMessage } from "../../api/auth.js";
-import { navigate } from "../../utils/navigation.js";
-import "../../styles/app-shell.css";
-import "../../styles/pages/dashboard.css";
-export default function AdminRequestDetails({params}){
-  const [r,setRequest]=useState(null),[assignees,setAssignees]=useState([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
-  useEffect(()=>{let mounted=true;Promise.all([getAdminRequest(params.id),getAssignees()]).then(([data,a])=>{if(!mounted)return;setRequest(data);setAssignees(a)}).catch(e=>mounted&&setError(getApiErrorMessage(e,"Demande introuvable."))).finally(()=>mounted&&setLoading(false));return()=>{mounted=false}},[params.id]);
-  async function patch(changes){if(!r||saving)return;setSaving(true);setError('');try{setRequest(await updateAdminRequest(r.ref,changes))}catch(e){setError(getApiErrorMessage(e,"Modification impossible."))}finally{setSaving(false)}}
-  return <div className="portal-layout"><AdminSidebar/><div className="portal-main"><PortalTopbar eyebrow="Supervision" title={r?`Demande ${r.ref}`:'Demande'}/><main className="portal-content"><button className="back-link" onClick={()=>navigate('/admin/requests')}>← Retour aux demandes</button>{loading?<div className="loading-card">Chargement…</div>:error&&!r?<div className="error-card">{error}</div>:r?<>{error?<div className="error-card">{error}</div>:null}<section className="agent-detail-head"><div><span>{r.service}</span><h2>{r.citizen}</h2><p>{r.title} · {r.created}</p></div><div className="agent-detail-controls"><label><span>Statut</span><select value={r.status} disabled={saving} onChange={e=>patch({status:e.target.value})}><option>Envoyée</option><option>À traiter</option><option>En traitement</option><option>Action requise</option><option>Terminée</option></select></label><label><span>Priorité</span><select value={r.priority} disabled={saving} onChange={e=>patch({priority:e.target.value})}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></label><label><span>Responsable</span><select value={r.assignedTo??''} disabled={saving} onChange={e=>patch({assigned_to:e.target.value?Number(e.target.value):null})}><option value="">Non assignée</option>{assignees.map(a=><option key={a.id} value={a.id}>{a.display_name} · {a.role}</option>)}</select></label></div></section><section className="portal-grid portal-grid--2"><article className="portal-card"><span className="section-label">Demande</span><h3>{r.title}</h3><p className="detail-copy">{r.description}</p></article><article className="portal-card"><span className="section-label">Citoyen</span><h3>{r.citizen}</h3><div className="detail-list"><div><span>Email</span><b>{r.citizenEmail||'—'}</b></div><div><span>Responsable</span><b>{r.assignedToName||'Non assignée'}</b></div><div><span>Mise à jour</span><b>{r.updated}</b></div></div></article></section></>:null}</main></div></div>;
+import AgentRequestDetails from "../agent/AgentRequestDetails.jsx";
+
+export default function AdminRequestDetails({ params }) {
+  return <AgentRequestDetails params={params} mode="admin" />;
 }

@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { createCitizenRequest, getAllCitizenRequests, getCitizenRequests } from "../../api/requests.js";
+import { createCitizenRequest, getAllCitizenRequests, getCitizenRequestsPage } from "../../api/requests.js";
+import { getServices } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { CATEGORY_SERVICE, REQUEST_CATEGORIES, REQUEST_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 
-const filters = ["Toutes", "Envoyée", "En attente", "En traitement", "Action requise", "Terminée"];
-const emptyDraft = { type: "question", category: "État civil", subject: "", message: "", location: "" };
+const filters = [
+  ["", "Toutes"], ["submitted", "Envoyée"], ["pending", "En attente"],
+  ["in_progress", "En traitement"], ["action_required", "Action requise"], ["completed", "Terminée"],
+  ["rejected", "Non retenue"], ["cancelled", "Annulée"],
+];
+const emptyDraft = { type: "question", category: "État civil", serviceId: "", subject: "", message: "", location: "" };
 
 const COPY = {
   fr: {
@@ -59,11 +64,11 @@ const FILTER_LABELS = {
   fr: {},
   en: {
     "Toutes":"All", "Envoyée":"Sent", "En attente":"Pending", "En traitement":"In progress",
-    "Action requise":"Action required", "Terminée":"Completed",
+    "Action requise":"Action required", "Terminée":"Completed", "Non retenue":"Not retained", "Annulée":"Cancelled",
   },
   mg: {
     "Toutes":"Rehetra", "Envoyée":"Nalefa", "En attente":"Miandry", "En traitement":"Eo am-pikarakarana",
-    "Action requise":"Mila hetsika", "Terminée":"Vita",
+    "Action requise":"Mila hetsika", "Terminée":"Vita", "Non retenue":"Tsy nekena", "Annulée":"Nofoanana",
   },
 };
 
@@ -92,10 +97,16 @@ function statusLabel(value, locale) {
 export default function CitizenRequests() {
   const [locale] = useLocale();
   const copy = COPY[locale] || COPY.fr;
-  const [filter, setFilter] = useState("Toutes");
+  const [filter, setFilter] = useState("");
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [requests, setRequests] = useState([]);
+  const [services, setServices] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState(emptyDraft);
   const [file, setFile] = useState(null);
   const [showExtras, setShowExtras] = useState(false);
@@ -105,18 +116,31 @@ export default function CitizenRequests() {
   const [exporting,setExporting]=useState(false);
   const fileRef = useRef(null);
 
-  async function refresh() {
+  async function refresh(targetPage = page) {
+    setLoading(true);
     try {
-      setRequests(await getCitizenRequests({type:"procedure",page_size:50,ordering:"-updated_at"}));
+      const result = await getCitizenRequestsPage({
+        type: "procedure",
+        status: filter || undefined,
+        search: query || undefined,
+        page: targetPage,
+        page_size: 20,
+        ordering: "-updated_at",
+      });
+      setRequests(result.results);
+      setTotal(result.count);
+      setHasNext(Boolean(result.next));
+      setHasPrevious(Boolean(result.previous));
       setError("");
     } catch (err) {
       setError(getApiErrorMessage(err, copy.loadError));
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    refresh();
-
+    getServices().then(setServices).catch(() => setServices([]));
     const applyIntent = () => {
       const params = new URLSearchParams(window.location.search);
       if (params.get("new") !== "1") return;
@@ -159,12 +183,14 @@ export default function CitizenRequests() {
     };
   }, []);
 
-  const rows = useMemo(() => requests.filter((row) =>
-    (filter === "Toutes" || row.status === filter) &&
-    (!query || `${row.id} ${row.title} ${row.service} ${row.category || ""}`.toLowerCase().includes(query.toLowerCase()))
-  ), [filter, query, requests]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => refresh(page), query ? 220 : 0);
+    return () => window.clearTimeout(timer);
+  }, [filter, query, page]);
 
-  const service = CATEGORY_SERVICE[draft.category] || "Administration";
+  const rows = useMemo(() => requests, [requests]);
+  const selectedService = services.find((item) => String(item.id) === String(draft.serviceId));
+  const service = selectedService?.name || CATEGORY_SERVICE[draft.category] || "Administration";
 
 
   async function exportRequests(format="csv") {
@@ -202,7 +228,7 @@ export default function CitizenRequests() {
         type: draft.type,
         requestType: "procedure",
         category: draft.category,
-        service,
+        service: draft.serviceId || service,
         subject: draft.subject,
         message: draft.message,
         location: draft.location ? { label: draft.location } : null,
@@ -234,8 +260,8 @@ export default function CitizenRequests() {
           </section>
 
           <section className="toolbar-card requests-toolbar-card">
-            <label className="portal-search requests-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label={copy.search} placeholder={copy.search} /></label>
-            <div className="filter-row filter-row--portal requests-filter-row">{filters.map((item) => <button className={item === filter ? "is-active" : ""} aria-pressed={item === filter} key={item} onClick={() => setFilter(item)}>{statusLabel(item, locale)}</button>)}</div>
+            <label className="portal-search requests-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} aria-label={copy.search} placeholder={copy.search} /></label>
+            <div className="filter-row filter-row--portal requests-filter-row">{filters.map(([value, label]) => <button type="button" className={value === filter ? "is-active" : ""} aria-pressed={value === filter} key={value || "all"} onClick={() => { setFilter(value); setPage(1); }}>{statusLabel(label, locale)}</button>)}</div>
           </section>
 
           <section className="portal-card request-export-panel" aria-labelledby="request-export-title">
@@ -258,9 +284,9 @@ export default function CitizenRequests() {
                 <span className="section-label">{copy.listKicker}</span>
                 <h3 id="request-list-title">{copy.listText}</h3>
               </div>
-              <b>{rows.length} demande(s)</b>
+              <b>{total} demande{total > 1 ? "s" : ""}</b>
             </div>
-            <div className="accessible-table-wrap">
+            {loading ? <div className="request-list-loading" role="status">Chargement de vos demandes…</div> : <div className="accessible-table-wrap">
               <table className="accessible-table request-table">
                 <caption className="sr-only">{copy.tableCaption}</caption>
                 <thead><tr><th scope="col">{copy.ref}</th><th scope="col">{copy.request}</th><th scope="col">{copy.service}</th><th scope="col">{copy.status}</th><th scope="col">{copy.updated}</th><th scope="col">{copy.action}</th></tr></thead>
@@ -268,7 +294,7 @@ export default function CitizenRequests() {
                   {rows.map((row) => (
                     <tr key={row.id}>
                       <td className="mono"><div className="request-ref-cell"><span aria-hidden="true">◇</span><b>{row.id}</b></div></td>
-                      <td><div className="request-title-cell"><strong>{row.title}</strong><small>{row.category || row.service}</small></div></td>
+                      <td><div className="request-title-cell"><strong>{row.title}</strong><small>{row.category || row.service}</small>{row.hasAgentReply ? <small className="request-reply-hint">↩ {row.agentReplyCount} réponse{row.agentReplyCount > 1 ? "s" : ""} de la ville</small> : null}</div></td>
                       <td>{row.service}</td>
                       <td><span className={`status-pill status-${String(row.status).replaceAll(" ", "-").toLowerCase()}`}>{statusLabel(row.status,locale)}</span></td>
                       <td>{row.updated}</td>
@@ -277,8 +303,9 @@ export default function CitizenRequests() {
                   ))}
                 </tbody>
               </table>
-              {!rows.length ? <div className="dashboard-empty">{copy.empty}</div> : <div className="request-list-foot">Affichage de {rows.length} demande(s)</div>}
-            </div>
+              {!rows.length ? <div className="dashboard-empty">{copy.empty}</div> : <div className="request-list-foot">Page {page} · {rows.length} affichée(s) sur {total}</div>}
+            </div>}
+            {total > 20 ? <div className="request-pagination" aria-label="Pagination des demandes"><button type="button" className="secondary-action" disabled={!hasPrevious || loading} onClick={() => setPage((value) => Math.max(1, value - 1))}>← Précédent</button><span>Page {page}</span><button type="button" className="secondary-action" disabled={!hasNext || loading} onClick={() => setPage((value) => value + 1)}>Suivant →</button></div> : null}
           </section>
 
           {showForm ? (
@@ -309,7 +336,8 @@ export default function CitizenRequests() {
                     </div>
 
                     <div className="request-studio-grid">
-                      <label className="span-2"><span>{copy.category}</span><select value={draft.category} onChange={(event) => patch("category", event.target.value)}>{REQUEST_CATEGORIES.map((category) => <option key={category} value={category}>{CATEGORY_LABELS[locale]?.[category] || category}</option>)}</select></label>
+                      <label><span>{copy.category}</span><select value={draft.category} onChange={(event) => patch("category", event.target.value)}>{REQUEST_CATEGORIES.map((category) => <option key={category} value={category}>{CATEGORY_LABELS[locale]?.[category] || category}</option>)}</select></label>
+                      <label><span>{copy.destination}</span><select value={draft.serviceId} onChange={(event) => patch("serviceId", event.target.value)}><option value="">Automatique · {CATEGORY_SERVICE[draft.category] || "Administration"}</option>{services.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
                       <label className="span-2"><span>{copy.subject}</span><input required value={draft.subject} onChange={(event) => patch("subject", event.target.value)} placeholder={copy.subjectPh} /></label>
                       <label className="span-2"><span>{copy.message}</span><textarea required rows="4" value={draft.message} onChange={(event) => patch("message", event.target.value)} placeholder={copy.messagePh} /></label>
                     </div>

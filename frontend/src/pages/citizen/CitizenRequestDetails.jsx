@@ -6,6 +6,7 @@ import {
   cancelCitizenReport,
   downloadCitizenReportAttachment,
   getCitizenRequestById,
+  getCitizenRequestReplies,
   reopenCitizenReport,
   updateCitizenReport,
 } from "../../api/requests.js";
@@ -29,6 +30,7 @@ function displayDate(value,locale){
 export default function CitizenRequestDetails({params}){
   const [locale]=useLocale(); const copy=COPY[locale]||COPY.fr;
   const [request,setRequest]=useState(null);
+  const [replies,setReplies]=useState([]);
   const [showNote,setShowNote]=useState(false);
   const [showEdit,setShowEdit]=useState(false);
   const [note,setNote]=useState("");
@@ -42,8 +44,12 @@ export default function CitizenRequestDetails({params}){
   async function load(){
     setError("");
     try{
-      const row=await getCitizenRequestById(params.id);
+      const [row, replyRows]=await Promise.all([
+        getCitizenRequestById(params.id),
+        getCitizenRequestReplies(params.id,{page_size:50}).catch(()=>[]),
+      ]);
       setRequest(row);
+      setReplies(replyRows);
       setEdit({title:row.title||"",description:row.description||"",location_text:row.location?.label||"",district:row.district||"",severity:row.severityCode||"moderate"});
     }catch(e){setError(getApiErrorMessage(e,"Impossible de charger ce dossier."))}
   }
@@ -54,6 +60,7 @@ export default function CitizenRequestDetails({params}){
   const canEdit=isReport&&!request?.isClosed&&(request?.availableActions?.includes("edit")||["submitted","pending"].includes(request?.statusCode));
   const canCancel=isReport&&!request?.isClosed&&(request?.availableActions?.includes("cancel")||["submitted","pending","in_progress","action_required"].includes(request?.statusCode));
   const canMessage=request?.availableActions?.includes("add_message")||isReport||request?.statusCode==="action_required";
+  const latestReply=replies.length?replies[replies.length-1]:null;
 
   async function saveNote(event){
     event.preventDefault(); if(!note.trim()&&!noteFile)return;
@@ -102,7 +109,7 @@ export default function CitizenRequestDetails({params}){
       {error?<div className="error-card" role="alert">{error}</div>:null}{notice?<div className="success-inline" role="status">✓ {notice}</div>:null}
 
       <section className="request-detail-hero request-detail-hero--soft">
-        <div className="request-detail-hero__icon" aria-hidden="true">💧</div>
+        <div className="request-detail-hero__icon" aria-hidden="true">▤</div>
         <div className="request-detail-hero__content">
           <span>{request.category||request.service}</span>
           <h2>{request.title}</h2>
@@ -115,9 +122,14 @@ export default function CitizenRequestDetails({params}){
         <em className={`status-pill status-${String(request.status).replaceAll(" ","-").toLowerCase()}`}>{request.status}</em>
       </section>
 
-      {request.statusCode==="action_required"?<section className="portal-card action-required-card" role="status"><span className="section-label">{copy.actionRequired}</span><h3>{request.resolutionSummary||"Merci de compléter votre dossier."}</h3><button className="primary-action" type="button" onClick={()=>setShowNote(true)}>{copy.addInfo}</button></section>:null}
+      {request.statusCode==="action_required"?<section className="portal-card action-required-card" role="status"><span className="section-label">{copy.actionRequired}</span><h3>{request.resolutionSummary||"Merci de compléter votre dossier."}</h3><button className="primary-action" type="button" onClick={()=>setShowNote(true)}>{isReport?copy.addInfo:"Contacter la mairie"}</button></section>:null}
 
       <section className="portal-grid portal-grid--detail request-detail-grid">
+        {replies.length ? <article className="portal-card portal-card--wide municipal-replies-card" aria-labelledby="municipal-replies-title">
+          <div className="municipal-replies-card__head"><div><span className="section-label">Réponses de la ville</span><h3 id="municipal-replies-title">{replies.length} réponse{replies.length > 1 ? "s" : ""} reçue{replies.length > 1 ? "s" : ""}</h3></div>{latestReply?.createdAt ? <span>Dernière · {displayDate(latestReply.createdAt,locale)}</span> : null}</div>
+          <div className="municipal-reply-list">{replies.map((reply,index)=><article key={reply.key||index}><div className="municipal-reply-avatar" aria-hidden="true">NT</div><div><div><strong>{reply.actorName||"Équipe municipale"}</strong><span>{displayDate(reply.createdAt||reply.at,locale)}</span></div><p>{reply.message}</p>{reply.attachments?.length?<small>{reply.attachments.length} pièce(s) jointe(s)</small>:null}</div></article>)}</div>
+        </article> : null}
+
         <article className="portal-card request-history-card">
           <span className="section-label">{copy.follow}</span><h3>{copy.progress}</h3>
           <div className="activity-feed citizen-request-timeline">{timeline.map((item,index)=><div key={item.key||index}><i>{item.eventType==="status"?"●":item.eventType==="created"?"✓":"◆"}</i><div><b>{item.title||item.label}</b>{item.message?<small>{item.message}</small>:null}<span>{item.actorName?`${item.actorName}${item.actorRole?` (${item.actorRole})`:""} · `:""}{displayDate(item.createdAt||item.at,locale)}</span>{item.attachments?.length?<small>{item.attachments.length} pièce(s) jointe(s)</small>:null}</div></div>)}{!timeline.length?<div className="empty-inline">Aucun événement de suivi.</div>:null}</div>
@@ -133,7 +145,7 @@ export default function CitizenRequestDetails({params}){
         </article>
 
         <article className="portal-card portal-card--wide request-attachments-card request-soft-panel">
-          <div className="portal-card__head"><div><span className="section-label">{copy.attachments}</span><h3>{copy.elements}</h3></div>{canMessage?<button type="button" onClick={()=>setShowNote(true)}>{copy.add}</button>:null}</div>
+          <div className="portal-card__head"><div><span className="section-label">{copy.attachments}</span><h3>{copy.elements}</h3></div>{canMessage?<button type="button" onClick={()=>setShowNote(true)}>{isReport?copy.add:"Contacter la mairie"}</button>:null}</div>
           {request.attachments?.length?<div className="document-grid">{request.attachments.map((file,index)=><div className="document-row" key={file.id||index}><i>{file.type?.includes("image")?"IMG":"DOC"}</i><div><b>{file.name}</b><span>{file.caption||file.uploaderName||"Pièce jointe"}{file.size?` · ${Math.max(1,Math.round(file.size/1024))} Ko`:""}</span></div>{file.downloadUrl?<button type="button" onClick={()=>download(file)}>{copy.download}</button>:null}</div>)}</div>:<div className="empty-inline">{copy.none}</div>}
         </article>
 
@@ -150,12 +162,12 @@ export default function CitizenRequestDetails({params}){
         </article>
 
         <article className="action-bar portal-card--wide">
-          <div><b>{copy.need}</b><span>{copy.needText}</span></div>
-          <div>{canMessage?<button className="secondary-action" onClick={()=>setShowNote(true)}>{copy.addInfo}</button>:null}{canEdit?<button className="secondary-action" onClick={()=>setShowEdit(true)}>{copy.edit}</button>:null}{canCancel?<button className="text-danger" disabled={busy} onClick={cancelReport}>{copy.cancel}</button>:null}{isReport&&request.isClosed?<button className="secondary-action" disabled={busy} onClick={reopenReport}>{copy.reopen}</button>:null}<button className="primary-action" onClick={()=>navigate("/citizen/notifications")}>{copy.notifications}</button></div>
+          <div><b>{copy.need}</b><span>{isReport?copy.needText:"Pour une demande classique, un message est transmis au canal de contact de la mairie avec la référence du dossier."}</span></div>
+          <div>{canMessage?<button className="secondary-action" onClick={()=>setShowNote(true)}>{isReport?copy.addInfo:"Contacter la mairie"}</button>:null}{canEdit?<button className="secondary-action" onClick={()=>setShowEdit(true)}>{copy.edit}</button>:null}{canCancel?<button className="text-danger" disabled={busy} onClick={cancelReport}>{copy.cancel}</button>:null}{isReport&&request.isClosed?<button className="secondary-action" disabled={busy} onClick={reopenReport}>{copy.reopen}</button>:null}<button className="primary-action" onClick={()=>navigate("/citizen/notifications")}>{copy.notifications}</button></div>
         </article>
       </section>
 
-      {showNote?<div className="modal-backdrop" onClick={()=>setShowNote(false)}><form className="portal-modal compact-note-modal" onClick={e=>e.stopPropagation()} onSubmit={saveNote}><button type="button" className="modal-close" onClick={()=>setShowNote(false)}>×</button><span className="section-label">{copy.complete}</span><h2>{copy.addDetail}</h2><p>{copy.modalText}</p><label><span>{copy.message}</span><textarea rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder={copy.messagePh}/></label><label><span>Photo (optionnelle)</span><input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setNoteFile(e.target.files?.[0]||null)}/></label><button className="primary-action" type="submit" disabled={busy||(!note.trim()&&!noteFile)}>{busy?"Envoi…":copy.save}</button></form></div>:null}
+      {showNote?<div className="modal-backdrop" onClick={()=>setShowNote(false)}><form className="portal-modal compact-note-modal" onClick={e=>e.stopPropagation()} onSubmit={saveNote}><button type="button" className="modal-close" onClick={()=>setShowNote(false)}>×</button><span className="section-label">{copy.complete}</span><h2>{copy.addDetail}</h2><p>{isReport?copy.modalText:"Votre message sera transmis à la mairie en mentionnant automatiquement la référence de cette demande."}</p><label><span>{copy.message}</span><textarea rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder={copy.messagePh}/></label>{isReport?<label><span>Photo (optionnelle)</span><input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setNoteFile(e.target.files?.[0]||null)}/></label>:null}<button className="primary-action" type="submit" disabled={busy||(!note.trim()&&!noteFile)}>{busy?"Envoi…":isReport?copy.save:"Envoyer →"}</button></form></div>:null}
 
       {showEdit&&isReport?<div className="modal-backdrop" onClick={()=>setShowEdit(false)}><form className="portal-modal compact-note-modal" onClick={e=>e.stopPropagation()} onSubmit={saveEdit}><button type="button" className="modal-close" onClick={()=>setShowEdit(false)}>×</button><span className="section-label">Correction avant traitement</span><h2>{copy.edit}</h2><label><span>Titre</span><input value={edit.title} onChange={e=>setEdit(v=>({...v,title:e.target.value}))}/></label><label><span>Description</span><textarea rows="4" value={edit.description} onChange={e=>setEdit(v=>({...v,description:e.target.value}))}/></label><label><span>Lieu</span><input value={edit.location_text} onChange={e=>setEdit(v=>({...v,location_text:e.target.value}))}/></label><label><span>Quartier</span><input value={edit.district} onChange={e=>setEdit(v=>({...v,district:e.target.value}))}/></label><label><span>Gravité</span><select value={edit.severity} onChange={e=>setEdit(v=>({...v,severity:e.target.value}))}><option value="minor">Mineure</option><option value="moderate">Modérée</option><option value="major">Majeure</option><option value="critical">Critique</option></select></label><button className="primary-action" type="submit" disabled={busy}>{busy?"Enregistrement…":"Enregistrer"}</button></form></div>:null}
     </main>

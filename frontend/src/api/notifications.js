@@ -48,7 +48,7 @@ function inferEventStatus(item = {}) {
 function requestReferenceFromNotification(item = {}) {
   if (item.request_reference || item.request_ref) return item.request_reference || item.request_ref;
   const actionUrl = String(item.action_url || item.actionUrl || "");
-  const match = actionUrl.match(/\/citizen\/requests\/([^/?#]+)/i);
+  const match = actionUrl.match(/\/(?:citizen\/)?requests\/([^/?#]+)/i);
   return match ? decodeURIComponent(match[1]) : null;
 }
 

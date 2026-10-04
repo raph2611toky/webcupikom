@@ -436,3 +436,23 @@ html[data-data-mode="reduced"] :where(body[data-route-group="portal"]) .citizen-
   :where(body[data-route-group="portal"]) .request-details-card .detail-list>div{grid-template-columns:1fr}
   :where(body[data-route-group="portal"]) .request-details-card .detail-list b{justify-self:start;text-align:left}
 }
+
+/* V90 — Demandes : états serveur, pagination et réponses municipales */
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-list-loading{padding:1rem 0;color:#655f77;font-size:.875rem}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-reply-hint{display:inline-flex!important;width:max-content;margin-top:.3rem!important;padding:.22rem .48rem;border-radius:999px;background:#f1eaff;color:#6544a4!important;font-weight:750}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination{display:flex;align-items:center;justify-content:flex-end;gap:.65rem;padding-top:1rem;border-top:1px solid #eee9f3}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination span{color:#655f77;font-size:.8125rem}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination button{min-height:2.5rem;padding:0 .85rem;border:1px solid #e1d9e8;border-radius:.8rem;background:#fff;color:#302739;font-size:.8125rem;font-weight:800}
+:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination button:disabled{opacity:.45;cursor:not-allowed}
+:where(body[data-route-group="portal"]) .municipal-replies-card{display:grid;gap:1rem;border-color:#dfd3f3;background:linear-gradient(180deg,#fff 0%,#fcfaff 100%)}
+:where(body[data-route-group="portal"]) .municipal-replies-card__head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+:where(body[data-route-group="portal"]) .municipal-replies-card__head>span{color:#72677c;font-size:.8125rem;white-space:nowrap}
+:where(body[data-route-group="portal"]) .municipal-reply-list{display:grid;gap:.75rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list>article{display:grid;grid-template-columns:2.45rem minmax(0,1fr);gap:.8rem;padding:.85rem;border:1px solid #e9e1ef;border-radius:1rem;background:#fff}
+:where(body[data-route-group="portal"]) .municipal-reply-avatar{width:2.35rem;height:2.35rem;border-radius:.75rem;display:grid;place-items:center;background:#eee6fb;color:#5e3ca5;font-size:.76rem;font-weight:900}
+:where(body[data-route-group="portal"]) .municipal-reply-list>article>div:last-child>div{display:flex;align-items:center;justify-content:space-between;gap:.8rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list strong{color:#25202d;font-size:.875rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list span,:where(body[data-route-group="portal"]) .municipal-reply-list small{color:#766b7f;font-size:.8125rem}
+:where(body[data-route-group="portal"]) .municipal-reply-list p{margin:.38rem 0 0;color:#4b4352;font-size:.875rem;line-height:1.55;white-space:pre-wrap}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .municipal-replies-card,html[data-contrast="high"] :where(body[data-route-group="portal"]) .municipal-reply-list>article{background:#000!important;color:#fff!important;border-color:#fff!important}
+@media(max-width:700px){:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination{justify-content:stretch;flex-wrap:wrap}:where(body[data-route-group="portal"]) .citizen-requests-page .request-pagination button{flex:1}:where(body[data-route-group="portal"]) .municipal-replies-card__head,:where(body[data-route-group="portal"]) .municipal-reply-list>article>div:last-child>div{flex-direction:column;align-items:flex-start}:where(body[data-route-group="portal"]) .municipal-reply-list>article{grid-template-columns:1fr}:where(body[data-route-group="portal"]) .municipal-reply-avatar{display:none}}

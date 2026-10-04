@@ -12,7 +12,7 @@ const AGENT_STATUS = {
   action_required: "Action requise",
   completed: "Terminée",
   cancelled: "Annulée",
-  rejected: "Rejetée",
+  rejected: "Non retenue",
 };
 
 const CITIZEN_STATUS = {
@@ -22,7 +22,7 @@ const CITIZEN_STATUS = {
   action_required: "Action requise",
   completed: "Terminée",
   cancelled: "Annulée",
-  rejected: "Rejetée",
+  rejected: "Non retenue",
 };
 
 const STATUS_CODE = {
@@ -34,6 +34,7 @@ const STATUS_CODE = {
   "Terminée": "completed",
   "Annulée": "cancelled",
   "Rejetée": "rejected",
+  "Non retenue": "rejected",
 };
 
 const PRIORITY_LABEL = { low: "Basse", normal: "Normale", high: "Haute", urgent: "Urgente" };
@@ -103,6 +104,7 @@ function normalizeTimeline(items = []) {
     actorRole: event.actor_role || "",
     isPublic: event.is_public !== false,
     eventType: event.event_type || "note",
+    attachments: normalizeAttachments(event.attachments || []),
     state: "done",
   }));
 }
@@ -176,6 +178,13 @@ function normalizeBase(item, labels) {
     reopenedCount: Number(item.reopened_count || 0),
     isClosed: item.is_closed !== undefined && item.is_closed !== null ? Boolean(item.is_closed) : ["completed","cancelled","rejected"].includes(item.status),
     availableActions: item.available_actions || [],
+    workflowState: item.workflow_state || "",
+    requiresAgentAction: Boolean(item.requires_agent_action),
+    requiresCitizenAction: Boolean(item.requires_citizen_action),
+    supportCount: Number(item.support_count ?? 0),
+    agentReplyCount: Number(item.agent_reply_count ?? 0),
+    hasAgentReply: item.has_agent_reply !== undefined ? Boolean(item.has_agent_reply) : Number(item.agent_reply_count ?? 0) > 0,
+    lastAgentReplyAt: item.last_agent_reply_at || null,
     confirmation: item.confirmation || null,
     createdAt: created,
     updatedAt: updated,
@@ -292,16 +301,34 @@ function filterCitizenRequestRows(rows, params = {}) {
 }
 
 function citizenListParams(params = {}) {
-  // Le backend documenté ne promet pas de filtres sur GET /citizen/requests/.
-  // On ne lui transmet donc que la pagination/tri éventuellement acceptés, puis on
-  // sépare procédures et signalements côté frontend avec request_type renvoyé.
-  const { type, request_type, requestType, ...rest } = params;
-  return cleanParams(rest);
+  const wantedType = params.type || params.request_type || params.requestType || "";
+  const normalizedType = ["report", "signalement"].includes(String(wantedType).toLowerCase())
+    ? "report"
+    : ["procedure", "demarche", "démarche"].includes(String(wantedType).toLowerCase())
+      ? "procedure"
+      : "";
+  const allowed = [
+    "status", "created_from", "created_to", "has_images", "priority", "handling_route",
+    "alert_status", "severity", "incident_category", "district", "search", "ordering", "page", "page_size",
+  ];
+  const result = Object.fromEntries(allowed.flatMap((key) => params[key] !== undefined ? [[key, params[key]]] : []));
+  if (normalizedType) result.type = normalizedType;
+  return cleanParams(result);
+}
+
+export async function getCitizenRequestsPage(params = {}) {
+  const { data } = await api.get("/citizen/requests/", { params: citizenListParams(params) });
+  const results = filterCitizenRequestRows(unwrapList(data).map(normalizeCitizen), params);
+  return {
+    count: Number(data?.count ?? results.length),
+    next: data?.next || null,
+    previous: data?.previous || null,
+    results,
+  };
 }
 
 export async function getCitizenRequests(params = {}) {
-  const { data } = await api.get("/citizen/requests/", { params: citizenListParams(params) });
-  return filterCitizenRequestRows(unwrapList(data).map(normalizeCitizen), params);
+  return (await getCitizenRequestsPage(params)).results;
 }
 
 export async function getAllCitizenRequests(params = {}) {
@@ -318,8 +345,9 @@ export async function getAllCitizenRequests(params = {}) {
   return filterCitizenRequestRows(rows, params);
 }
 
-export async function getAgentRequestsPage(params = {}) {
-  const { data } = await api.get("/agent/requests/", { params: cleanParams(params) });
+async function getStaffRequestsPage(scope, params = {}) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
+  const { data } = await api.get(`/${safeScope}/requests/`, { params: cleanParams(params) });
   return {
     count: Number(data?.count ?? unwrapList(data).length),
     next: data?.next || null,
@@ -328,24 +356,32 @@ export async function getAgentRequestsPage(params = {}) {
   };
 }
 
+export async function getAgentRequestsPage(params = {}) { return getStaffRequestsPage("agent", params); }
+export async function getAdminRequestsPage(params = {}) { return getStaffRequestsPage("admin", params); }
 export async function getAgentRequests(params = {}) { return (await getAgentRequestsPage(params)).results; }
-
+export async function getAdminRequests(params = {}) { return (await getAdminRequestsPage(params)).results; }
 export async function getAgentRequestCount(params = {}) { return (await getAgentRequestsPage({ ...params, page_size: 1 })).count; }
+export async function getAdminRequestCount(params = {}) { return (await getAdminRequestsPage({ ...params, page_size: 1 })).count; }
 
-export async function getAgentRequestSummary() {
+async function getStaffRequestSummary(scope) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
   try {
-    const { data } = await api.get("/agent/requests/summary/");
+    const { data } = await api.get(`/${safeScope}/requests/summary/`);
     return data || {};
   } catch {
+    const getCount = safeScope === "admin" ? getAdminRequestCount : getAgentRequestCount;
     const [awaiting, needsAction, active, closed] = await Promise.all([
-      getAgentRequestCount({ awaiting_handling: true }),
-      getAgentRequestCount({ needs_action: true }),
-      getAgentRequestCount({ workflow_state: "agent_processing" }),
-      getAgentRequestCount({ workflow_state: "closed" }),
+      getCount({ awaiting_handling: true }),
+      getCount({ needs_action: true }),
+      getCount({ workflow_state: "agent_processing" }),
+      getCount({ workflow_state: "closed" }),
     ]);
-    return { awaiting_handling: awaiting, needs_action: needsAction, agent_processing: active, closed };
+    return { awaiting_handling: awaiting, needs_agent_action: needsAction, agent_processing: active, closed };
   }
 }
+
+export async function getAgentRequestSummary() { return getStaffRequestSummary("agent"); }
+export async function getAdminRequestSummary() { return getStaffRequestSummary("admin"); }
 
 export async function getCitizenRequestById(reference) {
   const { data } = await api.get(`/citizen/requests/${encodeURIComponent(reference)}/`);
@@ -353,17 +389,21 @@ export async function getCitizenRequestById(reference) {
 }
 export async function getCitizenRequest(reference) { return getCitizenRequestById(reference); }
 
-export async function getAgentRequestById(reference) {
-  const { data } = await api.get(`/agent/requests/${encodeURIComponent(reference)}/`);
+async function getStaffRequestById(scope, reference) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
+  const { data } = await api.get(`/${safeScope}/requests/${encodeURIComponent(reference)}/`);
   return normalizeRequestForAgent(data);
 }
+export async function getAgentRequestById(reference) { return getStaffRequestById("agent", reference); }
+export async function getAdminRequestById(reference) { return getStaffRequestById("admin", reference); }
 export async function getAgentRequest(reference) { return getAgentRequestById(reference); }
+export async function getAdminRequest(reference) { return getAdminRequestById(reference); }
 
 function normalizeSimilarRequest(item = {}) {
   const source = item.request || item.similar_request || item.candidate || item.result || item;
   const request = normalizeRequestForAgent(source || {});
   const rawScore = Number(
-    item.similarity_score ?? item.score ?? item.similarity ?? item.match_score ?? item.relevance ??
+    item.similarity_percent ?? item.similarity_score ?? item.score ?? item.similarity ?? item.match_score ?? item.relevance ??
     source?.similarity_score ?? source?.score ?? 0
   );
   const score = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, rawScore <= 1 ? rawScore * 100 : rawScore)) : 0;
@@ -374,6 +414,7 @@ function normalizeSimilarRequest(item = {}) {
   const distance = item.distance_meters ?? item.distance ?? item.gps_distance_meters ?? item.gps_distance_km ?? null;
   return {
     ...request,
+    description: source?.description_excerpt || request.description,
     matchScore: score,
     matchScoreLabel: `${Math.round(score)} %`,
     matchReasons: reasonList,
@@ -381,8 +422,9 @@ function normalizeSimilarRequest(item = {}) {
   };
 }
 
-export async function getAgentSimilarRequests(reference) {
-  const { data } = await api.get(`/agent/requests/${encodeURIComponent(reference)}/similar/`);
+async function getStaffSimilarRequests(scope, reference) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
+  const { data } = await api.get(`/${safeScope}/requests/${encodeURIComponent(reference)}/similar/`);
   const rows = Array.isArray(data)
     ? data
     : Array.isArray(data?.results)
@@ -402,6 +444,9 @@ export async function getAgentSimilarRequests(reference) {
     .sort((a, b) => b.matchScore - a.matchScore);
 }
 
+export async function getAgentSimilarRequests(reference) { return getStaffSimilarRequests("agent", reference); }
+export async function getAdminSimilarRequests(reference) { return getStaffSimilarRequests("admin", reference); }
+
 export async function linkAgentRequestDuplicate(reference, duplicateId) {
   return updateAgentRequest(reference, { duplicate_of: duplicateId });
 }
@@ -409,32 +454,67 @@ export async function linkAgentRequestDuplicate(reference, duplicateId) {
 export async function unlinkAgentRequestDuplicate(reference) {
   return updateAgentRequest(reference, { duplicate_of: "" });
 }
+export async function linkAdminRequestDuplicate(reference, duplicateId) {
+  return updateAdminRequest(reference, { duplicate_of: duplicateId });
+}
+export async function unlinkAdminRequestDuplicate(reference) {
+  return updateAdminRequest(reference, { duplicate_of: "" });
+}
 
 export async function updateRequestStatus(reference, status, extra = {}) {
   return updateAgentRequest(reference, { ...extra, status });
 }
 
-export async function updateAgentRequest(reference, changes) {
+async function updateStaffRequest(scope, reference, changes) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
   const payload = { ...changes };
   if (payload.status) payload.status = STATUS_CODE[payload.status] || payload.status;
   if (payload.priority) payload.priority = PRIORITY_CODE[payload.priority] || payload.priority;
   delete payload.workflow_state;
   delete payload.requires_agent_action;
   delete payload.requires_citizen_action;
-  const { data } = await api.patch(`/agent/requests/${encodeURIComponent(reference)}/`, toFormData(payload));
+  const { data } = await api.patch(`/${safeScope}/requests/${encodeURIComponent(reference)}/`, toFormData(payload));
   return normalizeRequestForAgent(data);
 }
 
-export async function addAgentRequestTimeline(reference, payload = {}) {
+export async function updateAgentRequest(reference, changes) { return updateStaffRequest("agent", reference, changes); }
+export async function updateAdminRequest(reference, changes) { return updateStaffRequest("admin", reference, changes); }
+
+async function addStaffRequestTimeline(scope, reference, payload = {}) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
   const form = new FormData();
   form.append("title", payload.title || "Mise à jour du dossier");
   if (payload.message) form.append("message", payload.message);
   form.append("is_public", String(payload.is_public ?? payload.isPublic ?? true));
   (payload.images || []).forEach((file) => form.append("images", file));
   (payload.image_captions || payload.imageCaptions || []).forEach((caption) => form.append("image_captions", caption));
-  const { data } = await api.post(`/agent/requests/${encodeURIComponent(reference)}/timeline/`, form);
-  return data;
+  const { data } = await api.post(`/${safeScope}/requests/${encodeURIComponent(reference)}/timeline/`, form);
+  return normalizeTimeline([data])[0] || data;
 }
+export async function addAgentRequestTimeline(reference, payload = {}) { return addStaffRequestTimeline("agent", reference, payload); }
+export async function addAdminRequestTimeline(reference, payload = {}) { return addStaffRequestTimeline("admin", reference, payload); }
+
+async function getRequestReplies(scope, reference, params = {}) {
+  const safeScope = scope === "citizen" ? "citizen" : scope === "admin" ? "admin" : "agent";
+  const { data } = await api.get(`/${safeScope}/requests/${encodeURIComponent(reference)}/replies/`, { params: cleanParams(params) });
+  return unwrapList(data).map((event) => normalizeTimeline([event])[0]);
+}
+
+async function sendStaffRequestReply(scope, reference, payload = {}) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
+  const form = new FormData();
+  appendFormValue(form, "message", payload.message);
+  (payload.images || []).forEach((file) => { if (file instanceof Blob) form.append("images", file); });
+  (payload.image_captions || payload.imageCaptions || []).forEach((caption) => appendFormValue(form, "image_captions", caption));
+  const { data } = await api.post(`/${safeScope}/requests/${encodeURIComponent(reference)}/replies/`, form);
+  return normalizeTimeline([data])[0] || data;
+}
+
+export async function getCitizenRequestReplies(reference, params = {}) { return getRequestReplies("citizen", reference, params); }
+export async function getAgentRequestReplies(reference, params = {}) { return getRequestReplies("agent", reference, params); }
+export async function getAdminRequestReplies(reference, params = {}) { return getRequestReplies("admin", reference, params); }
+export async function sendAgentRequestReply(reference, payload = {}) { return sendStaffRequestReply("agent", reference, payload); }
+export async function sendAdminRequestReply(reference, payload = {}) { return sendStaffRequestReply("admin", reference, payload); }
 
 export async function getCitizenRequestTimeline(reference, params = {}) {
   const { data } = await api.get(`/citizen/requests/${encodeURIComponent(reference)}/timeline/`, { params: cleanParams(params) });

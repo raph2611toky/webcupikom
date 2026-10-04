@@ -3,6 +3,7 @@ import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getCitizenRequests } from "../../api/requests.js";
+import { getCitizenDashboard } from "../../api/dashboards.js";
 import { getServices } from "../../api/services.js";
 import { getNews, getAlerts } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
@@ -59,18 +60,21 @@ export default function CitizenDashboard(){
   const copy = DASH_COPY[locale] || DASH_COPY.fr;
   const dataProfile = useDataMode();
   const [citizenRequests,setCitizenRequests]=useState([]);
+  const [requestSummary,setRequestSummary]=useState(null);
   const [services,setServices]=useState([]);
   const [news,setNews]=useState([]);
   const [alerts,setAlerts]=useState([]);
   const [showStartGuide,setShowStartGuide]=useState(()=>localStorage.getItem("nova_terra_first_steps_done")!=="done");
 
   const load = async () => {
-    const [requestsData, servicesData] = await Promise.all([
-      getCitizenRequests(),
+    const [requestsData, servicesData, dashboardData] = await Promise.all([
+      getCitizenRequests({page_size:10,ordering:"-updated_at"}),
       getServices(),
+      getCitizenDashboard().catch(()=>null),
     ]);
     setCitizenRequests(requestsData);
     setServices(servicesData);
+    setRequestSummary(dashboardData?.requests||null);
 
     const loadSecondary = async () => {
       const [newsData, alertResult] = await Promise.all([
@@ -96,8 +100,11 @@ export default function CitizenDashboard(){
     };
   },[locale,dataProfile.reduced]);
 
-  const active=useMemo(()=>citizenRequests.filter(r=>r.status!=="Terminée" && r.status!=="completed"),[citizenRequests]);
-  const actions=useMemo(()=>citizenRequests.filter(r=>r.status==="Action requise" || r.status==="action_required").length,[citizenRequests]);
+  const active=useMemo(()=>citizenRequests.filter(r=>!r.isClosed),[citizenRequests]);
+  const openRequestCount=requestSummary
+    ? Number(requestSummary.pending||0)+Number(requestSummary.submitted||0)+Number(requestSummary.in_progress||0)+Number(requestSummary.action_required||0)
+    : active.length;
+  const actions=requestSummary?Number(requestSummary.action_required||0):citizenRequests.filter(r=>r.statusCode==="action_required").length;
   const availableServices=useMemo(()=>services.filter(service=>service.isAvailable!==false).length,[services]);
   const activeReports=useMemo(()=>citizenRequests.filter(r=>r.requestType==="signalement"&&!r.isClosed),[citizenRequests]);
   const profileCompletion=Math.round(([user?.first_name,user?.last_name,user?.email,user?.phone_number,user?.locale].filter(Boolean).length/5)*100);
@@ -149,7 +156,7 @@ export default function CitizenDashboard(){
         </section>:null}
 
         <section className="citizen-home-metrics" aria-label="Résumé">
-          <button type="button" onClick={()=>navigate('/citizen/requests')} className="is-purple"><i>□</i><div><span>{copy.open}</span><strong>{active.length}</strong><small>{copy.track}</small></div><em>›</em></button>
+          <button type="button" onClick={()=>navigate('/citizen/requests')} className="is-purple"><i>□</i><div><span>{copy.open}</span><strong>{openRequestCount}</strong><small>{copy.track}</small></div><em>›</em></button>
           <button type="button" onClick={()=>navigate('/citizen/requests')} className="is-orange"><i>◷</i><div><span>{copy.action}</span><strong>{actions}</strong><small>{copy.complete}</small></div><em>›</em></button>
           <button type="button" onClick={()=>navigate('/citizen/news')} className="is-blue"><i>▤</i><div><span>{copy.publications}</span><strong>{news.length}</strong><small>{copy.pubs}</small></div><em>›</em></button>
           <button type="button" onClick={()=>navigate('/citizen/services')} className="is-green"><i>▧</i><div><span>{copy.available}</span><strong>{availableServices}</strong><small>{copy.cityServices}</small></div><em>›</em></button>

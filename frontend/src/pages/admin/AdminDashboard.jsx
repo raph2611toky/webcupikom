@@ -33,7 +33,7 @@ export default function AdminDashboard(){
           <article><span>Utilisateurs</span><strong>{u.total||users.length}</strong><small>{u.agents||0} agents · {u.admins||0} admins</small></article>
           <article><span>Services</span><strong>{s.active||0}</strong><small>{s.total||0} au total</small></article>
           <article><span>Actualités</span><strong>{n.published||0}</strong><small>Publications actives</small></article>
-          <article><span>Démarches</span><strong>{r.total||0}</strong><small>{(r.pending||0)+(r.in_progress||0)} actives</small></article>
+          <article><span>Demandes</span><strong>{r.total||0}</strong><small>{r.needs_agent_action||0} requièrent une action</small></article>
         </section>
 
         <section className="portal-grid portal-grid--2">
@@ -49,6 +49,7 @@ export default function AdminDashboard(){
           <article className="portal-card">
             <span className="section-label">Contenu</span><h3>Gestion rapide</h3>
             <div className="admin-shortcuts">
+              <button onClick={()=>navigate("/admin/requests")}><i>▤</i><div><b>Demandes citoyennes</b><span>{r.total||0} dossiers · {r.needs_agent_action||0} à traiter</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/services")}><i>◇</i><div><b>Services municipaux</b><span>{s.active||0} actifs</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/appointments")}><i>◷</i><div><b>Rendez-vous</b><span>Agenda et créneaux municipaux</span></div><em>→</em></button>
               <button onClick={()=>navigate("/admin/news")}><i>▤</i><div><b>Actualités</b><span>{n.published||0} publications</span></div><em>→</em></button>
