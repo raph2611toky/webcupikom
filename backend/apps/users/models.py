@@ -125,6 +125,10 @@ class AccountSession(models.Model):
         ordering = ("-created_at",)
         indexes = [models.Index(fields=["user", "revoked_at"])]
 
+    def __str__(self):
+        state = "révoquée" if self.revoked_at else "active"
+        return f"{self.user.email} — session {str(self.id)[:8]} ({state})"
+
 
 class SecurityOTP(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -139,11 +143,17 @@ class SecurityOTP(models.Model):
     used_at = models.DateTimeField(null=True)
     attempts = models.PositiveSmallIntegerField(default=0)
 
+    def __str__(self):
+        return f"{self.user.email} — OTP {self.purpose}"
+
 
 class SecurityRateBucket(models.Model):
     key = models.CharField(max_length=64, primary_key=True)
     started_at = models.DateTimeField()
     count = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.key} — {self.count}"
 
 
 class SecurityEvent(models.Model):
@@ -156,3 +166,7 @@ class SecurityEvent(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+
+    def __str__(self):
+        target = self.subject or self.actor
+        return f"{self.kind} — {target or 'système'}"

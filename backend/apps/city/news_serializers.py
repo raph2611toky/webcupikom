@@ -10,7 +10,59 @@ from .models import NewsArticle, MunicipalService
 
 class AudienceGuidanceSerializer(serializers.Serializer):
     audience = serializers.CharField(max_length=120)
-    instructions = serializers.CharField(max_length=5000)
+    instructions = serializers.CharField(max_length=5000, required=False, allow_blank=True)
+
+
+class AudienceGuidanceListField(serializers.Field):
+    """Liste JSON rétrocompatible pour le guidage par public.
+
+    Les premières données de démonstration stockaient parfois simplement des
+    chaînes. On les normalise à la lecture et à l'écriture afin qu'une ancienne
+    ligne ne puisse plus faire tomber toute la sérialisation d'une publication.
+    """
+
+    def to_representation(self, value):
+        normalized = []
+        for item in value or []:
+            if isinstance(item, str):
+                audience = item.strip()
+                if audience:
+                    normalized.append({"audience": audience, "instructions": ""})
+                continue
+            if isinstance(item, dict):
+                audience = str(item.get("audience", "") or "").strip()[:120]
+                instructions = str(item.get("instructions", "") or "").strip()[:5000]
+                if audience:
+                    normalized.append({"audience": audience, "instructions": instructions})
+        return normalized
+
+    def to_internal_value(self, data):
+        if data in (None, ""):
+            return []
+        if not isinstance(data, list):
+            raise serializers.ValidationError("Une liste de publics est attendue.")
+        if len(data) > 20:
+            raise serializers.ValidationError("Maximum 20 publics.")
+
+        normalized = []
+        for index, item in enumerate(data):
+            if isinstance(item, str):
+                audience = item.strip()
+                instructions = ""
+            elif isinstance(item, dict):
+                audience = str(item.get("audience", "") or "").strip()
+                instructions = str(item.get("instructions", "") or "").strip()
+            else:
+                raise serializers.ValidationError(f"Élément {index + 1} invalide.")
+
+            if not audience:
+                raise serializers.ValidationError(f"Le public de l'élément {index + 1} est requis.")
+            if len(audience) > 120:
+                raise serializers.ValidationError(f"Le public de l'élément {index + 1} dépasse 120 caractères.")
+            if len(instructions) > 5000:
+                raise serializers.ValidationError(f"Les instructions de l'élément {index + 1} dépassent 5000 caractères.")
+            normalized.append({"audience": audience, "instructions": instructions})
+        return normalized
 
 
 PUBLIC_FIELDS = ('id', 'title', 'slug', 'category', 'excerpt', 'content', 'publication_type', 'severity',
@@ -22,7 +74,7 @@ PUBLIC_FIELDS = ('id', 'title', 'slug', 'category', 'excerpt', 'content', 'publi
 class PublicationSerializer(serializers.ModelSerializer):
     cover_url = serializers.SerializerMethodField()
     publication_state = serializers.SerializerMethodField()
-    audience_guidance = AudienceGuidanceSerializer(many=True, read_only=True)
+    audience_guidance = AudienceGuidanceListField(read_only=True)
 
     class Meta:
         model = NewsArticle
@@ -48,7 +100,7 @@ class PublicationAdminSerializer(PublicationSerializer):
     is_published = serializers.BooleanField(default=False)
     notify_residents = serializers.BooleanField(default=True)
     target_districts = serializers.ListField(child=serializers.CharField(max_length=120), max_length=50, required=False)
-    audience_guidance = AudienceGuidanceSerializer(many=True, required=False)
+    audience_guidance = AudienceGuidanceListField(required=False)
     service = serializers.PrimaryKeyRelatedField(queryset=MunicipalService.objects.filter(is_active=True), allow_null=True, required=False)
 
     class Meta:

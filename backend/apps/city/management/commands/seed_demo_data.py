@@ -596,7 +596,16 @@ class Command(BaseCommand):
                 "target_districts": ["Nova Sud"],
                 "affected_areas": "Nova Sud — Place du Sud et axes bas",
                 "instructions": "Évitez les zones inondées et suivez les consignes des services municipaux.",
-                "audience_guidance": ["Habitants de Nova Sud", "Usagers de la voirie"],
+                "audience_guidance": [
+                    {
+                        "audience": "Habitants de Nova Sud",
+                        "instructions": "Évitez les zones inondées et suivez les consignes municipales.",
+                    },
+                    {
+                        "audience": "Usagers de la voirie",
+                        "instructions": "Évitez les axes bas signalés temporairement comme inondables.",
+                    },
+                ],
                 "service": self.service(services, "securite"),
                 "author": users["nandrasana"],
                 "published_at": now - timedelta(minutes=35),

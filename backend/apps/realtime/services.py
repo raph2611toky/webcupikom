@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import threading
 import time
 import uuid
@@ -68,6 +69,8 @@ def _json_safe(value):
 
 
 def _send(groups, envelope):
+    if sys.is_finalizing():
+        return
     try:
         layer = get_channel_layer()
         if layer is None:
@@ -86,7 +89,7 @@ def _send(groups, envelope):
 
 
 def publish_event(*, groups, event: str, payload=None, event_id=None):
-    if not settings.REALTIME_ENABLED:
+    if not settings.REALTIME_ENABLED or sys.is_finalizing():
         return False
     normalized_groups = tuple(dict.fromkeys(g for g in groups if g))
     if not normalized_groups:
@@ -105,7 +108,13 @@ def publish_event(*, groups, event: str, payload=None, event_id=None):
         )
         return False
 
-    future = _executor.submit(_send, normalized_groups, envelope)
+    try:
+        future = _executor.submit(_send, normalized_groups, envelope)
+    except RuntimeError:
+        # Cas typique d'une commande manage.py qui termine : l'interpréteur
+        # ferme déjà ses pools de threads. Ce n'est pas une erreur métier.
+        _slots.release()
+        return False
     future.add_done_callback(lambda _future: _slots.release())
     return True
 
@@ -117,7 +126,7 @@ def publish_event_now(*, groups, event: str, payload=None, event_id=None):
     (notamment l'outbox des signalements urgents). Une panne Redis renvoie
     ``False`` au lieu de faire perdre silencieusement l'événement.
     """
-    if not settings.REALTIME_ENABLED:
+    if not settings.REALTIME_ENABLED or sys.is_finalizing():
         return False
     normalized_groups = tuple(dict.fromkeys(g for g in groups if g))
     if not normalized_groups:

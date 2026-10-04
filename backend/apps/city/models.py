@@ -748,6 +748,10 @@ class CitizenRequestAttachment(models.Model):
     class Meta:
         ordering = ('created_at', 'id')
 
+    def __str__(self):
+        label = self.caption.strip() or self.original_name or "Pièce jointe"
+        return f"{self.request.reference} — {label}"
+
 
 class NewsDistrict(models.Model):
     article = models.ForeignKey(NewsArticle, on_delete=models.CASCADE, related_name='district_targets')
@@ -755,6 +759,10 @@ class NewsDistrict(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['article', 'district'], name='unique_news_district')]
+
+    def __str__(self):
+        return f"{self.article.title} — {self.district}"
+
 
 class MunicipalProject(models.Model):
     """Projet municipal publié aux citoyens.
