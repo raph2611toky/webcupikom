@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Case, Count, F, IntegerField, Q, When
+from django.db.models import Case, Count, F, IntegerField, Max, Q, When
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
@@ -46,6 +46,7 @@ from .serializers import (
     AgentCitizenRequestSerializer,
     AgentAppointmentSerializer,
     AgentRequestEventCreateSerializer,
+    AgentCitizenReplyCreateSerializer,
     AppointmentAgentSerializer,
     CitizenAppointmentSerializer,
     CitizenAppointmentUpdateSerializer,
@@ -77,6 +78,8 @@ from .swagger import (
     admin_news_patch_schema,
     admin_news_post_schema,
     admin_request_event_post_schema,
+    admin_request_reply_list_schema,
+    admin_request_reply_post_schema,
     admin_request_list_schema,
     admin_request_patch_schema,
     admin_request_similar_schema,
@@ -95,6 +98,8 @@ from .swagger import (
     admin_audit_list_schema,
     agent_notification_post_schema,
     agent_request_event_post_schema,
+    agent_request_reply_list_schema,
+    agent_request_reply_post_schema,
     agent_request_list_schema,
     agent_request_patch_schema,
     agent_request_similar_schema,
@@ -108,6 +113,7 @@ from .swagger import (
     citizen_preferences_patch_schema,
     citizen_report_post_schema,
     citizen_request_post_schema,
+    citizen_request_reply_list_schema,
     contact_create_schema,
 )
 from .services.notifications import schedule_notification_batch, schedule_notification_email
@@ -649,7 +655,18 @@ class CitizenRequestListCreateView(ReportMutationMixin, generics.ListCreateAPIVi
             return CitizenRequest.objects.none()
         queryset = CitizenRequest.objects.filter(citizen=user).select_related(
             "service", "assigned_to"
-        ).annotate(support_count=Count("request_supports", distinct=True))
+        ).annotate(
+            support_count=Count("request_supports", distinct=True),
+            agent_reply_count=Count(
+                "timeline_events",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+                distinct=True,
+            ),
+            last_agent_reply_at=Max(
+                "timeline_events__created_at",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+            ),
+        )
         return filter_requests(queryset, self.request.query_params, citizen=True)
 
     def perform_create(self, serializer):
@@ -691,7 +708,20 @@ class CitizenIssueReportCreateView(ReportMutationMixin, generics.ListCreateAPIVi
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return CitizenRequest.objects.none()
-        queryset = CitizenRequest.objects.filter(citizen=self.request.user, request_type="report").select_related("citizen", "service", "assigned_to")
+        queryset = CitizenRequest.objects.filter(
+            citizen=self.request.user, request_type="report"
+        ).select_related("citizen", "service", "assigned_to").annotate(
+            support_count=Count("request_supports", distinct=True),
+            agent_reply_count=Count(
+                "timeline_events",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+                distinct=True,
+            ),
+            last_agent_reply_at=Max(
+                "timeline_events__created_at",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+            ),
+        )
         return filter_requests(queryset, self.request.query_params, citizen=True)
 
     permission_classes = [IsAuthenticatedCitizen]
@@ -753,6 +783,17 @@ class CitizenRequestDetailView(ReportMutationMixin, generics.RetrieveAPIView):
             return CitizenRequest.objects.none()
         return CitizenRequest.objects.filter(citizen=user).select_related(
             "service", "assigned_to"
+        ).annotate(
+            support_count=Count("request_supports", distinct=True),
+            agent_reply_count=Count(
+                "timeline_events",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+                distinct=True,
+            ),
+            last_agent_reply_at=Max(
+                "timeline_events__created_at",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+            ),
         )
 
 
@@ -769,6 +810,25 @@ class CitizenRequestTimelineView(ReportMutationMixin, generics.ListAPIView):
             request__citizen=self.request.user,
             is_public=True,
         ).select_related("actor", "request")
+
+
+@method_decorator(name="get", decorator=citizen_request_reply_list_schema)
+class CitizenRequestReplyListView(ReportMutationMixin, generics.ListAPIView):
+    """F84 — réponses municipales visibles uniquement par le citoyen propriétaire."""
+
+    pagination_class = ReportPagination
+    permission_classes = [IsAuthenticatedCitizen]
+    serializer_class = CitizenRequestEventSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenRequestEvent.objects.none()
+        return CitizenRequestEvent.objects.filter(
+            request__reference=self.kwargs["reference"],
+            request__citizen=self.request.user,
+            event_type=CitizenRequestEvent.EventType.REPLY,
+            is_public=True,
+        ).select_related("actor", "request").prefetch_related("attachments")
 
 
 class CitizenContactMessageListView(generics.ListAPIView):
@@ -1216,7 +1276,7 @@ class AgentDashboardView(APIView):
                     "role": request.user.role,
                     "display_name": request.user.get_full_name().strip() or request.user.email,
                     "capabilities": {
-                        "requests": ["read", "assign", "update", "timeline"],
+                        "requests": ["read", "assign", "update", "timeline", "reply"],
                         "report_alerts": ["read", "acknowledge"],
                         "citizens": ["read", "update_profile", "activate", "deactivate"],
                         "appointments": ["read", "confirm", "decline", "reschedule", "complete"],
@@ -1397,7 +1457,16 @@ class AgentRequestListView(generics.ListAPIView):
         if getattr(self, "swagger_fake_view", False):
             return CitizenRequest.objects.none()
         queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to", "alert_acknowledged_by").annotate(
-            support_count=Count("request_supports", distinct=True)
+            support_count=Count("request_supports", distinct=True),
+            agent_reply_count=Count(
+                "timeline_events",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+                distinct=True,
+            ),
+            last_agent_reply_at=Max(
+                "timeline_events__created_at",
+                filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+            ),
         )
         request_status = self.request.query_params.get("status")
         service = self.request.query_params.get("service")
@@ -1407,6 +1476,7 @@ class AgentRequestListView(generics.ListAPIView):
         incident_category = self.request.query_params.get("incident_category")
         search = self.request.query_params.get("search")
         duplicate = (self.request.query_params.get("duplicate") or "").strip().lower()
+        has_agent_reply = (self.request.query_params.get("has_agent_reply") or "").strip().lower()
         if request_status:
             queryset = queryset.filter(status=request_status)
         if service:
@@ -1439,6 +1509,12 @@ class AgentRequestListView(generics.ListAPIView):
             queryset = queryset.filter(duplicate_of__isnull=True)
         elif duplicate:
             raise ValidationError({"duplicate": "Utilisez true ou false."})
+        if has_agent_reply in {"1", "true", "yes"}:
+            queryset = queryset.filter(agent_reply_count__gt=0)
+        elif has_agent_reply in {"0", "false", "no"}:
+            queryset = queryset.filter(agent_reply_count=0)
+        elif has_agent_reply:
+            raise ValidationError({"has_agent_reply": "Utilisez true ou false."})
         queryset = _filter_agent_workflow(queryset, self.request.query_params)
         return filter_requests(queryset, self.request.query_params)
 
@@ -1468,6 +1544,16 @@ class AgentRequestSummaryView(APIView):
             "needs_triage": open_queryset.filter(request_type="report", service__isnull=True).count(),
             "reports": queryset.filter(request_type=CitizenRequest.RequestType.REPORT).count(),
             "duplicates": queryset.filter(duplicate_of__isnull=False).count(),
+            "answered": queryset.filter(
+                timeline_events__event_type=CitizenRequestEvent.EventType.REPLY,
+                timeline_events__is_public=True,
+            ).distinct().count(),
+            "awaiting_first_reply": open_queryset.exclude(
+                pk__in=queryset.filter(
+                    timeline_events__event_type=CitizenRequestEvent.EventType.REPLY,
+                    timeline_events__is_public=True,
+                ).values("pk")
+            ).count(),
             "emergency_open": open_queryset.filter(
                 request_type=CitizenRequest.RequestType.REPORT,
                 handling_route=CitizenRequest.HandlingRoute.EMERGENCY,
@@ -1629,7 +1715,20 @@ class AgentRequestDetailView(ReportMutationMixin, generics.RetrieveUpdateAPIView
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = AgentCitizenRequestDetailSerializer
     lookup_field = "reference"
-    queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to", "alert_acknowledged_by")
+    queryset = CitizenRequest.objects.select_related(
+        "citizen", "service", "assigned_to", "alert_acknowledged_by"
+    ).annotate(
+        support_count=Count("request_supports", distinct=True),
+        agent_reply_count=Count(
+            "timeline_events",
+            filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+            distinct=True,
+        ),
+        last_agent_reply_at=Max(
+            "timeline_events__created_at",
+            filter=Q(timeline_events__event_type=CitizenRequestEvent.EventType.REPLY, timeline_events__is_public=True),
+        ),
+    )
 
     def put(self, request, *args, **kwargs):
         return Response(
@@ -1765,6 +1864,86 @@ class AgentRequestTimelineView(ReportMutationMixin, generics.ListCreateAPIView):
             context["citizen_request"] = self.get_citizen_request()
         return context
 
+
+
+@method_decorator(name="get", decorator=agent_request_reply_list_schema)
+@method_decorator(name="post", decorator=agent_request_reply_post_schema)
+class AgentRequestReplyListCreateView(ReportMutationMixin, generics.ListCreateAPIView):
+    """F84 — canal explicite Agent → Citoyen, basé sur la chronologie existante."""
+
+    pagination_class = ReportPagination
+    permission_classes = [AGENT_OR_ADMIN]
+
+    def get_serializer_class(self):
+        return AgentCitizenReplyCreateSerializer if self.request.method == "POST" else CitizenRequestEventSerializer
+
+    def get_citizen_request(self, *, lock=False):
+        queryset = CitizenRequest.objects.select_related("citizen", "assigned_to")
+        if lock:
+            queryset = queryset.select_for_update()
+        return generics.get_object_or_404(queryset, reference=self.kwargs["reference"])
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CitizenRequestEvent.objects.none()
+        return CitizenRequestEvent.objects.filter(
+            request__reference=self.kwargs["reference"],
+            event_type=CitizenRequestEvent.EventType.REPLY,
+            is_public=True,
+        ).select_related("actor", "request").prefetch_related("attachments")
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if not getattr(self, "swagger_fake_view", False):
+            context["citizen_request"] = self.get_citizen_request()
+        return context
+
+    def create(self, request, *args, **kwargs):
+        with attachment_transaction():
+            with transaction.atomic():
+                item = self.get_citizen_request(lock=True)
+                serializer = self.get_serializer(
+                    data=request.data,
+                    context={"request": request, "citizen_request": item},
+                )
+                serializer.is_valid(raise_exception=True)
+                reply = serializer.save()
+
+                update_fields = ["updated_at"]
+                if item.acknowledged_at is None:
+                    item.acknowledged_at = timezone.now()
+                    update_fields.append("acknowledged_at")
+                item.save(update_fields=update_fields)
+
+                important = item.priority == CitizenRequest.Priority.URGENT
+                notice = CitizenNotification.objects.create(
+                    user=item.citizen,
+                    sender=request.user,
+                    kind=CitizenNotification.Kind.REQUEST,
+                    scope=CitizenNotification.Scope.TARGETED,
+                    title=f"Réponse à votre demande {item.reference}"[:220],
+                    message=reply.message,
+                    related_request=item,
+                    action_label="Voir la réponse",
+                    action_url=f"/requests/{item.reference}",
+                    is_important=important,
+                )
+                if important:
+                    schedule_notification_email(notice)
+
+                record_staff_audit(
+                    actor=request.user,
+                    action="request.reply",
+                    resource_type="request",
+                    resource_id=item.pk,
+                    resource_reference=item.reference,
+                    subject_user=item.citizen,
+                    summary="Réponse envoyée au citoyen",
+                    changes={"reply_event_id": reply.pk, "public": True},
+                    request=request,
+                )
+                data = CitizenRequestEventSerializer(reply, context={"request": request}).data
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class AgentAssigneeListView(generics.ListAPIView):
@@ -2305,6 +2484,18 @@ class AdminRequestTimelineView(AgentRequestTimelineView):
     permission_classes = [IsAuthenticatedAdmin]
 
     @admin_request_event_post_schema
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class AdminRequestReplyListCreateView(AgentRequestReplyListCreateView):
+    permission_classes = [IsAuthenticatedAdmin]
+
+    @admin_request_reply_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @admin_request_reply_post_schema
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 

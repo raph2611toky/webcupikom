@@ -463,6 +463,7 @@ class CitizenRequestEvent(models.Model):
         CREATED = "created", "Création"
         STATUS = "status", "Changement de statut"
         NOTE = "note", "Étape / note"
+        REPLY = "reply", "Réponse agent → citoyen"
 
     request = models.ForeignKey(
         CitizenRequest,
@@ -485,6 +486,9 @@ class CitizenRequestEvent(models.Model):
 
     class Meta:
         ordering = ("created_at", "id")
+        indexes = [
+            models.Index(fields=("request", "event_type", "created_at"), name="city_req_event_reply_idx"),
+        ]
         verbose_name = "étape de demande citoyenne"
         verbose_name_plural = "étapes de demandes citoyennes"
 

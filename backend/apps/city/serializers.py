@@ -510,6 +510,50 @@ class AgentRequestEventCreateSerializer(ImageUploadMixin, serializers.ModelSeria
         return instance
 
 
+class AgentCitizenReplyCreateSerializer(ImageUploadMixin, serializers.ModelSerializer):
+    """F84 — réponse publique et explicite d'un agent à un citoyen.
+
+    On réutilise la chronologie existante comme source de vérité afin d'éviter
+    un second système de messagerie parallèle pour les demandes.
+    """
+
+    message = serializers.CharField(max_length=10000, allow_blank=False, trim_whitespace=True)
+
+    class Meta:
+        model = CitizenRequestEvent
+        fields = ("message", "images", "image", "image_captions")
+
+    def validate(self, attrs):
+        attrs = self.validate_images_payload(attrs)
+        if not str(attrs.get("message", "")).strip():
+            raise serializers.ValidationError({"message": "La réponse ne peut pas être vide."})
+        item = self.context.get("citizen_request")
+        if item and item.status == CitizenRequest.Status.CANCELLED:
+            raise serializers.ValidationError(
+                "Cette demande a été annulée par le citoyen et ne peut plus recevoir de réponse publique."
+            )
+        return attrs
+
+    def create(self, validated_data):
+        images = validated_data.pop("images", [])
+        captions = validated_data.pop("image_captions", [])
+        item = self.context["citizen_request"]
+        actor = self.context["request"].user
+        instance = CitizenRequestEvent.objects.create(
+            request=item,
+            actor=actor,
+            event_type=CitizenRequestEvent.EventType.REPLY,
+            status=item.status,
+            title="Réponse de l’équipe municipale",
+            message=validated_data["message"].strip(),
+            is_public=True,
+        )
+        save_images(
+            item, images, uploader=actor, event=instance, is_public=True, captions=captions
+        )
+        return instance
+
+
 class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     status_label = serializers.CharField(source='get_status_display', read_only=True)
     priority_label = serializers.CharField(source='get_priority_display', read_only=True)
@@ -521,10 +565,37 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     requires_citizen_action = serializers.SerializerMethodField()
     available_actions = serializers.SerializerMethodField()
     support_count = serializers.SerializerMethodField()
+    agent_reply_count = serializers.SerializerMethodField()
+    has_agent_reply = serializers.SerializerMethodField()
+    last_agent_reply_at = serializers.SerializerMethodField()
 
     def get_support_count(self, obj) -> int:
         value = getattr(obj, "support_count", None)
         return int(value if value is not None else obj.request_supports.count())
+
+    def get_agent_reply_count(self, obj) -> int:
+        value = getattr(obj, "agent_reply_count", None)
+        if value is not None:
+            return int(value)
+        return obj.timeline_events.filter(
+            event_type=CitizenRequestEvent.EventType.REPLY, is_public=True
+        ).count()
+
+    def get_has_agent_reply(self, obj) -> bool:
+        return self.get_agent_reply_count(obj) > 0
+
+    def get_last_agent_reply_at(self, obj):
+        value = getattr(obj, "last_agent_reply_at", None)
+        if value is not None:
+            return value
+        return (
+            obj.timeline_events.filter(
+                event_type=CitizenRequestEvent.EventType.REPLY, is_public=True
+            )
+            .order_by("-created_at")
+            .values_list("created_at", flat=True)
+            .first()
+        )
 
     def get_category_label(self, obj) -> str:
         return next((row['label'] for row in CATEGORIES if row['code'] == obj.incident_category), obj.incident_category)
@@ -554,21 +625,32 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.CharField()))
     def get_available_actions(self, obj):
         request = self.context.get('request')
-        if not request or obj.request_type != 'report':
+        if not request:
             return []
+
         if request.user.role in ('agent', 'admin'):
+            # F84 s'applique aux démarches comme aux signalements : la réponse
+            # Agent → Citoyen ne dépend pas du sous-module de signalement.
+            if obj.request_type != CitizenRequest.RequestType.REPORT:
+                if obj.status == CitizenRequest.Status.CANCELLED:
+                    return []
+                return ['reply_to_citizen', 'update_processing']
+
             if obj.status in ('completed', 'rejected'):
-                return ['reopen', 'add_private_note', 'find_similar']
+                return ['reply_to_citizen', 'reopen', 'add_private_note', 'find_similar']
             if obj.status == 'cancelled':
                 return ['add_private_note', 'find_similar']
             duplicate_action = 'unlink_duplicate' if obj.duplicate_of_id else 'mark_duplicate'
-            actions = ['update_processing', 'add_note', 'upload_photos', 'find_similar', duplicate_action]
+            actions = ['update_processing', 'reply_to_citizen', 'add_note', 'upload_photos', 'find_similar', duplicate_action]
             if (
                 obj.handling_route == CitizenRequest.HandlingRoute.EMERGENCY
                 and obj.alert_status != CitizenRequest.AlertStatus.ACKNOWLEDGED
             ):
                 actions.insert(0, 'acknowledge_alert')
             return actions
+
+        if obj.request_type != CitizenRequest.RequestType.REPORT:
+            return []
         if request.user.pk != obj.citizen_id:
             return []
         if obj.status in ('completed','rejected'):
@@ -610,7 +692,7 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     class Meta:
         model = CitizenRequest
         fields = (
-            "id", "reference", "status_label", "priority_label", "severity_label", "category_label", "is_closed", "workflow_state", "requires_agent_action", "requires_citizen_action", "available_actions", "support_count", "citizen", "citizen_name", "citizen_email",
+            "id", "reference", "status_label", "priority_label", "severity_label", "category_label", "is_closed", "workflow_state", "requires_agent_action", "requires_citizen_action", "available_actions", "support_count", "agent_reply_count", "has_agent_reply", "last_agent_reply_at", "citizen", "citizen_name", "citizen_email",
             "service", "service_name", "request_type", "incident_category", "title",
             "description", "location_text", "latitude", "longitude", "status", "priority",
             "handling_route", "alert_status", "alert_triggered_at", "alert_acknowledged_at",
@@ -623,7 +705,7 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
             'alert_acknowledged_at', 'assigned_to', 'assigned_to_name',
             'created_at', 'updated_at', 'routing_source', 'needs_triage', 'resolution_summary', 'acknowledged_at',
             'resolved_at', 'closed_at', 'cancellation_reason', 'reopened_count',
-            'attachments', 'attachment_count',
+            'attachments', 'attachment_count', 'agent_reply_count', 'has_agent_reply', 'last_agent_reply_at',
         )
 
     def get_citizen_name(self, obj):

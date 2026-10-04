@@ -19,10 +19,12 @@ from .serializers import (
     AgentCitizenRequestDetailSerializer,
     AgentCitizenRequestSerializer,
     AgentRequestEventCreateSerializer,
+    AgentCitizenReplyCreateSerializer,
     CitizenAppointmentSerializer,
     CitizenNotificationSerializer,
     CitizenPreferenceSerializer,
     CitizenRequestSerializer,
+    CitizenRequestEventSerializer,
     SimilarCitizenRequestResponseSerializer,
     ContactMessageSerializer,
     StaffAuditEventSerializer,
@@ -163,6 +165,10 @@ REQUEST_AGENT_LIST_PARAMETERS = [
         "workflow_state",
         "awaiting_handling, agent_processing, citizen_action_required ou closed",
     ),
+    openapi.Parameter(
+        "has_agent_reply", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, required=False,
+        description="F84 — true : demandes ayant déjà reçu une réponse publique d'un agent ; false : sans réponse agent.",
+    ),
     query_string("page", "Numéro de page"),
     query_string("page_size", "Taille de page, 100 maximum"),
 ]
@@ -173,6 +179,13 @@ class AgentRequestPageSerializer(serializers.Serializer):
     next = serializers.CharField(allow_null=True)
     previous = serializers.CharField(allow_null=True)
     results = AgentCitizenRequestSerializer(many=True)
+
+
+class RequestEventPageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    results = CitizenRequestEventSerializer(many=True)
 
 
 REPORT_ALERT_LIST_PARAMETERS = [
@@ -268,6 +281,11 @@ REQUEST_EVENT_PARAMETERS = [
     form_string("title", "Titre de l'étape", required=True),
     form_string("message", "Message"),
     form_bool("is_public", "Visible par le citoyen"),
+]
+
+REQUEST_REPLY_PARAMETERS = [
+    *IMAGE_PARAMETERS,
+    form_string("message", "Réponse adressée au citoyen (10 000 caractères maximum)", required=True),
 ]
 
 CONTACT_UPDATE_PARAMETERS = [
@@ -578,6 +596,36 @@ agent_request_event_post_schema = swagger_auto_schema(
     responses={201: AgentRequestEventCreateSerializer()},
 )
 
+agent_request_reply_list_schema = swagger_auto_schema(
+    tags=["Agent - Demandes"],
+    operation_id="agent_request_reply_list",
+    operation_summary="Lister les réponses Agent → Citoyen (F84)",
+    security=JWT_SECURITY,
+    responses={200: RequestEventPageSerializer()},
+)
+
+agent_request_reply_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Agent - Demandes"],
+    operation_id="agent_request_reply_create",
+    operation_summary="Répondre directement au citoyen sur une demande (F84)",
+    operation_description=(
+        "Crée une réponse publique dans la chronologie, notifie le citoyen et laisse une trace d'audit. "
+        "Les notes internes restent séparées de ce canal."
+    ),
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_REPLY_PARAMETERS,
+    responses={201: CitizenRequestEventSerializer()},
+)
+
+citizen_request_reply_list_schema = swagger_auto_schema(
+    tags=["Citoyen - Demandes"],
+    operation_id="citizen_request_reply_list",
+    operation_summary="Consulter les réponses municipales reçues (F84)",
+    security=JWT_SECURITY,
+    responses={200: RequestEventPageSerializer()},
+)
+
 agent_contact_patch_schema = swagger_auto_schema(
     auto_schema=ManualFormAutoSchema,
     tags=["Agent - Contact"],
@@ -739,4 +787,22 @@ admin_request_event_post_schema = swagger_auto_schema(
     security=JWT_SECURITY,
     manual_parameters=REQUEST_EVENT_PARAMETERS,
     responses={201: AgentRequestEventCreateSerializer()},
+)
+
+admin_request_reply_list_schema = swagger_auto_schema(
+    tags=["Administration - Demandes"],
+    operation_id="admin_request_reply_list",
+    operation_summary="Lister les réponses Agent → Citoyen (F84)",
+    security=JWT_SECURITY,
+    responses={200: RequestEventPageSerializer()},
+)
+
+admin_request_reply_post_schema = swagger_auto_schema(
+    auto_schema=ManualFormAutoSchema,
+    tags=["Administration - Demandes"],
+    operation_id="admin_request_reply_create",
+    operation_summary="Répondre directement au citoyen sur une demande (F84)",
+    security=JWT_SECURITY,
+    manual_parameters=REQUEST_REPLY_PARAMETERS,
+    responses={201: CitizenRequestEventSerializer()},
 )
