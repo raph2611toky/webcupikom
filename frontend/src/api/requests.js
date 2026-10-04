@@ -186,6 +186,12 @@ function normalizeBase(item, labels) {
     hasAgentReply: item.has_agent_reply !== undefined ? Boolean(item.has_agent_reply) : Number(item.agent_reply_count ?? 0) > 0,
     lastAgentReplyAt: item.last_agent_reply_at || null,
     confirmation: item.confirmation || null,
+    handlingRoute: item.handling_route || "standard",
+    alertStatus: item.alert_status || "none",
+    alertTriggeredAt: item.alert_triggered_at || null,
+    alertAcknowledgedAt: item.alert_acknowledged_at || null,
+    alertAcknowledgedBy: item.alert_acknowledged_by ?? null,
+    alertAcknowledgedByName: item.alert_acknowledged_by_name || "",
     createdAt: created,
     updatedAt: updated,
     created: formatDateTime(created),
@@ -414,6 +420,44 @@ export async function getAgentRequests(params = {}) { return (await getAgentRequ
 export async function getAdminRequests(params = {}) { return (await getAdminRequestsPage(params)).results; }
 export async function getAgentRequestCount(params = {}) { return (await getAgentRequestsPage({ ...params, page_size: 1 })).count; }
 export async function getAdminRequestCount(params = {}) { return (await getAdminRequestsPage({ ...params, page_size: 1 })).count; }
+
+async function getStaffReportAlertsPage(scope, params = {}) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
+  const { data } = await api.get(`/${safeScope}/report-alerts/`, { params: cleanParams(params) });
+  return {
+    count: Number(data?.count ?? unwrapList(data).length),
+    next: data?.next || null,
+    previous: data?.previous || null,
+    results: unwrapList(data).map(normalizeRequestForAgent),
+  };
+}
+
+export async function getAgentReportAlertsPage(params = {}) { return getStaffReportAlertsPage("agent", params); }
+export async function getAdminReportAlertsPage(params = {}) { return getStaffReportAlertsPage("admin", params); }
+
+async function getStaffUnacknowledgedReportAlerts(scope, { page_size = 20, ...params } = {}) {
+  const limit = Math.max(1, Math.min(Number(page_size) || 20, 100));
+  const [pending, dispatched] = await Promise.all([
+    getStaffReportAlertsPage(scope, { ...params, alert_status: "pending", page_size: limit }),
+    getStaffReportAlertsPage(scope, { ...params, alert_status: "dispatched", page_size: limit }),
+  ]);
+  const results = [...pending.results, ...dispatched.results]
+    .sort((a, b) => new Date(b.alertTriggeredAt || b.createdAt || 0) - new Date(a.alertTriggeredAt || a.createdAt || 0))
+    .slice(0, limit);
+  return { count: pending.count + dispatched.count, results };
+}
+
+export async function getAgentUnacknowledgedReportAlerts(params = {}) { return getStaffUnacknowledgedReportAlerts("agent", params); }
+export async function getAdminUnacknowledgedReportAlerts(params = {}) { return getStaffUnacknowledgedReportAlerts("admin", params); }
+
+async function acknowledgeStaffReportAlert(scope, reference) {
+  const safeScope = scope === "admin" ? "admin" : "agent";
+  const { data } = await api.post(`/${safeScope}/report-alerts/${encodeURIComponent(reference)}/acknowledge/`, {});
+  return normalizeRequestForAgent(data);
+}
+
+export async function acknowledgeAgentReportAlert(reference) { return acknowledgeStaffReportAlert("agent", reference); }
+export async function acknowledgeAdminReportAlert(reference) { return acknowledgeStaffReportAlert("admin", reference); }
 
 async function getStaffRequestSummary(scope) {
   const safeScope = scope === "admin" ? "admin" : "agent";

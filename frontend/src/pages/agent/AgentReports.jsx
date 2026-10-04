@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { getAgentRequestCount, getAgentRequests } from "../../api/requests.js";
+import { acknowledgeAgentReportAlert, getAgentRequestCount, getAgentRequests, getAgentUnacknowledgedReportAlerts } from "../../api/requests.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
 
@@ -50,6 +50,17 @@ function markerFor(row) {
     y: zone.y + margin + ((h >>> 8) % Math.max(1, zone.h - margin * 2)),
     urgent: ["urgent", "high"].includes(String(row.priorityCode || "").toLowerCase()),
   };
+}
+
+function relativeAge(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "à l’instant";
+  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+  if (minutes < 1) return "à l’instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  return `il y a ${Math.floor(hours / 24)} j`;
 }
 
 function formatDateParts(value) {
@@ -131,6 +142,10 @@ function ReportPlan({ rows }) {
 export default function AgentReports() {
   const [requests, setRequests] = useState([]);
   const [metrics, setMetrics] = useState({ pending: 0, processing: 0, action: 0, completed: 0 });
+  const [emergencyAlerts, setEmergencyAlerts] = useState([]);
+  const [emergencyCount, setEmergencyCount] = useState(0);
+  const [acknowledging, setAcknowledging] = useState("");
+  const [emergencyOnly, setEmergencyOnly] = useState(() => new URLSearchParams(window.location.search).get("emergency") === "true");
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -143,11 +158,42 @@ export default function AgentReports() {
   useEffect(() => {
     Promise.all([
       getAgentRequestCount({ type: "report", awaiting_handling: true }),
+      getAgentRequestCount({ type: "report", awaiting_handling: true, handling_route: "emergency" }),
       getAgentRequestCount({ type: "report", status: "in_progress" }),
+      getAgentRequestCount({ type: "report", status: "in_progress", handling_route: "emergency" }),
       getAgentRequestCount({ type: "report", status: "action_required" }),
+      getAgentRequestCount({ type: "report", status: "action_required", handling_route: "emergency" }),
       getAgentRequestCount({ type: "report", status: "completed" }),
-    ]).then(([pending, processing, action, completed]) => setMetrics({ pending, processing, action, completed })).catch(() => {});
+      getAgentRequestCount({ type: "report", status: "completed", handling_route: "emergency" }),
+    ]).then(([pending, pendingEmergency, processing, processingEmergency, action, actionEmergency, completed, completedEmergency]) => setMetrics({
+      pending: Math.max(0, pending - pendingEmergency),
+      processing: Math.max(0, processing - processingEmergency),
+      action: Math.max(0, action - actionEmergency),
+      completed: Math.max(0, completed - completedEmergency),
+    })).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    getAgentUnacknowledgedReportAlerts({ page_size: 8 })
+      .then((page) => { if (active) { setEmergencyAlerts(page.results || []); setEmergencyCount(page.count || 0); } })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  async function acknowledgeEmergency(reference) {
+    if (!reference || acknowledging) return;
+    setAcknowledging(reference); setError("");
+    try {
+      await acknowledgeAgentReportAlert(reference);
+      setEmergencyAlerts((rows) => rows.filter((row) => row.ref !== reference));
+      setEmergencyCount((value) => Math.max(0, value - 1));
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Impossible de confirmer la prise en charge de l’urgence."));
+    } finally {
+      setAcknowledging("");
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -157,6 +203,7 @@ export default function AgentReports() {
       getAgentRequests({
         type: "report",
         ...(status === "awaiting" ? { awaiting_handling: true } : status ? { status } : {}),
+        ...(emergencyOnly ? { handling_route: "emergency" } : {}),
         search: query || undefined,
         page_size: 100,
       })
@@ -165,22 +212,24 @@ export default function AgentReports() {
         .finally(() => active && setLoading(false));
     }, 180);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [status, query]);
+  }, [status, query, emergencyOnly]);
 
   const filteredRows = useMemo(() => {
     return requests.filter((row) => {
+      if (!emergencyOnly && row.handlingRoute === "emergency") return false;
+      if (emergencyOnly && row.handlingRoute !== "emergency") return false;
       const created = row.createdAt ? new Date(row.createdAt) : null;
       if (dateFrom && created && created < new Date(`${dateFrom}T00:00:00`)) return false;
       if (dateTo && created && created > new Date(`${dateTo}T23:59:59`)) return false;
       return true;
     });
-  }, [requests, dateFrom, dateTo]);
+  }, [requests, dateFrom, dateTo, emergencyOnly]);
 
   const perPage = 5;
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
   const pageRows = filteredRows.slice((page - 1) * perPage, page * perPage);
 
-  useEffect(() => { setPage(1); }, [status, query, dateFrom, dateTo]);
+  useEffect(() => { setPage(1); }, [status, query, dateFrom, dateTo, emergencyOnly]);
 
   return (
     <div className="portal-layout">
@@ -190,24 +239,32 @@ export default function AgentReports() {
         <main className="portal-content arp85-page">
           {error ? <div className="error-card" role="alert">{error}</div> : null}
 
-          <section className="arp85-metrics" aria-label="Résumé des signalements">
-            <button type="button" onClick={() => setStatus("awaiting")} className={status === "awaiting" ? "is-active" : ""}>
+          {emergencyCount > 0 || emergencyAlerts.length ? <section className="f86-alert-queue" aria-label="Urgences non prises en charge">
+            <header><div><span className="f86-siren" aria-hidden="true">!</span><div><strong>URGENCES NON PRISES EN CHARGE — {emergencyCount}</strong><small>Circuit F86 · ces dossiers restent séparés des signalements ordinaires</small></div></div><button type="button" onClick={() => setEmergencyOnly(true)}>Afficher la file urgence</button></header>
+            <div className="f86-alert-grid">{emergencyAlerts.slice(0,4).map((row) => <article key={row.ref}><div><span className="mono">{row.ref}</span><strong>{row.category || row.reportType || row.title || "Urgence"}</strong><small>{row.district || row.location?.label || "Localisation à vérifier"} · {relativeAge(row.alertTriggeredAt || row.createdAt)}</small></div><div><button type="button" onClick={() => navigate(`/agent/requests/${encodeURIComponent(row.ref)}`)}>Ouvrir</button><button type="button" className="is-primary" disabled={acknowledging === row.ref} onClick={() => acknowledgeEmergency(row.ref)}>{acknowledging === row.ref ? "Prise en charge…" : "Prendre en charge"}</button></div></article>)}</div>
+          </section> : null}
+
+          <section className="arp85-metrics arp85-metrics--f86" aria-label="Résumé des signalements">
+            <button type="button" onClick={() => setEmergencyOnly((value) => !value)} className={emergencyOnly ? "is-active is-emergency" : "is-emergency"}>
+              <i className="arp85-metric-icon icon-emergency">!</i><span><b>Urgences</b><strong>{emergencyCount}</strong><small>{emergencyOnly ? "File urgence affichée" : "Non acquittées · F86"}</small></span>
+            </button>
+            <button type="button" onClick={() => { setEmergencyOnly(false); setStatus("awaiting"); }} className={status === "awaiting" ? "is-active" : ""}>
               <i className="arp85-metric-icon icon-pending">▤</i><span><b>À prendre en charge</b><strong>{metrics.pending}</strong><small>Nouveaux signalements</small></span>
             </button>
-            <button type="button" onClick={() => setStatus("in_progress")} className={status === "in_progress" ? "is-active" : ""}>
+            <button type="button" onClick={() => { setEmergencyOnly(false); setStatus("in_progress"); }} className={status === "in_progress" ? "is-active" : ""}>
               <i className="arp85-metric-icon">◷</i><span><b>En traitement</b><strong>{metrics.processing}</strong><small>Dossiers en cours</small></span>
             </button>
-            <button type="button" onClick={() => setStatus("action_required")} className={status === "action_required" ? "is-active" : ""}>
+            <button type="button" onClick={() => { setEmergencyOnly(false); setStatus("action_required"); }} className={status === "action_required" ? "is-active" : ""}>
               <i className="arp85-metric-icon icon-action">!</i><span><b>Action requise</b><strong>{metrics.action}</strong><small>En attente</small></span>
             </button>
-            <button type="button" onClick={() => setStatus("completed")} className={status === "completed" ? "is-active" : ""}>
+            <button type="button" onClick={() => { setEmergencyOnly(false); setStatus("completed"); }} className={status === "completed" ? "is-active" : ""}>
               <i className="arp85-metric-icon">✓</i><span><b>Terminés</b><strong>{metrics.completed}</strong><small>Résolus</small></span>
             </button>
           </section>
 
           <section className="arp85-toolbar">
             <label className="arp85-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Référence, citoyen, lieu, service..." /></label>
-            <label className="arp85-status-select"><select value={status} onChange={(event) => setStatus(event.target.value)}>{STATUS_OPTIONS.map(([value, label]) => <option value={value} key={value || "all"}>{label}</option>)}</select></label>
+            <label className="arp85-status-select"><select value={status} onChange={(event) => { setEmergencyOnly(false); setStatus(event.target.value); }}>{STATUS_OPTIONS.map(([value, label]) => <option value={value} key={value || "all"}>{label}</option>)}</select></label>
             <div className="arp85-date-range">
               <span aria-hidden="true">▣</span>
               <label><small>Du</small><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
@@ -251,7 +308,7 @@ export default function AgentReports() {
                     </table>
                   </div>
                   <footer className="arp85-table-footer">
-                    <span>{filteredRows.length} signalement{filteredRows.length > 1 ? "s" : ""} au total</span>
+                    <span>{filteredRows.length} {emergencyOnly ? "urgence" : "signalement"}{filteredRows.length > 1 ? "s" : ""} affiché{filteredRows.length > 1 ? "s" : ""}</span>
                     <div><button type="button" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>‹</button><b>{page}</b><button type="button" disabled={page >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>›</button></div>
                   </footer>
                 </>

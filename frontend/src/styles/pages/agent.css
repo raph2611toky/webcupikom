@@ -383,3 +383,20 @@ html[data-contrast="high"] :where(body[data-route-group="portal"]) .agent-flow-f
   :where(body[data-route-group="portal"]) .agent-request-item__ref>small{display:none}
   :where(body[data-route-group="portal"]) .agent-worklist__head>span{display:none}
 }
+
+/* V95 — F86 dans le détail d'un dossier urgent */
+:where(body[data-route-group="portal"]) .request-emergency-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 13px;border:1px solid #df7f88;border-radius:14px;background:#fff8f8;color:#3c2024}
+:where(body[data-route-group="portal"]) .request-emergency-banner>div{display:flex;align-items:center;gap:10px;min-width:0}
+:where(body[data-route-group="portal"]) .request-emergency-banner>div>span{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#b92f3a;color:#fff;font-weight:900;flex:0 0 auto}
+:where(body[data-route-group="portal"]) .request-emergency-banner>div>div{display:grid;gap:2px;min-width:0}
+:where(body[data-route-group="portal"]) .request-emergency-banner strong{font-size:.8rem;color:#9f2732;letter-spacing:.035em}
+:where(body[data-route-group="portal"]) .request-emergency-banner small{font-size:.74rem;color:#755e63}
+:where(body[data-route-group="portal"]) .request-emergency-banner>button{min-height:34px;border:0;border-radius:9px;background:#b92f3a;color:#fff;padding:0 11px;font:inherit;font-size:.74rem;font-weight:850;cursor:pointer;white-space:nowrap}
+:where(body[data-route-group="portal"]) .request-emergency-banner>button:disabled{opacity:.65;cursor:wait}
+:where(body[data-route-group="portal"]) .request-emergency-banner>b{font-size:.75rem;color:#2f7550;background:#e8f6ed;border-radius:999px;padding:6px 9px;white-space:nowrap}
+:where(body[data-route-group="portal"]) .request-emergency-banner.is-acknowledged{border-color:#b7d9c3;background:#f8fcf9}
+:where(body[data-route-group="portal"]) .request-emergency-banner.is-acknowledged>div>span{background:#2f8056}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-emergency-banner{background:#000!important;color:#fff!important;border-color:#f2d34b!important}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-emergency-banner :is(strong,small){color:#fff!important}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-emergency-banner>button{background:#f2d34b!important;color:#000!important}
+@media(max-width:700px){:where(body[data-route-group="portal"]) .request-emergency-banner{align-items:flex-start;flex-direction:column}:where(body[data-route-group="portal"]) .request-emergency-banner>button{width:100%}}

@@ -4,6 +4,8 @@ import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import {
   addAgentReportAttachments,
+  acknowledgeAgentReportAlert,
+  acknowledgeAdminReportAlert,
   addAgentRequestTimeline,
   addAdminRequestTimeline,
   downloadRequestAttachment,
@@ -67,6 +69,7 @@ export default function AgentRequestDetails({ params, mode = "agent" }) {
   const addTimelineEvent = isAdmin ? addAdminRequestTimeline : addAgentRequestTimeline;
   const getReplies = isAdmin ? getAdminRequestReplies : getAgentRequestReplies;
   const sendReply = isAdmin ? sendAdminRequestReply : sendAgentRequestReply;
+  const acknowledgeAlert = isAdmin ? acknowledgeAdminReportAlert : acknowledgeAgentReportAlert;
 
   const { user } = useAuth();
   const summaryRef = useRef(null);
@@ -88,6 +91,7 @@ export default function AgentRequestDetails({ params, mode = "agent" }) {
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarSearched, setSimilarSearched] = useState(false);
   const [duplicateSaving, setDuplicateSaving] = useState(false);
+  const [alertSaving, setAlertSaving] = useState(false);
 
   async function load() {
     const [row, people, serviceRows, replyRows] = await Promise.all([
@@ -255,6 +259,17 @@ export default function AgentRequestDetails({ params, mode = "agent" }) {
     finally { setSaving(false); }
   }
 
+  async function acknowledgeEmergencyAlert() {
+    if (!request || request.handlingRoute !== "emergency" || request.alertStatus === "acknowledged" || alertSaving) return;
+    setAlertSaving(true); setError(""); setNotice("");
+    try {
+      await acknowledgeAlert(request.ref);
+      await load();
+      setNotice("Urgence F86 prise en charge. Le citoyen a été notifié par le backend.");
+    } catch (e) { setError(getApiErrorMessage(e, "Impossible de confirmer la prise en charge de l’urgence.")); }
+    finally { setAlertSaving(false); }
+  }
+
   async function reopenReport() {
     const reason = window.prompt("Motif de réouverture du signalement");
     if (!reason?.trim()) return;
@@ -275,6 +290,7 @@ export default function AgentRequestDetails({ params, mode = "agent" }) {
       {error ? <div className="error-card" role="alert">{error}</div> : null}
       {notice ? <div className="success-inline" role="status">✓ {notice}</div> : null}
       {request.duplicateOf ? <div className="duplicate-link-banner" role="status"><div><strong>↪ Dossier lié comme doublon</strong><span>{request.duplicateOfReference ? `Doublon de ${request.duplicateOfReference}` : `Demande source #${request.duplicateOf}`}</span></div><button type="button" className="secondary-action" disabled={duplicateSaving} onClick={clearDuplicateLink}>{duplicateSaving ? "Mise à jour…" : "Retirer le lien"}</button></div> : null}
+      {request.handlingRoute === "emergency" ? <div className={`request-emergency-banner ${request.alertStatus === "acknowledged" ? "is-acknowledged" : ""}`} role="status"><div><span aria-hidden="true">!</span><div><strong>F86 · CIRCUIT D’URGENCE</strong><small>{request.alertStatus === "acknowledged" ? `Prise en charge${request.alertAcknowledgedByName ? ` par ${request.alertAcknowledgedByName}` : ""}${request.alertAcknowledgedAt ? ` · ${displayDate(request.alertAcknowledgedAt)}` : ""}` : `Alerte ${request.alertStatus || "active"} · intervention prioritaire requise`}</small></div></div>{request.alertStatus !== "acknowledged" ? <button type="button" disabled={alertSaving} onClick={acknowledgeEmergencyAlert}>{alertSaving ? "Prise en charge…" : "Prendre en charge maintenant"}</button> : <b>✓ Acquittée</b>}</div> : null}
 
       <section className="agent-detail-head agent-detail-head--smart request-operations-hero">
         <div>

@@ -58,6 +58,7 @@ const AgentNewsDetails = lazy(() => import("./pages/agent/AgentNewsDetails.jsx")
 const AgentMessages = lazy(() => import("./pages/agent/AgentMessages.jsx"));
 const AgentMessageDetails = lazy(() => import("./pages/agent/AgentMessageDetails.jsx"));
 const AgentAudit = lazy(() => import("./pages/agent/AgentAudit.jsx"));
+const AgentSecurityEvents = lazy(() => import("./pages/agent/AgentSecurityEvents.jsx"));
 const AgentProjects = lazy(() => import("./pages/agent/AgentProjects.jsx"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
@@ -278,6 +279,7 @@ export default function App() {
       "/agent/api":<Protected roles={["agent"]}><AgentApi/></Protected>,
       "/agent/messages":<Protected roles={["agent"]}><AgentMessages/></Protected>,
       "/agent/audit":<Protected roles={["agent"]}><AgentAudit/></Protected>,
+      "/agent/security-events":<Protected roles={["agent"]}><AgentSecurityEvents/></Protected>,
       "/agent/projects":<Protected roles={["agent"]}><AgentProjects/></Protected>,
 
       "/admin":<Protected roles={["admin"]}><AdminDashboard/></Protected>,

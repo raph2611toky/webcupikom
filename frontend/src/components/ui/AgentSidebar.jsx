@@ -22,6 +22,7 @@ const groups = [
       ["/agent/projects", "✦", "Projets municipaux"],
       ["/agent/news", "▤", "Actualités"],
       ["/agent/audit", "⌁", "Journal d’activité"],
+      ["/agent/security-events", "◇", "Sécurité"],
     ],
   },
 ];
