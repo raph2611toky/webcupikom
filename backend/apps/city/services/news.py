@@ -20,11 +20,17 @@ def ordered_news(queryset):
     return queryset.annotate(_urgency=Case(When(severity='critical', then=Value(2)), When(severity='warning', then=Value(1)), default=Value(0), output_field=IntegerField())).order_by('-_urgency', '-is_pinned', '-published_at', '-id')
 
 
+def publication_requires_email(article):
+    """Email duplicate for announcements, alerts and explicitly important news."""
+    return bool(article.is_important or article.publication_type in {'announcement', 'alert'})
+
+
 def deliver_news(article_id, limit=500):
     """Diffuse un lot de publication de façon atomique et reprenable.
 
-    Les alertes/publications importantes tentent aussi un envoi email après
-    commit ; la commande périodique reprend les emails futurs ou échoués.
+    Les annonces, alertes et publications importantes tentent aussi un envoi
+    email après commit ; la commande périodique reprend les emails futurs ou
+    échoués.
     """
     limit = min(max(int(limit), 1), 2000)
     with transaction.atomic():
@@ -47,6 +53,7 @@ def deliver_news(article_id, limit=500):
         ids = fetched_ids[:limit]
         notification_code = f'news:{article.pk}'
         important = article.is_important or article.publication_type == 'alert'
+        email_required = publication_requires_email(article)
         for user_id in ids:
             CitizenNotification.objects.get_or_create(user_id=user_id, related_news=article, defaults={
                 'sender_id': article.author_id, 'scope': 'targeted' if article.target_districts else 'global',
@@ -63,10 +70,10 @@ def deliver_news(article_id, limit=500):
             article.delivery_completed_at = timezone.now()
         article.save(update_fields=['delivery_cursor', 'delivery_started_at', 'delivery_completed_at'])
 
-        # Les alertes et publications importantes doivent déclencher l'email
+        # Les annonces, alertes et publications importantes doivent déclencher l'email
         # dès que leur lot de notifications est commité. Le worker/cron reste
         # le filet de rattrapage pour les publications futures et les échecs SMTP.
-        if ids and important:
+        if ids and email_required:
             def dispatch_email_batch():
                 from .notifications import dispatch_due_notification_emails
                 dispatch_due_notification_emails(notification_code=notification_code, limit=limit)

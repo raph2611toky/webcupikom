@@ -14,7 +14,7 @@ from drf_yasg import openapi
 from helpers.permissions import IsAuthenticatedAdmin
 from .models import NewsArticle
 from .news_serializers import PublicationSerializer, PublicationAdminSerializer, NewsFilterSerializer, NewsCoverUploadSerializer, NewsDeliveryStatusSerializer
-from .services.news import active_news, ordered_news
+from .services.news import active_news, ordered_news, publication_requires_email
 from .services.audit import record_staff_audit
 from .report_api import ReportPagination
 
@@ -227,8 +227,9 @@ class AdminNewsDeliveryView(PublicationHeaders, APIView):
     def get(self, request, slug):
         item = get_object_or_404(NewsArticle, slug=slug)
         notices = item.notifications.all()
+        email_required = publication_requires_email(item)
         return Response({'started_at': item.delivery_started_at, 'completed_at': item.delivery_completed_at,
             'recipients': notices.count(), 'read': notices.filter(is_read=True).count(),
             'emails_sent': notices.filter(email_sent_at__isnull=False).count(),
-            'emails_pending': notices.filter(is_important=True, email_sent_at__isnull=True).count(),
+            'emails_pending': notices.filter(email_sent_at__isnull=True).count() if email_required else 0,
             'emails_failed': notices.exclude(email_last_error='').count()})

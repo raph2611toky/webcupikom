@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from helpers.services.emails import send_templated_email
@@ -23,10 +24,27 @@ def _absolute_frontend_url(action_url):
     return urljoin(base, action_url.lstrip("/"))
 
 
+def notification_email_eligibility_q():
+    """Notifications that must also be duplicated by email."""
+    return (
+        Q(is_important=True)
+        | Q(related_news__publication_type__in=['announcement', 'alert'])
+        | Q(related_news__is_important=True)
+    )
+
+
+def notification_requires_email(notification):
+    article = getattr(notification, 'related_news', None)
+    return bool(
+        notification.is_important
+        or (article and (article.is_important or article.publication_type in {'announcement', 'alert'}))
+    )
+
+
 def notification_email_is_due(notification, *, now=None):
     now = now or timezone.now()
     return bool(
-        notification.is_important
+        notification_requires_email(notification)
         and notification.email_sent_at is None
         and notification.visible_from <= now
         and notification.user_id
@@ -46,7 +64,7 @@ def send_notification_email(notification_id, *, fail_silently=True):
         with transaction.atomic():
             notification = (
                 CitizenNotification.objects.select_for_update()
-                .select_related("user", "sender")
+                .select_related("user", "sender", "related_news")
                 .get(pk=notification_id)
             )
             if not notification_email_is_due(notification):
@@ -97,11 +115,10 @@ def send_notification_email(notification_id, *, fail_silently=True):
 
 def dispatch_due_notification_emails(*, notification_code=None, limit=500):
     queryset = CitizenNotification.objects.filter(
-        is_important=True,
         email_sent_at__isnull=True,
         visible_from__lte=timezone.now(),
         user__email__gt="",
-    ).filter(visible_notifications(), user__is_active=True).order_by("visible_from", "id")
+    ).filter(notification_email_eligibility_q()).filter(visible_notifications(), user__is_active=True).order_by("visible_from", "id")
     if notification_code:
         queryset = queryset.filter(notification_code=notification_code)
 
@@ -122,7 +139,7 @@ def dispatch_due_notification_emails(*, notification_code=None, limit=500):
 
 def schedule_notification_email(notification):
     """Send immediately after commit when due; future emails stay pending."""
-    if not notification.is_important:
+    if not notification_requires_email(notification):
         return
     notification_id = notification.pk
     transaction.on_commit(lambda: send_notification_email(notification_id, fail_silently=True))

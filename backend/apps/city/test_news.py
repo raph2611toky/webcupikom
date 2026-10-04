@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.utils import timezone
 from django.core.management import call_command
+from django.core import mail
 from rest_framework.test import APITestCase
 from apps.users.models import User
 from apps.users.auth_cookies import build_refresh_token
@@ -132,6 +133,39 @@ class NewsTests(APITestCase):
             self.assertEqual(dispatch_due_notification_emails()['sent'],0)
         self.assertEqual(dispatch_due_notification_emails()['sent'],2)
         self.assertEqual(dispatch_due_notification_emails()['sent'],0)
+
+    def test_announcement_broadcast_is_also_duplicated_by_email(self):
+        item = self.article(publication_type='announcement', is_important=False)
+        mail.outbox.clear()
+        self.assertEqual(deliver_news(item.pk), 2)
+        self.assertEqual(item.notifications.count(), 2)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(dispatch_due_notification_emails()['sent'], 0)
+
+    def test_targeted_announcement_limits_broadcast_and_email_to_target_district(self):
+        item = self.article(slug='targeted-announcement', publication_type='announcement', target_districts=['sud'])
+        mail.outbox.clear()
+        self.assertEqual(deliver_news(item.pk), 1)
+        self.assertTrue(item.notifications.filter(user=self.south).exists())
+        self.assertFalse(item.notifications.filter(user=self.north).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.south.email])
+
+    def test_announcement_respects_notify_residents_opt_out(self):
+        item = self.article(slug='silent-announcement', publication_type='announcement', notify_residents=False)
+        mail.outbox.clear()
+        self.assertEqual(deliver_news(item.pk), 0)
+        self.assertEqual(item.notifications.count(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_regular_news_keeps_existing_email_rule(self):
+        normal = self.article(slug='normal-news', publication_type='news', is_important=False)
+        mail.outbox.clear()
+        self.assertEqual(deliver_news(normal.pk), 2)
+        self.assertEqual(len(mail.outbox), 0)
+        important = self.article(slug='important-news', publication_type='news', is_important=True)
+        self.assertEqual(deliver_news(important.pk), 2)
+        self.assertEqual(len(mail.outbox), 2)
 
     def test_filters_priority_pagination(self):
         self.article()
