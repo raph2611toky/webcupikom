@@ -80,7 +80,7 @@ function websocketUrl(path) {
 }
 
 function eventDomain(eventName = "", payload = {}) {
-  if (eventName.startsWith("notification.")) return "notification";
+  if (eventName.startsWith("notification.") || eventName.startsWith("notifications.")) return "notification";
   if (eventName === "news.refresh" || eventName.startsWith("news.")) return "news";
   if (eventName.startsWith("staff.request.") || eventName.startsWith("request.")) {
     const requestType = String(payload.request_type || "").toLowerCase();
@@ -327,6 +327,19 @@ function scheduleInitialConnect(localGeneration) {
     if (!wanted || localGeneration !== generation) return;
     connect(localGeneration);
   }, START_DEBOUNCE_MS);
+}
+
+
+export function dispatchRealtimeEvent(event, payload = {}, meta = {}) {
+  fanOutRealtimeEvent({
+    type: "event",
+    event: String(event || ""),
+    event_id: meta.event_id || `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    occurred_at: meta.occurred_at || new Date().toISOString(),
+    version: 1,
+    payload: payload || {},
+    source: meta.source || "local",
+  });
 }
 
 export function startRealtime(identity = {}) {

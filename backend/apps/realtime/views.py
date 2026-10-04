@@ -78,16 +78,21 @@ class RealtimeStatusView(APIView):
         responses={200: "État WebSocket/Redis. Aucune information de connexion Redis n'est exposée."},
     )
     def get(self, request):
+        backend = getattr(settings, "REALTIME_BACKEND_RESOLVED", "redis")
         available = False
-        if settings.REALTIME_ENABLED:
+        if settings.REALTIME_ENABLED and backend == "memory":
+            available = True
+        elif settings.REALTIME_ENABLED and backend == "redis":
             try:
                 available = bool(sync_redis_client().ping())
             except Exception:
                 available = False
         return Response(
             {
-                "enabled": settings.REALTIME_ENABLED,
+                "enabled": bool(settings.REALTIME_ENABLED and backend != "off"),
                 "available": available,
+                "transport": backend,
+                "single_process_only": backend == "memory",
                 "websocket_path": "/ws/realtime/",
                 "ticket_endpoint": "/api/realtime/ticket/",
                 "http_fallback": True,

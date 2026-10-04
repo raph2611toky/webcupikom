@@ -1,8 +1,9 @@
 import os
 import sys
+import socket
 from datetime import timedelta
 from pathlib import Path
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlparse
 
 from dotenv import load_dotenv
 
@@ -261,7 +262,16 @@ GOOGLE_OAUTH_STATE_MAX_AGE = int(os.getenv("GOOGLE_OAUTH_STATE_MAX_AGE", "600"))
 # -----------------------------------------------------------------------------
 # Temps réel / WebSocket (optionnel)
 # -----------------------------------------------------------------------------
+# REALTIME_BACKEND:
+#   auto   -> Redis si joignable, sinon mémoire locale (pratique sous Windows/dev)
+#   redis  -> exige Redis ; recommandé pour une production multi-processus
+#   memory -> WebSocket sans Redis, limité à UN processus Python
+#   off    -> désactive complètement la couche temps réel
 REALTIME_ENABLED = env_bool("REALTIME_ENABLED", True)
+REALTIME_BACKEND = os.getenv("REALTIME_BACKEND", "auto").strip().lower() or "auto"
+if REALTIME_BACKEND not in {"auto", "redis", "memory", "off"}:
+    REALTIME_BACKEND = "auto"
+
 REALTIME_REDIS_DB = int(os.getenv("REALTIME_REDIS_DB", "15"))
 REALTIME_REDIS_PREFIX = os.getenv("REALTIME_REDIS_PREFIX", "terra_nova_rt").strip() or "terra_nova_rt"
 REALTIME_REDIS_CONNECT_TIMEOUT = float(os.getenv("REALTIME_REDIS_CONNECT_TIMEOUT", "0.35"))
@@ -302,7 +312,40 @@ REALTIME_CHANNEL_ENCRYPTION_KEY = os.getenv(
     "REALTIME_CHANNEL_ENCRYPTION_KEY", SECRET_KEY
 ).strip() or SECRET_KEY
 
-if REALTIME_ENABLED:
+
+def _local_redis_is_reachable():
+    """Probe très court uniquement pour le mode auto.
+
+    On ne bloque pas le démarrage : si Redis local n'existe pas (cas Windows
+    courant), on utilise le layer mémoire. Pour une URL Redis distante, on garde
+    Redis comme backend afin d'éviter un fallback mémoire silencieux en prod.
+    """
+    try:
+        parsed = urlparse(REALTIME_REDIS_URL)
+        if parsed.scheme.startswith("unix"):
+            return True
+        host = (parsed.hostname or "").strip().lower()
+        port = parsed.port or 6379
+        if host not in {"127.0.0.1", "localhost", "::1"}:
+            return True
+        with socket.create_connection((host, port), timeout=min(0.20, REALTIME_REDIS_CONNECT_TIMEOUT)):
+            return True
+    except OSError:
+        return False
+    except Exception:
+        return False
+
+
+if not REALTIME_ENABLED or REALTIME_BACKEND == "off":
+    REALTIME_BACKEND_RESOLVED = "off"
+elif REALTIME_BACKEND == "memory":
+    REALTIME_BACKEND_RESOLVED = "memory"
+elif REALTIME_BACKEND == "redis":
+    REALTIME_BACKEND_RESOLVED = "redis"
+else:
+    REALTIME_BACKEND_RESOLVED = "redis" if _local_redis_is_reachable() else "memory"
+
+if REALTIME_BACKEND_RESOLVED == "redis":
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -317,10 +360,13 @@ if REALTIME_ENABLED:
         }
     }
 else:
-    # L'API HTTP reste entièrement utilisable. Le layer mémoire évite les imports
-    # conditionnels dans le code, mais l'endpoint ticket renvoie 503.
+    # Le layer mémoire permet un vrai WebSocket local sans Redis. Il est volontairement
+    # réservé à un seul processus Uvicorn : plusieurs workers ne partageraient pas l'état.
     CHANNEL_LAYERS = {
-        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+            "CONFIG": {"capacity": 150, "expiry": 60},
+        }
     }
 
 # MFA TOTP (Google Authenticator et applications compatibles RFC 6238).

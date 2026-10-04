@@ -6,10 +6,11 @@ import {
   startRealtime,
   stopRealtime,
 } from "../../realtime/realtime.js";
+import { startRealtimePolling, stopRealtimePolling } from "../../realtime/pollingFallback.js";
 import { navigate } from "../../utils/navigation.js";
 
 const TOAST_DURATION = 10_000;
-const SEMANTIC_DEDUPE_MS = 2500;
+const SEMANTIC_DEDUPE_MS = 10_000;
 const MAX_TOASTS = 3;
 
 function text(value, fallback = "") {
@@ -26,7 +27,7 @@ function toastFromEvent(detail, role) {
   const payload = detail.payload || {};
 
   if (event === "notification.created" && payload.visible_now !== false) {
-    const relatedRequest = text(payload.related_request);
+    const relatedRequest = text(payload.related_request || payload.request_reference);
     const relatedNews = text(payload.news_slug);
     return {
       key: relatedRequest ? `request:${relatedRequest}` : relatedNews ? `news:${relatedNews}` : `notification:${payload.id ?? detail.event_id}`,
@@ -37,11 +38,49 @@ function toastFromEvent(detail, role) {
     };
   }
 
-  if (role === "citizen") {
-    // Les citoyens reçoivent normalement une CitizenNotification plus riche.
-    // On garde donc les événements métier silencieux pour éviter les doubles toasts.
-    return null;
+  if (role === "citizen" && event === "notifications.refresh") {
+    return {
+      key: `notifications:${payload.batch_code || detail.event_id}`,
+      title: "Nouvelle notification",
+      message: "Une nouvelle information municipale est disponible.",
+      variant: "info",
+      actionUrl: "/citizen/notifications",
+    };
   }
+
+  if ((event === "news.created" || event === "news.updated") && payload.title && payload.is_published !== false) {
+    const kind = text(payload.publication_type, "news").toLowerCase();
+    const created = event === "news.created";
+    const title = kind === "alert"
+      ? (created ? "Nouvelle alerte" : "Alerte mise à jour")
+      : kind === "announcement"
+        ? (created ? "Nouvelle annonce" : "Annonce mise à jour")
+        : (created ? "Nouvelle actualité" : "Actualité mise à jour");
+    const prefix = role === "citizen" ? "/citizen/news" : role === "admin" ? "/admin/news" : "/agent/news";
+    return {
+      key: `news:${payload.slug || payload.id || detail.event_id}`,
+      title,
+      message: text(payload.title),
+      variant: kind === "alert" || payload.severity === "critical" ? "important" : "info",
+      actionUrl: payload.slug ? `${prefix}/${encodeURIComponent(payload.slug)}` : "",
+    };
+  }
+
+  if (role === "citizen" && (event === "request.created" || event === "request.updated")) {
+    const reference = reportReference(payload);
+    const isReport = text(payload.request_type).toLowerCase() === "report" || /^SIG-/i.test(reference) || payload.handling_route === "emergency";
+    return {
+      key: `request:${reference || detail.event_id}`,
+      title: isReport
+        ? (event.endsWith("created") ? "Signalement enregistré" : "Signalement mis à jour")
+        : (event.endsWith("created") ? "Demande enregistrée" : "Demande mise à jour"),
+      message: [reference, text(payload.status_label)].filter(Boolean).join(" · ") || "Les informations ont été actualisées.",
+      variant: payload.handling_route === "emergency" ? "important" : "info",
+      actionUrl: reference ? `/citizen/requests/${encodeURIComponent(reference)}` : "",
+    };
+  }
+
+  if (role === "citizen") return null;
 
   if (event === "staff.request.created" || event === "staff.request.updated") {
     const reference = reportReference(payload);
@@ -52,16 +91,6 @@ function toastFromEvent(detail, role) {
       message: [reference, text(payload.status_label)].filter(Boolean).join(" · ") || "Les données ont été actualisées.",
       variant: payload.handling_route === "emergency" ? "important" : "info",
       actionUrl: reference ? `${role === "admin" ? "/admin" : "/agent"}/requests/${encodeURIComponent(reference)}` : "",
-    };
-  }
-
-  if ((event === "news.created" || event === "news.updated") && payload.title) {
-    return {
-      key: `news:${payload.slug || payload.id || detail.event_id}`,
-      title: event === "news.created" ? "Nouvelle publication" : "Publication mise à jour",
-      message: text(payload.title),
-      variant: payload.severity === "critical" ? "important" : "info",
-      actionUrl: payload.slug ? `${role === "admin" ? "/admin/news" : "/agent/news"}/${encodeURIComponent(payload.slug)}` : "",
     };
   }
 
@@ -85,6 +114,7 @@ function ToastIcon({ variant }) {
 export default function RealtimeBridge() {
   const { user, isAuthenticated, ready, clearSession } = useAuth();
   const [toasts, setToasts] = useState([]);
+  const [realtimeStatus, setRealtimeStatus] = useState("idle");
   const timers = useRef(new Map());
   const lastSemantic = useRef(new Map());
 
@@ -102,12 +132,6 @@ export default function RealtimeBridge() {
     const previous = lastSemantic.current.get(semanticKey);
 
     if (previous && now - previous.at < SEMANTIC_DEDUPE_MS) {
-      const id = previous.id;
-      setToasts((rows) => rows.map((item) => item.id === id ? { ...item, ...toast, id, createdAt: now } : item));
-      const oldTimer = timers.current.get(id);
-      if (oldTimer) window.clearTimeout(oldTimer);
-      timers.current.set(id, window.setTimeout(() => dismiss(id), TOAST_DURATION));
-      lastSemantic.current.set(semanticKey, { id, at: now });
       return;
     }
 
@@ -121,6 +145,8 @@ export default function RealtimeBridge() {
   useEffect(() => {
     if (!ready || !isAuthenticated || !user) {
       stopRealtime();
+      stopRealtimePolling();
+      setRealtimeStatus("idle");
       return undefined;
     }
 
@@ -137,6 +163,7 @@ export default function RealtimeBridge() {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
       stopRealtime();
+      stopRealtimePolling();
     };
   }, [isAuthenticated, ready, user?.id, user?.pk, user?.role]);
 
@@ -152,13 +179,36 @@ export default function RealtimeBridge() {
       navigate("/login", { replace: true });
     };
 
+    const onRealtimeStatus = (event) => {
+      setRealtimeStatus(text(event.detail?.status, "idle"));
+    };
+
     window.addEventListener(realtimeEvents.EVENT, onRealtimeEvent);
     window.addEventListener(realtimeEvents.SESSION_INVALID_EVENT, onSessionInvalid);
+    window.addEventListener(realtimeEvents.STATUS_EVENT, onRealtimeStatus);
     return () => {
       window.removeEventListener(realtimeEvents.EVENT, onRealtimeEvent);
       window.removeEventListener(realtimeEvents.SESSION_INVALID_EVENT, onSessionInvalid);
+      window.removeEventListener(realtimeEvents.STATUS_EVENT, onRealtimeStatus);
     };
   }, [clearSession, pushToast, user?.role]);
+
+  useEffect(() => {
+    if (!ready || !isAuthenticated || !user) {
+      stopRealtimePolling();
+      return undefined;
+    }
+
+    // Le polling ne remplace jamais le socket : il sert uniquement de filet de
+    // sécurité lorsque la couche temps réel signale explicitement un fallback.
+    if (["http_fallback", "offline", "auth_wait"].includes(realtimeStatus)) {
+      startRealtimePolling(user);
+      return () => stopRealtimePolling();
+    }
+
+    if (realtimeStatus === "connected") stopRealtimePolling();
+    return undefined;
+  }, [isAuthenticated, ready, realtimeStatus, user?.id, user?.pk, user?.role]);
 
   useEffect(() => () => {
     for (const timer of timers.current.values()) window.clearTimeout(timer);

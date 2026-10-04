@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
+import threading
 import time
 
 from django.conf import settings
@@ -18,19 +19,37 @@ class InvalidRealtimeTicket(ValueError):
     pass
 
 
+# En mode mémoire, les tickets restent opaques, courts et à usage unique.
+# Ils ne sont valables que dans le processus Uvicorn courant, ce qui correspond
+# au mode local sans Redis. La production multi-worker doit utiliser Redis.
+_memory_tickets: dict[str, tuple[float, dict]] = {}
+_memory_lock = threading.Lock()
+
+
 def _ticket_key(token: str) -> str:
     digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
     return f"{settings.REALTIME_REDIS_PREFIX}:ticket:{digest}"
 
 
-def issue_ticket(*, user, auth_token) -> tuple[str, int]:
-    """Crée un ticket opaque, court et à usage unique dans Redis.
+def _resolved_backend() -> str:
+    return getattr(settings, "REALTIME_BACKEND_RESOLVED", "redis")
 
-    Le JWT principal n'est jamais copié dans Redis ni envoyé dans l'URL du
-    WebSocket. Seuls les identifiants nécessaires à la revalidation DB sont
-    conservés pendant quelques secondes.
+
+def _prune_memory_tickets(now: float) -> None:
+    expired = [key for key, (expires_at, _payload) in _memory_tickets.items() if expires_at <= now]
+    for key in expired:
+        _memory_tickets.pop(key, None)
+
+
+def issue_ticket(*, user, auth_token) -> tuple[str, int]:
+    """Crée un ticket WebSocket opaque, court et à usage unique.
+
+    Redis est utilisé en production lorsqu'il est disponible. En mode local
+    ``memory``, le ticket est conservé quelques secondes en mémoire du processus.
+    Le JWT principal n'est jamais placé dans l'URL du WebSocket.
     """
-    if not settings.REALTIME_ENABLED:
+    backend = _resolved_backend()
+    if not settings.REALTIME_ENABLED or backend == "off":
         raise RealtimeUnavailable("Le service temps réel est désactivé.")
 
     sid = str(auth_token.get("sid") or "")
@@ -45,6 +64,14 @@ def issue_ticket(*, user, auth_token) -> tuple[str, int]:
         "security_version": int(user.auth_token_version),
         "issued_at": int(time.time()),
     }
+
+    if backend == "memory":
+        now = time.monotonic()
+        with _memory_lock:
+            _prune_memory_tickets(now)
+            _memory_tickets[_ticket_key(token)] = (now + ttl, payload)
+        return token, ttl
+
     try:
         created = sync_redis_client().set(
             _ticket_key(token),
@@ -52,7 +79,7 @@ def issue_ticket(*, user, auth_token) -> tuple[str, int]:
             ex=ttl,
             nx=True,
         )
-    except Exception as exc:  # Redis indisponible => temps réel indisponible, pas HTTP.
+    except Exception as exc:
         raise RealtimeUnavailable("Redis temps réel indisponible.") from exc
     if not created:
         raise RealtimeUnavailable("Impossible de créer le ticket temps réel.")
@@ -62,13 +89,25 @@ def issue_ticket(*, user, auth_token) -> tuple[str, int]:
 async def consume_ticket(token: str) -> dict:
     if not token or len(token) > 256:
         raise InvalidRealtimeTicket("Ticket temps réel invalide.")
-    if not settings.REALTIME_ENABLED:
+
+    backend = _resolved_backend()
+    if not settings.REALTIME_ENABLED or backend == "off":
         raise RealtimeUnavailable("Le service temps réel est désactivé.")
+
+    if backend == "memory":
+        now = time.monotonic()
+        with _memory_lock:
+            _prune_memory_tickets(now)
+            stored = _memory_tickets.pop(_ticket_key(token), None)
+        if not stored:
+            raise InvalidRealtimeTicket("Ticket temps réel expiré, inconnu ou déjà utilisé.")
+        expires_at, payload = stored
+        if expires_at <= now:
+            raise InvalidRealtimeTicket("Ticket temps réel expiré, inconnu ou déjà utilisé.")
+        return dict(payload)
 
     client = async_redis_client()
     try:
-        # GET + DEL atomique compatible Redis >=5 (EVAL est également requis
-        # par RedisChannelLayer). Un ticket capturé ne peut donc pas être rejoué.
         value = await client.eval(
             "local v=redis.call('GET',KEYS[1]); if v then redis.call('DEL',KEYS[1]); end; return v",
             1,

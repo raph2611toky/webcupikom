@@ -312,33 +312,67 @@ def news_saved(sender, instance, created, update_fields=None, **kwargs):
         "delivery_cursor", "delivery_started_at", "delivery_completed_at"
     }:
         return
+
+    payload = {
+        "id": instance.pk,
+        "slug": instance.slug,
+        "title": instance.title,
+        "publication_type": instance.publication_type,
+        "severity": instance.severity,
+        "is_published": instance.is_published,
+        "published_at": instance.published_at,
+        "expires_at": instance.expires_at,
+    }
+    event_name = "news.created" if created else "news.updated"
+
+    # Le staff reçoit toujours le détail : l'écran d'administration peut se
+    # rafraîchir immédiatement dans un autre navigateur.
     publish_after_commit(
         groups=[staff_group()],
-        event="news.created" if created else "news.updated",
-        payload={
-            "id": instance.pk,
-            "slug": instance.slug,
-            "title": instance.title,
-            "publication_type": instance.publication_type,
-            "severity": instance.severity,
-            "is_published": instance.is_published,
-            "published_at": instance.published_at,
-            "expires_at": instance.expires_at,
-        },
+        event=event_name,
+        payload=payload,
     )
+
     active_for_public = (
         instance.is_published
         and instance.published_at <= timezone.now()
         and (instance.expires_at is None or instance.expires_at > timezone.now())
     )
-    if active_for_public:
-        # Pas de titre ici : un article ciblé par quartier ne doit pas fuiter son
-        # contenu aux autres citoyens. Le détail ciblé arrive via notification.
+    if not active_for_public:
+        return
+
+    if not instance.target_districts:
+        # Publication globale : vrai broadcast riche vers tous les citoyens.
+        # Les notifications individuelles créées par deliver_news peuvent aussi
+        # émettre notification.created ; le frontend les déduplique par slug.
         publish_after_commit(
             groups=[role_group(User.Role.CITIZEN)],
-            event="news.refresh",
-            payload={"reason": "publication_changed"},
+            event=event_name,
+            payload=payload,
         )
+        return
+
+    # Publication ciblée : ne jamais diffuser le titre aux citoyens hors zone.
+    # Tout le monde reçoit seulement une invalidation sans contenu sensible.
+    publish_after_commit(
+        groups=[role_group(User.Role.CITIZEN)],
+        event="news.refresh",
+        payload={"reason": "publication_changed", "targeted": True},
+    )
+
+    # Lors d'une mise à jour, les notifications des destinataires existent déjà.
+    # QuerySet.update() dans apps.city.news_signals ne déclenche pas post_save ;
+    # on adresse donc explicitement les utilisateurs déjà destinataires.
+    if not created:
+        recipient_ids = list(
+            instance.notifications.order_by().values_list("user_id", flat=True).distinct()
+        )
+        if recipient_ids:
+            publish_after_commit(
+                groups=[user_group(user_id) for user_id in recipient_ids],
+                event="news.updated",
+                payload=payload,
+            )
 
 
 @receiver(post_delete, sender=NewsArticle)

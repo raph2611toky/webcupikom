@@ -101,6 +101,18 @@ def publish_event(*, groups, event: str, payload=None, event_id=None):
         "version": 1,
         "payload": _json_safe(payload or {}),
     }
+
+    # IMPORTANT pour le mode local sans Redis : InMemoryChannelLayer vit dans
+    # le processus / event loop ASGI courant. L'envoyer depuis notre propre
+    # ThreadPoolExecutor peut détacher group_send de la boucle qui porte les
+    # WebSockets. On publie donc directement depuis le thread Django courant ;
+    # async_to_sync peut alors revenir proprement vers la boucle ASGI.
+    # Redis, lui, est thread/process-safe et conserve la file asynchrone afin de
+    # ne jamais ralentir une mutation HTTP.
+    if getattr(settings, "REALTIME_BACKEND_RESOLVED", "redis") == "memory":
+        _send(normalized_groups, envelope)
+        return True
+
     if not _slots.acquire(blocking=False):
         _warn_limited(
             "queue_full",
