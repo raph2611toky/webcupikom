@@ -301,3 +301,37 @@ html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-card
   :where(body[data-route-group="portal"]) .project-grid--compact {grid-template-columns:1fr}
   :where(body[data-route-group="portal"]) .project-detail-page .project-date-grid {grid-template-columns:1fr}
 }
+
+/* V91 — Projets : administration backend-complete, sans surcharge visuelle */
+:where(body[data-route-group="portal"]) .project-admin-controlbar{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,360px);gap:12px;align-items:center;
+  padding:9px 10px;border:1px solid #e9e2ee;border-radius:16px;background:#fff;
+}
+:where(body[data-route-group="portal"]) .project-admin-search input{
+  width:100%;min-height:40px;padding:0 12px;border:1px solid #e2dbe7;border-radius:11px;background:#fbfafc;color:#2d2433;font:inherit;font-size:.8125rem;
+}
+:where(body[data-route-group="portal"]) .project-admin-filterchips{display:flex;gap:7px;flex-wrap:wrap}
+:where(body[data-route-group="portal"]) .project-admin-filterchips button{
+  min-height:34px;padding:0 11px;border:1px solid #e3dbe8;border-radius:10px;background:#fff;color:#655a6d;font-size:.8125rem;font-weight:760;
+}
+:where(body[data-route-group="portal"]) .project-admin-filterchips button.is-active{background:#221c28;color:#fff;border-color:#221c28}
+:where(body[data-route-group="portal"]) .project-form-participation{
+  display:grid;gap:12px;padding:13px;border:1px solid #e6dcef;border-radius:15px;background:#fbf9fd;
+}
+:where(body[data-route-group="portal"]) .project-form label>small{color:#7b7083;font-size:.76rem;line-height:1.45}
+:where(body[data-route-group="portal"]) .project-admin-contributions small{color:#7b7083;font-size:.76rem;line-height:1.45}
+:where(body[data-route-group="portal"]) .project-receipt--detailed{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.65fr) auto;gap:12px;align-items:center}
+:where(body[data-route-group="portal"]) .project-receipt--detailed>div{display:grid;gap:3px}
+:where(body[data-route-group="portal"]) .project-receipt--detailed code{font-size:.78rem;color:#2f6846;white-space:nowrap}
+:where(body[data-route-group="portal"]) .project-receipt--detailed small{font-size:.78rem;color:#4f725d}
+:where(body[data-route-group="portal"]) .project-contribution-locked{display:grid;gap:5px}
+:where(body[data-route-group="portal"]) .project-contribution-locked strong{color:#3d3442;font-size:.84rem}
+:where(body[data-route-group="portal"]) .project-contribution-locked span{color:#746a7c}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-admin-controlbar,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-admin-filterchips button,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-form-participation{background:#000!important;color:#fff!important;border-color:#fff!important}
+@media(max-width:850px){
+  :where(body[data-route-group="portal"]) .project-admin-controlbar{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .project-receipt--detailed{grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .project-receipt--detailed code{white-space:normal}
+}

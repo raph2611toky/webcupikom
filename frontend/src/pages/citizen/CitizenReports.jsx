@@ -256,7 +256,7 @@ export default function CitizenReports(){
   return <div className="portal-layout">
     <CitizenSidebar/>
     <div className="portal-main">
-      <PortalTopbar eyebrow={copy.eyebrow} title={copy.title}/>
+      <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button type="button" className="topbar-ghost" onClick={()=>navigate("/citizen/requests/support")}>♡ Soutenir un signalement</button>}/>
       <main className="portal-content report-page report-page--wizard">
         <section className="report-layout report-layout--wizard">
           <form className="portal-card report-form report-form--wizard" onSubmit={submit}>
@@ -363,7 +363,7 @@ export default function CitizenReports(){
                 <div>
                   <strong>{item.reportType||item.title}</strong>
                   <span>{item.location?.label||"Lieu non précisé"}</span>
-                  <small>{item.ref} · {item.updated}</small>
+                  <small>{item.ref} · {item.updated}{Number(item.supportCount||0)>0?` · ♡ ${item.supportCount} soutien${Number(item.supportCount)>1?"s":""}`:""}</small>
                 </div>
                 <em className={`status-pill status-${String(item.status).replaceAll(" ","-").toLowerCase()}`}>{item.status}</em>
               </button>):<div className="dashboard-empty">{copy.empty}</div>}

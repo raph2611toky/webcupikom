@@ -82,7 +82,7 @@ export default function CitizenProjectDetails({params}){
       <button className="back-link" onClick={()=>navigate("/citizen/projects")}>← Projets municipaux</button>
       {error?<div className="error-card" role="alert">{error}</div>:null}
       {notice?<div className="success-inline" role="status">✓ {notice}</div>:null}
-      {contribution?<div className="project-receipt" role="status"><strong>✓ Votre {isDecision?"participation":"avis"} est enregistré.</strong><span>{contribution.createdAt?`Enregistré le ${formatDate(contribution.createdAt,{withTime:true})}`:"Trace conservée par Nova Terra"}</span><b>{contribution.reference?`Trace : ${contribution.reference}`:""}</b></div>:null}
+      {contribution?<div className="project-receipt project-receipt--detailed" role="status"><div><strong>✓ Votre {isDecision?"participation":"avis"} est enregistré.</strong><span>{contribution.createdAt?`Enregistré le ${formatDate(contribution.createdAt,{withTime:true})}`:"Trace conservée par Nova Terra"}</span></div><div><span>Votre choix</span><b>{contribution.choiceLabel||contribution.choice}</b>{contribution.comment?<small>{contribution.comment}</small>:null}</div><code>{contribution.reference?`Trace : ${contribution.reference}`:""}</code></div>:null}
 
       <section className="project-detail-hero portal-card">
         <div className="project-detail-hero__main">
@@ -103,10 +103,10 @@ export default function CitizenProjectDetails({params}){
 
       {project.participation_type!=="none"?<section className={`portal-card project-participation-card ${isDecision?"is-decision":""}`}>
         <div className="project-participation-copy"><span className="section-label">{isDecision?"Décision citoyenne":"Consultation"}</span><h3>{isDecision?"Participez à la décision":"Votre avis nous intéresse"}</h3><p>{project.participation_question||"Donnez votre avis sur ce projet municipal."}</p>{project.participation_closes_at?<small>Clôture : {formatDate(project.participation_closes_at,{withTime:true})}</small>:<small>{isDecision?"Votre participation laisse une trace claire.":"Cette consultation n’est pas un vote officiel."}</small>}</div>
-        {participationClosed?<div className="project-closed-note" role="status">Cette participation est actuellement fermée. Votre dernière contribution reste consultable ci-dessus.</div>:<form className="project-participation-form" onSubmit={submit}>
+        {contribution?<div className="project-closed-note project-contribution-locked" role="status"><strong>Participation déjà enregistrée</strong><span>Le backend conserve une contribution unique et traçable par citoyen pour cette consultation ou décision. Votre reçu reste visible ci-dessus.</span></div>:participationClosed?<div className="project-closed-note" role="status">Cette participation n’est pas ouverte actuellement.</div>:<form className="project-participation-form" onSubmit={submit}>
           <div className="project-choice-grid" role="radiogroup" aria-label={project.participation_question||"Choix de participation"}>{options.map(({value,label})=><label key={value} className={choice===value?"is-selected":""}><input type="radio" name="project-choice" value={value} checked={choice===value} onChange={e=>setChoice(e.target.value)}/><span>{label}</span></label>)}</div>
           {!isDecision?<label className="project-comment"><span>Commentaire facultatif</span><textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Vous pouvez préciser votre avis…"/></label>:null}
-          <button className="primary-action" type="submit" disabled={saving}>{saving?"Enregistrement…":contribution?"Mettre à jour ma contribution":isDecision?"Valider ma participation":"Envoyer mon avis"}</button>
+          <button className="primary-action" type="submit" disabled={saving}>{saving?"Enregistrement…":isDecision?"Valider ma participation":"Envoyer mon avis"}</button>
         </form>}
       </section>:<section className="portal-card project-no-participation"><h3>Suivre ce projet</h3><p>Aucune consultation n’est ouverte actuellement. Les informations d’avancement restent disponibles sur cette fiche.</p></section>}
     </main>

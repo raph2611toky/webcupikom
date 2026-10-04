@@ -1,0 +1,4 @@
+
+/* V91 — F52 : compteur agrégé de soutiens dans la file agent/admin */
+:where(body[data-route-group="portal"]) .request-support-inline{display:inline-flex;width:max-content;margin-top:.2rem;padding:.18rem .45rem;border-radius:999px;background:#f5effb;color:#674696!important;font-size:.74rem!important;font-weight:760}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .request-support-inline{background:#fff!important;color:#000!important}

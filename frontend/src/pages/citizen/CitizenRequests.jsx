@@ -247,7 +247,7 @@ export default function CitizenRequests() {
     <div className="portal-layout">
       <CitizenSidebar />
       <div className="portal-main">
-        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} subtitle={copy.subtitle} actions={<button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button>} />
+        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} subtitle={copy.subtitle} actions={<><button type="button" className="topbar-ghost" onClick={() => navigate("/citizen/requests/support")}>♡ Soutenir une demande</button><button type="button" className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button></>} />
         <main className="portal-content citizen-requests-page">
           {error && !showForm ? <div className="error-card" role="alert">{error}</div> : null}
           <section className="portal-card requests-intro-card" aria-labelledby="requests-intro-title">

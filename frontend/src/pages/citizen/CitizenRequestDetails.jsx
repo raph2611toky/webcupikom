@@ -138,7 +138,7 @@ export default function CitizenRequestDetails({params}){
         <article className="portal-card request-details-card">
           <span className="section-label">{copy.information}</span><h3>{copy.details}</h3>
           <div className="detail-list">
-            {isReport?<><div><span>{locale==="en"?"Report type":locale==="mg"?"Karazana tatitra":"Type de signalement"}</span><b>{request.reportType||request.category||"Signalement"}</b></div><div><span>Gravité</span><b>{request.severity||"—"}</b></div></>:null}
+            {isReport?<><div><span>{locale==="en"?"Report type":locale==="mg"?"Karazana tatitra":"Type de signalement"}</span><b>{request.reportType||request.category||"Signalement"}</b></div><div><span>Gravité</span><b>{request.severity||"—"}</b></div><div><span>Soutiens citoyens</span><b>{request.supportCount||0}</b></div></>:null}
             <div><span>{copy.service}</span><b>{request.service}</b></div><div><span>{copy.category}</span><b>{request.category||"—"}</b></div><div><span>{copy.location}</span><b>{request.location?.label||request.district||copy.notSpecified}</b></div><div><span>{copy.updated}</span><b>{request.updated}</b></div>{request.resolutionSummary?<div><span>Décision / suivi</span><b>{request.resolutionSummary}</b></div>:null}{request.cancellationReason?<div><span>Motif d’annulation</span><b>{request.cancellationReason}</b></div>:null}
           </div>
           {request.location?.latitude!=null?<div className="request-location-chip">⌖ {request.location.latitude}, {request.location.longitude}{request.location.accuracy!=null?` · ±${request.location.accuracy} m`:""}</div>:null}

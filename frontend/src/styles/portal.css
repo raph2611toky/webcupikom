@@ -2,6 +2,7 @@
 @import "./app-shell.css";
 @import "./pages/dashboard.css";
 @import "./pages/agent-polish.css";
+@import "./pages/agent.css";
 @import "./pages/agent-reports-v85.css";
 @import "./pages/citizen-appointments-flow.css";
 @import "./pages/citizen-appointments-v86.css";

@@ -24,6 +24,7 @@ const Contact = lazy(() => import("./pages/public/Contact.jsx"));
 const CitizenDashboard = lazy(() => import("./pages/citizen/CitizenDashboard.jsx"));
 const CitizenProfile = lazy(() => import("./pages/citizen/CitizenProfile.jsx"));
 const CitizenRequests = lazy(() => import("./pages/citizen/CitizenRequests.jsx"));
+const CitizenRequestSupport = lazy(() => import("./pages/citizen/CitizenRequestSupport.jsx"));
 const CitizenReports = lazy(() => import("./pages/citizen/CitizenReports.jsx"));
 const CitizenRequestDetails = lazy(() => import("./pages/citizen/CitizenRequestDetails.jsx"));
 const CitizenServices = lazy(() => import("./pages/citizen/CitizenServices.jsx"));
@@ -253,6 +254,7 @@ export default function App() {
       "/citizen/dashboard":<Protected roles={["citizen"]}><CitizenDashboard/></Protected>,
       "/citizen/profile":<Protected roles={["citizen"]}><CitizenProfile/></Protected>,
       "/citizen/requests":<Protected roles={["citizen"]}><CitizenRequests/></Protected>,
+      "/citizen/requests/support":<Protected roles={["citizen"]}><CitizenRequestSupport/></Protected>,
       "/citizen/signalements":<Protected roles={["citizen"]}><CitizenReports/></Protected>,
       "/citizen/services":<Protected roles={["citizen"]}><CitizenServices/></Protected>,
       "/citizen/transport":<Protected roles={["citizen"]}><CitizenTransport/></Protected>,

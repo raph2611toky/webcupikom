@@ -48,11 +48,14 @@ function normalizeMilestones(value) {
   const parsed = parseJsonish(value, []);
   const rows = Array.isArray(parsed) ? parsed : parsed && typeof parsed === "object" ? Object.values(parsed) : [];
   return rows.map((entry, index) => {
-    if (typeof entry === "string") return { title: entry, status: index === 0 ? "current" : "upcoming" };
+    if (typeof entry === "string") return { title: entry, status: index === 0 ? "current" : "pending" };
     return {
       ...entry,
       title: entry?.title || entry?.label || entry?.name || `Étape ${index + 1}`,
-      status: entry?.status || entry?.state || (entry?.completed ? "completed" : "upcoming"),
+      status: (() => {
+        const raw = entry?.status || entry?.state || (entry?.completed ? "completed" : "pending");
+        return raw === "upcoming" ? "pending" : raw;
+      })(),
     };
   });
 }
@@ -72,6 +75,7 @@ function normalizeOptions(value, participationType) {
     }));
     if (rows.length) return rows;
   }
+  if (participationType === "none") return [];
   return participationType === "decision" ? DEFAULT_DECISION_OPTIONS : DEFAULT_CONSULTATION_OPTIONS;
 }
 
@@ -181,9 +185,11 @@ function toIso(value) {
   return Number.isNaN(date.getTime()) ? value : date.toISOString();
 }
 
-function optionsObject(value, participationType) {
-  const rows = normalizeOptions(value, participationType);
-  return Object.fromEntries(rows.map((entry) => [String(entry.value), String(entry.label)]));
+function optionsList(value, participationType) {
+  return normalizeOptions(value, participationType).map((entry) => ({
+    value: String(entry.value),
+    label: String(entry.label),
+  }));
 }
 
 function projectPayload(payload = {}) {
@@ -193,7 +199,7 @@ function projectPayload(payload = {}) {
     : normalizeStringList(payload.objectivesText ?? payload.objectives);
   const milestones = Array.isArray(payload.milestones)
     ? payload.milestones
-    : normalizeStringList(payload.milestonesText ?? payload.milestones).map((title, index) => ({ title, status: index === 0 ? "current" : "upcoming" }));
+    : normalizeStringList(payload.milestonesText ?? payload.milestones).map((title, index) => ({ title, status: index === 0 ? "current" : "pending" }));
   return {
     ...(payload.slug ? { slug: payload.slug } : {}),
     title: payload.title,
@@ -209,7 +215,7 @@ function projectPayload(payload = {}) {
     milestones,
     participation_type: participationType,
     participation_question: participationType === "none" ? "" : payload.participation_question ?? payload.participationQuestion ?? "",
-    participation_options: participationType === "none" ? {} : optionsObject(payload.participation_options ?? payload.participationOptions, participationType),
+    participation_options: participationType === "none" ? [] : optionsList(payload.participation_options ?? payload.participationOptions, participationType),
     participation_opens_at: participationType === "none" ? null : toIso(payload.participation_opens_at),
     participation_closes_at: participationType === "none" ? null : toIso(payload.participation_closes_at ?? payload.decision_closes_at),
     support_enabled: Boolean(payload.support_enabled ?? payload.supportEnabled),
@@ -220,7 +226,7 @@ function projectPayload(payload = {}) {
 /* Public / citizen */
 export async function getMunicipalProjects({ force = false } = {}) {
   const load = async () => {
-    const { data } = await api.get("/city/projects/", { skipAccessToken: true });
+    const { data } = await api.get("/city/projects/");
     return unwrapList(data).map(normalizeMunicipalProject);
   };
   return force ? load() : cachedRequest("projects:public:list", load, { ttl: 60_000 });
@@ -228,7 +234,7 @@ export async function getMunicipalProjects({ force = false } = {}) {
 
 export async function getMunicipalProject(slug, { force = false } = {}) {
   const load = async () => {
-    const { data } = await api.get(`/city/projects/${encodeURIComponent(slug)}/`, { skipAccessToken: true });
+    const { data } = await api.get(`/city/projects/${encodeURIComponent(slug)}/`);
     return normalizeMunicipalProject(data);
   };
   return force ? load() : cachedRequest(`projects:public:item:${slug}`, load, { ttl: 60_000 });
@@ -272,8 +278,9 @@ export async function setProjectSupport(projectOrSlug, supported) {
   const endpoint = `/citizen/projects/${encodeURIComponent(slug)}/support/`;
   const response = supported ? await api.post(endpoint, {}) : await api.delete(endpoint);
   invalidateCache(`projects:public:item:${slug}`);
-  if (!supported && !response?.data) return { supported: false, supportCount: 0, supportedAt: "", message: "Soutien retiré." };
-  const row = response?.data || {};
+  const row = !supported && !response?.data
+    ? (await api.get(endpoint)).data
+    : (response?.data || {});
   return {
     supported: booleanish(row.supported, supported),
     supportCount: Number(row.support_count || 0),
@@ -304,8 +311,8 @@ export async function getCitizenIdea(reference) {
 }
 
 /* Administration */
-export async function getAdminMunicipalProjects() {
-  const { data } = await api.get("/admin/projects/");
+export async function getAdminMunicipalProjects(params = {}) {
+  const { data } = await api.get("/admin/projects/", { params });
   return unwrapList(data).map(normalizeMunicipalProject);
 }
 
@@ -337,13 +344,13 @@ export async function saveMunicipalProject(payload = {}) {
   return createAdminMunicipalProject(payload);
 }
 
-export async function getAllProjectContributions() {
-  const { data } = await api.get("/admin/project-participations/");
+export async function getAllProjectContributions(params = {}) {
+  const { data } = await api.get("/admin/project-participations/", { params });
   return unwrapList(data).map(normalizeContribution);
 }
 
-export async function getAllCitizenIdeas() {
-  const { data } = await api.get("/admin/ideas/");
+export async function getAllCitizenIdeas(params = {}) {
+  const { data } = await api.get("/admin/ideas/", { params });
   return unwrapList(data).map(normalizeIdea);
 }
 

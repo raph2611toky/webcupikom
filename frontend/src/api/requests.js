@@ -345,6 +345,58 @@ export async function getAllCitizenRequests(params = {}) {
   return filterCitizenRequestRows(rows, params);
 }
 
+function normalizeSupportableCitizenRequest(item = {}) {
+  return {
+    reference: item.reference || "",
+    title: item.public_title || item.category_label || "Signalement citoyen",
+    categoryCode: item.incident_category || "",
+    categoryLabel: item.category_label || item.incident_category || "Signalement",
+    district: item.district || "",
+    serviceName: item.service_name || "",
+    status: item.status || "submitted",
+    statusLabel: item.status_label || CITIZEN_STATUS[item.status] || item.status || "",
+    createdAt: item.created_at || null,
+    supportCount: Number(item.support_count || 0),
+    isSupported: Boolean(item.is_supported),
+    canSupport: Boolean(item.can_support),
+  };
+}
+
+export async function getSupportableCitizenRequests(params = {}) {
+  const { data } = await api.get("/citizen/supportable-requests/", { params: cleanParams(params) });
+  return {
+    count: Number(data?.count ?? unwrapList(data).length),
+    next: data?.next || null,
+    previous: data?.previous || null,
+    results: unwrapList(data).map(normalizeSupportableCitizenRequest),
+  };
+}
+
+export async function getCitizenRequestSupport(reference) {
+  const { data } = await api.get(`/citizen/requests/${encodeURIComponent(reference)}/support/`);
+  return {
+    reference: data?.reference || reference,
+    supported: Boolean(data?.supported),
+    supportCount: Number(data?.support_count || 0),
+    supportedAt: data?.supported_at || null,
+    canSupport: Boolean(data?.can_support),
+    confirmation: data?.confirmation || "",
+  };
+}
+
+export async function setCitizenRequestSupport(reference, supported) {
+  const endpoint = `/citizen/requests/${encodeURIComponent(reference)}/support/`;
+  const { data } = supported ? await api.post(endpoint, {}) : await api.delete(endpoint);
+  return {
+    reference: data?.reference || reference,
+    supported: Boolean(data?.supported),
+    supportCount: Number(data?.support_count || 0),
+    supportedAt: data?.supported_at || null,
+    canSupport: Boolean(data?.can_support),
+    confirmation: data?.confirmation || (supported ? "Votre soutien a bien été enregistré." : "Votre soutien a été retiré."),
+  };
+}
+
 async function getStaffRequestsPage(scope, params = {}) {
   const safeScope = scope === "admin" ? "admin" : "agent";
   const { data } = await api.get(`/${safeScope}/requests/`, { params: cleanParams(params) });
