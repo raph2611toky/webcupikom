@@ -137,7 +137,10 @@ class NewsTests(APITestCase):
     def test_announcement_broadcast_is_also_duplicated_by_email(self):
         item = self.article(publication_type='announcement', is_important=False)
         mail.outbox.clear()
-        self.assertEqual(deliver_news(item.pk), 2)
+        # deliver_news envoie les emails uniquement après commit. APITestCase
+        # garde une transaction ouverte : exécuter explicitement ces callbacks.
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(deliver_news(item.pk), 2)
         self.assertEqual(item.notifications.count(), 2)
         self.assertEqual(len(mail.outbox), 2)
         self.assertEqual(dispatch_due_notification_emails()['sent'], 0)
@@ -145,7 +148,8 @@ class NewsTests(APITestCase):
     def test_targeted_announcement_limits_broadcast_and_email_to_target_district(self):
         item = self.article(slug='targeted-announcement', publication_type='announcement', target_districts=['sud'])
         mail.outbox.clear()
-        self.assertEqual(deliver_news(item.pk), 1)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(deliver_news(item.pk), 1)
         self.assertTrue(item.notifications.filter(user=self.south).exists())
         self.assertFalse(item.notifications.filter(user=self.north).exists())
         self.assertEqual(len(mail.outbox), 1)
@@ -161,10 +165,12 @@ class NewsTests(APITestCase):
     def test_regular_news_keeps_existing_email_rule(self):
         normal = self.article(slug='normal-news', publication_type='news', is_important=False)
         mail.outbox.clear()
-        self.assertEqual(deliver_news(normal.pk), 2)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(deliver_news(normal.pk), 2)
         self.assertEqual(len(mail.outbox), 0)
         important = self.article(slug='important-news', publication_type='news', is_important=True)
-        self.assertEqual(deliver_news(important.pk), 2)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(deliver_news(important.pk), 2)
         self.assertEqual(len(mail.outbox), 2)
 
     def test_f104_space_weather_reuses_critical_alert_delivery(self):
@@ -178,7 +184,11 @@ class NewsTests(APITestCase):
             'source_name': 'Centre d’alerte spatiale',
             'expires_at': (timezone.now() + timedelta(hours=4)).isoformat(),
         }
-        response = self.client.post('/api/admin/news/', data, format='json')
+        mail.outbox.clear()
+        # La création API programme la diffusion après commit ; reproduire le
+        # commit applicatif dans APITestCase pour tester broadcast + email.
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post('/api/admin/news/', data, format='json')
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response.data['publication_type'], 'alert')
         self.assertEqual(response.data['severity'], 'critical')
@@ -190,10 +200,9 @@ class NewsTests(APITestCase):
         item = NewsArticle.objects.get(pk=response.data['id'])
         # La diffusion reste celle déjà utilisée par toutes les alertes :
         # notifications citoyennes puis duplication email idempotente.
-        mail.outbox.clear()
-        self.assertEqual(deliver_news(item.pk), 2)
         self.assertEqual(item.notifications.count(), 2)
         self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(dispatch_due_notification_emails()['sent'], 0)
 
     def test_f104_published_space_weather_cannot_silently_disable_delivery(self):
         data = {
@@ -213,7 +222,8 @@ class NewsTests(APITestCase):
         }
         response = self.client.post('/api/admin/news/', data, format='json')
         self.assertEqual(response.status_code, 400, response.data)
-        self.assertIn('notify_residents', response.data)
+        self.assertIn('errors', response.data)
+        self.assertIn('notify_residents', response.data['errors'])
 
     def test_filters_priority_pagination(self):
         self.article()
