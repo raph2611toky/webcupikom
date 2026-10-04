@@ -4,6 +4,7 @@ import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import { acknowledgeAgentReportAlert, getAgentRequestCount, getAgentRequests, getAgentUnacknowledgedReportAlerts } from "../../api/requests.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 
 const STATUS_OPTIONS = [
   ["", "Tous les statuts"],
@@ -154,6 +155,8 @@ export default function AgentReports() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [realtimeVersion, setRealtimeVersion] = useState(0);
+  useRealtimeRefresh("nova-reports-updated", () => setRealtimeVersion((value) => value + 1));
 
   useEffect(() => {
     Promise.all([
@@ -171,7 +174,7 @@ export default function AgentReports() {
       action: Math.max(0, action - actionEmergency),
       completed: Math.max(0, completed - completedEmergency),
     })).catch(() => {});
-  }, []);
+  }, [realtimeVersion]);
 
   useEffect(() => {
     let active = true;
@@ -179,7 +182,7 @@ export default function AgentReports() {
       .then((page) => { if (active) { setEmergencyAlerts(page.results || []); setEmergencyCount(page.count || 0); } })
       .catch(() => {});
     return () => { active = false; };
-  }, []);
+  }, [realtimeVersion]);
 
   async function acknowledgeEmergency(reference) {
     if (!reference || acknowledging) return;
@@ -212,7 +215,7 @@ export default function AgentReports() {
         .finally(() => active && setLoading(false));
     }, 180);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [status, query, emergencyOnly]);
+  }, [status, query, emergencyOnly, realtimeVersion]);
 
   const filteredRows = useMemo(() => {
     return requests.filter((row) => {

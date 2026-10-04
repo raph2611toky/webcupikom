@@ -201,6 +201,12 @@ SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
 CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
+CSRF_COOKIE_NAME = "csrftoken"
+CSRF_COOKIE_PATH = "/"
+CSRF_COOKIE_HTTPONLY = False
+
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = env_bool("USE_X_FORWARDED_HOST", True)
@@ -307,7 +313,6 @@ if REALTIME_ENABLED:
                 "expiry": 60,
                 "group_expiry": 86400,
                 "symmetric_encryption_keys": [REALTIME_CHANNEL_ENCRYPTION_KEY],
-                "serializer_format": "json",
             },
         }
     }

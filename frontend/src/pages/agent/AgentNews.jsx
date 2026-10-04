@@ -5,6 +5,7 @@ import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { getNews } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
 import { useDataMode } from "../../utils/useDataMode.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 
 export default function AgentNews(){
   const dataProfile=useDataMode();
@@ -14,6 +15,7 @@ export default function AgentNews(){
   const [loading,setLoading]=useState(true);
   const perPage=8;
   useEffect(()=>{let active=true;setLoading(true);getNews().then(rows=>active&&setItems(rows)).catch(()=>active&&setItems([])).finally(()=>active&&setLoading(false));return()=>{active=false}},[]);
+  useRealtimeRefresh("terra-news-updated", ()=>{getNews({force:true}).then(setItems).catch(()=>{});});
   const rows=useMemo(()=>{const q=query.trim().toLowerCase();return items.filter(item=>!q||`${item.title||""} ${item.category||""} ${item.excerpt||""}`.toLowerCase().includes(q))},[items,query]);
   const totalPages=Math.max(1,Math.ceil(rows.length/perPage));
   const pageRows=rows.slice((page-1)*perPage,page*perPage);

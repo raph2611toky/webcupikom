@@ -6,6 +6,11 @@ const REGISTRATION_CONTEXT_KEY = "nova_terra_registration_context";
 const MFA_CONTEXT_KEY = "nova_terra_pending_mfa";
 const ACCOUNT_GOOGLE_PROOF_KEY = "nova_terra_account_google_proof";
 let bootstrapPromise = null;
+const googleExchangePromises = new Map();
+
+function googleExchangeKey(code, state) {
+  return `${String(state || "")}::${String(code || "")}`;
+}
 
 function rememberFromSession() {
   return window.sessionStorage.getItem(GOOGLE_REMEMBER_KEY) !== "false";
@@ -287,16 +292,32 @@ export function clearAccountGoogleProof() {
   window.sessionStorage.removeItem(ACCOUNT_GOOGLE_PROOF_KEY);
 }
 
-export async function completeGoogleAuth({ code, state }) {
-  clearPendingMfa();
-  const { data } = await api.post(
-    "/auth/google/",
-    toFormData({ code, state, remember: consumeGoogleRemember() }),
-    { skipAuthRefresh: true, skipAccessToken: true, csrf: true },
-  );
-  if (data?.mfa_required) rememberPendingMfa(data, "google");
-  else applyAuthenticatedSession(data);
-  return data;
+export function completeGoogleAuth({ code, state }) {
+  const key = googleExchangeKey(code, state);
+
+  // Un authorization code Google est à usage unique. React.StrictMode exécute
+  // les effets deux fois en développement : les deux appels doivent donc
+  // partager exactement la même Promise au lieu d'échanger le code deux fois.
+  const existing = googleExchangePromises.get(key);
+  if (existing) return existing;
+
+  const exchangePromise = (async () => {
+    clearPendingMfa();
+
+    const { data } = await api.post(
+      "/auth/google/",
+      toFormData({ code, state, remember: consumeGoogleRemember() }),
+      { skipAuthRefresh: true, skipAccessToken: true, csrf: true },
+    );
+
+    if (data?.mfa_required) rememberPendingMfa(data, "google");
+    else applyAuthenticatedSession(data);
+
+    return data;
+  })();
+
+  googleExchangePromises.set(key, exchangePromise);
+  return exchangePromise;
 }
 
 export async function sendAuthMfaEmail(mfaToken) {

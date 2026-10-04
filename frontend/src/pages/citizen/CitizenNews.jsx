@@ -6,6 +6,7 @@ import { getNews } from "../../api/news.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import { useDataMode } from "../../utils/useDataMode.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 import "../../styles/pages/citizen-news-v94.css";
 
 const COPY={
@@ -40,6 +41,10 @@ export default function CitizenNews(){
     getNews().then(data=>active&&setItems(data)).catch(()=>active&&setError(copy.error)).finally(()=>active&&setLoading(false));
     return()=>{active=false};
   },[locale]);
+
+  useRealtimeRefresh("terra-news-updated", ()=>{
+    getNews({force:true}).then(setItems).catch(()=>{});
+  });
 
   useEffect(()=>{
     const syncType=()=>{

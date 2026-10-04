@@ -11,7 +11,7 @@ export default function GoogleCallbackPage() {
   const [status, setStatus] = useState({ type: "info", message: "Connexion Google en cours…" });
 
   useEffect(() => {
-    let mounted = true;
+    let active = true;
     const googleError = params.get("error");
     const code = params.get("code");
     const state = params.get("state");
@@ -22,6 +22,14 @@ export default function GoogleCallbackPage() {
       return undefined;
     }
 
+    // Le code OAuth est à usage unique. On l'enlève immédiatement de l'URL
+    // afin qu'un rafraîchissement de la page ne tente pas de le rejouer.
+    window.history.replaceState(
+      window.history.state,
+      document.title,
+      window.location.pathname,
+    );
+
     const sensitivePurpose = ["mfa-setup", "mfa-disable", "mfa-recovery", "set-password", "change-email", "delete-account"].includes(flow?.purpose);
     if (sensitivePurpose) {
       storeAccountGoogleProof({ purpose: flow.purpose, code, state });
@@ -31,9 +39,12 @@ export default function GoogleCallbackPage() {
       return undefined;
     }
 
+    // completeGoogleAuth déduplique maintenant les appels identiques :
+    // les deux exécutions de useEffect sous React.StrictMode réutilisent
+    // la même Promise et un seul POST /api/auth/google/ part vers le backend.
     completeGoogle({ code, state })
       .then((data) => {
-        if (!mounted) return;
+        if (!active) return;
 
         if (data?.mfa_required) {
           const next = flow?.returnTo ? `&next=${encodeURIComponent(flow.returnTo)}` : "";
@@ -49,11 +60,12 @@ export default function GoogleCallbackPage() {
         navigate(target, { replace: true });
       })
       .catch((error) => {
-        if (!mounted) return;
+        if (!active) return;
+        clearGoogleFlow();
         setStatus({ type: "error", message: getApiErrorMessage(error, "Connexion Google impossible.") });
       });
 
-    return () => { mounted = false; };
+    return () => { active = false; };
   }, [completeGoogle, flow, params]);
 
   return (

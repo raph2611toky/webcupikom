@@ -13,6 +13,7 @@ import {
 } from "../../api/news.js";
 import { getServices } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 
 const EMPTY = {
   title: "",
@@ -85,6 +86,7 @@ export default function AdminNews() {
   }
 
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh("terra-news-updated", () => load());
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -280,7 +282,7 @@ export default function AdminNews() {
             <label className="span-2"><span>Quartiers ciblés</span><input value={form.target_districts} onChange={(e) => patch("target_districts", e.target.value)} placeholder="Nova Centre, Secteur Nord"/></label>
             <label className="span-2"><span>Zones concernées</span><input value={form.affected_areas} onChange={(e) => patch("affected_areas", e.target.value)} placeholder="Avenue Centrale et rues adjacentes"/></label>
             <label className="span-2"><span>Consignes aux habitants</span><textarea rows="3" value={form.instructions} onChange={(e) => patch("instructions", e.target.value)} placeholder="Que doivent faire les habitants ?"/></label>
-            <label className="span-2"><span>Public concerné</span><textarea rows="2" value={form.audience_guidance} onChange={(e) => patch("audience_guidance", e.target.value)} placeholder="Ex. Les riverains et automobilistes sont principalement concernés."/></label>
+            <label className="span-2"><span>Public concerné</span><textarea rows="3" value={form.audience_guidance} onChange={(e) => patch("audience_guidance", e.target.value)} placeholder="Un public par ligne — ex. Riverains\nAutomobilistes"/><small>Chaque ligne devient un public distinct. Les consignes ci-dessus sont associées à ces publics.</small></label>
 
             <label><span>Source officielle</span><input maxLength="160" value={form.source_name} onChange={(e) => patch("source_name", e.target.value)} placeholder="Ex. Service Mobilité"/></label>
             <label><span>Téléphone de contact</span><input maxLength="50" value={form.contact_phone} onChange={(e) => patch("contact_phone", e.target.value)} placeholder="+261 ..."/></label>

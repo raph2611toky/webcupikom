@@ -6,6 +6,7 @@ import { getAdminRequestSummary, getAdminRequestsPage, getAgentRequestSummary, g
 import { getServices } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 
 const FLOW_FILTERS = [
   ["all", "Toutes"],
@@ -51,6 +52,8 @@ export default function AgentRequests({ mode = "agent" } = {}) {
   const [metrics, setMetrics] = useState({ awaiting: 0, action: 0, processing: 0, waitingCitizen: 0, answered: 0, awaitingReply: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [realtimeVersion, setRealtimeVersion] = useState(0);
+  useRealtimeRefresh("nova-requests-updated", () => setRealtimeVersion((value) => value + 1));
 
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
   useEffect(() => {
@@ -62,7 +65,7 @@ export default function AgentRequests({ mode = "agent" } = {}) {
       answered: Number(summary.answered || 0),
       awaitingReply: Number(summary.awaiting_first_reply || 0),
     })).catch(() => {});
-  }, [isAdmin]);
+  }, [isAdmin, realtimeVersion]);
 
   useEffect(() => {
     let active = true;
@@ -87,7 +90,7 @@ export default function AgentRequests({ mode = "agent" } = {}) {
         .finally(() => active && setLoading(false));
     }, 180);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [filters, page]);
+  }, [filters, page, realtimeVersion]);
 
   const hasFilters = useMemo(() => filters.workflow !== "all" || filters.query || filters.service || filters.priority || filters.type || filters.reply !== "all", [filters]);
   const setWorkflow = (workflow) => { setFilters((value) => ({ ...value, workflow })); setPage(1); };

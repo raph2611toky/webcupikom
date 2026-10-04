@@ -11,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from helpers.permissions import IsAuthenticatedAnyRole, IsAuthenticatedAgent, IsAuthenticatedAdmin
 from .security_api import SecurityAPIView
@@ -254,13 +256,31 @@ class CurrentSessionLogoutView(SecurityAPIView):
         return response
 
 
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class CSRFTokenView(SecurityAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @swagger_auto_schema(security=[], responses={200: openapi.Schema(type='object', properties={'csrf_token': openapi.Schema(type='string')})}, tags=['Authentification'])
+    @swagger_auto_schema(
+        security=[],
+        responses={
+            200: openapi.Schema(
+                type="object",
+                properties={
+                    "csrf_token": openapi.Schema(type="string")
+                },
+            )
+        },
+        tags=["Authentification"],
+    )
     def get(self, request):
-        return no_store(Response({'csrf_token': get_token(request)}))
+        token = get_token(request)
+
+        response = Response({
+            "csrf_token": token
+        })
+
+        return no_store(response)
 
 
 class CitizenAdminSerializer(serializers.ModelSerializer):

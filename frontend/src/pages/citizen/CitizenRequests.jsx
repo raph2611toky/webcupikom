@@ -7,6 +7,7 @@ import { getApiErrorMessage } from "../../api/auth.js";
 import { CATEGORY_SERVICE, REQUEST_CATEGORIES, REQUEST_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 
 const filters = [
   ["", "Toutes"], ["submitted", "Envoyée"], ["pending", "En attente"],
@@ -114,7 +115,9 @@ export default function CitizenRequests() {
   const [created, setCreated] = useState(null);
   const [error,setError]=useState("");
   const [exporting,setExporting]=useState(false);
+  const [realtimeVersion,setRealtimeVersion]=useState(0);
   const fileRef = useRef(null);
+  useRealtimeRefresh("nova-requests-updated",()=>setRealtimeVersion(value=>value+1));
 
   async function refresh(targetPage = page) {
     setLoading(true);
@@ -186,7 +189,7 @@ export default function CitizenRequests() {
   useEffect(() => {
     const timer = window.setTimeout(() => refresh(page), query ? 220 : 0);
     return () => window.clearTimeout(timer);
-  }, [filter, query, page]);
+  }, [filter, query, page, realtimeVersion]);
 
   const rows = useMemo(() => requests, [requests]);
   const selectedService = services.find((item) => String(item.id) === String(draft.serviceId));

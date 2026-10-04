@@ -25,6 +25,50 @@ function formatDate(value) {
   }).format(date);
 }
 
+
+function normalizeAudienceGuidance(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        const audience = item.trim();
+        return audience ? { audience, instructions: "" } : null;
+      }
+      if (!item || typeof item !== "object") return null;
+      const audience = String(item.audience || "").trim();
+      const instructions = String(item.instructions || "").trim();
+      return audience ? { audience, instructions } : null;
+    })
+    .filter(Boolean);
+}
+
+function audienceGuidanceText(value) {
+  return normalizeAudienceGuidance(value)
+    .map((item) => item.audience)
+    .filter(Boolean)
+    .join("\n");
+}
+
+function toAudienceGuidance(value, fallbackInstructions = "") {
+  if (Array.isArray(value)) {
+    const rows = normalizeAudienceGuidance(value);
+    return rows.map((item) => ({
+      audience: item.audience.slice(0, 120),
+      instructions: (item.instructions || fallbackInstructions || "Consulter les informations et consignes de cette publication.").slice(0, 5000),
+    }));
+  }
+
+  const rows = String(value || "")
+    .split(/\r?\n|;/g)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return rows.slice(0, 20).map((audience) => ({
+    audience: audience.slice(0, 120),
+    instructions: (fallbackInstructions || "Consulter les informations et consignes de cette publication.").slice(0, 5000),
+  }));
+}
+
 function normalizeNews(item) {
   const publicationType = item.publication_type || item.publicationType || "news";
   return {
@@ -52,7 +96,8 @@ function normalizeNews(item) {
     targetDistricts: Array.isArray(item.target_districts) ? item.target_districts : [],
     affectedAreas: item.affected_areas || "",
     instructions: item.instructions || "",
-    audienceGuidance: item.audience_guidance || "",
+    audienceGuidance: audienceGuidanceText(item.audience_guidance),
+    audienceGuidanceList: normalizeAudienceGuidance(item.audience_guidance),
     sourceName: item.source_name || "",
     sourceUrl: item.source_url || "",
     contactPhone: item.contact_phone || "",
@@ -124,7 +169,10 @@ function toBackendPayload(payload) {
     target_districts: splitDistricts(payload),
     affected_areas: payload.affected_areas ?? payload.affectedAreas ?? "",
     instructions: payload.instructions || "",
-    audience_guidance: payload.audience_guidance ?? payload.audienceGuidance ?? "",
+    audience_guidance: toAudienceGuidance(
+      payload.audience_guidance ?? payload.audienceGuidance ?? [],
+      payload.instructions || payload.content || payload.body || "",
+    ),
     source_name: payload.source_name ?? payload.sourceName ?? "",
     contact_phone: payload.contact_phone ?? payload.contactPhone ?? "",
     action_label: payload.action_label ?? payload.actionLabel ?? "",

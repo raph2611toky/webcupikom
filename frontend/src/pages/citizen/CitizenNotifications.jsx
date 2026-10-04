@@ -12,6 +12,7 @@ import {
 import { getApiErrorMessage } from "../../api/auth.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 
 const COPY={
   fr:{
@@ -131,6 +132,8 @@ export default function CitizenNotifications(){
       if(!silent)setLoading(false);
     }
   }
+
+  useRealtimeRefresh("nova-realtime:notification", ()=>load({silent:true}));
 
   useEffect(()=>{
     let active=true;

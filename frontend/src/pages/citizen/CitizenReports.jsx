@@ -6,6 +6,7 @@ import { createCitizenRequest, getCitizenReportCategories, getCitizenRequests } 
 import { REPORT_TYPES } from "../../constants/requestOptions.js";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 
 const COPY = {
@@ -212,6 +213,8 @@ export default function CitizenReports(){
     refresh();
     getCitizenReportCategories().then(setReportMeta).catch(()=>{});
   },[]);
+
+  useRealtimeRefresh("nova-reports-updated", ()=>refresh());
 
   useEffect(()=>{
     if(reportTypes.length&&!reportTypes.some(item=>item.value===reportType)){
