@@ -218,7 +218,17 @@ class ContactMessage(models.Model):
         READ = "read", "Lu"
         CLOSED = "closed", "Clôturé"
 
+    class Category(models.TextChoices):
+        GENERAL = "general", "Contact général"
+        PRIVACY = "privacy", "Confidentialité / données personnelles"
+
     reference = models.CharField(max_length=32, unique=True, editable=False)
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.GENERAL,
+        db_index=True,
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -1000,14 +1010,14 @@ class ServiceFeedback(models.Model):
         CitizenRequest,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL,
+        on_delete=models.RESTRICT,
         related_name="service_feedbacks",
     )
     source_appointment = models.ForeignKey(
         CitizenAppointment,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL,
+        on_delete=models.RESTRICT,
         related_name="service_feedbacks",
     )
     rating = models.PositiveSmallIntegerField()
@@ -1026,6 +1036,13 @@ class ServiceFeedback(models.Model):
                 condition=models.Q(rating__gte=1, rating__lte=5),
                 name="service_feedback_rating_1_5",
             ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(source_request__isnull=False, source_appointment__isnull=True)
+                    | models.Q(source_request__isnull=True, source_appointment__isnull=False)
+                ),
+                name="service_feedback_exactly_one_usage_source",
+            ),
         ]
         indexes = [
             models.Index(fields=("service", "created_at"), name="city_feedback_service_idx"),
@@ -1037,9 +1054,35 @@ class ServiceFeedback(models.Model):
     def verified_usage(self):
         return bool(self.source_request_id or self.source_appointment_id)
 
+    def clean(self):
+        super().clean()
+        has_request = bool(self.source_request_id)
+        has_appointment = bool(self.source_appointment_id)
+        if has_request == has_appointment:
+            raise ValidationError(
+                "Un avis doit être rattaché exactement à une demande terminée ou à un rendez-vous terminé."
+            )
+
+        source = self.source_request if has_request else self.source_appointment
+        if source.citizen_id != self.citizen_id or source.service_id != self.service_id:
+            raise ValidationError(
+                "La preuve d'utilisation doit appartenir au citoyen et au service évalué."
+            )
+        expected_status = (
+            CitizenRequest.Status.COMPLETED if has_request else CitizenAppointment.Status.COMPLETED
+        )
+        if source.status != expected_status:
+            raise ValidationError(
+                "La preuve d'utilisation doit correspondre à une démarche terminée."
+            )
+
     def save(self, *args, **kwargs):
         if not self.reference:
             self.reference = make_reference("NT-AVIS")
+        # Le serializer reste la première barrière ; ce contrôle protège aussi
+        # les créations internes/directes ORM qui contourneraient l'API.
+        if self._state.adding:
+            self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):

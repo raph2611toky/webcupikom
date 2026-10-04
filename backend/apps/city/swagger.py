@@ -80,6 +80,7 @@ def query_string(name, description):
 
 
 CONTACT_CREATE_PARAMETERS = [
+    form_string("category", "Catégorie : general ou privacy (privacy exige un compte citoyen connecté)"),
     form_string("name", "Nom de l'expéditeur", required=True),
     form_string("email", "Adresse email", required=True, fmt=openapi.FORMAT_EMAIL),
     form_int("service", "ID du service municipal concerné"),

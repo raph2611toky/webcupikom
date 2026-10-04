@@ -3,6 +3,7 @@ from django.db.models import Count, Exists, OuterRef, Q
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -87,9 +88,9 @@ def _support_state(instance, citizen, *, confirmation=""):
 
 
 class SupportableCitizenRequestListView(generics.ListAPIView):
-    """F52 : demandes soutenables, avec projection strictement non personnelle."""
+    """F52 : demandes publiques soutenables, avec projection strictement non personnelle."""
 
-    permission_classes = [IsAuthenticatedCitizen]
+    permission_classes = [AllowAny]
     serializer_class = SupportableCitizenRequestSerializer
     throttle_scope = "citizen_participation"
 
@@ -101,18 +102,19 @@ class SupportableCitizenRequestListView(generics.ListAPIView):
         if getattr(self, "swagger_fake_view", False):
             return CitizenRequest.objects.none()
         user = self.request.user
-        own_support = CitizenRequestSupport.objects.filter(
-            request=OuterRef("pk"), citizen=user
-        )
         queryset = (
             _supportable_base_queryset()
-            .exclude(citizen=user)
             .select_related("service")
-            .annotate(
-                support_count=Count("request_supports", distinct=True),
-                is_supported=Exists(own_support),
-            )
+            .annotate(support_count=Count("request_supports", distinct=True))
         )
+        if user and user.is_authenticated:
+            queryset = queryset.exclude(citizen=user).annotate(
+                is_supported=Exists(
+                    CitizenRequestSupport.objects.filter(
+                        request=OuterRef("pk"), citizen=user
+                    )
+                )
+            )
         district = (self.request.query_params.get("district") or "").strip()
         category = (self.request.query_params.get("category") or "").strip()
         service = (self.request.query_params.get("service") or "").strip()
@@ -219,12 +221,19 @@ class CitizenServiceFeedbackView(APIView):
             "service", "source_request", "source_appointment"
         ).filter(citizen=request.user, service=service).first()
         sources = _feedback_sources(request.user, service)
+        usage_eligible = bool(sources)
         return Response({
-            "eligible": bool(sources),
+            "eligible": usage_eligible,
+            "can_create": bool(usage_eligible and feedback is None),
+            "can_update": bool(feedback is not None),
             "eligibility_reason": (
-                "Vous pouvez laisser un avis après une utilisation terminée de ce service."
-                if sources
-                else "Aucune demande ou rendez-vous terminé n'a été trouvé pour ce service."
+                "Votre utilisation est vérifiée. Vous pouvez modifier votre avis existant."
+                if feedback is not None
+                else (
+                    "Vous pouvez laisser un avis après une utilisation terminée de ce service."
+                    if usage_eligible
+                    else "Aucune demande ou rendez-vous terminé n'a été trouvé pour ce service."
+                )
             ),
             "eligible_sources": sources,
             "feedback": (

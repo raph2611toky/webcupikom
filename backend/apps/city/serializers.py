@@ -330,7 +330,21 @@ from .news_serializers import PublicationSerializer as NewsArticleSerializer, Pu
 class ContactMessageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
-        fields = ("name", "email", "service", "subject", "message")
+        fields = ("category", "name", "email", "service", "subject", "message")
+
+    def validate_category(self, value):
+        if value == ContactMessage.Category.PRIVACY:
+            request = self.context.get("request")
+            user = getattr(request, "user", None)
+            if not (
+                user
+                and user.is_authenticated
+                and getattr(user, "role", None) == User.Role.CITIZEN
+            ):
+                raise serializers.ValidationError(
+                    "Les préoccupations de confidentialité doivent être envoyées depuis un compte citoyen connecté."
+                )
+        return value
 
     def validate_service(self, value):
         if value and not value.is_active:
@@ -347,7 +361,7 @@ class ContactMessageCreateSerializer(serializers.ModelSerializer):
 class ContactMessageReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
-        fields = ("reference", "status", "created_at")
+        fields = ("reference", "category", "status", "created_at")
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
@@ -358,12 +372,12 @@ class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
         fields = (
-            "id", "reference", "user", "user_name", "name", "email", "service",
+            "id", "reference", "category", "user", "user_name", "name", "email", "service",
             "service_name", "subject", "message", "status", "assigned_to",
             "assigned_to_name", "read_at", "closed_at", "created_at", "updated_at",
         )
         read_only_fields = (
-            "id", "reference", "user", "user_name", "name", "email", "service",
+            "id", "reference", "category", "user", "user_name", "name", "email", "service",
             "service_name", "subject", "message", "assigned_to_name", "read_at",
             "closed_at", "created_at", "updated_at",
         )
@@ -384,6 +398,15 @@ class ContactMessageSerializer(serializers.ModelSerializer):
             and (value.is_superuser or getattr(value, "role", None) in {"agent", "admin"})
         ):
             raise serializers.ValidationError("Le responsable doit être un agent ou administrateur actif.")
+        if (
+            value
+            and self.instance
+            and self.instance.category == ContactMessage.Category.PRIVACY
+            and not (value.is_superuser or getattr(value, "role", None) == User.Role.ADMIN)
+        ):
+            raise serializers.ValidationError(
+                "Un message de confidentialité ne peut être attribué qu'à un administrateur."
+            )
         return value
 
     def update(self, instance, validated_data):
@@ -417,7 +440,7 @@ class CitizenContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
         fields = (
-            "reference", "service", "service_name", "subject", "message", "status",
+            "reference", "category", "service", "service_name", "subject", "message", "status",
             "created_at", "updated_at",
         )
         read_only_fields = fields

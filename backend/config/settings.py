@@ -178,6 +178,16 @@ AUTH_REFRESH_COOKIE_MAX_AGE = int(
 )
 AUTH_COOKIE_REMEMBER_DEFAULT = env_bool("AUTH_COOKIE_REMEMBER_DEFAULT", True)
 
+# F54 — identifiant opaque de navigateur/appareil. Le cookie ne contient ni
+# email, ni user id, ni empreinte matérielle ; seule une valeur aléatoire HttpOnly
+# est conservée côté navigateur et son hash user-scoped côté base.
+AUTH_DEVICE_COOKIE_NAME = os.getenv("AUTH_DEVICE_COOKIE_NAME", "kamo_device")
+AUTH_DEVICE_COOKIE_SECURE = env_bool("AUTH_DEVICE_COOKIE_SECURE", AUTH_REFRESH_COOKIE_SECURE)
+AUTH_DEVICE_COOKIE_SAMESITE = os.getenv("AUTH_DEVICE_COOKIE_SAMESITE", AUTH_REFRESH_COOKIE_SAMESITE).strip() or "Lax"
+AUTH_DEVICE_COOKIE_DOMAIN = os.getenv("AUTH_DEVICE_COOKIE_DOMAIN", "").strip() or AUTH_REFRESH_COOKIE_DOMAIN
+AUTH_DEVICE_COOKIE_PATH = os.getenv("AUTH_DEVICE_COOKIE_PATH", "/api/auth/").strip() or "/api/auth/"
+AUTH_DEVICE_COOKIE_MAX_AGE = int(os.getenv("AUTH_DEVICE_COOKIE_MAX_AGE", str(365 * 24 * 60 * 60)))
+
 SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)

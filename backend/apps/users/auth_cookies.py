@@ -13,6 +13,26 @@ def build_refresh_token(user, *, remember: bool, request=None) -> RefreshToken:
     return refresh
 
 
+
+def set_device_cookie(response: Response, raw_token: str | None) -> None:
+    if not raw_token:
+        return
+    options = {
+        "httponly": True,
+        "secure": getattr(settings, "AUTH_DEVICE_COOKIE_SECURE", settings.AUTH_REFRESH_COOKIE_SECURE),
+        "samesite": getattr(settings, "AUTH_DEVICE_COOKIE_SAMESITE", settings.AUTH_REFRESH_COOKIE_SAMESITE),
+        "path": getattr(settings, "AUTH_DEVICE_COOKIE_PATH", "/api/auth/"),
+        "max_age": getattr(settings, "AUTH_DEVICE_COOKIE_MAX_AGE", 365 * 24 * 60 * 60),
+    }
+    domain = getattr(settings, "AUTH_DEVICE_COOKIE_DOMAIN", settings.AUTH_REFRESH_COOKIE_DOMAIN)
+    if domain:
+        options["domain"] = domain
+    response.set_cookie(
+        getattr(settings, "AUTH_DEVICE_COOKIE_NAME", "kamo_device"),
+        raw_token,
+        **options,
+    )
+
 def remember_from_refresh(refresh_value: str) -> bool:
     refresh = RefreshToken(refresh_value)
     return bool(refresh.get("remember", settings.AUTH_COOKIE_REMEMBER_DEFAULT))

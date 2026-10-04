@@ -477,12 +477,18 @@ class ContactMessageCreateView(generics.CreateAPIView):
         _register_service_usage(instance.service_id)
 
         if instance.user and getattr(instance.user, "role", None) == User.Role.CITIZEN:
+            is_privacy = instance.category == ContactMessage.Category.PRIVACY
             CitizenNotification.objects.create(
                 user=instance.user,
                 kind=CitizenNotification.Kind.CONTACT,
-                title="Message transmis à la mairie",
+                title=(
+                    "Préoccupation de confidentialité enregistrée"
+                    if is_privacy
+                    else "Message transmis à la mairie"
+                ),
                 message=f"Votre message {instance.reference} a bien été reçu.",
                 related_contact=instance,
+                is_important=is_privacy,
             )
 
         return Response(
@@ -740,7 +746,11 @@ class CitizenContactMessageListView(generics.ListAPIView):
         user = getattr(self.request, "user", None)
         if not user or not user.is_authenticated:
             return ContactMessage.objects.none()
-        return ContactMessage.objects.filter(user=user).select_related("service")
+        queryset = ContactMessage.objects.filter(user=user).select_related("service")
+        category = (self.request.query_params.get("category") or "").strip()
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
 
 
 class CitizenContactMessageDetailView(generics.RetrieveAPIView):
@@ -1140,6 +1150,7 @@ class AgentDashboardView(APIView):
         is_agent = getattr(request.user, "role", None) == User.Role.AGENT
         if is_agent:
             appointments = appointments.filter(agent=request.user)
+            contacts = contacts.exclude(category=ContactMessage.Category.PRIVACY)
         now = timezone.now()
         day_ago = now - timedelta(hours=24)
         week_ago = now - timedelta(days=7)
@@ -1629,12 +1640,19 @@ class AgentContactMessageListView(generics.ListAPIView):
         if getattr(self, "swagger_fake_view", False):
             return ContactMessage.objects.none()
         queryset = ContactMessage.objects.select_related("user", "service", "assigned_to")
+        user = self.request.user
+        if not (user.is_superuser or getattr(user, "role", None) == User.Role.ADMIN):
+            # F51 : les messages de confidentialité sont réservés à l'administration.
+            queryset = queryset.exclude(category=ContactMessage.Category.PRIVACY)
         message_status = self.request.query_params.get("status")
+        category = (self.request.query_params.get("category") or "").strip()
         service = self.request.query_params.get("service")
         assigned_to = self.request.query_params.get("assigned_to")
         search = self.request.query_params.get("search")
         if message_status:
             queryset = queryset.filter(status=message_status)
+        if category:
+            queryset = queryset.filter(category=category)
         if service:
             queryset = queryset.filter(service_id=int(service)) if str(service).isdigit() else queryset.filter(service__slug=service)
         if assigned_to:
@@ -1661,7 +1679,15 @@ class AgentContactMessageDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [AGENT_OR_ADMIN]
     serializer_class = ContactMessageSerializer
     lookup_field = "reference"
-    queryset = ContactMessage.objects.select_related("user", "service", "assigned_to")
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ContactMessage.objects.none()
+        queryset = ContactMessage.objects.select_related("user", "service", "assigned_to")
+        user = self.request.user
+        if not (user.is_superuser or getattr(user, "role", None) == User.Role.ADMIN):
+            queryset = queryset.exclude(category=ContactMessage.Category.PRIVACY)
+        return queryset
 
     def put(self, request, *args, **kwargs):
         return Response(
@@ -1690,6 +1716,11 @@ class AgentContactMessageDetailView(generics.RetrieveUpdateAPIView):
                 summary="Message citoyen mis à jour",
                 changes=changes,
                 request=self.request,
+                visibility=(
+                    StaffAuditEvent.Visibility.ADMIN
+                    if instance.category == ContactMessage.Category.PRIVACY
+                    else StaffAuditEvent.Visibility.STAFF
+                ),
             )
 
 

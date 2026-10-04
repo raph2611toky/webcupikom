@@ -61,7 +61,7 @@ admin.site.site_title = "Administration"
 admin.site.index_title = "Tableau de bord"
 
 
-from .models import AccountSession, SecurityEvent
+from .models import AccountDevice, AccountSession, SecurityEvent
 
 
 class SecurityReadOnlyAdmin(admin.ModelAdmin):
@@ -75,9 +75,18 @@ class SecurityReadOnlyAdmin(admin.ModelAdmin):
         return False
 
 
+
+
+@admin.register(AccountDevice)
+class AccountDeviceAdmin(SecurityReadOnlyAdmin):
+    list_display = ('id', 'user', 'label', 'first_seen_at', 'last_seen_at', 'last_login_at', 'last_ip_address')
+    list_filter = ('first_seen_at', 'last_login_at')
+    search_fields = ('user__email', 'label')
+    exclude = ('token_hash',)
+
 @admin.register(AccountSession)
 class AccountSessionAdmin(SecurityReadOnlyAdmin):
-    list_display = ('id', 'user', 'created_at', 'last_seen_at', 'expires_at', 'revoked_at')
+    list_display = ('id', 'user', 'device', 'is_new_device_login', 'created_at', 'last_seen_at', 'expires_at', 'revoked_at')
     list_filter = ('revoked_at',)
     exclude = ('refresh_jti',)
     search_fields = ('user__email',)

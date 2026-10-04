@@ -92,6 +92,7 @@ class SupportableCitizenRequestSerializer(serializers.ModelSerializer):
         return bool(
             user
             and user.is_authenticated
+            and getattr(user, "role", None) == "citizen"
             and not self.get_is_supported(obj)
             and obj.citizen_id != user.pk
             and request_support_is_allowed(obj)
@@ -233,15 +234,24 @@ class ServiceFeedbackSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context["request"]
         service = self.context["service"]
-        return ServiceFeedback.objects.create(
+        # get_or_create s'appuie sur la contrainte unique (citizen, service) et
+        # évite qu'un double clic/concurrence transforme un doublon en erreur 500.
+        instance, created = ServiceFeedback.objects.get_or_create(
             citizen=request.user,
             service=service,
-            **validated_data,
+            defaults=validated_data,
         )
+        if not created:
+            raise serializers.ValidationError({
+                "service": "Vous avez déjà laissé un avis pour ce service. Utilisez PATCH pour le modifier."
+            })
+        return instance
 
 
 class ServiceFeedbackStateSerializer(serializers.Serializer):
     eligible = serializers.BooleanField()
+    can_create = serializers.BooleanField()
+    can_update = serializers.BooleanField()
     eligibility_reason = serializers.CharField(allow_blank=True)
     eligible_sources = serializers.ListField(child=serializers.DictField(), read_only=True)
     feedback = ServiceFeedbackSerializer(allow_null=True, read_only=True)

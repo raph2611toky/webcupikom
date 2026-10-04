@@ -27,6 +27,7 @@ from .auth_cookies import (
     no_store,
     remember_from_refresh,
     set_refresh_cookie,
+    set_device_cookie,
 )
 from .models import User
 from .serializers import (
@@ -134,6 +135,8 @@ def auth_response(user, request, *, remember=None, extra=None, status_code=statu
 
     response = Response(payload, status=status_code)
     set_refresh_cookie(response, str(refresh), remember=remember)
+    from .services.sessions import device_cookie_value_from_request
+    set_device_cookie(response, device_cookie_value_from_request(request))
     return no_store(response)
 
 
@@ -842,7 +845,7 @@ class RefreshView(APIView):
             try:
                 remember = remember_from_refresh(refresh_value)
                 from .services.sessions import rotate_refresh
-                refresh_data = rotate_refresh(refresh_value)
+                refresh_data = rotate_refresh(refresh_value, request=request)
             except (TokenError, AuthenticationFailed):
                 response = Response(
                     {"detail": "Session expirée. Reconnectez-vous."},

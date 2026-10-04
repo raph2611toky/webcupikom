@@ -67,14 +67,29 @@ class OTPSendSensitiveSerializer(serializers.Serializer):
 class SessionSerializer(serializers.ModelSerializer):
     is_current = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    device = serializers.SerializerMethodField()
 
     class Meta:
         model = AccountSession
-        fields = ['id', 'created_at', 'last_seen_at', 'expires_at', 'revoked_at',
-                  'revoke_reason', 'user_agent', 'ip_address', 'is_current', 'status']
+        fields = [
+            'id', 'created_at', 'last_seen_at', 'expires_at', 'revoked_at',
+            'revoke_reason', 'user_agent', 'ip_address', 'is_current', 'status',
+            'is_new_device_login', 'device',
+        ]
 
     def get_is_current(self, obj):
         return str(obj.pk) == str(self.context['request'].auth.get('sid'))
+
+    def get_device(self, obj):
+        if not obj.device_id:
+            return None
+        return {
+            'id': str(obj.device_id),
+            'label': obj.device.label,
+            'first_seen_at': obj.device.first_seen_at,
+            'last_seen_at': obj.device.last_seen_at,
+            'last_login_at': obj.device.last_login_at,
+        }
 
     def get_status(self, obj):
         if obj.revoked_at:
@@ -151,10 +166,10 @@ class MFASensitiveEmailSendView(SecurityAPIView):
 class SessionListView(SecurityAPIView):
     permission_classes = [IsAuthenticatedAnyRole]
 
-    @swagger_auto_schema(responses=responses(openapi.Schema(type='object', properties={'count': openapi.Schema(type='integer'), 'next': openapi.Schema(type='string', x_nullable=True), 'previous': openapi.Schema(type='string', x_nullable=True), 'results': openapi.Schema(type='array', items=openapi.Schema(type='object', properties={'id': openapi.Schema(type='string', format='uuid'), 'created_at': openapi.Schema(type='string', format='date-time'), 'last_seen_at': openapi.Schema(type='string', format='date-time'), 'expires_at': openapi.Schema(type='string', format='date-time'), 'revoked_at': openapi.Schema(type='string', format='date-time', x_nullable=True), 'revoke_reason': openapi.Schema(type='string'), 'ip_address': openapi.Schema(type='string', x_nullable=True), 'user_agent': openapi.Schema(type='string'), 'is_current': openapi.Schema(type='boolean'), 'status': openapi.Schema(type='string', enum=['active', 'expired', 'revoked'])}))})), tags=['Sessions'])
+    @swagger_auto_schema(responses=responses(openapi.Schema(type='object', properties={'count': openapi.Schema(type='integer'), 'next': openapi.Schema(type='string', x_nullable=True), 'previous': openapi.Schema(type='string', x_nullable=True), 'results': openapi.Schema(type='array', items=openapi.Schema(type='object', properties={'id': openapi.Schema(type='string', format='uuid'), 'created_at': openapi.Schema(type='string', format='date-time'), 'last_seen_at': openapi.Schema(type='string', format='date-time'), 'expires_at': openapi.Schema(type='string', format='date-time'), 'revoked_at': openapi.Schema(type='string', format='date-time', x_nullable=True), 'revoke_reason': openapi.Schema(type='string'), 'ip_address': openapi.Schema(type='string', x_nullable=True), 'user_agent': openapi.Schema(type='string'), 'is_current': openapi.Schema(type='boolean'), 'is_new_device_login': openapi.Schema(type='boolean'), 'device': openapi.Schema(type='object', x_nullable=True, properties={'id': openapi.Schema(type='string', format='uuid'), 'label': openapi.Schema(type='string'), 'first_seen_at': openapi.Schema(type='string', format='date-time'), 'last_seen_at': openapi.Schema(type='string', format='date-time'), 'last_login_at': openapi.Schema(type='string', format='date-time')}), 'status': openapi.Schema(type='string', enum=['active', 'expired', 'revoked'])}))})), tags=['Sessions'])
     def get(self, request):
         # Bounded history; no limit on the number of active sessions.
-        sessions = AccountSession.objects.filter(user=request.user).select_related('user')
+        sessions = AccountSession.objects.filter(user=request.user).select_related('user', 'device')
         from rest_framework.pagination import PageNumberPagination
         pagination = PageNumberPagination()
         pagination.page_size = 50

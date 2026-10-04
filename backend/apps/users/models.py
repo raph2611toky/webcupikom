@@ -82,9 +82,35 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
 
+class AccountDevice(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="account_devices")
+    token_hash = models.CharField(max_length=64)
+    label = models.CharField(max_length=160, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True)
+    first_seen_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(auto_now_add=True)
+    last_login_at = models.DateTimeField(auto_now_add=True)
+    last_ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-last_login_at",)
+        constraints = [
+            models.UniqueConstraint(fields=["user", "token_hash"], name="unique_account_device_token"),
+        ]
+        indexes = [models.Index(fields=["user", "last_seen_at"], name="users_accdev_user_seen_idx")]
+
+    def __str__(self):
+        return f"{self.user_id} — {self.label or 'Appareil'}"
+
+
 class AccountSession(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="account_sessions")
+    device = models.ForeignKey(
+        AccountDevice, on_delete=models.SET_NULL, null=True, blank=True, related_name="sessions"
+    )
+    is_new_device_login = models.BooleanField(default=False)
     security_version = models.PositiveIntegerField(default=0)
     refresh_jti = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)

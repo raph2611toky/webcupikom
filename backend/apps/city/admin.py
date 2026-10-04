@@ -135,12 +135,34 @@ class NewsArticleAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
+class ContactMessageAdminForm(forms.ModelForm):
+    class Meta:
+        model = ContactMessage
+        fields = "__all__"
+
+    def clean(self):
+        data = super().clean()
+        category = data.get("category")
+        assignee = data.get("assigned_to")
+        if (
+            category == ContactMessage.Category.PRIVACY
+            and assignee
+            and not (assignee.is_superuser or getattr(assignee, "role", None) == "admin")
+        ):
+            self.add_error(
+                "assigned_to",
+                "Un message de confidentialité ne peut être attribué qu'à un administrateur.",
+            )
+        return data
+
+
 @admin.register(ContactMessage)
 class ContactMessageAdmin(admin.ModelAdmin):
+    form = ContactMessageAdminForm
     list_display = (
-        "reference", "name", "email", "service", "status", "assigned_to", "created_at"
+        "reference", "category", "name", "email", "service", "status", "assigned_to", "created_at"
     )
-    list_filter = ("status", "service", "assigned_to")
+    list_filter = ("category", "status", "service", "assigned_to")
     search_fields = ("reference", "name", "email", "subject", "message")
     readonly_fields = ("reference", "read_at", "closed_at", "created_at", "updated_at")
 
@@ -544,7 +566,13 @@ class ServiceFeedbackAdmin(_AdminRoleOnlyMixin, admin.ModelAdmin):
     def verified_usage(self, obj):
         return obj.verified_usage
 
+    def has_add_permission(self, request):
+        return False
+
     def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False
 
 

@@ -25,7 +25,7 @@ supportable_request_list_schema = swagger_auto_schema(
         openapi.Parameter("search", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=False),
     ],
     responses={200: SupportableCitizenRequestSerializer(many=True)},
-    security=JWT_SECURITY,
+    security=[],
 )
 
 request_support_get_schema = swagger_auto_schema(
