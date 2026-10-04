@@ -198,24 +198,6 @@ body[data-route-group="portal"] .portal-sidebar--citizen .portal-sidebar__bottom
 .portal-sidebar--citizen ~ .portal-main .report-history-list span,
 .portal-sidebar--citizen ~ .portal-main .report-history-list small{font-size:.48rem!important}
 
-/* Services */
-.portal-sidebar--citizen ~ .portal-main .citizen-services-page{gap:9px!important}
-.portal-sidebar--citizen ~ .portal-main .services-view-toolbar{padding:9px 11px!important;border-radius:13px!important;gap:8px!important}
-.portal-sidebar--citizen ~ .portal-main .services-view-switch button,
-.portal-sidebar--citizen ~ .portal-main .service-availability-filters button{min-height:30px!important;font-size:.56rem!important}
-.portal-sidebar--citizen ~ .portal-main .citizen-service-grid--v39{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
-.portal-sidebar--citizen ~ .portal-main .citizen-service-card{min-height:158px!important;padding:12px!important;border-radius:13px!important}
-.portal-sidebar--citizen ~ .portal-main .citizen-service-card__icon{width:34px!important;height:34px!important;border-radius:10px!important}
-.portal-sidebar--citizen ~ .portal-main .citizen-service-card h2{font-size:.8rem!important;margin:4px 0!important}
-.portal-sidebar--citizen ~ .portal-main .citizen-service-card p{font-size:.54rem!important;line-height:1.4!important}
-.portal-sidebar--citizen ~ .portal-main .citizen-service-card__cta{padding-top:8px!important;font-size:.55rem!important}
-.portal-sidebar--citizen ~ .portal-main .service-portal-hero{padding:13px 15px!important;border-radius:14px!important;gap:12px!important}
-.portal-sidebar--citizen ~ .portal-main .service-portal-hero__icon{width:46px!important;height:46px!important}
-.portal-sidebar--citizen ~ .portal-main .service-portal-hero h2{font-size:1rem!important}
-.portal-sidebar--citizen ~ .portal-main .service-portal-hero p{font-size:.58rem!important;line-height:1.45!important}
-.portal-sidebar--citizen ~ .portal-main .portal-detail-grid{gap:8px!important}
-.portal-sidebar--citizen ~ .portal-main .portal-detail-grid>.portal-card{padding:11px 12px!important}
-
 /* Appointments */
 .portal-sidebar--citizen ~ .portal-main .appointment-redesign-page{gap:8px!important;padding-top:10px!important}
 .portal-sidebar--citizen ~ .portal-main .appointment-redesign-header{min-height:58px!important;padding:9px 12px!important;border-radius:13px!important}
@@ -260,60 +242,6 @@ body[data-route-group="portal"] .portal-sidebar--citizen .portal-sidebar__bottom
 .portal-sidebar--citizen ~ .portal-main .project-detail-hero{padding:13px 15px!important;border-radius:14px!important}
 .portal-sidebar--citizen ~ .portal-main .project-detail-hero h2{font-size:1.08rem!important}
 .portal-sidebar--citizen ~ .portal-main .project-detail-hero p{font-size:.58rem!important}
-
-/* Notifications */
-.portal-sidebar--citizen ~ .portal-main .notification-center-page{gap:10px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-kpi-grid{gap:10px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-kpi-grid>.notification-kpi-card{
-  min-height:86px!important;
-  grid-template-columns:36px minmax(0,1fr)!important;
-  gap:10px!important;
-  padding:11px 12px!important;
-  border-radius:15px!important;
-}
-.portal-sidebar--citizen ~ .portal-main .notification-kpi-icon{width:36px!important;height:36px!important;border-radius:11px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-kpi-card>div>span{font-size:.62rem!important}
-.portal-sidebar--citizen ~ .portal-main .notification-kpi-card>div>strong{font-size:1.35rem!important}
-.portal-sidebar--citizen ~ .portal-main .notification-kpi-card>div>small{font-size:.52rem!important}
-.portal-sidebar--citizen ~ .portal-main .notification-category-card{padding:8px 10px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-category-title{display:none!important}
-.portal-sidebar--citizen ~ .portal-main .notification-filter-row--visual{
-  display:flex!important;
-  flex-wrap:wrap!important;
-  gap:6px!important;
-  overflow:visible!important;
-  padding:0!important;
-}
-.portal-sidebar--citizen ~ .portal-main .notification-filter-row--visual button{
-  height:30px!important;
-  min-height:30px!important;
-  padding:0 9px!important;
-  gap:5px!important;
-  border-radius:999px!important;
-  font-size:.6rem!important;
-  white-space:nowrap!important;
-}
-.portal-sidebar--citizen ~ .portal-main .notification-filter-row--visual button>i{width:14px!important;height:14px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-filter-row--visual button>small{min-width:17px!important;height:17px!important;font-size:.5rem!important}
-.portal-sidebar--citizen ~ .portal-main .notification-list--backend{gap:8px!important;max-height:none!important;overflow:visible!important}
-.portal-sidebar--citizen ~ .portal-main .notification-list--backend>button{
-  min-height:76px!important;
-  grid-template-columns:40px minmax(0,1fr) 32px!important;
-  gap:11px!important;
-  padding:10px 12px!important;
-  border-radius:14px!important;
-  box-shadow:none!important;
-}
-.portal-sidebar--citizen ~ .portal-main .notification-type-icon{width:38px!important;height:38px!important;border-radius:12px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-title-line strong{font-size:.69rem!important;line-height:1.25!important}
-.portal-sidebar--citizen ~ .portal-main .notification-main>p{margin:3px 0 0!important;font-size:.56rem!important;line-height:1.35!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-.portal-sidebar--citizen ~ .portal-main .notification-meta{margin-top:6px!important;gap:7px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-type-badge,
-.portal-sidebar--citizen ~ .portal-main .notification-event-status{font-size:.5rem!important;padding:3px 7px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-date{font-size:.5rem!important}
-.portal-sidebar--citizen ~ .portal-main .notification-arrow{width:30px!important;height:30px!important}
-.portal-sidebar--citizen ~ .portal-main .notification-empty-state,
-.portal-sidebar--citizen ~ .portal-main .notification-loading-state{min-height:120px!important;padding:14px!important}
 
 /* Contact / Messages */
 .portal-sidebar--citizen ~ .portal-main .citizen-contact-layout{gap:9px!important}
