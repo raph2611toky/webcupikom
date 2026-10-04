@@ -141,6 +141,9 @@ REST_FRAMEWORK = {
         "contact": os.getenv("THROTTLE_CONTACT", "10/min"),
         "webcup": os.getenv("THROTTLE_WEBCUP", "60/min"),
         "realtime_ticket": os.getenv("THROTTLE_REALTIME_TICKET", "12/min"),
+        "citizen_participation": os.getenv("THROTTLE_CITIZEN_PARTICIPATION", "30/min"),
+        "service_feedback": os.getenv("THROTTLE_SERVICE_FEEDBACK", "10/hour"),
+        "privacy_concern": os.getenv("THROTTLE_PRIVACY_CONCERN", "5/hour"),
     },
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",

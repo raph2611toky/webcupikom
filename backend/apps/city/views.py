@@ -624,7 +624,7 @@ class CitizenRequestListCreateView(ReportMutationMixin, generics.ListCreateAPIVi
             return CitizenRequest.objects.none()
         queryset = CitizenRequest.objects.filter(citizen=user).select_related(
             "service", "assigned_to"
-        )
+        ).annotate(support_count=Count("request_supports", distinct=True))
         return filter_requests(queryset, self.request.query_params, citizen=True)
 
     def perform_create(self, serializer):
@@ -1345,7 +1345,9 @@ class AgentRequestListView(generics.ListAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return CitizenRequest.objects.none()
-        queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to")
+        queryset = CitizenRequest.objects.select_related("citizen", "service", "assigned_to").annotate(
+            support_count=Count("request_supports", distinct=True)
+        )
         request_status = self.request.query_params.get("status")
         service = self.request.query_params.get("service")
         assigned_to = self.request.query_params.get("assigned_to")

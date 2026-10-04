@@ -14,10 +14,13 @@ from .models import (
     CitizenRequest,
     CitizenRequestEvent,
     CitizenRequestAttachment,
+    CitizenRequestSupport,
     ContactMessage,
     CityLocation,
     MunicipalService,
     NewsArticle,
+    PrivacyConcern,
+    ServiceFeedback,
     StaffAuditEvent,
     WebCupRequestSnapshot,
     WebCupSyncState,
@@ -494,3 +497,95 @@ class MunicipalIdeaAdmin(admin.ModelAdmin):
                 changes={"fields": list(form.changed_data)},
                 request=request,
             )
+
+
+class _AdminRoleOnlyMixin:
+    """Les objets contenant l'identité des participants restent admin-only."""
+
+    def _allowed(self, request):
+        user = getattr(request, "user", None)
+        return bool(user and user.is_authenticated and (user.is_superuser or getattr(user, "role", None) == "admin"))
+
+    def has_module_permission(self, request):
+        return self._allowed(request) and super().has_module_permission(request)
+
+    def has_view_permission(self, request, obj=None):
+        return self._allowed(request) and super().has_view_permission(request, obj)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CitizenRequestSupport)
+class CitizenRequestSupportAdmin(_AdminRoleOnlyMixin, admin.ModelAdmin):
+    list_display = ("request", "citizen", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("request__reference", "citizen__email")
+    readonly_fields = ("request", "citizen", "created_at")
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ServiceFeedback)
+class ServiceFeedbackAdmin(_AdminRoleOnlyMixin, admin.ModelAdmin):
+    list_display = ("reference", "service", "citizen", "rating", "verified_usage", "created_at")
+    list_filter = ("rating", "service", "created_at")
+    search_fields = ("reference", "service__name", "citizen__email", "comment")
+    readonly_fields = (
+        "reference", "citizen", "service", "source_request", "source_appointment",
+        "rating", "comment", "created_at", "updated_at",
+    )
+
+    @admin.display(boolean=True, description="Utilisation vérifiée")
+    def verified_usage(self, obj):
+        return obj.verified_usage
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(PrivacyConcern)
+class PrivacyConcernAdmin(_AdminRoleOnlyMixin, admin.ModelAdmin):
+    list_display = ("reference", "topic", "status", "citizen", "handled_by", "created_at")
+    list_filter = ("topic", "status", "created_at")
+    search_fields = ("reference", "citizen__email", "subject", "message")
+    readonly_fields = (
+        "reference", "citizen", "topic", "subject", "message", "handled_by",
+        "handled_at", "created_at", "updated_at",
+    )
+    fields = (
+        "reference", "citizen", "topic", "subject", "message", "status", "admin_note",
+        "handled_by", "handled_at", "created_at", "updated_at",
+    )
+
+    def save_model(self, request, obj, form, change):
+        previous = None
+        if change and obj.pk:
+            previous = PrivacyConcern.objects.filter(pk=obj.pk).values("status", "admin_note").first()
+        if previous and (previous["status"] != obj.status or previous["admin_note"] != obj.admin_note):
+            obj.handled_by = request.user
+            obj.handled_at = timezone.now()
+        super().save_model(request, obj, form, change)
+        if previous:
+            changes = {}
+            if previous["status"] != obj.status:
+                changes["status"] = {"from": previous["status"], "to": obj.status}
+            if previous["admin_note"] != obj.admin_note:
+                changes["admin_note_changed"] = True
+            if changes:
+                record_staff_audit(
+                    actor=request.user,
+                    action="privacy_concern.update",
+                    resource_type="privacy_concern",
+                    resource_id=obj.pk,
+                    resource_reference=obj.reference,
+                    subject_user=obj.citizen,
+                    summary="Préoccupation vie privée mise à jour",
+                    changes=changes,
+                    request=request,
+                    visibility=StaffAuditEvent.Visibility.ADMIN,
+                )

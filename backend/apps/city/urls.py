@@ -251,3 +251,32 @@ urlpatterns += [
     path("admin/locations/", AdminCityLocationListCreateView.as_view(), name="admin-location-list"),
     path("admin/locations/<slug:slug>/", AdminCityLocationDetailView.as_view(), name="admin-location-detail"),
 ]
+
+# Engagement citoyen sécurisé : soutien de demandes (F52), avis service (F76),
+# préoccupations données personnelles (F51).
+from .engagement_views import (
+    AdminPrivacyConcernDetailView,
+    AdminPrivacyConcernListView,
+    AdminServiceFeedbackListView,
+    CitizenPrivacyConcernDetailView,
+    CitizenPrivacyConcernListCreateView,
+    CitizenRequestSupportView,
+    CitizenServiceFeedbackView,
+    SupportableCitizenRequestListView,
+)
+
+urlpatterns += [
+    # F52 — seuls des champs non personnels des signalements soutenables sont exposés.
+    path("citizen/supportable-requests/", SupportableCitizenRequestListView.as_view(), name="citizen-supportable-request-list"),
+    path("citizen/requests/<str:reference>/support/", CitizenRequestSupportView.as_view(), name="citizen-request-support"),
+
+    # F76 — avis uniquement après une utilisation vérifiable du service.
+    path("citizen/services/<slug:slug>/feedback/", CitizenServiceFeedbackView.as_view(), name="citizen-service-feedback"),
+    path("admin/service-feedback/", AdminServiceFeedbackListView.as_view(), name="admin-service-feedback-list"),
+
+    # F51 — canal confidentiel distinct du contact générique.
+    path("citizen/privacy-concerns/", CitizenPrivacyConcernListCreateView.as_view(), name="citizen-privacy-concern-list"),
+    path("citizen/privacy-concerns/<str:reference>/", CitizenPrivacyConcernDetailView.as_view(), name="citizen-privacy-concern-detail"),
+    path("admin/privacy-concerns/", AdminPrivacyConcernListView.as_view(), name="admin-privacy-concern-list"),
+    path("admin/privacy-concerns/<str:reference>/", AdminPrivacyConcernDetailView.as_view(), name="admin-privacy-concern-detail"),
+]

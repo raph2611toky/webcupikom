@@ -947,3 +947,160 @@ class MunicipalIdea(models.Model):
     def __str__(self):
         return f"{self.reference} — {self.title}"
 
+
+
+class CitizenRequestSupport(models.Model):
+    """Soutien F52 à un signalement citoyen, sans exposer son dossier privé."""
+
+    request = models.ForeignKey(
+        CitizenRequest,
+        on_delete=models.CASCADE,
+        related_name="request_supports",
+    )
+    citizen = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="citizen_request_supports",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("request", "citizen"),
+                name="unique_request_citizen_support",
+            )
+        ]
+        indexes = [
+            models.Index(fields=("request", "created_at"), name="city_req_support_idx"),
+        ]
+        verbose_name = "soutien à une demande citoyenne"
+        verbose_name_plural = "soutiens aux demandes citoyennes"
+
+    def __str__(self):
+        return f"{self.request.reference} — {self.citizen_id}"
+
+
+class ServiceFeedback(models.Model):
+    """Avis F76 rattaché à une utilisation vérifiable d'un service municipal."""
+
+    reference = models.CharField(max_length=32, unique=True, editable=False)
+    citizen = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="service_feedbacks",
+    )
+    service = models.ForeignKey(
+        MunicipalService,
+        on_delete=models.PROTECT,
+        related_name="feedbacks",
+    )
+    source_request = models.ForeignKey(
+        CitizenRequest,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="service_feedbacks",
+    )
+    source_appointment = models.ForeignKey(
+        CitizenAppointment,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="service_feedbacks",
+    )
+    rating = models.PositiveSmallIntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("citizen", "service"),
+                name="unique_citizen_service_feedback",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rating__gte=1, rating__lte=5),
+                name="service_feedback_rating_1_5",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("service", "created_at"), name="city_feedback_service_idx"),
+        ]
+        verbose_name = "avis sur un service"
+        verbose_name_plural = "avis sur les services"
+
+    @property
+    def verified_usage(self):
+        return bool(self.source_request_id or self.source_appointment_id)
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            self.reference = make_reference("NT-AVIS")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.reference} — {self.service_id} / {self.rating}"
+
+
+class PrivacyConcern(models.Model):
+    """Canal F51 dédié aux préoccupations relatives aux données personnelles."""
+
+    class Topic(models.TextChoices):
+        DATA_USAGE = "data_usage", "Utilisation de mes données"
+        TRANSPARENCY = "transparency", "Comprendre les données conservées"
+        CORRECTION = "correction", "Correction d'informations"
+        DELETION = "deletion", "Suppression / conservation"
+        CONSENT = "consent", "Consentement et préférences"
+        SECURITY = "security", "Sécurité / confidentialité"
+        OTHER = "other", "Autre préoccupation"
+
+    class Status(models.TextChoices):
+        RECEIVED = "received", "Reçue"
+        IN_REVIEW = "in_review", "En analyse"
+        RESOLVED = "resolved", "Traitée"
+        CLOSED = "closed", "Clôturée"
+
+    reference = models.CharField(max_length=32, unique=True, editable=False)
+    citizen = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="privacy_concerns",
+    )
+    topic = models.CharField(max_length=24, choices=Topic.choices, default=Topic.DATA_USAGE)
+    subject = models.CharField(max_length=220)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RECEIVED, db_index=True)
+    admin_note = models.TextField(blank=True)
+    handled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="handled_privacy_concerns",
+    )
+    handled_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        indexes = [
+            models.Index(fields=("status", "created_at"), name="city_privacy_status_idx"),
+            models.Index(fields=("citizen", "created_at"), name="city_privacy_citizen_idx"),
+        ]
+        verbose_name = "préoccupation vie privée"
+        verbose_name_plural = "préoccupations vie privée"
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            self.reference = make_reference("NT-PRIV")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.reference} — {self.get_topic_display()}"

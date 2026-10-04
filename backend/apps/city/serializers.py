@@ -496,6 +496,11 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     requires_agent_action = serializers.SerializerMethodField()
     requires_citizen_action = serializers.SerializerMethodField()
     available_actions = serializers.SerializerMethodField()
+    support_count = serializers.SerializerMethodField()
+
+    def get_support_count(self, obj) -> int:
+        value = getattr(obj, "support_count", None)
+        return int(value if value is not None else obj.request_supports.count())
 
     def get_category_label(self, obj) -> str:
         return next((row['label'] for row in CATEGORIES if row['code'] == obj.incident_category), obj.incident_category)
@@ -575,7 +580,7 @@ class CitizenRequestSerializer(ImageUploadMixin, serializers.ModelSerializer):
     class Meta:
         model = CitizenRequest
         fields = (
-            "id", "reference", "status_label", "priority_label", "severity_label", "category_label", "is_closed", "workflow_state", "requires_agent_action", "requires_citizen_action", "available_actions", "citizen", "citizen_name", "citizen_email",
+            "id", "reference", "status_label", "priority_label", "severity_label", "category_label", "is_closed", "workflow_state", "requires_agent_action", "requires_citizen_action", "available_actions", "support_count", "citizen", "citizen_name", "citizen_email",
             "service", "service_name", "request_type", "incident_category", "title",
             "description", "location_text", "latitude", "longitude", "status", "priority",
             "assigned_to", "assigned_to_name", "created_at", "updated_at",
