@@ -28,7 +28,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .public-header__cta{padding:12px 18px;border-radius:12px;background:var(--tn-purple);color:#fff;text-decoration:none;font-size:0.8125rem;font-weight:700;box-shadow:0 12px 28px rgba(102,0,252,.16);}
 
 /* Portal */
-.portal-layout{min-height:100svh;background:var(--tn-bg);display:grid;grid-template-columns:254px minmax(0,1fr);}
+.portal-layout{min-height:100svh;background:var(--tn-bg);display:grid;grid-template-columns:254px minmax(0,1fr);font-family:var(--kamo-body-font,"Plus Jakarta Sans","Helvetica Neue",Arial,sans-serif);}
 .portal-sidebar{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;padding:28px 20px 22px;background:#09080d;color:#fff;border-right:1px solid rgba(255,255,255,.06);}
 .portal-sidebar__brand{border:0;background:none;padding:0 8px 6px;text-align:left;color:#fff;font-family:var(--kamo-display-font);font-size:1.8125rem;font-weight:900;letter-spacing:-.07em;}
 .portal-sidebar__brand span{color:#7b22ff;margin-left:.05em;}
@@ -42,7 +42,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .portal-main{min-width:0;}
 .portal-topbar{position:sticky;top:0;z-index:60;min-height:88px;display:flex;align-items:center;justify-content:space-between;gap:28px;padding:17px clamp(24px,3vw,46px);background:rgba(247,247,251,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(15,10,20,.06);}
 .portal-topbar__eyebrow{display:block;color:var(--tn-purple);font-size:0.625rem;letter-spacing:.13em;text-transform:uppercase;font-weight:800;margin-bottom:4px;}
-.portal-topbar h1{margin:0;font-family:var(--kamo-body-font);font-size:clamp(1.375rem,2vw,1.9375rem);letter-spacing:-.045em;line-height:1.05;font-weight:800;color:#0a0710;}
+.portal-topbar h1{margin:0;font-family:var(--kamo-display-font,"Unbounded","Archivo Black","Arial Black",sans-serif);font-size:clamp(1.375rem,2vw,1.9375rem);letter-spacing:-.045em;line-height:1.05;font-weight:800;color:#0a0710;}
 .portal-topbar__right{display:flex;align-items:center;gap:12px;}
 .portal-topbar__icon{width:40px;height:40px;border:1px solid var(--tn-line);background:#fff;border-radius:12px;color:#332b3d;font-size:1.125rem;}
 .portal-user{display:flex;align-items:center;gap:10px;padding-left:5px;}
@@ -1047,11 +1047,27 @@ html[data-contrast="high"] .portal-voice-panel__head>button{
   border:2px solid var(--tn-purple)!important;
 }
 
-/* Post-v44 shell additions only: no global layout override. */
+/* V50 — toutes les fonctions agent restent accessibles, y compris sur petit écran */
+body[data-route-group="portal"] .portal-sidebar--agent nav{overflow-y:auto;scrollbar-width:thin;min-height:0}
+@media(max-width:700px){
+  body[data-route-group="portal"] .portal-sidebar--agent nav{display:flex;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:2px}
+  body[data-route-group="portal"] .portal-sidebar--agent nav::-webkit-scrollbar{display:none}
+  body[data-route-group="portal"] .portal-sidebar--agent nav button:nth-child(n+5){display:flex}
+  body[data-route-group="portal"] .portal-sidebar--agent nav button{flex:0 0 58px;width:58px}
+}
+
+/* V53 — raccourcis header Signalements + Notifications */
+.portal-report-shortcut,.portal-notification-bell{position:relative;display:grid;place-items:center}.portal-report-shortcut svg,.portal-notification-bell svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.portal-report-shortcut>b,.portal-notification-bell>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#6b18df;color:#fff;font-size:.48rem;font-weight:900;line-height:1}.portal-report-shortcut{color:#8b3b23}.portal-report-shortcut:hover,.portal-notification-bell:hover{border-color:color-mix(in srgb,var(--tn-purple) 38%,var(--tn-line));background:var(--tn-purple-soft);color:var(--tn-purple)}html[data-contrast="high"] .portal-report-shortcut>b,html[data-contrast="high"] .portal-notification-bell>b{background:#fff!important;color:#000!important;border-color:#000!important}
+
+/* v58 — F35 contextual indication remains reopenable */
+.citizen-context-guide-trigger{position:fixed;z-index:639;left:272px;bottom:24px;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px 6px 7px;border:1px solid #dfd7e6;border-radius:999px;background:#fff;color:#4f405d;box-shadow:0 10px 28px rgba(26,14,35,.12);font-size:.68rem;font-weight:800}.citizen-context-guide-trigger>span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#efe7ff;color:#6414d4;font-size:.78rem;font-weight:900}.citizen-context-guide-trigger:hover{border-color:#cbb9dc;background:#fbf9fd}.citizen-context-guide-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--tn-purple) 35%,transparent);outline-offset:3px}
+html[data-contrast="high"] .citizen-context-guide-trigger{background:#fff!important;color:#000!important;border:2px solid #111!important}html[data-contrast="high"] .citizen-context-guide-trigger>span{background:#000!important;color:#fff!important}
+@media(max-width:1000px){.citizen-context-guide-trigger{left:98px}}@media(max-width:700px){.citizen-context-guide-trigger{left:12px;bottom:78px}.citizen-context-guide-trigger b{display:none}}
+
+/* v64 — true municipal alert shortcut */
 .portal-alert-shortcut{position:relative;display:grid;place-items:center;color:#b26a00}
 .portal-alert-shortcut svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.portal-alert-shortcut>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#e58b00;color:#fff;font-size:.5rem;font-weight:900;line-height:1}
+.portal-alert-shortcut>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#e58b00;color:#fff;font-size:.48rem;font-weight:900;line-height:1}
 .portal-alert-shortcut:hover{border-color:#e4b057;background:#fff6e6;color:#9b5900}
-.citizen-context-guide-trigger{position:fixed;z-index:639;left:236px;bottom:20px;display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:5px 11px 5px 6px;border:1px solid #dfd7e6;border-radius:999px;background:#fff;color:#4f405d;box-shadow:0 10px 28px rgba(26,14,35,.12);font-size:.6875rem;font-weight:800}.citizen-context-guide-trigger>span{width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:#efe7ff;color:#6414d4;font-size:.75rem;font-weight:900}
-html[data-contrast="high"] .portal-alert-shortcut{color:#f2d34b!important}html[data-contrast="high"] .portal-alert-shortcut>b{background:#f2d34b!important;color:#000!important;border-color:#000!important}html[data-contrast="high"] .citizen-context-guide-trigger{background:#fff!important;color:#000!important;border:2px solid #111!important}
-@media(max-width:1000px){.citizen-context-guide-trigger{left:92px}}@media(max-width:680px){.citizen-context-guide-trigger{left:12px;bottom:78px}.citizen-context-guide-trigger b{display:none}}
+html[data-contrast="high"] .portal-alert-shortcut{color:#f2d34b!important}
+html[data-contrast="high"] .portal-alert-shortcut>b{background:#f2d34b!important;color:#000!important;border-color:#000!important}

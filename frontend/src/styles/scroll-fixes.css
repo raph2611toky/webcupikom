@@ -23,7 +23,6 @@
     overflow-y: auto !important;
     overflow-x: hidden !important;
     overscroll-behavior-y: contain;
-    scrollbar-gutter: stable;
     scrollbar-width: thin;
     scrollbar-color: var(--tn-purple) color-mix(in srgb, var(--tn-card) 86%, var(--tn-line));
   }
@@ -162,7 +161,6 @@ html[data-contrast="high"] .profile-page .profile-readonly-field {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     overscroll-behavior-y: contain;
-    scrollbar-gutter: stable;
     scrollbar-width: thin;
     scrollbar-color: var(--tn-purple) color-mix(in srgb, var(--tn-card) 86%, var(--tn-line));
   }
