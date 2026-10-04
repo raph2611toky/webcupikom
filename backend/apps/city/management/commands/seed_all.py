@@ -1,0 +1,29 @@
+from django.core.management import call_command
+from django.core.management.base import BaseCommand
+
+
+class Command(BaseCommand):
+    help = "Exécute tous les seeders Nova Terra dans l'ordre recommandé."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--reset-passwords",
+            action="store_true",
+            help="Réinitialise les mots de passe des comptes de démonstration existants.",
+        )
+
+    def handle(self, *args, **options):
+        self.stdout.write(self.style.MIGRATE_HEADING("Seed Nova Terra"))
+        self.stdout.write("1/3 — Lieux municipaux")
+        call_command("seed_city_locations", verbosity=options.get("verbosity", 1))
+
+        self.stdout.write("2/3 — Projets municipaux de base")
+        call_command("seed_municipal_projects", verbosity=options.get("verbosity", 1))
+
+        self.stdout.write("3/3 — Données de démonstration complètes")
+        command_options = {"verbosity": options.get("verbosity", 1)}
+        if options.get("reset_passwords"):
+            command_options["reset_passwords"] = True
+        call_command("seed_demo_data", **command_options)
+
+        self.stdout.write(self.style.SUCCESS("Tous les seeders Nova Terra ont été exécutés."))
