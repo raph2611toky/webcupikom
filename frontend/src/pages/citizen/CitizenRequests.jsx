@@ -15,7 +15,7 @@ const emptyDraft = { type: "question", category: "État civil", subject: "", mes
 
 const COPY = {
   fr: {
-    eyebrow:"Démarches", title:"Mes demandes", new:"+ Nouvelle demande", search:"Rechercher une demande...",
+    eyebrow:"Démarches", title:"Mes demandes",subtitle:"Suivez, gérez et exportez toutes vos demandes au même endroit.",introKicker:"MES DEMANDES",introTitle:"Toutes mes demandes",introText:"Suivez l’état de vos demandes et exportez leurs détails quand vous en avez besoin.",exportTitle:"Exporter mes demandes",exportText:"Téléchargez un récapitulatif de vos démarches depuis cette page. Pour un dossier précis, ouvrez la demande puis exportez uniquement ce dossier.",listKicker:"LISTE DE MES DEMANDES",listText:"Voici toutes les demandes que vous avez créées.", new:"+ Nouvelle demande", search:"Rechercher une demande...",
     tableCaption:"Mes demandes citoyennes", ref:"Référence", request:"Demande", service:"Service", status:"Statut",
     updated:"Mise à jour", action:"Action", open:"Ouvrir", empty:"Aucune demande correspondante.",
     created:"Demande créée", createdText:"Votre demande est enregistrée et apparaît déjà dans votre suivi citoyen.",
@@ -29,7 +29,7 @@ const COPY = {
     loadError:"Impossible de charger vos demandes.", sendError:"Impossible d’envoyer la demande.",
   },
   en: {
-    eyebrow:"Procedures", title:"My requests", new:"+ New request", search:"Search a request...",
+    eyebrow:"Procedures", title:"My requests",subtitle:"Track, manage and export all your requests in one place.",introKicker:"MY REQUESTS",introTitle:"All your requests",introText:"Follow the status of your requests and export their details whenever you need them.",exportTitle:"Export my requests",exportText:"Download a summary of your requests from this page. For one specific file, open it and export only that request.",listKicker:"MY REQUESTS LIST",listText:"Here are all the requests you have created.", new:"+ New request", search:"Search a request...",
     tableCaption:"My citizen requests", ref:"Reference", request:"Request", service:"Service", status:"Status",
     updated:"Updated", action:"Action", open:"Open", empty:"No matching request.",
     created:"Request created", createdText:"Your request has been recorded and is already available in your citizen tracking.",
@@ -43,7 +43,7 @@ const COPY = {
     loadError:"Unable to load your requests.", sendError:"Unable to send the request.",
   },
   mg: {
-    eyebrow:"Dingana", title:"Ny fangatahako", new:"+ Fangatahana vaovao", search:"Hitady fangatahana...",
+    eyebrow:"Dingana", title:"Ny fangatahako",subtitle:"Araho, tantano ary avoahy eto amin’ny toerana iray ny fangatahanao rehetra.",introKicker:"NY FANGATAHAKO",introTitle:"Ny fangatahanao rehetra",introText:"Araho ny satan’ny fangatahanao ary avoahy ny antsipiriany rehefa ilaina.",exportTitle:"Hamoaka ny fangatahako",exportText:"Ampidino eto ny famintinana ny fangatahanao. Raha dossier iray manokana no ilaina dia sokafy aloha ilay fangatahana.",listKicker:"LISITRY NY FANGATAHAKO",listText:"Ireto ny fangatahana rehetra noforoninao.", new:"+ Fangatahana vaovao", search:"Hitady fangatahana...",
     tableCaption:"Ny fangatahan'ny mponina", ref:"Laharana", request:"Fangatahana", service:"Sampan-draharaha", status:"Sata",
     updated:"Fanavaozana", action:"Hetsika", open:"Hanokatra", empty:"Tsy misy fangatahana mifanaraka.",
     created:"Vita ny fangatahana", createdText:"Voaray ny fangatahanao ary efa hita ao amin'ny fanaraha-maso anao.",
@@ -224,15 +224,15 @@ export default function CitizenRequests() {
     <div className="portal-layout">
       <CitizenSidebar />
       <div className="portal-main">
-        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button>} />
+        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} subtitle={copy.subtitle} actions={<button className="topbar-cta" onClick={() => setShowForm(true)}>{copy.new}</button>} />
         <main className="portal-content citizen-requests-page">
           {error && !showForm ? <div className="error-card" role="alert">{error}</div> : null}
           <section className="portal-card requests-intro-card" aria-labelledby="requests-intro-title">
-            <div className="requests-intro-card__icon" aria-hidden="true">🗎</div>
+            <div className="requests-intro-card__icon" aria-hidden="true"><span>▤</span></div>
             <div className="requests-intro-card__copy">
-              <span className="section-label">{copy.eyebrow}</span>
-              <h2 id="requests-intro-title">Toutes mes demandes</h2>
-              <p className="detail-copy">Suivez l’état de vos demandes et exportez leurs détails quand vous en avez besoin.</p>
+              <span className="section-label">{copy.introKicker}</span>
+              <h2 id="requests-intro-title">{copy.introTitle}</h2>
+              <p className="detail-copy">{copy.introText}</p>
             </div>
           </section>
 
@@ -242,10 +242,11 @@ export default function CitizenRequests() {
           </section>
 
           <section className="portal-card request-export-panel" aria-labelledby="request-export-title">
+            <div className="request-export-panel__icon" aria-hidden="true"><span>⇩</span></div>
             <div className="request-export-panel__copy">
-              <span className="section-label">F56 · Export</span>
-              <h3 id="request-export-title">Exporter mes demandes</h3>
-              <p className="detail-copy">Téléchargez un récapitulatif de vos démarches depuis cette page. Pour un dossier précis, ouvrez la demande puis utilisez « Exporter cette demande ».</p>
+              <span className="section-label">F56 · EXPORT</span>
+              <h3 id="request-export-title">{copy.exportTitle}</h3>
+              <p className="detail-copy">{copy.exportText}</p>
             </div>
             <div className="request-export-panel__actions">
               <button type="button" className="primary-action" disabled={exporting} onClick={() => exportRequests("print")}>{exporting?"Préparation…":"Imprimer / PDF"}</button>
@@ -257,8 +258,8 @@ export default function CitizenRequests() {
           <section className="portal-card request-list-card" aria-labelledby="request-list-title">
             <div className="request-list-card__head">
               <div>
-                <span className="section-label">Liste de mes demandes</span>
-                <h3 id="request-list-title">Voici toutes les demandes que vous avez créées.</h3>
+                <span className="section-label">{copy.listKicker}</span>
+                <h3 id="request-list-title">{copy.listText}</h3>
               </div>
               <b>{rows.length} demande(s)</b>
             </div>
@@ -269,7 +270,7 @@ export default function CitizenRequests() {
                 <tbody>
                   {rows.map((row) => (
                     <tr key={row.id}>
-                      <td className="mono">{row.id}</td>
+                      <td className="mono"><div className="request-ref-cell"><span aria-hidden="true">◇</span><b>{row.id}</b></div></td>
                       <td><div className="request-title-cell"><strong>{row.title}</strong><small>{row.category || row.service}</small></div></td>
                       <td>{row.service}</td>
                       <td><span className={`status-pill status-${String(row.status).replaceAll(" ", "-").toLowerCase()}`}>{statusLabel(row.status,locale)}</span></td>

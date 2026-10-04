@@ -171,27 +171,7 @@ body[data-route-group="portal"] .portal-sidebar--citizen .portal-sidebar__bottom
 .portal-sidebar--citizen ~ .portal-main .settings-tab-panel.portal-card,
 .portal-sidebar--citizen ~ .portal-main .settings-general-grid .portal-card{padding:12px 14px!important}
 
-/* Requests */
-.portal-sidebar--citizen ~ .portal-main .request-export-panel{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-  gap:12px!important;
-  padding:9px 11px!important;
-}
-.portal-sidebar--citizen ~ .portal-main .request-export-panel__copy{display:grid;gap:1px;min-width:0}
-.portal-sidebar--citizen ~ .portal-main .request-export-panel__copy h3{margin:0!important;font-size:.68rem!important}
-.portal-sidebar--citizen ~ .portal-main .request-export-panel__copy .section-label,
-.portal-sidebar--citizen ~ .portal-main .request-export-panel__copy p{display:none!important}
-.portal-sidebar--citizen ~ .portal-main .request-export-panel__actions{display:flex!important;gap:6px!important;flex-wrap:wrap!important}
-.portal-sidebar--citizen ~ .portal-main .accessible-table-wrap{max-height:calc(100dvh - 245px);overflow:auto}
-.portal-sidebar--citizen ~ .portal-main .accessible-table th{position:sticky;top:0;z-index:2;background:#fff;font-size:.5rem}
-.portal-sidebar--citizen ~ .portal-main .accessible-table td{font-size:.59rem}
-.portal-sidebar--citizen ~ .portal-main .accessible-table th,
-.portal-sidebar--citizen ~ .portal-main .accessible-table td{padding:7px 8px}
-.portal-sidebar--citizen ~ .portal-main .request-single-export{padding:9px 11px!important}
-.portal-sidebar--citizen ~ .portal-main .request-single-export h3{font-size:.68rem!important}
-.portal-sidebar--citizen ~ .portal-main .request-single-export .detail-copy{display:none}
+/* Requests: styled only in pages/citizen-requests.css to avoid conflicting layers. */
 
 /* Reports wizard: use the available viewport instead of leaving a large empty floor. */
 .portal-sidebar--citizen ~ .portal-main .report-page--wizard{padding-top:10px!important}
@@ -395,7 +375,6 @@ html[data-font-size="xlarge"] .portal-sidebar--citizen ~ .portal-main .portal-co
   .portal-sidebar--citizen ~ .portal-main .citizen-service-grid--v39,
   .portal-sidebar--citizen ~ .portal-main .project-grid--compact,
   .portal-sidebar--citizen ~ .portal-main .citizen-news-grid{grid-template-columns:1fr!important}
-  .portal-sidebar--citizen ~ .portal-main .request-export-panel{align-items:flex-start!important;flex-direction:column!important}
 }
 
 /* High contrast keeps the compact geometry without white-on-white cards. */
