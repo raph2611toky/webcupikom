@@ -29,8 +29,9 @@ pipeline {
     options {
         timestamps()
         disableConcurrentBuilds()
+        skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        timeout(time: 20, unit: 'MINUTES')
+        timeout(time: 30, unit: 'MINUTES')
     }
 
     stages {
@@ -146,22 +147,24 @@ pipeline {
         }
 
         stage('Verify Backend Revision') {
-            when {
-                branch 'backend'
-            }
+            when { branch 'backend' }
             steps {
                 sh '''
-                set -eu
-                LOCAL_SHA="$(git rev-parse HEAD)"
-                REMOTE_SHA="$(git rev-parse refs/remotes/origin/backend)"
-                echo "Jenkins checkout : $LOCAL_SHA"
-                echo "origin/backend   : $REMOTE_SHA"
-                if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
-                    echo "ERREUR: Jenkins essaie de déployer un commit backend obsolète."
-                    echo "Un nouveau build doit être lancé pour le HEAD actuel de origin/backend."
-                    exit 42
-                fi
-            '''
+                    set -eu
+
+                    LOCAL_SHA="$(git rev-parse HEAD)"
+                    git fetch origin backend >/dev/null 2>&1
+                    REMOTE_SHA="$(git rev-parse origin/backend)"
+
+                    echo "Jenkins checkout : $LOCAL_SHA"
+                    echo "origin/backend   : $REMOTE_SHA"
+
+                    if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
+                        echo "ERREUR: Jenkins essaie de déployer un commit backend obsolète."
+                        echo "Le déploiement de ce build est annulé pour éviter d'écraser une version plus récente."
+                        exit 42
+                    fi
+                '''
             }
         }
 
@@ -178,25 +181,20 @@ pipeline {
         }
 
         stage('Test Backend') {
-            when {
-                branch 'backend'
-            }
+            when { branch 'backend' }
             steps {
                 sh '''
                     set -eu
 
-                    # CI uniquement : aucune connexion à la base MySQL/MariaDB finale du cPanel.
-                    # Sans DB_NAME, Django utilise SQLite pour `check`; pendant `test`,
-                    # settings.py bascule déjà explicitement sur SQLite en mémoire.
                     run_django() {
                         docker run --rm \
-                          -e SECRET_KEY=jenkins-ci-secret-key-2026-at-least-32-bytes \
-                          -e MODE_DEV=False \
-                          -e DEBUG=False \
-                          -e CORS_ALLOW_ALL_ORIGINS=False \
-                          -e TEST_USE_SQLITE=True \
-                          -e REALTIME_ENABLED=False \
-                          webcup-backend:latest "$@"
+                            -e SECRET_KEY=jenkins-ci-secret-key-2026-at-least-32-bytes \
+                            -e MODE_DEV=False \
+                            -e DEBUG=False \
+                            -e CORS_ALLOW_ALL_ORIGINS=False \
+                            -e TEST_USE_SQLITE=True \
+                            -e REALTIME_ENABLED=False \
+                            "$BACKEND_IMAGE:$DOCKER_TAG" "$@"
                     }
 
                     run_django python manage.py check
@@ -217,41 +215,35 @@ pipeline {
 
                     cp -a backend/. "$BACKEND_DEPLOY_DIR/"
 
-                    rm -f \
-                        "$BACKEND_DEPLOY_DIR/.env" \
-                        "$BACKEND_DEPLOY_DIR/Dockerfile" \
-                        "$BACKEND_DEPLOY_DIR/.gitignore" \
-                        "$BACKEND_DEPLOY_DIR/db.sqlite3"
+                    rm -f "$BACKEND_DEPLOY_DIR/.env"
+                    rm -f "$BACKEND_DEPLOY_DIR/.env.example"
+                    rm -f "$BACKEND_DEPLOY_DIR/.env.production.example"
+                    rm -f "$BACKEND_DEPLOY_DIR/Dockerfile"
+                    rm -f "$BACKEND_DEPLOY_DIR/.gitignore"
+                    rm -f "$BACKEND_DEPLOY_DIR/db.sqlite3"
 
-                    find "$BACKEND_DEPLOY_DIR" \
-                        -type d -name "__pycache__" \
-                        -prune -exec rm -rf {} + || true
+                    rm -rf "$BACKEND_DEPLOY_DIR/docs"
+                    rm -rf "$BACKEND_DEPLOY_DIR/scripts"
 
-                    find "$BACKEND_DEPLOY_DIR" \
-                        -type f \
-                        \\( -name "*.pyc" -o -name "*.pyo" \\) \
-                        -delete || true
-                
-            # PIPELINE_SAFETY_RUNTIME_ONLY
-            # Production receives runtime files only. Keep documentation and tests in Git/Jenkins.
-            DEPLOY_DIR="${WORKSPACE}/deploy-backend"
-            rm -rf "$DEPLOY_DIR/docs"
-            find "$DEPLOY_DIR" -type f \( \
-              -name 'test*.py' -o \
-              -name '*_test.py' -o \
-              -name 'PATCH_FILES*.txt' -o \
-              -name '*.md' \
-            \) -delete
-            rm -f "$DEPLOY_DIR/.env.example" "$DEPLOY_DIR/.env.production.example"
+                    find "$BACKEND_DEPLOY_DIR" -type d -name "__pycache__" -prune -exec rm -rf {} + || true
+                    find "$BACKEND_DEPLOY_DIR" -type f -name "*.pyc" -delete || true
+                    find "$BACKEND_DEPLOY_DIR" -type f -name "*.pyo" -delete || true
 
-            # Fail before FTP if the runtime package is incomplete.
-            test -f "$DEPLOY_DIR/manage.py"
-            test -f "$DEPLOY_DIR/requirements.txt"
-            test -f "$DEPLOY_DIR/config/settings.py"
-            test -f "$DEPLOY_DIR/passenger_wsgi.py"
-            test -d "$DEPLOY_DIR/apps/city/migrations"
-            test -d "$DEPLOY_DIR/apps/users/migrations"
-'''
+                    find "$BACKEND_DEPLOY_DIR/apps" -type f -name "test*.py" -delete || true
+                    find "$BACKEND_DEPLOY_DIR/apps" -type f -name "*_test.py" -delete || true
+                    find "$BACKEND_DEPLOY_DIR" -type f -name "PATCH_FILES*.txt" -delete || true
+                    find "$BACKEND_DEPLOY_DIR" -type f -name "*.md" -delete || true
+
+                    test -f "$BACKEND_DEPLOY_DIR/manage.py"
+                    test -f "$BACKEND_DEPLOY_DIR/requirements.txt"
+                    test -f "$BACKEND_DEPLOY_DIR/config/settings.py"
+                    test -f "$BACKEND_DEPLOY_DIR/passenger_wsgi.py"
+                    test -d "$BACKEND_DEPLOY_DIR/apps/city/migrations"
+                    test -d "$BACKEND_DEPLOY_DIR/apps/users/migrations"
+
+                    echo "Fichiers backend prêts pour le déploiement :"
+                    find "$BACKEND_DEPLOY_DIR" -type f | wc -l
+                '''
             }
         }
 
@@ -311,6 +303,9 @@ pipeline {
                             --show-error \
                             --ftp-pasv \
                             --ftp-create-dirs \
+                            --connect-timeout 10 \
+                            --max-time 120 \
+                            --retry 2 \
                             --user "$FTP_USER:$FTP_PASSWORD" \
                             -T "$WORKSPACE/restart.txt" \
                             "ftp://$FTP_HOST$BACKEND_REMOTE_DIR/tmp/restart.txt"
@@ -326,10 +321,13 @@ pipeline {
                     set -eu
 
                     for i in 1 2 3 4 5 6 7 8 9 10; do
-                        curl -fsS "$BACKEND_URL" && exit 0
+                        if curl -fsS "$BACKEND_URL"; then
+                            exit 0
+                        fi
                         sleep 3
                     done
 
+                    echo "ERREUR: le health-check backend ne répond pas après le redémarrage."
                     exit 1
                 '''
             }
