@@ -10,9 +10,13 @@ import "../../styles/pages/dashboard.css";
 const FILTERS=[["","Tous"],["requested","À confirmer"],["confirmed","Confirmés"],["completed","Terminés"],["cancelled","Annulés"],["declined","Refusés"]];
 function formatDate(date){if(!date)return"—";try{return new Intl.DateTimeFormat("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}).format(new Date(`${date}T12:00:00`))}catch{return date}}
 
+function toLocalInput(value){const date=new Date(value||"");if(Number.isNaN(date.getTime()))return "";const pad=n=>String(n).padStart(2,"0");return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`}
+
 export default function AgentAppointments(){
   const [appointments,setAppointments]=useState([]),[summary,setSummary]=useState({}),[loading,setLoading]=useState(true),[savingReference,setSavingReference]=useState(""),[notice,setNotice]=useState(""),[error,setError]=useState("");
   const [filters,setFilters]=useState({status:"",search:"",upcoming:"",date_from:"",date_to:""});
+  const [rescheduleTarget,setRescheduleTarget]=useState(null);
+  const [rescheduleForm,setRescheduleForm]=useState({starts_at:"",ends_at:""});
 
   async function loadSummary(){try{setSummary(await getAgentAppointmentSummary())}catch{}}
   useEffect(()=>{loadSummary()},[]);
@@ -31,9 +35,21 @@ export default function AgentAppointments(){
       setAppointments(rows=>rows.map(row=>row.reference===item.reference?{...row,...patch,status,statusLabel:getAppointmentStatusLabel(status)}:row));
     }catch(err){setError(getApiErrorMessage(err,"Impossible de mettre à jour le rendez-vous."))}finally{setSavingReference("")}
   }
-  async function reschedule(item){
-    const start=window.prompt("Nouveau début (ISO 8601)",item.startsAt||"");if(!start)return;const end=window.prompt("Nouvelle fin (ISO 8601)",item.endsAt||"");if(!end)return;
-    setSavingReference(item.reference);setError("");try{await updateAgentAppointment(item.reference,{starts_at:start,ends_at:end});setNotice("Rendez-vous replanifié.");setFilters(v=>({...v}))}catch(e){setError(getApiErrorMessage(e,"Replanification impossible."))}finally{setSavingReference("")}
+  function openReschedule(item){
+    setRescheduleTarget(item);
+    setRescheduleForm({starts_at:toLocalInput(item.startsAt),ends_at:toLocalInput(item.endsAt)});
+  }
+  async function reschedule(event){
+    event.preventDefault();
+    if(!rescheduleTarget)return;
+    const start=new Date(rescheduleForm.starts_at),end=new Date(rescheduleForm.ends_at);
+    if(Number.isNaN(start.getTime())||Number.isNaN(end.getTime())||end<=start){setError("Choisissez une heure de fin postérieure au début.");return}
+    setSavingReference(rescheduleTarget.reference);setError("");
+    try{
+      const updated=await updateAgentAppointment(rescheduleTarget.reference,{starts_at:start.toISOString(),ends_at:end.toISOString()});
+      setAppointments(rows=>rows.map(row=>row.reference===updated.reference?updated:row));
+      setNotice("Rendez-vous replanifié.");setRescheduleTarget(null);await loadSummary();
+    }catch(e){setError(getApiErrorMessage(e,"Replanification impossible."))}finally{setSavingReference("")}
   }
 
   return <div className="portal-layout"><AgentSidebar/><div className="portal-main">
@@ -51,9 +67,10 @@ export default function AgentAppointments(){
         {loading?<div className="loading-card">Chargement…</div>:<div className="agent-appointment-list">{visible.length?visible.map(item=><article key={item.reference} className={`agent-appointment status-${item.status}`}>
           <div className="agent-appointment__time"><b>{item.startTime||"—"}</b><span>{formatDate(item.date)}</span></div>
           <div className="agent-appointment__body"><div className="agent-appointment__title"><strong>{item.citizenName}</strong><em>{getAppointmentStatusLabel(item.status)}</em></div><span>{item.serviceName} · {item.reference}</span><p>{item.reason||"Motif non précisé"}</p><div className="agent-appointment__meta"><small>{item.slot||`${item.startTime} - ${item.endTime}`}</small><small>{item.citizenEmail||"—"}</small>{item.location?<small>Lieu : {item.location}</small>:null}{item.preparation?<small>Préparation : {item.preparation}</small>:null}</div>
-          <div className="agent-appointment__actions">{item.status==="requested"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"confirmed")}>Confirmer</button><button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"declined")}>Refuser</button></>:null}{item.status==="confirmed"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"completed")}>Terminer</button><button className="secondary-action" disabled={savingReference===item.reference} onClick={()=>reschedule(item)}>Replanifier</button>{item.canCancel?<button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"cancelled")}>Annuler</button>:null}</>:null}</div></div>
+          <div className="agent-appointment__actions">{item.status==="requested"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"confirmed")}>Confirmer</button><button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"declined")}>Refuser</button></>:null}{item.status==="confirmed"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"completed")}>Terminer</button><button className="secondary-action" disabled={savingReference===item.reference} onClick={()=>openReschedule(item)}>Replanifier</button>{item.canCancel?<button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"cancelled")}>Annuler</button>:null}</>:null}</div></div>
         </article>):<div className="dashboard-empty">Aucun rendez-vous dans ce filtre.</div>}</div>}
       </section>
+      {rescheduleTarget?<div className="modal-backdrop" onClick={()=>setRescheduleTarget(null)}><form className="portal-modal compact-note-modal" onClick={e=>e.stopPropagation()} onSubmit={reschedule}><button type="button" className="modal-close" onClick={()=>setRescheduleTarget(null)}>×</button><span className="section-label">Replanification</span><h2>{rescheduleTarget.reference}</h2><label><span>Début</span><input type="datetime-local" required value={rescheduleForm.starts_at} onChange={e=>setRescheduleForm(v=>({...v,starts_at:e.target.value}))}/></label><label><span>Fin</span><input type="datetime-local" required value={rescheduleForm.ends_at} onChange={e=>setRescheduleForm(v=>({...v,ends_at:e.target.value}))}/></label><button className="primary-action" type="submit" disabled={savingReference===rescheduleTarget.reference}>{savingReference===rescheduleTarget.reference?"Enregistrement…":"Enregistrer le nouveau créneau"}</button></form></div>:null}
     </main>
   </div></div>;
 }

@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
+import "../../styles/pages/portal-foundation-v87.css";
 
 const items = [
   ["/admin", "◫", "Tableau de bord"],
   ["/admin/users", "◉", "Utilisateurs"],
   ["/admin/services", "◇", "Services"],
+  ["/admin/transport", "⇄", "Transport"],
   ["/admin/appointments", "◷", "Rendez-vous"],
   ["/admin/news", "▤", "Actualités"],
   ["/admin/projects", "✦", "Projets municipaux"],

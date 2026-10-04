@@ -134,10 +134,7 @@
 }
 
 /* Any page-specific horizontal data region gets its own scroll instead of\n   forcing the whole portal outside the viewport. */
-.accessible-table-wrap,
-.portal-table,
-.filter-row--portal,
-.notification-filter-row {
+.accessible-table-wrap, .portal-table, .filter-row--portal{
   scrollbar-width: thin;
   scrollbar-color: var(--tn-purple) transparent;
 }

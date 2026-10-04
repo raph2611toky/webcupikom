@@ -205,7 +205,8 @@ export function normalizeRequestForAgent(item) {
     isClosed: item.is_closed !== undefined && item.is_closed !== null ? Boolean(item.is_closed) : ["completed","cancelled","rejected"].includes(item.status),
     resolutionSummary: item.resolution_summary || "",
     availableActions: item.available_actions || [],
-    duplicateOf: item.duplicate_of ?? null,
+    duplicateOf: item.duplicate_of?.id ?? item.duplicate_of ?? null,
+    duplicateOfReference: item.duplicate_of_reference || item.duplicate_of?.reference || item.duplicate_reference || "",
   };
 }
 
@@ -279,9 +280,28 @@ export async function createCitizenRequest(payload) {
   return normalizeCitizen(data);
 }
 
+function filterCitizenRequestRows(rows, params = {}) {
+  const wantedType = params.request_type || params.requestType || params.type || "";
+  const normalizedType = ["report", "signalement"].includes(String(wantedType).toLowerCase())
+    ? "report"
+    : ["procedure", "demarche", "démarche"].includes(String(wantedType).toLowerCase())
+      ? "procedure"
+      : "";
+  if (!normalizedType) return rows;
+  return rows.filter((row) => row.requestTypeCode === normalizedType || (normalizedType === "report" && row.requestType === "signalement"));
+}
+
+function citizenListParams(params = {}) {
+  // Le backend documenté ne promet pas de filtres sur GET /citizen/requests/.
+  // On ne lui transmet donc que la pagination/tri éventuellement acceptés, puis on
+  // sépare procédures et signalements côté frontend avec request_type renvoyé.
+  const { type, request_type, requestType, ...rest } = params;
+  return cleanParams(rest);
+}
+
 export async function getCitizenRequests(params = {}) {
-  const { data } = await api.get("/citizen/requests/", { params: cleanParams(params) });
-  return unwrapList(data).map(normalizeCitizen);
+  const { data } = await api.get("/citizen/requests/", { params: citizenListParams(params) });
+  return filterCitizenRequestRows(unwrapList(data).map(normalizeCitizen), params);
 }
 
 export async function getAllCitizenRequests(params = {}) {
@@ -289,13 +309,13 @@ export async function getAllCitizenRequests(params = {}) {
   let page = 1;
   for (let guard = 0; guard < 100; guard += 1) {
     const { data } = await api.get("/citizen/requests/", {
-      params: cleanParams({ ...params, page, page_size: params.page_size || 100 }),
+      params: citizenListParams({ ...params, page, page_size: params.page_size || 100 }),
     });
     rows.push(...unwrapList(data).map(normalizeCitizen));
     if (!data?.next || !Array.isArray(data?.results)) break;
     page += 1;
   }
-  return rows;
+  return filterCitizenRequestRows(rows, params);
 }
 
 export async function getAgentRequestsPage(params = {}) {
@@ -338,6 +358,57 @@ export async function getAgentRequestById(reference) {
   return normalizeRequestForAgent(data);
 }
 export async function getAgentRequest(reference) { return getAgentRequestById(reference); }
+
+function normalizeSimilarRequest(item = {}) {
+  const source = item.request || item.similar_request || item.candidate || item.result || item;
+  const request = normalizeRequestForAgent(source || {});
+  const rawScore = Number(
+    item.similarity_score ?? item.score ?? item.similarity ?? item.match_score ?? item.relevance ??
+    source?.similarity_score ?? source?.score ?? 0
+  );
+  const score = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, rawScore <= 1 ? rawScore * 100 : rawScore)) : 0;
+  const reasons = item.reasons || item.match_reasons || item.matched_fields || item.signals || source?.match_reasons || [];
+  const reasonList = Array.isArray(reasons)
+    ? reasons.map((value) => typeof value === "string" ? value : value?.label || value?.name || value?.field || JSON.stringify(value)).filter(Boolean)
+    : typeof reasons === "string" ? [reasons] : [];
+  const distance = item.distance_meters ?? item.distance ?? item.gps_distance_meters ?? item.gps_distance_km ?? null;
+  return {
+    ...request,
+    matchScore: score,
+    matchScoreLabel: `${Math.round(score)} %`,
+    matchReasons: reasonList,
+    matchDistance: distance,
+  };
+}
+
+export async function getAgentSimilarRequests(reference) {
+  const { data } = await api.get(`/agent/requests/${encodeURIComponent(reference)}/similar/`);
+  const rows = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.results)
+      ? data.results
+      : Array.isArray(data?.similar_requests)
+        ? data.similar_requests
+        : Array.isArray(data?.similar)
+          ? data.similar
+          : Array.isArray(data?.matches)
+            ? data.matches
+            : Array.isArray(data?.items)
+              ? data.items
+              : [];
+  return rows
+    .map(normalizeSimilarRequest)
+    .filter((item) => item.ref && String(item.ref) !== String(reference))
+    .sort((a, b) => b.matchScore - a.matchScore);
+}
+
+export async function linkAgentRequestDuplicate(reference, duplicateId) {
+  return updateAgentRequest(reference, { duplicate_of: duplicateId });
+}
+
+export async function unlinkAgentRequestDuplicate(reference) {
+  return updateAgentRequest(reference, { duplicate_of: "" });
+}
 
 export async function updateRequestStatus(reference, status, extra = {}) {
   return updateAgentRequest(reference, { ...extra, status });
@@ -410,17 +481,19 @@ export async function addCitizenRequestMessage(reference, { message = "", images
 
 export async function addRequestInformation(reference, message, images = []) {
   try {
-    return await addCitizenRequestMessage(reference, { message, images });
+    const event = await addCitizenRequestMessage(reference, { message, images });
+    return { channel: "request", event };
   } catch (error) {
     if (![400, 404, 405].includes(error?.response?.status)) throw error;
     const [request, profile] = await Promise.all([getCitizenRequestById(reference), getProfile()]);
-    return sendContactMessage({
+    const contact = await sendContactMessage({
       name: profile?.display_name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Citoyen",
       email: profile?.email || "",
       service: Number(request.serviceId) || undefined,
       subject: `Complément — ${reference}`,
       message: `Information complémentaire liée à la demande ${reference} :\n\n${message}`,
     });
+    return { channel: "contact", contact };
   }
 }
 

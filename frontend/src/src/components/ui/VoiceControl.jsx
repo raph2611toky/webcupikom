@@ -25,6 +25,11 @@ const PAGE_HELP = {
     en:"Here you can find all your requests. Use New request to write and send what you need.",
     mg:"Eto no ahitanao ny fangatahanao rehetra. Ampiasao ny Fangatahana vaovao mba hanoratra sy handefa ny filànao."
   },
+  "/citizen/transport": {
+    fr:"Consultez les lignes et arrêts de transport. Utilisez Autour de moi pour chercher les arrêts proches de votre position.",
+    en:"Browse transport lines and stops. Use Near me to find stops close to your position.",
+    mg:"Jereo ny zotra sy ny fijanonana. Ampiasao Akaiky ahy hitadiavana fijanonana manodidina anao."
+  },
   "/citizen/services": {
     fr:"Ouvrez un service pour voir ses horaires, ses coordonnées, les démarches disponibles et les documents requis.",
     en:"Open a service to see its hours, contact details, available procedures and required documents.",
@@ -66,6 +71,7 @@ function routeFromSpeech(text) {
   if (/nouvelle demande|new request|fangatahana vaovao/.test(value)) return "/citizen/requests?new=1";
   if (/signalement|signaler|report|tatitra/.test(value)) return "/citizen/signalements";
   if (/demande|request|fangata/.test(value)) return "/citizen/requests";
+  if (/transport|bus|mobilit|fitaterana/.test(value)) return "/citizen/transport";
   if (/service|sampan/.test(value)) return "/citizen/services";
   if (/rendez|appointment|fihaonana|fotoana/.test(value)) return "/citizen/appointments";
   if (/actualit|news|vaovao/.test(value)) return "/citizen/news";

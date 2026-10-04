@@ -13,7 +13,7 @@ import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
-import "../../styles/pages/citizen-notifications-v83.css";
+import "../../styles/pages/citizen-notifications-v88.css";
 
 const COPY={
   fr:{
@@ -75,11 +75,29 @@ const FILTER_ICON={
 };
 
 function filterClass(value){
-  return `filter-${String(value).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}`;
+  return `ntf88-filter--${String(value).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}`;
 }
 
 function metaFor(type){
   return TYPE_META[type]||TYPE_META.Information;
+}
+
+function filterLabel(type,locale="fr") {
+  const labels={
+    fr:{"Démarche":"Demandes","Service":"Services","Rendez-vous":"Rendez-vous","Signalement":"Signalements","Message":"Messages","Information":"Informations"},
+    en:{"Démarche":"Requests","Service":"Services","Rendez-vous":"Appointments","Signalement":"Reports","Message":"Messages","Information":"Information"},
+    mg:{"Démarche":"Fangatahana","Service":"Sampan-draharaha","Rendez-vous":"Fotoana","Signalement":"Tatitra","Message":"Hafatra","Information":"Fampahalalana"},
+  };
+  return labels[locale]?.[type]||labels.fr[type]||type;
+}
+
+function badgeLabel(type,locale="fr") {
+  const labels={
+    fr:{"Démarche":"Demande","Service":"Service","Rendez-vous":"Rendez-vous","Signalement":"Signalement","Message":"Message","Information":"Information"},
+    en:{"Démarche":"Request","Service":"Service","Rendez-vous":"Appointment","Signalement":"Report","Message":"Message","Information":"Information"},
+    mg:{"Démarche":"Fangatahana","Service":"Sampan-draharaha","Rendez-vous":"Fotoana","Signalement":"Tatitra","Message":"Hafatra","Information":"Fampahalalana"},
+  };
+  return labels[locale]?.[type]||labels.fr[type]||type;
 }
 
 function formatCreated(value,locale="fr"){
@@ -156,7 +174,7 @@ export default function CitizenNotifications(){
   const filters=useMemo(()=>[
     ["Toutes",copy.allFilter],
     ["Non lues",copy.unread],
-    ...["Démarche","Service","Rendez-vous","Signalement","Message","Information"].map(type=>[type,type]),
+    ...["Démarche","Service","Rendez-vous","Signalement","Message","Information"].map(type=>[type,filterLabel(type,locale)]),
   ],[copy]);
 
   const visible=useMemo(()=>normalized.filter(item=>{
@@ -226,35 +244,35 @@ export default function CitizenNotifications(){
 
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
     <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} subtitle={copy.subtitle} actions={
-      <div className="notification-top-actions">
-        <button className="topbar-ghost" type="button" onClick={()=>load()} disabled={loading}>{copy.refresh}</button>
-        <button className="topbar-ghost" type="button" onClick={readAll} disabled={busy||!overview.unread}>{copy.all}</button>
+      <div className="ntf88-top-actions">
+        <button className="topbar-ghost" type="button" onClick={()=>load()} disabled={loading}><span aria-hidden="true">↻</span>{copy.refresh}</button>
+        <button className="topbar-ghost" type="button" onClick={readAll} disabled={busy||!overview.unread}><span aria-hidden="true">✓</span>{copy.all}</button>
       </div>
     }/>
-    <main className="portal-content notification-center-page">
+    <main className="portal-content ntf88-page">
       {error?<div className="error-card" role="alert">{error}</div>:null}
 
-      <section className="notification-overview notification-overview--backend notification-kpi-grid" aria-label="Résumé des notifications">
-        <div className="notification-kpi-card kpi-total">
-          <i className="notification-kpi-icon"><NotificationIcon kind="mail"/></i>
-          <div><span>Total</span><strong>{overview.total}</strong><small>{copy.backend}</small></div>
+      <section className="ntf88-kpis" aria-label="Résumé des notifications">
+        <div className="ntf88-kpi ntf88-kpi--total">
+          <i className="ntf88-kpi__icon"><NotificationIcon kind="mail"/></i>
+          <div><span>Total</span><strong>{overview.total}</strong><small>{locale==="en"?"All your notifications":locale==="mg"?"Ny fampahafantaranao rehetra":"Toutes vos notifications"}</small></div>
         </div>
-        <div className="notification-kpi-card kpi-unread">
-          <i className="notification-kpi-icon"><NotificationIcon kind="unread"/></i>
+        <div className="ntf88-kpi ntf88-kpi--unread">
+          <i className="ntf88-kpi__icon"><NotificationIcon kind="mail"/></i>
           <div><span>{copy.unread}</span><strong>{overview.unread}</strong><small>À consulter</small></div>
         </div>
-        <div className="notification-kpi-card kpi-appointments">
-          <i className="notification-kpi-icon"><NotificationIcon kind="appointment"/></i>
-          <div><span>Rendez-vous</span><strong>{overview.appointments}</strong><small>Informations et rappels</small></div>
+        <div className="ntf88-kpi ntf88-kpi--appointments">
+          <i className="ntf88-kpi__icon"><NotificationIcon kind="appointment"/></i>
+          <div><span>Rendez-vous</span><strong>{overview.appointments}</strong><small>{locale==="en"?"Appointment notifications":locale==="mg"?"Fampahafantarana momba ny fotoana":"Notifications de rendez-vous"}</small></div>
         </div>
-        <div className="notification-kpi-card kpi-requests">
-          <i className="notification-kpi-icon"><NotificationIcon kind="request"/></i>
-          <div><span>Démarches / signalements</span><strong>{overview.requests}</strong><small>Suivi des demandes</small></div>
+        <div className="ntf88-kpi ntf88-kpi--requests">
+          <i className="ntf88-kpi__icon"><NotificationIcon kind="request"/></i>
+          <div><span>Démarches / signalements</span><strong>{overview.requests}</strong><small>{locale==="en"?"Updates to your requests":locale==="mg"?"Fanavaozana ny fangatahanao":"Mises à jour de vos demandes"}</small></div>
         </div>
       </section>
 
-      <section className="toolbar-card notification-toolbar notification-category-card">
-        <div className="management-filter-row notification-filter-row notification-filter-row--visual">
+      <section className="ntf88-filter-card">
+        <div className="ntf88-filters">
           {filters.map(([value,label])=>{
             const count=value==="Toutes"?normalized.length:value==="Non lues"?overview.unread:normalized.filter(item=>item.notificationType===value).length;
             return <button
@@ -268,36 +286,36 @@ export default function CitizenNotifications(){
         </div>
       </section>
 
-      <section className={`notification-workspace ${selected?"has-detail":""}`}>
-        <div className="portal-card notification-list notification-list--backend">
-          {loading&&!items.length?<div className="notification-loading-state"><i/><span>{copy.loading}</span></div>:null}
-          {!loading&&!visible.length?<div className="notification-empty-state"><i aria-hidden="true">✓</i><strong>{copy.empty}</strong><span>{filter==="Non lues"?"Tout est à jour.":"Les nouvelles notifications apparaîtront ici."}</span></div>:null}
+      <section className={`ntf88-workspace ${selected?"has-detail":""}`}>
+        <div className="ntf88-list">
+          {loading&&!items.length?<div className="ntf88-loading"><i/><span>{copy.loading}</span></div>:null}
+          {!loading&&!visible.length?<div className="ntf88-empty"><i aria-hidden="true">✓</i><strong>{copy.empty}</strong><span>{filter==="Non lues"?"Tout est à jour.":"Les nouvelles notifications apparaîtront ici."}</span></div>:null}
 
           {visible.map(item=><button
             key={item.id}
             type="button"
-            className={`${item.typeMeta.className} ${!item.is_read?"is-unread":""} ${String(selected?.id)===String(item.id)?"is-selected":""}`}
+            className={`ntf88-item ${item.typeMeta.className} ${!item.is_read?"is-unread":""} ${String(selected?.id)===String(item.id)?"is-selected":""}`}
             onClick={()=>openNotification(item)}
           >
-            <i className={`notification-type-icon ${item.typeMeta.className}`} aria-hidden="true"><NotificationIcon kind={FILTER_ICON[item.notificationType]||"info"} size={20}/></i>
-            <div className="notification-main">
-              <div className="notification-title-line">
+            <i className={`ntf88-item__icon ${item.typeMeta.className}`} aria-hidden="true"><NotificationIcon kind={FILTER_ICON[item.notificationType]||"info"} size={20}/></i>
+            <div className="ntf88-item__main">
+              <div className="ntf88-item__title">
                 <strong>{item.title}</strong>
-                {!item.is_read?<span className="notification-new-dot" aria-label={copy.unread}/>:null}
+                {!item.is_read?<span className="ntf88-new-dot" aria-label={copy.unread}/>:null}
               </div>
               <p>{item.message||"—"}</p>
-              <div className="notification-meta">
-                <em className={`notification-type-badge ${item.typeMeta.className}`}>{item.notificationType}</em>
-                {item.eventStatus?<em className="notification-event-status">{item.eventStatus}</em>:null}
-                <span className="notification-date"><NotificationIcon kind="calendar" size={13}/>{formatCreated(item.created_at,locale)}</span>
+              <div className="ntf88-item__meta">
+                <em className={`ntf88-badge ${item.typeMeta.className}`}>{badgeLabel(item.notificationType,locale)}</em>
+                {item.eventStatus?<em className="ntf88-event">{item.eventStatus}</em>:null}
+                <span className="ntf88-date"><NotificationIcon kind="calendar" size={13}/>{formatCreated(item.created_at,locale)}</span>
               </div>
             </div>
-            <span className="notification-arrow" aria-hidden="true">→</span>
+            <span className="ntf88-arrow" aria-hidden="true">→</span>
           </button>)}
         </div>
 
-        {selected?<aside className="portal-card notification-detail-panel" aria-label={copy.detail}>
-          <div className="notification-detail-panel__head">
+        {selected?<aside className="ntf88-detail" aria-label={copy.detail}>
+          <div className="ntf88-detail__head">
             <div>
               <span className="section-label">{copy.detail}</span>
               <h2>{selected.title}</h2>
@@ -305,26 +323,26 @@ export default function CitizenNotifications(){
             <button type="button" aria-label={copy.close} onClick={()=>setSelected(null)}>×</button>
           </div>
 
-          <div className={`notification-detail-icon ${selected.typeMeta?.className||""}`} aria-hidden="true">
+          <div className={`ntf88-detail__icon ${selected.typeMeta?.className||""}`} aria-hidden="true">
             <NotificationIcon kind={FILTER_ICON[selected.notificationType]||"info"} size={21}/>
           </div>
 
-          <p className="notification-detail-message">{selected.message||"—"}</p>
+          <p className="ntf88-detail__message">{selected.message||"—"}</p>
 
-          <div className="notification-detail-facts">
+          <div className="ntf88-detail__facts">
             <div><span>{copy.type}</span><b>{selected.notificationType||selected.category||"Information"}</b></div>
             <div><span>{copy.status}</span><b>{selected.event_status||selected.status||"—"}</b></div>
             <div><span>{copy.received}</span><b>{formatCreated(selected.created_at,locale)}</b></div>
             <div><span>Lecture</span><b>{selected.is_read?copy.read:copy.unread}</b></div>
           </div>
 
-          <div className="notification-detail-actions">
+          <div className="ntf88-detail__actions">
             <button className="secondary-action" type="button" onClick={toggleSelectedRead} disabled={busy}>
               {selected.is_read?copy.markUnread:copy.markRead}
             </button>
-            {targetFor(selected)?<button className="primary-action notification-detail-open" type="button" onClick={()=>openTarget(selected)}>{copy.open} →</button>:null}
+            {targetFor(selected)?<button className="primary-action ntf88-detail__open" type="button" onClick={()=>openTarget(selected)}>{copy.open} →</button>:null}
           </div>
-        </aside>:detailLoading?<aside className="portal-card notification-detail-panel notification-detail-panel--loading"><div className="loading-card">Chargement…</div></aside>:null}
+        </aside>:detailLoading?<aside className="ntf88-detail ntf88-detail--loading"><div className="loading-card">Chargement…</div></aside>:null}
       </section>
     </main>
   </div></div>;

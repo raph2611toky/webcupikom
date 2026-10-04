@@ -238,7 +238,7 @@ export default function CitizenServices() {
                     </div>
                     <p>{service.isAvailable === false ? (service.unavailabilityReason || service.shortDescription) : service.shortDescription}</p>
                     {service.isAvailable === false && service.alternativeAction ? <small><b>{copy.alternative} :</b> {service.alternativeAction}</small> : null}
-                    <button type="button" className="svc84-card__cta" onClick={() => navigate(`/citizen/services/${service.slug}`)}>{copy.open}<span>→</span></button>
+                    <button type="button" className="svc84-card__cta" onClick={() => navigate(/transport|mobilit/.test(plain(`${service.slug || ""} ${service.name || ""} ${service.category || ""}`)) ? "/citizen/transport" : `/citizen/services/${service.slug}`)}>{copy.open}<span>→</span></button>
                   </div>
                   {!profile.reduced && service.visual.art ? <img className="svc84-card__art" src={service.visual.art} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : null}
                 </article>

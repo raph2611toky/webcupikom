@@ -14,6 +14,7 @@ import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
+import "../../styles/pages/citizen-requests.css";
 
 const COPY={
   fr:{eyebrow:"Suivi de demande",loading:"Chargement du dossier…",back:"Retour à mes demandes",follow:"Suivi",progress:"Historique du dossier",information:"Informations",details:"Détails",service:"Service",category:"Catégorie",location:"Lieu",notSpecified:"Non précisé",updated:"Dernière mise à jour",attachments:"Pièces jointes",elements:"Éléments transmis",add:"+ Ajouter une information",none:"Aucune pièce jointe pour cette demande.",need:"Besoin d’ajouter une précision ?",needText:"Votre complément sera rattaché au dossier et visible par l’agent.",addInfo:"Ajouter une information",notifications:"Voir mes notifications",complete:"Compléter le dossier",added:"Information ajoutée ✓",addDetail:"Ajouter une précision",modalText:"Votre message et votre photo éventuelle seront rattachés à la timeline du dossier.",message:"Message",messagePh:"Ajoutez une information utile…",save:"Enregistrer →",actionRequired:"Une action est attendue de votre part",cancel:"Annuler le signalement",reopen:"Rouvrir le signalement",edit:"Corriger le signalement",download:"Télécharger",reasonCancel:"Pourquoi annulez-vous ce signalement ?",reasonReopen:"Pourquoi souhaitez-vous rouvrir ce signalement ?",saved:"Signalement mis à jour.",cancelled:"Signalement annulé.",reopened:"Signalement rouvert."},
@@ -61,8 +62,12 @@ export default function CitizenRequestDetails({params}){
     event.preventDefault(); if(!note.trim()&&!noteFile)return;
     setBusy(true);setError("");
     try{
-      await addRequestInformation(request.ref,note.trim(),noteFile?[noteFile]:[]);
-      setNote("");setNoteFile(null);setNotice(copy.added);setShowNote(false);await load();
+      const result=await addRequestInformation(request.ref,note.trim(),noteFile?[noteFile]:[]);
+      setNote("");setNoteFile(null);
+      setNotice(result?.channel==="contact"
+        ? `Message transmis à la mairie${result?.contact?.reference?` · ${result.contact.reference}`:""}. Le backend n’a pas rattaché ce complément directement à la timeline.`
+        : copy.added);
+      setShowNote(false);await load();
     }catch(e){setError(getApiErrorMessage(e,"Impossible d’ajouter cette information."))}finally{setBusy(false)}
   }
 
@@ -95,24 +100,33 @@ export default function CitizenRequestDetails({params}){
 
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
     <PortalTopbar eyebrow={copy.eyebrow} title={request.ref}/>
-    <main className="portal-content citizen-request-detail-v51">
+    <main className="portal-content citizen-request-detail-v51 citizen-request-detail-page">
       <button className="back-link" onClick={()=>navigate(isReport?"/citizen/signalements":"/citizen/requests")}>← {isReport?(locale==="en"?"Back to my reports":locale==="mg"?"Hiverina amin'ny tatitra":"Retour à mes signalements"):copy.back}</button>
       {error?<div className="error-card" role="alert">{error}</div>:null}{notice?<div className="success-inline" role="status">✓ {notice}</div>:null}
 
-      <section className="request-detail-hero">
-        <div><span>{request.category||request.service}</span><h2>{request.title}</h2><p>{request.description}</p></div>
+      <section className="request-detail-hero request-detail-hero--soft">
+        <div className="request-detail-hero__icon" aria-hidden="true">💧</div>
+        <div className="request-detail-hero__content">
+          <span>{request.category||request.service}</span>
+          <h2>{request.title}</h2>
+          <div className="request-detail-hero__meta">
+            <small>📍 {request.location?.label || request.district || copy.notSpecified}</small>
+            <small>🗓 {request.updated}</small>
+          </div>
+          <p>{request.description}</p>
+        </div>
         <em className={`status-pill status-${String(request.status).replaceAll(" ","-").toLowerCase()}`}>{request.status}</em>
       </section>
 
       {request.statusCode==="action_required"?<section className="portal-card action-required-card" role="status"><span className="section-label">{copy.actionRequired}</span><h3>{request.resolutionSummary||"Merci de compléter votre dossier."}</h3><button className="primary-action" type="button" onClick={()=>setShowNote(true)}>{copy.addInfo}</button></section>:null}
 
-      <section className="portal-grid portal-grid--detail">
-        <article className="portal-card">
+      <section className="portal-grid portal-grid--detail request-detail-grid">
+        <article className="portal-card request-history-card">
           <span className="section-label">{copy.follow}</span><h3>{copy.progress}</h3>
           <div className="activity-feed citizen-request-timeline">{timeline.map((item,index)=><div key={item.key||index}><i>{item.eventType==="status"?"●":item.eventType==="created"?"✓":"◆"}</i><div><b>{item.title||item.label}</b>{item.message?<small>{item.message}</small>:null}<span>{item.actorName?`${item.actorName}${item.actorRole?` (${item.actorRole})`:""} · `:""}{displayDate(item.createdAt||item.at,locale)}</span>{item.attachments?.length?<small>{item.attachments.length} pièce(s) jointe(s)</small>:null}</div></div>)}{!timeline.length?<div className="empty-inline">Aucun événement de suivi.</div>:null}</div>
         </article>
 
-        <article className="portal-card">
+        <article className="portal-card request-details-card">
           <span className="section-label">{copy.information}</span><h3>{copy.details}</h3>
           <div className="detail-list">
             {isReport?<><div><span>{locale==="en"?"Report type":locale==="mg"?"Karazana tatitra":"Type de signalement"}</span><b>{request.reportType||request.category||"Signalement"}</b></div><div><span>Gravité</span><b>{request.severity||"—"}</b></div></>:null}
@@ -121,12 +135,12 @@ export default function CitizenRequestDetails({params}){
           {request.location?.latitude!=null?<div className="request-location-chip">⌖ {request.location.latitude}, {request.location.longitude}{request.location.accuracy!=null?` · ±${request.location.accuracy} m`:""}</div>:null}
         </article>
 
-        <article className="portal-card portal-card--wide request-attachments-card">
+        <article className="portal-card portal-card--wide request-attachments-card request-soft-panel">
           <div className="portal-card__head"><div><span className="section-label">{copy.attachments}</span><h3>{copy.elements}</h3></div>{canMessage?<button type="button" onClick={()=>setShowNote(true)}>{copy.add}</button>:null}</div>
           {request.attachments?.length?<div className="document-grid">{request.attachments.map((file,index)=><div className="document-row" key={file.id||index}><i>{file.type?.includes("image")?"IMG":"DOC"}</i><div><b>{file.name}</b><span>{file.caption||file.uploaderName||"Pièce jointe"}{file.size?` · ${Math.max(1,Math.round(file.size/1024))} Ko`:""}</span></div>{file.downloadUrl?<button type="button" onClick={()=>download(file)}>{copy.download}</button>:null}</div>)}</div>:<div className="empty-inline">{copy.none}</div>}
         </article>
 
-        <article className="portal-card portal-card--wide request-single-export" aria-labelledby="single-request-export-title">
+        <article className="portal-card portal-card--wide request-single-export request-soft-panel" aria-labelledby="single-request-export-title">
           <div>
             <span className="section-label">Export du dossier</span>
             <h3 id="single-request-export-title">Exporter cette demande</h3>

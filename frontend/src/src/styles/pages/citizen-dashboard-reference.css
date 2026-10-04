@@ -1,0 +1,532 @@
+/* ========================================================================== 
+   Citizen dashboard reference — V77
+   Scoped to the dashboard only. It does not modify the landing page or the
+   visual structure of other citizen/agent/admin pages.
+   ========================================================================== */
+
+.citizen-dashboard-layout{
+  background:#f6f6fa;
+}
+
+.citizen-dashboard-layout .portal-main{
+  background:#f7f7fb;
+}
+
+.citizen-dashboard-layout .portal-topbar{
+  min-height:88px;
+  height:88px;
+  padding:13px 24px 12px 30px;
+  border-bottom:1px solid #ece9f2;
+  background:rgba(255,255,255,.96);
+}
+
+.citizen-dashboard-layout .portal-topbar__title{
+  gap:2px;
+}
+
+.citizen-dashboard-layout .portal-topbar__meta{
+  min-height:14px;
+}
+
+.citizen-dashboard-layout .portal-topbar__eyebrow{
+  color:#6b18ee;
+  font-size:.62rem;
+  font-weight:900;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+}
+
+.citizen-dashboard-layout .portal-topbar h1{
+  margin:1px 0 0;
+  font-family:var(--kamo-display-font,"Unbounded",sans-serif);
+  font-size:1.55rem;
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.055em;
+}
+
+.portal-topbar__subtitle{
+  margin:4px 0 0;
+  color:#7d7694;
+  font-size:.69rem;
+  line-height:1.25;
+}
+
+.citizen-dashboard-layout .portal-topbar__right{
+  gap:8px;
+}
+
+.citizen-dashboard-layout .topbar-ghost,
+.citizen-dashboard-layout .topbar-cta,
+.citizen-dashboard-layout .topbar-icon-button{
+  height:39px;
+  min-height:39px;
+  border-radius:10px;
+  font-family:var(--kamo-body-font,"Plus Jakarta Sans",sans-serif);
+  font-size:.67rem;
+  font-weight:800;
+}
+
+.citizen-dashboard-layout .topbar-ghost{
+  padding:0 13px;
+  border:1px solid #e4deee;
+  background:#fff;
+  color:#1f1830;
+}
+
+.citizen-dashboard-layout .topbar-cta{
+  padding:0 15px;
+  border:0;
+  background:linear-gradient(135deg,#701cff,#5e04ef);
+  color:#fff;
+  box-shadow:0 8px 22px rgba(103,18,240,.22);
+}
+
+.citizen-dashboard-layout .topbar-icon-button{
+  width:39px;
+  padding:0;
+  border:1px solid #e4deee;
+  background:#fff;
+  color:#20182e;
+  font-size:1rem;
+}
+
+.citizen-dashboard-layout .portal-content.citizen-home{
+  width:100%;
+  max-width:none;
+  padding:16px 22px 18px;
+  display:grid;
+  gap:12px;
+  overflow:auto;
+  align-content:start;
+}
+
+.citizen-home-hero{
+  position:relative;
+  overflow:hidden;
+  min-height:178px;
+  padding:24px 30px;
+  border-radius:20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  background-image:
+    linear-gradient(90deg,rgba(9,8,18,.96) 0%,rgba(15,10,30,.88) 25%,rgba(20,11,37,.42) 52%,rgba(9,8,18,.14) 100%),
+    url("../../assets/dashboard/nova-terra-city.webp");
+  background-size:cover;
+  background-position:center;
+  color:#fff;
+  box-shadow:0 12px 32px rgba(19,10,37,.11);
+}
+
+.citizen-home-hero:after{
+  content:"";
+  position:absolute;
+  inset:auto -72px -110px auto;
+  width:240px;
+  height:240px;
+  border:1px solid rgba(139,78,255,.35);
+  border-radius:50%;
+  box-shadow:0 0 0 72px rgba(108,30,244,.035);
+  pointer-events:none;
+}
+
+.citizen-home-hero__copy{
+  position:relative;
+  z-index:1;
+  max-width:660px;
+}
+
+.citizen-home-hero__copy>span,
+.citizen-home-onboarding__head>div>span,
+.citizen-home-panel__head>div>span{
+  display:block;
+  color:#a97aff;
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+}
+
+.citizen-home-hero h2{
+  margin:8px 0 9px;
+  font-family:var(--kamo-display-font,"Unbounded",sans-serif);
+  font-size:clamp(2rem,3.15vw,2.95rem);
+  font-weight:900;
+  line-height:1.02;
+  letter-spacing:-.065em;
+  color:#fff;
+}
+
+.citizen-home-hero h2 em{
+  color:#a76cff;
+  font-style:normal;
+}
+
+.citizen-home-hero p{
+  max-width:520px;
+  margin:0;
+  color:rgba(255,255,255,.68);
+  font-size:.74rem;
+  line-height:1.5;
+}
+
+.citizen-home-profile-card{
+  position:relative;
+  z-index:1;
+  flex:0 0 132px;
+  min-height:132px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:18px;
+  background:linear-gradient(150deg,rgba(18,13,31,.78),rgba(9,8,18,.9));
+  box-shadow:0 14px 34px rgba(5,3,13,.24);
+  backdrop-filter:blur(10px);
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:9px;
+}
+
+.citizen-home-profile-card>span{
+  color:rgba(255,255,255,.66);
+  font-size:.48rem;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.citizen-home-profile-ring{
+  width:72px;
+  height:72px;
+  padding:5px;
+  border-radius:50%;
+  background:conic-gradient(#7b22ff var(--profile-progress),rgba(255,255,255,.11) 0);
+}
+
+.citizen-home-profile-ring:before{
+  content:"";
+  position:absolute;
+}
+
+.citizen-home-profile-ring strong{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  background:#100c1c;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font-size:1.15rem;
+  letter-spacing:-.04em;
+}
+
+.citizen-home-onboarding{
+  padding:13px 15px 14px;
+  border:1px solid #e7e1ef;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 7px 22px rgba(27,17,40,.035);
+}
+
+.citizen-home-onboarding__head{
+  min-height:47px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.citizen-home-onboarding__head h3,
+.citizen-home-panel__head h3{
+  margin:3px 0 2px;
+  color:#100a1c;
+  font-family:var(--kamo-display-font,"Unbounded",sans-serif);
+  font-weight:800;
+  letter-spacing:-.04em;
+}
+
+.citizen-home-onboarding__head h3{font-size:.9rem}
+.citizen-home-onboarding__head p{margin:0;color:#81798f;font-size:.59rem}
+.citizen-home-onboarding__head>button,
+.citizen-home-panel__head>button{
+  border:0;
+  background:transparent;
+  color:#6713ee;
+  font:800 .59rem/1 var(--kamo-body-font,"Plus Jakarta Sans",sans-serif);
+  cursor:pointer;
+}
+
+.citizen-home-onboarding__steps{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.citizen-home-onboarding__steps>button{
+  min-width:0;
+  min-height:58px;
+  padding:8px 10px;
+  display:grid;
+  grid-template-columns:30px 30px minmax(0,1fr) 14px;
+  align-items:center;
+  gap:8px;
+  border:1px solid #e5ddf0;
+  border-radius:12px;
+  background:#fdfcff;
+  color:#20172d;
+  text-align:left;
+  cursor:pointer;
+}
+
+.citizen-home-onboarding__steps>button:hover{border-color:#c9b4e8;background:#faf6ff}
+.citizen-home-onboarding__steps i,
+.citizen-home-onboarding__steps b{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#efe4ff;
+  color:#6b16ef;
+  font-style:normal;
+  font-size:.68rem;
+  font-weight:900;
+}
+.citizen-home-onboarding__steps b{border-radius:9px;background:#f4edff;font-size:.82rem}
+.citizen-home-onboarding__steps div{min-width:0;display:grid;gap:2px}
+.citizen-home-onboarding__steps strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.65rem}
+.citizen-home-onboarding__steps span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#81798f;font-size:.52rem}
+.citizen-home-onboarding__steps em{color:#701aff;font-style:normal;font-size:1rem}
+
+.citizen-home-metrics{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+
+.citizen-home-metrics>button{
+  min-width:0;
+  min-height:86px;
+  padding:12px 13px;
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) 28px;
+  gap:10px;
+  align-items:center;
+  border:1px solid #e7e1ef;
+  border-radius:15px;
+  background:#fff;
+  text-align:left;
+  color:#161020;
+  box-shadow:0 7px 20px rgba(29,17,43,.035);
+  cursor:pointer;
+}
+
+.citizen-home-metrics>button>i{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  font-style:normal;
+  font-size:1.05rem;
+  font-weight:900;
+}
+.citizen-home-metrics>button>div{min-width:0;display:grid;gap:1px}
+.citizen-home-metrics>button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6d6680;font-size:.5rem;font-weight:900;letter-spacing:.07em}
+.citizen-home-metrics>button strong{font-size:1.35rem;line-height:1;letter-spacing:-.055em}
+.citizen-home-metrics>button small{color:#857d94;font-size:.54rem}
+.citizen-home-metrics>button>em{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:1rem}
+
+.citizen-home-metrics .is-purple{background:linear-gradient(135deg,#fff 0%,#faf5ff 100%)}
+.citizen-home-metrics .is-purple>i,.citizen-home-metrics .is-purple>em{background:#efe3ff;color:#6c14f1}
+.citizen-home-metrics .is-orange{background:linear-gradient(135deg,#fff 0%,#fff9ef 100%)}
+.citizen-home-metrics .is-orange>i,.citizen-home-metrics .is-orange>em{background:#fff0d7;color:#ff8c00}
+.citizen-home-metrics .is-blue{background:linear-gradient(135deg,#fff 0%,#f3f8ff 100%)}
+.citizen-home-metrics .is-blue>i,.citizen-home-metrics .is-blue>em{background:#e5f1ff;color:#1479f5}
+.citizen-home-metrics .is-green{background:linear-gradient(135deg,#fff 0%,#f1fbf4 100%)}
+.citizen-home-metrics .is-green>i,.citizen-home-metrics .is-green>em{background:#e0f7e7;color:#0daf55}
+
+.citizen-home-alert{
+  min-height:46px;
+  padding:7px 10px;
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 18px;
+  align-items:center;
+  gap:9px;
+  border:1px solid #f0d6dd;
+  border-radius:12px;
+  background:#fff9fb;
+  color:#31222a;
+  text-align:left;
+  cursor:pointer;
+}
+.citizen-home-alert>i{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:#ffe7ed;color:#db2f54;font-style:normal;font-weight:900}
+.citizen-home-alert>div{min-width:0;display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center}
+.citizen-home-alert span{color:#b22847;font-size:.48rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.citizen-home-alert strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.62rem}
+.citizen-home-alert small{grid-column:1/-1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8f7780;font-size:.5rem}
+.citizen-home-alert>em{font-style:normal;color:#a64c61;font-size:.95rem}
+
+.citizen-home-grid{
+  min-height:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(420px,.92fr);
+  gap:10px;
+}
+
+.citizen-home-panel{
+  min-width:0;
+  min-height:196px;
+  padding:13px 15px;
+  border:1px solid #e7e1ef;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 7px 22px rgba(27,17,40,.035);
+}
+
+.citizen-home-panel__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:8px;
+}
+.citizen-home-panel__head h3{font-size:.9rem}
+.citizen-home-panel__head>div>span{color:#7b7190}
+
+.citizen-home-requests{
+  display:grid;
+  gap:6px;
+}
+
+.citizen-home-requests>button{
+  min-width:0;
+  min-height:50px;
+  padding:7px 8px;
+  display:grid;
+  grid-template-columns:40px minmax(0,1fr) auto 16px;
+  gap:9px;
+  align-items:center;
+  border:1px solid #e9e4f0;
+  border-radius:11px;
+  background:#fefeff;
+  color:#211a2a;
+  text-align:left;
+  cursor:pointer;
+}
+.citizen-home-requests>button:hover{border-color:#cdb8e9;background:#fcf9ff}
+.citizen-home-requests>button>i{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:#f0e5ff;color:#6b16ef;font-style:normal;font-size:1rem}
+.citizen-home-requests>button>div{min-width:0;display:grid;gap:2px}
+.citizen-home-requests>button>div>span{color:#837a92;font-size:.5rem}
+.citizen-home-requests>button strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.65rem}
+.citizen-home-requests>button small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#867e91;font-size:.5rem}
+.citizen-home-requests>button>b{color:#8b8198;font-size:.95rem}
+.citizen-home-requests .status-pill{white-space:nowrap;font-size:.49rem;min-height:25px;padding:0 8px}
+
+.citizen-home-empty{
+  min-height:115px;
+  display:grid;
+  place-items:center;
+  color:#92899b;
+  font-size:.62rem;
+}
+
+.citizen-home-services{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+}
+
+.citizen-home-services>button{
+  min-width:0;
+  min-height:114px;
+  padding:10px 7px;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:7px;
+  border:1px solid #e7e1ef;
+  border-radius:12px;
+  background:#fbf7ff;
+  color:#251a34;
+  cursor:pointer;
+}
+.citizen-home-services>button:nth-child(2){background:#fff8ef}
+.citizen-home-services>button:nth-child(3){background:#f1f7ff}
+.citizen-home-services>button:nth-child(4){background:#f1fbf4}
+.citizen-home-services>button:hover{transform:translateY(-1px);border-color:#ceb7ee}
+.citizen-home-services i{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#eadcff;color:#6d18ee;font-style:normal;font-size:1.08rem}
+.citizen-home-services span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.62rem;font-weight:850}
+.citizen-home-services small{font-size:.48rem;color:#bd4057;font-weight:800}
+.citizen-home-services .is-unavailable{opacity:.68;background:#f8f6f8}
+
+@media(max-width:1200px){
+  .citizen-dashboard-layout .portal-topbar{height:auto;min-height:82px}
+  .citizen-dashboard-layout .portal-topbar__right{gap:6px}
+  .citizen-dashboard-layout .topbar-ghost{display:none}
+  .citizen-home-grid{grid-template-columns:1fr}
+  .citizen-home-panel{min-height:0}
+  .citizen-home-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:900px){
+  .citizen-dashboard-layout .portal-topbar{padding:11px 16px}
+  .citizen-dashboard-layout .portal-content.citizen-home{padding:12px}
+  .citizen-home-hero{min-height:168px;padding:22px}
+  .citizen-home-profile-card{display:none}
+  .citizen-home-onboarding__steps{grid-template-columns:1fr}
+  .citizen-home-services{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:620px){
+  .citizen-dashboard-layout .topbar-icon-button{display:none}
+  .citizen-home-hero{min-height:180px;padding:19px;background-position:62% center}
+  .citizen-home-hero h2{font-size:1.9rem}
+  .citizen-home-metrics{grid-template-columns:1fr}
+  .citizen-home-metrics>button{min-height:74px}
+  .citizen-home-onboarding__head{flex-direction:column;gap:5px}
+  .citizen-home-services{grid-template-columns:1fr 1fr}
+  .citizen-home-requests>button{grid-template-columns:36px minmax(0,1fr) 14px}
+  .citizen-home-requests>button>i{width:36px;height:36px}
+  .citizen-home-requests .status-pill{grid-column:2;width:max-content}
+  .citizen-home-requests>button>b{grid-column:3;grid-row:1/3}
+}
+
+html[data-contrast="high"] .citizen-home-onboarding,
+html[data-contrast="high"] .citizen-home-metrics>button,
+html[data-contrast="high"] .citizen-home-panel,
+html[data-contrast="high"] .citizen-home-requests>button,
+html[data-contrast="high"] .citizen-home-services>button,
+html[data-contrast="high"] .citizen-home-alert{
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}
+html[data-contrast="high"] .citizen-home-onboarding *,
+html[data-contrast="high"] .citizen-home-metrics *,
+html[data-contrast="high"] .citizen-home-panel *,
+html[data-contrast="high"] .citizen-home-alert *{color:#fff!important}
+html[data-contrast="high"] .citizen-home-hero h2 em{color:#ffe500!important}
+
+.citizen-home button:focus-visible,
+.citizen-dashboard-layout .portal-topbar button:focus-visible{
+  outline:3px solid #7a24ff;
+  outline-offset:2px;
+}
+
+html[data-contrast="high"] .citizen-home-hero{
+  background:#000!important;
+  border:2px solid #fff!important;
+  box-shadow:none!important;
+}
+html[data-contrast="high"] .citizen-home-profile-card{
+  background:#000!important;
+  border:2px solid #fff!important;
+}
+
+@media(prefers-reduced-motion:reduce){
+  .citizen-home-services>button,
+  .citizen-home-metrics>button,
+  .citizen-home-requests>button{transition:none!important;transform:none!important}
+}

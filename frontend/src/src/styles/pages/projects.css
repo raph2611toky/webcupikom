@@ -142,19 +142,6 @@ html[data-contrast="high"] .project-support-button,html[data-contrast="high"] .p
 /* ========================================================================== 
    V68 — Projects compact layout, original portal typography
    ========================================================================== */
-.projects-page,
-.project-detail-page,
-.agent-projects-page,
-.admin-projects-page,
-.project-modal,
-.project-form,
-.project-card,
-.project-toolbar,
-.project-admin-tabs,
-.project-admin-summary {
-  font-family:var(--kamo-body-font,"Plus Jakarta Sans","Helvetica Neue",Arial,sans-serif);
-}
-
 .projects-page--compact {
   display:grid;
   gap:10px;

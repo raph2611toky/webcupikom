@@ -427,3 +427,8 @@ html[data-contrast="high"] .svc84-status-filters button.is-active{background:#f2
   .svc84-view{width:max-content}
   .svc84-card p,.svc84-card small{width:70%}
 }
+
+/* V87 — artwork blends into cards; availability dots remain dots. */
+.svc84-card .svc84-badge>i{width:8px;height:8px;min-width:8px;min-height:8px;padding:0;margin:0;display:block;border-radius:999px;background:currentColor;box-shadow:none}
+.svc84-card__art{mix-blend-mode:multiply;opacity:.82;border:0;background:transparent}
+.svc84-hero__art{mix-blend-mode:multiply;opacity:.78}

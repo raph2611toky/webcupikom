@@ -28,7 +28,7 @@ function normalizeContact(item) {
 }
 
 export async function sendContactMessage(payload) {
-  const { data } = await api.post("/city/contact/", payload);
+  const { data } = await api.post("/city/contact/", toFormData(payload));
   return data;
 }
 

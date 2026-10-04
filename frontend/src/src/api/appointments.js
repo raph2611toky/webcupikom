@@ -30,15 +30,13 @@ function parseDateTime(value) {
 
 function resolveList(data) {
   if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.results)) return data.results;
-  if (Array.isArray(data?.appointments)) return data.appointments;
-  if (Array.isArray(data?.busy)) return data.busy;
-  if (Array.isArray(data?.busy_times)) return data.busy_times;
-  if (Array.isArray(data?.booked)) return data.booked;
-  if (Array.isArray(data?.unavailable)) return data.unavailable;
-  if (Array.isArray(data?.unavailable_times)) return data.unavailable_times;
-  if (Array.isArray(data?.slots)) return data.slots;
-  if (Array.isArray(data?.times)) return data.times;
+  const candidates = [
+    data?.results, data?.appointments, data?.busy, data?.busy_times, data?.busy_slots,
+    data?.booked, data?.booked_slots, data?.unavailable, data?.unavailable_times,
+    data?.slots, data?.times, data?.items,
+  ];
+  const found = candidates.find(Array.isArray);
+  if (found) return found;
   return [];
 }
 
@@ -151,8 +149,9 @@ function busyInterval(entry, date) {
     const start = parseDateTime(entry);
     return start ? { start, end: new Date(start.getTime() + 30 * 60 * 1000) } : null;
   }
-  const startValue = entry.starts_at || entry.start_at || entry.start || entry.from || entry.datetime;
-  const endValue = entry.ends_at || entry.end_at || entry.end || entry.to;
+  const nested = entry.slot && typeof entry.slot === "object" ? entry.slot : null;
+  const startValue = entry.starts_at || entry.start_at || entry.start || entry.from || entry.datetime || nested?.starts_at || nested?.start_at || nested?.start;
+  const endValue = entry.ends_at || entry.end_at || entry.end || entry.to || nested?.ends_at || nested?.end_at || nested?.end;
   let start = parseDateTime(startValue);
   let end = parseDateTime(endValue);
   if (!start && typeof entry.time === "string") start = new Date(`${date}T${entry.time.slice(0, 5)}:00`);
@@ -162,17 +161,54 @@ function busyInterval(entry, date) {
   return start && end ? { start, end } : null;
 }
 
-function buildCandidateSlots({ date, agent, agentName, busyRows }) {
+function minutesFromTime(value) {
+  const match = String(value || "").match(/(\d{1,2})\s*[:h]\s*(\d{2})/i);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour > 23 || minute > 59) return null;
+  return hour * 60 + minute;
+}
+
+function parseWorkingRanges(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [[8 * 60, 12 * 60], [13 * 60, 17 * 60]];
+  if (/24\s*h\s*\/\s*24|24h\/24/i.test(raw)) return [[8 * 60, 18 * 60]];
+  const matches = [...raw.matchAll(/(\d{1,2}\s*[:h]\s*\d{2})\s*[–—-]\s*(\d{1,2}\s*[:h]\s*\d{2})/g)];
+  const ranges = matches.map((match) => [minutesFromTime(match[1]), minutesFromTime(match[2])])
+    .filter(([from, to]) => Number.isFinite(from) && Number.isFinite(to) && to > from);
+  if (ranges.length) return ranges;
+  return [[8 * 60, 12 * 60], [13 * 60, 17 * 60]];
+}
+
+function backendWorkingRanges(data, openingHours) {
+  const source = data?.working_hours || data?.opening_hours || data?.hours || openingHours || "";
+  if (Array.isArray(source)) {
+    const parsed = source.map((row) => {
+      if (Array.isArray(row) && row.length >= 2) return [minutesFromTime(row[0]), minutesFromTime(row[1])];
+      if (row && typeof row === "object") return [minutesFromTime(row.start || row.from), minutesFromTime(row.end || row.to)];
+      return null;
+    }).filter((row) => row && Number.isFinite(row[0]) && Number.isFinite(row[1]) && row[1] > row[0]);
+    if (parsed.length) return parsed;
+  }
+  return parseWorkingRanges(source);
+}
+
+function slotDurationFrom(data, fallback = 30) {
+  const value = Number(data?.duration_minutes ?? data?.slot_duration_minutes ?? data?.slot_duration ?? fallback);
+  return Number.isFinite(value) && value >= 10 && value <= 240 ? value : fallback;
+}
+
+function buildCandidateSlots({ date, agent, agentName, busyRows, ranges, durationMinutes = 30 }) {
   const busy = resolveList(busyRows).map((row) => busyInterval(row, date)).filter(Boolean);
   const now = new Date();
   const slots = [];
-  const ranges = [[8, 12], [13, 17]];
-  for (const [from, to] of ranges) {
-    for (let minutes = from * 60; minutes < to * 60; minutes += 30) {
+  for (const [from, to] of ranges || [[8 * 60, 12 * 60], [13 * 60, 17 * 60]]) {
+    for (let minutes = from; minutes + durationMinutes <= to; minutes += durationMinutes) {
       const hour = Math.floor(minutes / 60);
       const minute = minutes % 60;
       const start = new Date(`${date}T${pad(hour)}:${pad(minute)}:00`);
-      const end = new Date(start.getTime() + 30 * 60 * 1000);
+      const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
       const isPast = end <= now;
       const isBusy = busy.some((row) => start < row.end && end > row.start);
       slots.push({
@@ -184,6 +220,7 @@ function buildCandidateSlots({ date, agent, agentName, busyRows }) {
         endTime: localTimeKey(end),
         startsAt: start.toISOString(),
         endsAt: end.toISOString(),
+        durationMinutes,
         isAvailable: !isPast && !isBusy,
         state: !isPast && !isBusy ? "available" : "full",
       });
@@ -239,12 +276,19 @@ export async function getAllCitizenAppointments(params = {}) {
   return rows;
 }
 
-export async function getCitizenAppointmentAvailability({ agent, date, agentName = "" } = {}) {
+export async function getCitizenAppointmentAvailability({ agent, date, agentName = "", openingHours = "", durationMinutes = 30 } = {}) {
   if (!agent || !date) return [];
   const { data } = await api.get("/citizen/appointments/availability/", {
     params: cleanParams({ agent, date }),
   });
-  return buildCandidateSlots({ date, agent, agentName, busyRows: data });
+  return buildCandidateSlots({
+    date,
+    agent,
+    agentName,
+    busyRows: data,
+    ranges: backendWorkingRanges(data, openingHours),
+    durationMinutes: slotDurationFrom(data, durationMinutes),
+  });
 }
 
 export async function getCitizenUpcomingAppointments() {
@@ -253,7 +297,7 @@ export async function getCitizenUpcomingAppointments() {
   return rows
     .filter((item) => {
       const start = parseDateTime(item.startsAt)?.getTime() ?? 0;
-      return start >= now && !["cancelled", "declined", "completed"].includes(item.status);
+      return start >= now && !["cancelled", "declined", "completed", "rejected", "no_show"].includes(item.status);
     })
     .sort((a, b) => String(a.startsAt).localeCompare(String(b.startsAt)));
 }
@@ -264,9 +308,23 @@ export async function getCitizenAppointmentHistory() {
   return rows
     .filter((item) => {
       const start = parseDateTime(item.startsAt)?.getTime() ?? 0;
-      return start < now || ["cancelled", "declined", "completed"].includes(item.status);
+      return start < now || ["cancelled", "declined", "completed", "rejected", "no_show"].includes(item.status);
     })
     .sort((a, b) => String(b.startsAt).localeCompare(String(a.startsAt)));
+}
+
+export async function getCitizenAppointmentCollections() {
+  const rows = await getCitizenAppointments();
+  const now = Date.now();
+  const closed = new Set(["cancelled", "declined", "completed", "rejected", "no_show"]);
+  return {
+    upcoming: rows
+      .filter((item) => (parseDateTime(item.startsAt)?.getTime() ?? 0) >= now && !closed.has(item.status))
+      .sort((a, b) => String(a.startsAt).localeCompare(String(b.startsAt))),
+    history: rows
+      .filter((item) => (parseDateTime(item.startsAt)?.getTime() ?? 0) < now || closed.has(item.status))
+      .sort((a, b) => String(b.startsAt).localeCompare(String(a.startsAt))),
+  };
 }
 
 export async function getCitizenAppointment(reference) {
@@ -350,8 +408,8 @@ export async function addAgentAppointmentEvent() {
 }
 
 /* ------------------------------- Admin ------------------------------- */
-export async function getAdminAppointments() {
-  const { data } = await api.get("/admin/appointments/");
+export async function getAdminAppointments(params = {}) {
+  const { data } = await api.get("/admin/appointments/", { params: cleanParams(params) });
   return unwrapList(data).map(normalizeAgentAppointment);
 }
 
@@ -401,6 +459,7 @@ export function getAppointmentStatusLabel(status) {
     declined: "Refusé",
     pending: "En attente",
     rejected: "Refusé",
+    no_show: "Absent",
   })[status] || status || "—";
 }
 

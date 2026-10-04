@@ -3,6 +3,7 @@ import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate } from "../../utils/navigation.js";
 import { t, useLocale } from "../../utils/i18n.js";
 import "../../styles/app-shell.css";
+import "../../styles/pages/portal-foundation-v87.css";
 import "../../styles/pages/citizen-polish.css";
 
 export default function CitizenSidebar() {
@@ -16,6 +17,7 @@ export default function CitizenSidebar() {
     ["/citizen/requests", "▤", t("requests", locale)],
     ["/citizen/signalements", "♙", t("reports", locale)],
     ["/citizen/services", "▦", t("services", locale)],
+    ["/citizen/transport", "⇄", locale === "en" ? "Transport" : locale === "mg" ? "Fitaterana" : "Transport"],
     ["/citizen/appointments", "□", t("appointments", locale)],
     ["/citizen/messages", "✉", t("messages", locale)],
     ["/citizen/notifications", "♟", t("notifications", locale)],

@@ -51,7 +51,7 @@ function Breadcrumbs({ locale }) {
   );
 }
 
-export default function PortalTopbar({ eyebrow, title, actions }) {
+export default function PortalTopbar({ eyebrow, title, subtitle, actions }) {
   const { user } = useAuth();
   const [locale] = useLocale();
   const displayName = user?.display_name || `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || user?.email || "Nova Terra";
@@ -68,6 +68,7 @@ export default function PortalTopbar({ eyebrow, title, actions }) {
               : null}
           </div>
           <h1>{title}</h1>
+          {subtitle ? <p className="portal-topbar__subtitle">{subtitle}</p> : null}
         </div>
         <div className="portal-topbar__right">
           {actions}

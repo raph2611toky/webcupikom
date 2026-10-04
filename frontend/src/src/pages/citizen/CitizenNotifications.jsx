@@ -13,24 +13,25 @@ import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import "../../styles/app-shell.css";
 import "../../styles/pages/dashboard.css";
+import "../../styles/pages/citizen-notifications-v83.css";
 
 const COPY={
   fr:{
-    eyebrow:"Centre de notifications",title:"Notifications",all:"Tout marquer comme lu",
+    eyebrow:"Espace citoyen",title:"Notifications",subtitle:"Restez informé de l’état de vos demandes, rendez-vous et signalements.",all:"Tout marquer comme lu",
     loading:"Chargement des notifications…",empty:"Aucune notification pour ce filtre.",
     error:"Impossible de charger les notifications.",allFilter:"Toutes",unread:"Non lues",
     read:"Lue",refresh:"Actualiser",detail:"Détail de la notification",close:"Fermer",
     open:"Ouvrir",received:"Reçue",status:"Statut",type:"Type",backend:"Synchronisé avec Nova Terra",markUnread:"Marquer comme non lue",markRead:"Marquer comme lue"
   },
   en:{
-    eyebrow:"Notification center",title:"Notifications",all:"Mark all as read",
+    eyebrow:"Citizen space",title:"Notifications",subtitle:"Stay informed about your requests, appointments and reports.",all:"Mark all as read",
     loading:"Loading notifications…",empty:"No notification for this filter.",
     error:"Unable to load notifications.",allFilter:"All",unread:"Unread",
     read:"Read",refresh:"Refresh",detail:"Notification details",close:"Close",
     open:"Open",received:"Received",status:"Status",type:"Type",backend:"Synced with Nova Terra",markUnread:"Mark as unread",markRead:"Mark as read"
   },
   mg:{
-    eyebrow:"Foiben'ny fampahafantarana",title:"Fampahafantarana",all:"Mariho ho voavaky rehetra",
+    eyebrow:"Sehatra olom-pirenena",title:"Fampahafantarana",subtitle:"Araho eto ny fangatahanao, ny fotoana ary ny tatitrao.",all:"Mariho ho voavaky rehetra",
     loading:"Mampiditra fampahafantarana…",empty:"Tsy misy fampahafantarana amin'ity sivana ity.",
     error:"Tsy afaka mampiseho ny fampahafantarana.",allFilter:"Rehetra",unread:"Tsy voavaky",
     read:"Voavaky",refresh:"Havaozina",detail:"Antsipirian'ny fampahafantarana",close:"Hakatona",
@@ -224,7 +225,7 @@ export default function CitizenNotifications(){
   }
 
   return <div className="portal-layout"><CitizenSidebar/><div className="portal-main">
-    <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={
+    <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} subtitle={copy.subtitle} actions={
       <div className="notification-top-actions">
         <button className="topbar-ghost" type="button" onClick={()=>load()} disabled={loading}>{copy.refresh}</button>
         <button className="topbar-ghost" type="button" onClick={readAll} disabled={busy||!overview.unread}>{copy.all}</button>
@@ -253,7 +254,6 @@ export default function CitizenNotifications(){
       </section>
 
       <section className="toolbar-card notification-toolbar notification-category-card">
-        <div className="notification-category-title"><NotificationIcon kind="filter" size={17}/><strong>Catégories</strong></div>
         <div className="management-filter-row notification-filter-row notification-filter-row--visual">
           {filters.map(([value,label])=>{
             const count=value==="Toutes"?normalized.length:value==="Non lues"?overview.unread:normalized.filter(item=>item.notificationType===value).length;
