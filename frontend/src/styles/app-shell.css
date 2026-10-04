@@ -1047,27 +1047,11 @@ html[data-contrast="high"] .portal-voice-panel__head>button{
   border:2px solid var(--tn-purple)!important;
 }
 
-/* V50 — toutes les fonctions agent restent accessibles, y compris sur petit écran */
-body[data-route-group="portal"] .portal-sidebar--agent nav{overflow-y:auto;scrollbar-width:thin;min-height:0}
-@media(max-width:700px){
-  body[data-route-group="portal"] .portal-sidebar--agent nav{display:flex;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:2px}
-  body[data-route-group="portal"] .portal-sidebar--agent nav::-webkit-scrollbar{display:none}
-  body[data-route-group="portal"] .portal-sidebar--agent nav button:nth-child(n+5){display:flex}
-  body[data-route-group="portal"] .portal-sidebar--agent nav button{flex:0 0 58px;width:58px}
-}
-
-/* V53 — raccourcis header Signalements + Notifications */
-.portal-report-shortcut,.portal-notification-bell{position:relative;display:grid;place-items:center}.portal-report-shortcut svg,.portal-notification-bell svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.portal-report-shortcut>b,.portal-notification-bell>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#6b18df;color:#fff;font-size:.48rem;font-weight:900;line-height:1}.portal-report-shortcut{color:#8b3b23}.portal-report-shortcut:hover,.portal-notification-bell:hover{border-color:color-mix(in srgb,var(--tn-purple) 38%,var(--tn-line));background:var(--tn-purple-soft);color:var(--tn-purple)}html[data-contrast="high"] .portal-report-shortcut>b,html[data-contrast="high"] .portal-notification-bell>b{background:#fff!important;color:#000!important;border-color:#000!important}
-
-/* v58 — F35 contextual indication remains reopenable */
-.citizen-context-guide-trigger{position:fixed;z-index:639;left:272px;bottom:24px;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px 6px 7px;border:1px solid #dfd7e6;border-radius:999px;background:#fff;color:#4f405d;box-shadow:0 10px 28px rgba(26,14,35,.12);font-size:.68rem;font-weight:800}.citizen-context-guide-trigger>span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#efe7ff;color:#6414d4;font-size:.78rem;font-weight:900}.citizen-context-guide-trigger:hover{border-color:#cbb9dc;background:#fbf9fd}.citizen-context-guide-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--tn-purple) 35%,transparent);outline-offset:3px}
-html[data-contrast="high"] .citizen-context-guide-trigger{background:#fff!important;color:#000!important;border:2px solid #111!important}html[data-contrast="high"] .citizen-context-guide-trigger>span{background:#000!important;color:#fff!important}
-@media(max-width:1000px){.citizen-context-guide-trigger{left:98px}}@media(max-width:700px){.citizen-context-guide-trigger{left:12px;bottom:78px}.citizen-context-guide-trigger b{display:none}}
-
-/* v64 — true municipal alert shortcut */
+/* Post-v44 shell additions only: no global layout override. */
 .portal-alert-shortcut{position:relative;display:grid;place-items:center;color:#b26a00}
 .portal-alert-shortcut svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.portal-alert-shortcut>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#e58b00;color:#fff;font-size:.48rem;font-weight:900;line-height:1}
+.portal-alert-shortcut>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#e58b00;color:#fff;font-size:.5rem;font-weight:900;line-height:1}
 .portal-alert-shortcut:hover{border-color:#e4b057;background:#fff6e6;color:#9b5900}
-html[data-contrast="high"] .portal-alert-shortcut{color:#f2d34b!important}
-html[data-contrast="high"] .portal-alert-shortcut>b{background:#f2d34b!important;color:#000!important;border-color:#000!important}
+.citizen-context-guide-trigger{position:fixed;z-index:639;left:236px;bottom:20px;display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:5px 11px 5px 6px;border:1px solid #dfd7e6;border-radius:999px;background:#fff;color:#4f405d;box-shadow:0 10px 28px rgba(26,14,35,.12);font-size:.6875rem;font-weight:800}.citizen-context-guide-trigger>span{width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:#efe7ff;color:#6414d4;font-size:.75rem;font-weight:900}
+html[data-contrast="high"] .portal-alert-shortcut{color:#f2d34b!important}html[data-contrast="high"] .portal-alert-shortcut>b{background:#f2d34b!important;color:#000!important;border-color:#000!important}html[data-contrast="high"] .citizen-context-guide-trigger{background:#fff!important;color:#000!important;border:2px solid #111!important}
+@media(max-width:1000px){.citizen-context-guide-trigger{left:92px}}@media(max-width:680px){.citizen-context-guide-trigger{left:12px;bottom:78px}.citizen-context-guide-trigger b{display:none}}

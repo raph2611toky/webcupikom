@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
-import { addAgentReportAttachments, addAgentRequestTimeline, downloadRequestAttachment, getAgentRequestById, reopenAgentReport, updateAgentRequest } from "../../api/requests.js";
+import { addAgentReportAttachments, addAgentRequestTimeline, downloadRequestAttachment, getAgentRequestById, getAgentSimilarRequests, linkAgentRequestDuplicate, reopenAgentReport, unlinkAgentRequestDuplicate, updateAgentRequest } from "../../api/requests.js";
 import { getAssignees } from "../../api/citizens.js";
 import { getServices } from "../../api/services.js";
 import { sendAgentNotification } from "../../api/notifications.js";
@@ -60,6 +60,10 @@ export default function AgentRequestDetails({ params }) {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [similarItems, setSimilarItems] = useState([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarSearched, setSimilarSearched] = useState(false);
+  const [duplicateSaving, setDuplicateSaving] = useState(false);
 
   async function load() {
     const [row, people, serviceRows] = await Promise.all([getAgentRequestById(params.id), getAssignees(), getServices()]);
@@ -115,6 +119,56 @@ export default function AgentRequestDetails({ params }) {
       return [{ key, label: fieldLabel(key), from, to }];
     });
   }, [assignees, form, request, services]);
+
+  async function searchSimilarRequests() {
+    if (!request || similarLoading) return;
+    setSimilarLoading(true);
+    setSimilarSearched(true);
+    setError("");
+    try {
+      const rows = await getAgentSimilarRequests(request.ref);
+      setSimilarItems(rows);
+    } catch (e) {
+      setSimilarItems([]);
+      setError(getApiErrorMessage(e, "Impossible de rechercher les dossiers similaires."));
+    } finally {
+      setSimilarLoading(false);
+    }
+  }
+
+  async function markAsDuplicate(candidate) {
+    if (!request || !candidate?.numericId || duplicateSaving) return;
+    const confirmed = window.confirm(`Marquer ${request.ref} comme doublon de ${candidate.ref} ?`);
+    if (!confirmed) return;
+    setDuplicateSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await linkAgentRequestDuplicate(request.ref, candidate.numericId);
+      await load();
+      setNotice(`Doublon enregistré : ${request.ref} est maintenant lié à ${candidate.ref}.`);
+    } catch (e) {
+      setError(getApiErrorMessage(e, "Impossible de marquer ce dossier comme doublon."));
+    } finally {
+      setDuplicateSaving(false);
+    }
+  }
+
+  async function clearDuplicateLink() {
+    if (!request?.duplicateOf || duplicateSaving) return;
+    setDuplicateSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await unlinkAgentRequestDuplicate(request.ref);
+      await load();
+      setNotice("Le lien de doublon a été retiré.");
+    } catch (e) {
+      setError(getApiErrorMessage(e, "Impossible de retirer le lien de doublon."));
+    } finally {
+      setDuplicateSaving(false);
+    }
+  }
 
   async function notifyCitizen(updated, title, message) {
     if (!updated?.citizenId) return;
@@ -251,6 +305,10 @@ export default function AgentRequestDetails({ params }) {
       <button className="back-link" onClick={() => navigate(request.requestType === "signalement" ? "/agent/signalements" : "/agent/requests")}>← Retour</button>
       {error ? <div className="error-card" role="alert">{error}</div> : null}
       {notice ? <div className="success-inline" role="status">✓ {notice}</div> : null}
+      {request.duplicateOf ? <div className="duplicate-link-banner" role="status">
+        <div><strong>↪ Dossier lié comme doublon</strong><span>{request.duplicateOfReference ? `Doublon de ${request.duplicateOfReference}` : `Demande source #${request.duplicateOf}`}</span></div>
+        <button type="button" className="secondary-action" disabled={duplicateSaving} onClick={clearDuplicateLink}>{duplicateSaving ? "Mise à jour…" : "Retirer le lien"}</button>
+      </div> : null}
 
       <section className="agent-detail-head agent-detail-head--smart">
         <div>
@@ -275,6 +333,28 @@ export default function AgentRequestDetails({ params }) {
 
       <section className="portal-grid portal-grid--detail agent-smart-grid">
         <article className="portal-card"><span className="section-label">Besoin exprimé</span><h3>{request.requestType === "signalement" ? "Signalement citoyen" : "Demande citoyenne"}</h3><p className="detail-copy">{request.description || "Aucune description."}</p><div className="detail-list compact-detail-list"><div><span>Type</span><b>{request.requestTypeCode || request.requestType}</b></div><div><span>Catégorie</span><b>{request.category || request.reportType || "—"}</b></div><div><span>Service</span><b>{request.service}</b></div><div><span>Lieu</span><b>{request.location?.label || request.location || request.district || "Non précisé"}</b></div><div><span>Responsable</span><b>{request.assignedToName || "Non assigné"}</b></div><div><span>Dernière mise à jour</span><b>{request.updated}</b></div></div></article>
+
+        <article className="portal-card portal-card--wide similar-requests-card">
+          <div className="similar-requests-head">
+            <div><span className="section-label">F75 · Aide au repérage</span><h3>Dossiers similaires</h3><p className="detail-copy">Le score aide à repérer les demandes proches. Aucun dossier n’est lié automatiquement : l’agent garde la décision finale.</p></div>
+            <button type="button" className="secondary-action" disabled={similarLoading} onClick={searchSimilarRequests}>{similarLoading ? "Recherche…" : similarSearched ? "Actualiser" : "Rechercher les similaires"}</button>
+          </div>
+          {similarSearched ? <div className="similar-request-results">
+            {similarItems.slice(0, 8).map((item) => <article className="similar-request-row" key={item.ref}>
+              <div className="similar-score" aria-label={`Similarité ${item.matchScoreLabel}`}><strong>{item.matchScoreLabel}</strong><span>similaire</span></div>
+              <div className="similar-request-copy">
+                <div><strong>{item.title}</strong><span className="mono">{item.ref}</span></div>
+                <p>{item.description || "Aucune description."}</p>
+                <div className="similar-request-meta"><span>{item.status}</span><span>{item.service}</span>{item.location?.label ? <span>{item.location.label}</span> : null}{item.matchReasons?.slice(0, 3).map((reason) => <em key={reason}>{reason}</em>)}</div>
+              </div>
+              <div className="similar-request-actions">
+                <button type="button" className="text-action" onClick={() => navigate(`/agent/requests/${encodeURIComponent(item.ref)}`)}>Ouvrir</button>
+                <button type="button" className="secondary-action" disabled={!item.numericId || duplicateSaving || String(request.duplicateOf || "") === String(item.numericId)} onClick={() => markAsDuplicate(item)}>{String(request.duplicateOf || "") === String(item.numericId) ? "Déjà lié" : "Marquer comme doublon"}</button>
+              </div>
+            </article>)}
+            {!similarItems.length ? <div className="empty-inline">Aucun dossier similaire détecté.</div> : null}
+          </div> : <div className="similar-request-empty"><span>◎</span><p>Lancez la recherche pour comparer ce dossier aux demandes existantes.</p></div>}
+        </article>
 
         <article className="portal-card portal-card--wide request-workbench">
           <div>
