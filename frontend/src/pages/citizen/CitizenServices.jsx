@@ -35,6 +35,7 @@ const COPY = {
     empty: "Aucun service ne correspond à vos filtres.",
     reset: "Réinitialiser",
     saver: "Mode économie de données actif : les illustrations sont masquées.",
+    hours: "Horaires indicatifs",
   },
   en: {
     eyebrow: "Citizen space",
@@ -56,6 +57,7 @@ const COPY = {
     empty: "No service matches your filters.",
     reset: "Reset",
     saver: "Data saver mode is active: illustrations are hidden.",
+    hours: "Indicative hours",
   },
   mg: {
     eyebrow: "Sehatra olom-pirenena",
@@ -77,6 +79,7 @@ const COPY = {
     empty: "Tsy misy sampan-draharaha mifanaraka amin'ny sivana.",
     reset: "Averina",
     saver: "Maody mitsitsy data : tsy aseho ny sary haingo.",
+    hours: "Ora fiasana",
   },
 };
 
@@ -115,6 +118,17 @@ function availabilityFor(service) {
   return "available";
 }
 
+function indicativeHoursFor(service) {
+  const text = plain(`${service?.slug || ""} ${service?.name || ""} ${service?.category || ""}`);
+  if (/secur|safety|security/.test(text)) return "24h/24 · 7j/7";
+  if (/energ|electric/.test(text)) return "24h/24 urgences · 08:00–18:00 accueil";
+  if (/transport|mobilit/.test(text)) return "06:00–23:00 · 7j/7";
+  if (/sante|health|medical/.test(text)) return "07:00–20:00 · lun–sam";
+  if (/habitat|housing|logement|residence/.test(text)) return "08:00–18:00 · lun–sam";
+  if (/admin|civil|etat/.test(text)) return "08:30–17:30 · lun–ven";
+  return "08:00–17:00 · lun–ven";
+}
+
 export default function CitizenServices() {
   const [locale] = useLocale();
   const profile = useDataMode();
@@ -141,6 +155,7 @@ export default function CitizenServices() {
     ...service,
     visual: visualFor(service),
     availabilityState: availabilityFor(service),
+    cardOpeningHours: indicativeHoursFor(service),
   })), [services]);
 
   const categories = useMemo(() => Array.from(new Set(rows.map((item) => item.category).filter(Boolean))), [rows]);
@@ -235,6 +250,10 @@ export default function CitizenServices() {
                     </div>
                     <p>{service.isAvailable === false ? (service.unavailabilityReason || service.shortDescription) : service.shortDescription}</p>
                     {service.isAvailable === false && service.alternativeAction ? <small><b>{copy.alternative} :</b> {service.alternativeAction}</small> : null}
+                    <div className="svc84-card__hours" aria-label={`${copy.hours} : ${service.cardOpeningHours}`}>
+                      <span aria-hidden="true">◷</span>
+                      <div><small>{copy.hours}</small><strong>{service.cardOpeningHours}</strong></div>
+                    </div>
                     <button type="button" className="svc84-card__cta" onClick={() => navigate(/transport|mobilit/.test(plain(`${service.slug || ""} ${service.name || ""} ${service.category || ""}`)) ? "/citizen/transport" : `/citizen/services/${service.slug}`)}>{copy.open}<span>→</span></button>
                   </div>
                   {!profile.reduced && service.visual.art ? <img className="svc84-card__art" src={service.visual.art} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : null}

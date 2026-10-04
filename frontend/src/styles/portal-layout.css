@@ -247,3 +247,66 @@ body[data-route-group="portal"] .tr87-summary article > div { display: grid; gap
 /* Grid children may shrink; wide data tables scroll within their own region. */
 body[data-route-group="portal"] .portal-content > * { min-width: 0; }
 body[data-route-group="portal"] :is(.request-list-card, .cit-appt-table-card, .cit-appt-filter-tabs, .cit-appt-list-toolbar) { min-width: 0; max-width: 100%; }
+
+/* V92 — densité générale légèrement réduite sur les espaces connectés uniquement. */
+@media (min-width:901px){
+  body[data-route-group="portal"] .portal-topbar{
+    min-height:80px;
+    padding:13px 22px;
+    gap:10px 16px;
+  }
+  body[data-route-group="portal"] .portal-topbar h1{
+    margin-top:2px;
+    font-size:clamp(1.22rem,1.55vw,1.52rem);
+  }
+  body[data-route-group="portal"] .portal-topbar__subtitle{
+    margin-top:4px;
+    font-size:.78rem;
+  }
+  body[data-route-group="portal"] .portal-content{
+    padding:16px 22px 64px;
+  }
+  body[data-route-group="portal"] .portal-card{
+    padding:16px;
+    border-radius:14px;
+  }
+  body[data-route-group="portal"] .toolbar-card{
+    padding:11px 12px;
+    gap:9px;
+    border-radius:14px;
+  }
+  body[data-route-group="portal"] .portal-grid{
+    gap:14px;
+    margin-top:14px;
+  }
+  body[data-route-group="portal"] :is(.primary-action,.secondary-action,.topbar-cta,.topbar-ghost){
+    min-height:38px;
+    padding:8px 12px;
+    font-size:.76rem;
+    border-radius:9px;
+  }
+  body[data-route-group="portal"] :is(.portal-search input,input,select,textarea){
+    font-size:.8125rem;
+  }
+  body[data-route-group="portal"] .portal-search{
+    min-height:40px;
+  }
+  body[data-route-group="portal"] .portal-card h3{
+    font-size:1rem;
+  }
+  body[data-route-group="portal"] .detail-copy{
+    font-size:.8125rem;
+    line-height:1.5;
+  }
+  body[data-route-group="portal"] :is(.portal-table__row,.accessible-table td){
+    font-size:.8125rem;
+  }
+  body[data-route-group="portal"] :is(.portal-table__head,.accessible-table th){
+    font-size:.7rem;
+  }
+  body[data-route-group="portal"] .status-pill{
+    min-height:25px;
+    font-size:.7rem;
+  }
+}
+
