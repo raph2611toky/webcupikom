@@ -35,15 +35,19 @@ class APISecurityHeadersMiddleware:
         )
 
         if path.startswith("/api/"):
-            # Les endpoints API sont des réponses de données et peuvent utiliser
-            # une politique plus restrictive. Ne pas appliquer no-referrer à
-            # /admin/ : cela peut produire Origin: null lors du POST du formulaire
-            # de connexion et faire échouer la vérification CSRF Django.
-            response.headers.setdefault("Referrer-Policy", "no-referrer")
+            # Les endpoints API sont des réponses de données : politique stricte.
+            response.headers["Referrer-Policy"] = "no-referrer"
             response.headers.setdefault(
                 "Content-Security-Policy",
                 "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
             )
+        else:
+            # IMPORTANT : les formulaires HTML Django (/admin/ notamment) doivent
+            # conserver une origine exploitable. Avec `no-referrer`, les navigateurs
+            # peuvent envoyer `Origin: null` lors d'un POST de formulaire, ce que
+            # CsrfViewMiddleware refuse. On force donc explicitement same-origin,
+            # indépendamment d'une ancienne variable d'environnement cPanel.
+            response.headers["Referrer-Policy"] = "same-origin"
 
         if path.startswith(self.SENSITIVE_PREFIXES):
             # Empêche les caches navigateur/proxy de conserver les données de
