@@ -1,0 +1,821 @@
+/* ==========================================================================
+   NOVA TERRA — CITIZEN UI SYSTEM V109
+   Shared visual language for authenticated citizen cards.
+   One theme layer, scoped to body[data-route-group="portal"].
+   ========================================================================== */
+
+:where(body[data-route-group="portal"]) {
+  --nt-card-border:#ddd2e8;
+  --nt-card-border-strong:#bb96e7;
+  --nt-card-bg:#fff;
+  --nt-card-soft:#fbf8ff;
+  --nt-card-ink:#17121e;
+  --nt-card-muted:#746b7d;
+  --nt-card-purple:#7421ef;
+  --nt-card-purple-2:#9638ff;
+  --nt-card-shadow:0 10px 26px rgba(43,24,70,.055);
+  --nt-card-shadow-hover:0 15px 34px rgba(64,26,109,.09);
+  --nt-card-cut:9px;
+}
+
+/* --------------------------------------------------------------------------
+   Shared card shell
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) :is(
+  .portal-card,
+  .project-card,
+  .project-toolbar,
+  .project-empty-state,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-hero-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side,
+  .appointment-reference-card,
+  .appointment-reminder-card,
+  .appointment-confirmation-dialog,
+  .requests-intro-card,
+  .requests-toolbar-card,
+  .request-export-panel,
+  .request-list-card,
+  .request-details-card,
+  .request-history-card,
+  .request-attachments-card,
+  .municipal-replies-card,
+  .report-form--wizard,
+  .report-history--wizard,
+  .notification-category-card,
+  .notification-detail-panel,
+  .notification-kpi-card,
+  .citizen-contact-form-card,
+  .data-export-card,
+  .delete-account-form-card,
+  .performance-settings-card,
+  .privacy-concern-card,
+  .settings-deferred-card,
+  .settings-tab-panel,
+  .toolbar-card,
+  .tr87-map-card,
+  .tr87-stop-card,
+  .tr87-modal,
+  .tr87-detail-grid>div,
+  .tr87-json-block,
+  .svc84-toolbar,
+  .svc84-search,
+  .svc84-view,
+  .project-detail-hero,
+  .project-date-grid>div,
+  .project-detail-grid>.portal-card,
+  .project-participation-card,
+  .project-no-participation,
+  .request-detail-hero--soft,
+  .request-history-card,
+  .request-details-card,
+  .request-attachments-card,
+  .action-bar,
+  .request-support-intro,
+  .request-support-toolbar,
+  .request-support-card,
+  .nova-map-frame,
+  .nova-city-map__selected,
+  .nova-city-map__accessible-list,
+  .nova-city-map__empty
+) {
+  border-radius:0!important;
+  border-color:var(--nt-card-border);
+  box-shadow:var(--nt-card-shadow);
+  clip-path:polygon(
+    var(--nt-card-cut) 0,
+    100% 0,
+    100% calc(100% - var(--nt-card-cut)),
+    calc(100% - var(--nt-card-cut)) 100%,
+    0 100%,
+    0 var(--nt-card-cut)
+  );
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .project-card,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .request-list-card,
+  .notification-category-card,
+  .svc84-card
+) {
+  transition:
+    transform .17s ease,
+    border-color .17s ease,
+    box-shadow .17s ease;
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .project-card,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .request-list-card,
+  .notification-category-card,
+  .svc84-card
+):hover {
+  transform:translateY(-2px);
+  border-color:var(--nt-card-border-strong);
+  box-shadow:var(--nt-card-shadow-hover);
+}
+
+/* Common technical buttons used inside citizen cards. */
+:where(body[data-route-group="portal"]) :is(
+  .project-card > .secondary-action,
+  .project-form__actions button,
+  .project-modal__head > button,
+  .appointment-confirmation-actions button,
+  .cit-appt-view-btn,
+  .cit-appt-menu-btn,
+  .cit-appt-primary,
+  .cit-appt-secondary,
+  .partner-card__actions a,
+  .citizen-news-card button
+) {
+  border-radius:0!important;
+  clip-path:polygon(
+    6px 0,
+    100% 0,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    0 100%,
+    0 6px
+  );
+}
+
+/* --------------------------------------------------------------------------
+   PROJECTS — cards + toolbar
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) .project-toolbar {
+  position:relative;
+  min-height:66px;
+  padding:9px 10px;
+  overflow:visible;
+  background:
+    linear-gradient(120deg,#fff 0%,#fdfaff 72%,#f6f0ff 100%);
+}
+
+:where(body[data-route-group="portal"]) .project-toolbar::after {
+  content:"";
+  position:absolute;
+  top:0;
+  right:13px;
+  width:76px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--nt-card-purple-2));
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row {
+  gap:7px;
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button {
+  --project-filter:#7421ef;
+  position:relative;
+  min-height:40px;
+  height:40px;
+  padding:0 13px;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--project-filter) 22%,#ded7e5);
+  border-radius:0!important;
+  color:#514759;
+  background:#fff;
+  font-weight:800;
+  font-size:.74rem;
+  cursor:pointer;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(1){--project-filter:#7421ef}
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(2){--project-filter:#16925d}
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(3){--project-filter:#2b7ff0}
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(4){--project-filter:#696174}
+
+:where(body[data-route-group="portal"]) .project-filter-row button::before {
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:24px;
+  height:2px;
+  background:var(--project-filter);
+  opacity:.55;
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button:hover {
+  transform:translateY(-1px);
+  border-color:color-mix(in srgb,var(--project-filter) 54%,#d9d1e0);
+  box-shadow:0 7px 15px color-mix(in srgb,var(--project-filter) 10%,transparent);
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button.is-active {
+  border-color:var(--project-filter);
+  color:#fff;
+  background:linear-gradient(
+    105deg,
+    color-mix(in srgb,var(--project-filter) 72%,#25043f),
+    var(--project-filter)
+  );
+  box-shadow:0 8px 18px color-mix(in srgb,var(--project-filter) 18%,transparent);
+}
+
+:where(body[data-route-group="portal"]) .project-mini-stats span {
+  min-height:36px;
+  padding:0 10px;
+  border:1px solid #e2d9ea;
+  border-radius:0!important;
+  background:#faf7fd;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .project-card {
+  --project-accent:#7421ef;
+  position:relative;
+  min-height:330px!important;
+  height:auto!important;
+  gap:11px;
+  padding:16px!important;
+  overflow:hidden;
+  background:
+    linear-gradient(145deg,#fff 0%,#fff 72%,color-mix(in srgb,var(--project-accent) 4%,#fff));
+  border-color:color-mix(in srgb,var(--project-accent) 20%,#ded7e6);
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb,var(--project-accent) 68%,transparent),
+    var(--nt-card-shadow);
+}
+
+:where(body[data-route-group="portal"]) .project-card:has(.status-in_progress) {--project-accent:#15945d}
+:where(body[data-route-group="portal"]) .project-card:has(.status-planned) {--project-accent:#2a7be8}
+:where(body[data-route-group="portal"]) .project-card:has(.status-completed) {--project-accent:#677282}
+:where(body[data-route-group="portal"]) .project-card:has(.status-paused) {--project-accent:#d48c16}
+:where(body[data-route-group="portal"]) .project-card:has(.status-cancelled) {--project-accent:#b75469}
+
+:where(body[data-route-group="portal"]) .project-card__icon {
+  border-radius:0!important;
+  color:var(--project-accent)!important;
+  background:color-mix(in srgb,var(--project-accent) 9%,#fff)!important;
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+}
+
+:where(body[data-route-group="portal"]) .project-card h3 {
+  color:#17121e;
+  letter-spacing:-.025em;
+}
+
+:where(body[data-route-group="portal"]) .project-card p,
+:where(body[data-route-group="portal"]) .project-card dd {
+  color:var(--nt-card-muted);
+}
+
+:where(body[data-route-group="portal"]) .project-progress progress {
+  height:6px!important;
+  border:0;
+  border-radius:0;
+  overflow:hidden;
+  accent-color:var(--project-accent)!important;
+  background:#eee8f2;
+}
+
+:where(body[data-route-group="portal"]) .project-progress progress::-webkit-progress-bar {
+  background:#eee8f2;
+}
+
+:where(body[data-route-group="portal"]) .project-progress progress::-webkit-progress-value {
+  background:linear-gradient(90deg,var(--project-accent),color-mix(in srgb,var(--project-accent) 65%,#a44dff));
+}
+
+:where(body[data-route-group="portal"]) .project-card > .secondary-action {
+  position:relative;
+  min-height:38px!important;
+  margin-top:auto;
+  border:1px solid color-mix(in srgb,var(--project-accent) 35%,#d9d0e2)!important;
+  color:var(--project-accent)!important;
+  background:color-mix(in srgb,var(--project-accent) 4%,#fff)!important;
+  font-weight:850;
+  transition:background .16s ease,color .16s ease,box-shadow .16s ease;
+}
+
+:where(body[data-route-group="portal"]) .project-card > .secondary-action:hover {
+  color:#fff!important;
+  background:linear-gradient(105deg,color-mix(in srgb,var(--project-accent) 72%,#280544),var(--project-accent))!important;
+  box-shadow:0 8px 17px color-mix(in srgb,var(--project-accent) 15%,transparent);
+}
+
+/* --------------------------------------------------------------------------
+   APPOINTMENTS — booking/list cards and confirmation
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) :is(
+  .cit-appt-hero-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side
+) {
+  --nt-card-cut:10px;
+  border:1px solid #ddd3e8;
+  background:#fff;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button,
+:where(body[data-route-group="portal"]) .cit-appt-view-btn,
+:where(body[data-route-group="portal"]) .cit-appt-menu-btn {
+  border-radius:0!important;
+  border:1px solid #ddd4e6;
+  background:#fff;
+  box-shadow:none!important;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button.is-active {
+  border-color:#7421ef;
+  background:linear-gradient(105deg,#4e0fa2,#7118ed 62%,#9634ff);
+  box-shadow:0 8px 18px rgba(107,29,226,.15)!important;
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .cit-appt-search-field,
+  .cit-appt-date-filter,
+  .cit-appt-service-chip i
+) {
+  border-radius:0!important;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-backdrop {
+  z-index:8200!important;
+  background:rgba(13,7,24,.54)!important;
+  backdrop-filter:blur(9px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog {
+  position:relative;
+  width:min(760px,calc(100vw - 28px))!important;
+  max-height:min(88dvh,760px);
+  overflow:auto;
+  padding:24px!important;
+  border:1px solid #aa78e3!important;
+  background:
+    radial-gradient(circle at 94% 8%,rgba(126,38,244,.08),transparent 23%),
+    #fff!important;
+  box-shadow:0 28px 70px rgba(22,10,40,.28)!important;
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)!important;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog::before {
+  content:"";
+  position:absolute;
+  top:0;
+  right:20px;
+  width:84px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#943dff);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-check {
+  width:48px!important;
+  height:48px!important;
+  margin-bottom:10px!important;
+  border-radius:0!important;
+  color:#fff!important;
+  background:linear-gradient(145deg,#13935a,#24bd78)!important;
+  box-shadow:0 9px 19px rgba(18,151,91,.16);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog h2 {
+  margin:7px 0 6px!important;
+  color:#17111f!important;
+  font-size:clamp(1.35rem,2.4vw,1.85rem);
+  line-height:1.12;
+  letter-spacing:-.04em;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog > p {
+  margin:0 0 16px!important;
+  color:#72687c!important;
+  line-height:1.48;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts {
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin:16px 0 18px!important;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div {
+  --fact-accent:#7421ef;
+  position:relative;
+  min-height:78px;
+  padding:12px 13px!important;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--fact-accent) 22%,#e1d9e8);
+  border-radius:0!important;
+  background:linear-gradient(135deg,#fff,color-mix(in srgb,var(--fact-accent) 5%,#fff))!important;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  width:2px;
+  height:100%;
+  background:var(--fact-accent);
+  opacity:.66;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(1){--fact-accent:#7421ef}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(2){--fact-accent:#287cf1}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(3){--fact-accent:#16945d}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(4){--fact-accent:#dd8d13}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(5){--fact-accent:#8b45e9}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(6){--fact-accent:#d15e26}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts span {
+  color:#786f82!important;
+  font-size:.72rem!important;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts b {
+  margin-top:3px;
+  color:#1d1726!important;
+  font-size:.82rem;
+  overflow-wrap:anywhere;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-actions {
+  display:flex!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+  padding-top:14px;
+  border-top:1px solid #e8e1ed;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-actions button {
+  min-height:42px;
+  padding:0 13px;
+  border:1px solid #d9cfe3;
+  background:#fff;
+  color:#3d3247;
+  font-weight:850;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-actions .primary-action {
+  border-color:#7421ed!important;
+  color:#fff!important;
+  background:linear-gradient(105deg,#4e0fa2,#7118ed 62%,#9634ff)!important;
+  box-shadow:0 8px 18px rgba(105,27,225,.17);
+}
+
+/* --------------------------------------------------------------------------
+   OTHER CITIZEN CARD FAMILIES
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) .partner-card {
+  border:1px solid #ded4e8;
+  background:linear-gradient(145deg,#fff,#fcf9ff);
+}
+
+:where(body[data-route-group="portal"]) .partner-card.is-available {
+  box-shadow:inset 0 2px 0 rgba(24,157,94,.48),var(--nt-card-shadow);
+}
+
+:where(body[data-route-group="portal"]) .partner-card.is-unavailable {
+  box-shadow:inset 0 2px 0 rgba(179,83,101,.42),var(--nt-card-shadow);
+}
+
+:where(body[data-route-group="portal"]) .citizen-news-card {
+  overflow:hidden;
+  border:1px solid #ded4e8;
+  background:#fff;
+}
+
+:where(body[data-route-group="portal"]) .notification-category-card {
+  border:1px solid #ddd4e8;
+  background:linear-gradient(140deg,#fff,#fcf9ff);
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .data-export-card,
+  .performance-settings-card,
+  .privacy-concern-card,
+  .settings-deferred-card,
+  .settings-tab-panel,
+  .delete-account-form-card
+) {
+  position:relative;
+  overflow:hidden;
+  border:1px solid #ddd4e8;
+  background:linear-gradient(145deg,#fff,#fdfaff);
+}
+
+/* Services already have their own art. Only normalize the shell. */
+:where(body[data-route-group="portal"]) .svc84-card {
+  border-radius:0!important;
+  border-color:#ddd4e8!important;
+  box-shadow:var(--nt-card-shadow)!important;
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+}
+
+/* --------------------------------------------------------------------------
+   Large text / responsive
+   -------------------------------------------------------------------------- */
+
+html:is([data-font-size="large"],[data-font-size="xlarge"])
+:where(body[data-route-group="portal"]) :is(
+  .project-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side,
+  .appointment-confirmation-dialog,
+  .appointment-confirmation-facts > div,
+  .partner-card,
+  .citizen-news-card,
+  .notification-category-card,
+  .portal-card
+) {
+  height:auto!important;
+  max-height:none!important;
+}
+
+html:is([data-font-size="large"],[data-font-size="xlarge"])
+:where(body[data-route-group="portal"]) .project-card :is(p,dd,h3),
+html:is([data-font-size="large"],[data-font-size="xlarge"])
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts :is(span,b) {
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:normal!important;
+}
+
+@media(max-width:900px) {
+  :where(body[data-route-group="portal"]) .project-grid--compact {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-dialog {
+    padding:20px!important;
+  }
+}
+
+@media(max-width:650px) {
+  :where(body[data-route-group="portal"]) .project-grid--compact {
+    grid-template-columns:1fr!important;
+  }
+
+  :where(body[data-route-group="portal"]) .project-toolbar {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  :where(body[data-route-group="portal"]) .project-toolbar .project-filter-row {
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    justify-content:flex-start;
+    padding-bottom:3px;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-facts {
+    grid-template-columns:1fr!important;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-actions {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-actions button {
+    width:100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Accessibility
+   -------------------------------------------------------------------------- */
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) :is(
+  .portal-card,
+  .project-card,
+  .project-toolbar,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-hero-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side,
+  .appointment-confirmation-dialog,
+  .appointment-confirmation-facts > div,
+  .notification-category-card,
+  .notification-detail-panel,
+  .notification-kpi-card
+) {
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-filter-row button {
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-filter-row button.is-active,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .appointment-confirmation-actions .primary-action {
+  color:#000!important;
+  background:#f1d55e!important;
+}
+
+@media(prefers-reduced-motion:reduce) {
+  :where(body[data-route-group="portal"]) :is(
+    .project-card,
+    .partner-card,
+    .citizen-news-card,
+    .cit-appt-next-card,
+    .cit-appt-calendar-card,
+    .request-list-card,
+    .notification-category-card,
+    .svc84-card,
+    .project-filter-row button
+  ) {
+    transition:none!important;
+  }
+}
+
+/* ==========================================================================
+   NOVA TERRA — CITIZEN THEME V110
+   Single owner for citizen sidebar, header, controls and portal accessibility.
+   ========================================================================== */
+
+:where(body[data-route-group="portal"]){
+  --nt-tech-purple:#741ff0;
+  --nt-tech-purple-2:#993cff;
+  --nt-tech-dark:#0a0813;
+  --nt-tech-line:#d9cce7;
+  --nt-tech-soft:#f8f4ff;
+  --nt-tech-cut:7px;
+}
+
+/* ---------- sidebar: angular border language, no rounded-pill regression ---------- */
+body[data-route-group="portal"] .portal-sidebar--citizen{
+  isolation:isolate;gap:7px;padding:15px 12px 13px;overflow-x:hidden;
+  background-color:#070812;
+  background-image:linear-gradient(180deg,rgba(4,5,15,.30),rgba(5,7,18,.82) 58%,rgba(4,6,17,.94)),url("../../assets/sidebar/nova-sidebar-space.jpg");
+  background-size:cover;background-position:center top;background-repeat:no-repeat;
+  border-right:1px solid rgba(130,83,245,.36);
+  box-shadow:inset -1px 0 0 rgba(108,63,241,.18),16px 0 38px rgba(8,5,28,.08);
+}
+body[data-route-group="portal"] .portal-sidebar--citizen::after{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:radial-gradient(circle at 12% 12%,rgba(113,45,255,.20),transparent 18%),radial-gradient(circle at 105% 46%,rgba(38,94,255,.14),transparent 28%)}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-brand{display:block;width:100%;min-height:82px;padding:0 7px 5px;overflow:hidden;border:0;background:transparent;text-align:center}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-brand img{display:block;width:100%;height:76px;object-fit:contain;filter:drop-shadow(0 7px 18px rgba(102,0,252,.20));transform:scale(1.035)}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat{position:relative;z-index:1;gap:4px}
+body[data-route-group="portal"] .portal-sidebar--citizen :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button){
+  position:relative;min-height:40px;padding:6px 9px;gap:10px;border:1px solid transparent!important;border-radius:0!important;
+  color:#f0eef8;background:transparent;font-size:.78rem;font-weight:700;letter-spacing:-.01em;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+  transition:background .17s ease,border-color .17s ease,box-shadow .17s ease,transform .17s ease,color .17s ease;
+}
+body[data-route-group="portal"] .portal-sidebar--citizen :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button)::after{content:"";position:absolute;top:0;right:9px;width:26px;height:1px;background:linear-gradient(90deg,transparent,rgba(164,106,255,.65));opacity:.35}
+body[data-route-group="portal"] .portal-sidebar--citizen :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button) i{
+  flex:0 0 29px;width:29px;height:29px;border:1px solid rgba(174,135,255,.12);border-radius:0!important;
+  color:#eadcff;background:linear-gradient(145deg,rgba(69,41,123,.56),rgba(29,22,57,.76));box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+body[data-route-group="portal"] .portal-sidebar--citizen :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button):hover{transform:translateX(2px);border-color:rgba(141,88,239,.42)!important;background:linear-gradient(90deg,rgba(95,38,185,.25),rgba(58,28,109,.10));color:#fff}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat>button.is-active{
+  color:#fff!important;border-color:#8b4bd7!important;background:linear-gradient(105deg,#39105f 0%,#57149c 48%,#6d1bc9 100%)!important;
+  box-shadow:0 0 0 1px rgba(143,67,230,.14),0 0 18px rgba(111,29,226,.19),inset 0 1px 0 rgba(255,255,255,.10)!important;
+}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat>button.is-active::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:2px;background:#b471ff;box-shadow:0 0 9px rgba(180,113,255,.72)}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat>button.is-active i{color:#fff!important;background:linear-gradient(145deg,#3c1a56,#2a173a)!important;border-color:rgba(255,255,255,.12)!important}
+body[data-route-group="portal"] .portal-sidebar--citizen .portal-sidebar__bottom{position:relative;z-index:1;gap:4px;margin-top:auto;padding-top:9px;border-top:1px solid rgba(177,151,255,.17)}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature{position:relative;z-index:1;display:flex;align-items:center;gap:7px;min-height:52px;margin:3px 3px 0;padding:4px 5px 0;color:#d9d5e8}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature__planet{flex:0 0 37px;width:37px;height:37px;display:grid;place-items:center;border-radius:50%;color:#e5d4ff;font-size:1.6rem;transform:rotate(-18deg);background:radial-gradient(circle at 35% 28%,#ce9bff 0 10%,#7b35ff 37%,#301278 72%,rgba(42,17,96,.25) 100%);box-shadow:0 0 17px rgba(109,54,255,.34)}
+body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature>span:last-child{display:grid;gap:1px}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature strong{color:#a962ff;font-size:.72rem;font-weight:800}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature small{color:#d6d1e2;font-size:.66rem;line-height:1.32}
+
+@media(min-width:1101px){
+  body[data-route-group="portal"].portal-sidebar-collapsed{--portal-sidebar-width:72px}
+  body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-toggle{position:absolute;z-index:6;top:82px;right:7px;display:grid;place-items:center;width:29px;height:29px;padding:0;border:1px solid rgba(181,141,236,.62)!important;border-radius:0!important;background:rgba(8,8,13,.88)!important;color:#d8d2e2!important;box-shadow:0 5px 16px rgba(8,5,28,.28)!important;cursor:pointer;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+  body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-toggle:hover{border-color:#a76bf0!important;color:#fff!important;background:#17101f!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed{gap:7px;padding:10px 8px 12px;background:#050506!important;border-right:1px solid #22182d;box-shadow:none}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed::after{display:none}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed .citizen-sidebar-brand{display:none!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed .citizen-sidebar-toggle{top:14px!important;left:50%;right:auto!important;width:34px;height:34px;transform:translateX(-50%)!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed .citizen-nav-flat{gap:8px;margin-top:48px;padding-top:6px}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button){display:grid;place-items:center;width:46px;height:44px;min-height:44px;margin-inline:auto;padding:0;gap:0;border:1px solid transparent!important;background:transparent;transform:none!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button)>span{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button) i{display:grid;flex:0 0 30px;place-items:center;width:30px;height:30px;padding:0;border:0!important;background:transparent!important;color:#aaa7af;box-shadow:none!important;clip-path:none}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed .citizen-nav-flat>button.is-active{background:linear-gradient(180deg,#421278,#5b18a6 55%,#421278)!important;border-color:#7b38c7!important;color:#fff!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed .citizen-nav-flat>button.is-active i{color:#fff!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen.is-collapsed .citizen-sidebar-signature{display:none!important}
+}
+
+@media(max-height:850px) and (min-width:701px){body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature{display:none}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-brand{min-height:68px}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-brand img{height:64px}}
+@media(min-width:701px) and (max-width:1100px){body[data-route-group="portal"] .portal-sidebar--citizen{padding:12px 8px;background-position:57% top}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-brand{min-height:48px;padding:0}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-brand img{display:none}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-brand::before{content:"NT";display:grid;place-items:center;width:42px;height:42px;margin:0 auto;color:#fff;font-size:.85rem;font-weight:850;background:linear-gradient(145deg,#6732f3,#922cff);border:1px solid rgba(119,211,255,.52);clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature{display:none}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-toggle{display:none!important}}
+@media(max-width:700px){body[data-route-group="portal"] .portal-sidebar--citizen{gap:4px;padding:6px;background-image:linear-gradient(90deg,rgba(7,8,19,.94),rgba(15,12,35,.91)),url("../../assets/sidebar/nova-sidebar-space.jpg");background-size:auto 500px;background-position:center 70%}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-sidebar-signature{display:none}body[data-route-group="portal"] .portal-sidebar--citizen :is(.citizen-nav-flat>button,.portal-sidebar__bottom>button){min-height:60px;transform:none}body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat>button.is-active::before{display:none}}
+
+/* ---------- citizen topbar: restore full controls and technical borders ---------- */
+body[data-route-group="portal"] .portal-topbar--citizen{display:grid;grid-template-columns:minmax(235px,.78fr) minmax(0,1.75fr);align-items:center;gap:12px;min-height:86px;height:auto;padding:12px 18px 11px 24px;overflow:visible;background:linear-gradient(90deg,#fff 0%,#fefcff 70%,#faf6ff 100%);border-bottom:1px solid #ddd0ea;box-shadow:0 7px 24px rgba(47,23,76,.035)}
+body[data-route-group="portal"] .portal-topbar--citizen::after{content:"";position:absolute;right:2%;bottom:0;width:35%;height:1px;background:linear-gradient(90deg,transparent,#9d59f3,transparent);opacity:.62}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__title{min-width:0;max-width:100%}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__eyebrow{color:#7322e9;font-size:.68rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+body[data-route-group="portal"] .portal-topbar--citizen h1{margin:2px 0 0;overflow:hidden;color:#0d0914;font-size:clamp(1.18rem,1.5vw,1.48rem);font-weight:900;line-height:1.05;letter-spacing:-.05em;text-overflow:ellipsis;white-space:nowrap}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__subtitle{margin:5px 0 0;overflow:hidden;color:#70677a;font-size:.69rem;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__right{display:flex!important;min-width:0;width:100%;flex-wrap:nowrap!important;align-items:center;justify-content:flex-end;gap:6px;overflow:visible}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__actions{display:flex;min-width:0;flex:0 1 auto;flex-wrap:nowrap;align-items:center;gap:6px}
+body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-ghost,.topbar-cta,.topbar-icon-button,.portal-topbar__icon,.portal-voice-trigger){position:relative;display:inline-flex!important;min-height:42px;height:42px;align-items:center;justify-content:center;gap:7px;padding:0 10px;border-radius:0!important;white-space:nowrap;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-ghost,.topbar-icon-button,.portal-topbar__icon,.portal-voice-trigger){border:1px solid #d5c8e3!important;color:#21182c!important;background:#fff!important;box-shadow:0 5px 14px rgba(43,22,67,.035)!important}
+body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-ghost,.topbar-icon-button,.portal-topbar__icon,.portal-voice-trigger)::before{content:"";position:absolute;right:8px;top:0;width:26px;height:2px;pointer-events:none;background:linear-gradient(90deg,transparent,#963cff);opacity:.58}
+body[data-route-group="portal"] .portal-topbar--citizen .topbar-cta{border:1px solid #7623ee!important;color:#fff!important;background:linear-gradient(105deg,#5110a6,#7119ee 62%,#9734ff)!important;box-shadow:0 9px 20px rgba(102,19,235,.20)!important}
+body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-icon-button,.portal-topbar__icon){width:42px;min-width:42px;padding:0}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user{display:grid;grid-template-columns:38px minmax(0,1fr) 14px;min-width:140px;max-width:190px;flex:0 1 190px;align-items:center;gap:7px;padding:2px 0}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user__avatar{display:grid;width:38px;height:38px;place-items:center;border-radius:50%;color:#fff;background:linear-gradient(145deg,#6c1de3,#9b43ff);box-shadow:0 7px 18px rgba(104,26,225,.17);font-size:.72rem;font-weight:850}
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div{min-width:0;display:grid}body[data-route-group="portal"] .portal-topbar--citizen .portal-user strong{overflow:hidden;color:#161020;font-size:.71rem;text-overflow:ellipsis;white-space:nowrap}body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div>span{color:#776f82;font-size:.66rem}
+@media(max-width:1260px){body[data-route-group="portal"] .portal-topbar--citizen{grid-template-columns:minmax(205px,.62fr) minmax(0,2fr);padding-inline:18px 12px}body[data-route-group="portal"] .portal-topbar--citizen .portal-user{min-width:112px;max-width:145px;flex-basis:145px}body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div>span{display:none}}
+@media(max-width:1080px){body[data-route-group="portal"] .portal-topbar--citizen{grid-template-columns:1fr;gap:8px;padding:12px 14px}body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__right{justify-content:flex-start;overflow-x:auto;overflow-y:visible;padding-bottom:2px;scrollbar-width:none}body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__right::-webkit-scrollbar{display:none}body[data-route-group="portal"] .portal-topbar--citizen .portal-user{margin-left:auto}}
+@media(max-width:700px){body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-cta,.topbar-ghost){display:inline-flex!important}body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__right{width:100%;flex-wrap:nowrap!important}body[data-route-group="portal"] .portal-topbar--citizen .portal-user{min-width:38px;max-width:38px;grid-template-columns:38px}body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div,body[data-route-group="portal"] .portal-topbar--citizen .portal-user__chevron{display:none}}
+
+
+/* V113 — remaining citizen technical shapes.
+   Status pills, avatars and map marker pins stay circular; structural UI does not. */
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main button:not(.nova-gl-marker){
+  border-radius:0!important;
+}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(
+  .request-detail-hero--soft,
+  .request-detail-hero__icon,
+  .request-location-chip,
+  .action-bar,
+  .request-support-intro,
+  .request-support-intro__icon,
+  .request-support-toolbar,
+  .request-support-card,
+  .municipal-reply-list>article,
+  .municipal-reply-avatar,
+  .nova-map-frame,
+  .nova-map-search,
+  .nova-map-chipbar button,
+  .nova-map-search-hint,
+  .nova-map-watermark,
+  .nova-map-controls button,
+  .nova-map-legend,
+  .nova-map-state,
+  .nova-gl-marker__label,
+  .nova-city-map__selected,
+  .nova-city-map__accessible-list,
+  .nova-city-map__empty,
+  .nova-city-map__selected-icon,
+  .nova-city-map__selected .primary-action,
+  .nova-city-map__accessible-list>button,
+  .nova-city-map__accessible-list>button>i
+){
+  border-radius:0!important;
+}
+
+/* ---------- controls: one citizen form/button visual grammar ---------- */
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]),select,textarea){
+  border-radius:0!important;border:1px solid #dcd2e6!important;color:#211a29;background:#fff;box-shadow:none;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]),select){min-height:44px;padding-inline:12px}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main textarea{padding:11px 12px}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]),select,textarea):focus{outline:0!important;border-color:#8d45dd!important;box-shadow:0 0 0 3px rgba(116,31,240,.09)!important;background:#fff}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(input,select,textarea):disabled,body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(input,textarea)[readonly]{background:#f7f4fa!important;color:#756c7d!important;border-color:#e3dae9!important}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main .portal-search{position:relative;border:1px solid #ddd3e7!important;border-radius:0!important;background:#fff!important;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main .portal-search input{border:0!important;clip-path:none!important;background:transparent!important;box-shadow:none!important}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(.primary-action,.secondary-action,.topbar-cta,.topbar-ghost,.accessible-table__action,.news-read-link,.svc84-card__cta,.svc84-categories button,.svc84-view button,.cit-appt-primary,.cit-appt-secondary,.cit-appt-view-btn,.cit-appt-menu-btn,.report-submit,.report-history-more,.tr87-close,.tr87-actions button,.tr87-stop-card>button,.project-support-button,.project-modal__head>button){
+  position:relative;border-radius:0!important;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main .primary-action{border:1px solid #7421ed!important;color:#fff!important;background:linear-gradient(105deg,#4e0fa2,#7118ed 62%,#9634ff)!important;box-shadow:0 8px 18px rgba(105,27,225,.16)}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main .secondary-action{border:1px solid #d2c3e1!important;color:#6017cb!important;background:#fff!important}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(.primary-action,.secondary-action,.accessible-table__action,.news-read-link,.svc84-card__cta):hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 18px rgba(71,29,114,.08)}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(.filter-row button,.settings-tabs button,.cit-appt-filter-tabs button,.request-filter,.project-filter-row button,.report-priority button,.report-wizard-actions button,.report-geolocation>button,.report-file>button,.request-export-panel__actions button,.request-pagination button){border-radius:0!important;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main .profile-hero{border-radius:0!important;border:1px solid #d9cce7!important;box-shadow:var(--nt-card-shadow)!important;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);background:linear-gradient(120deg,#fff,#fcf8ff)}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main .profile-avatar{border-radius:0!important;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main .profile-form-grid label>span{color:#675d71;font-weight:800}
+
+/* ---------- large text and high contrast ---------- */
+html:is([data-font-size="large"],[data-font-size="xlarge"]) body[data-route-group="portal"] .portal-sidebar--citizen~.portal-main :is(.portal-card,.profile-hero,input,select,textarea){height:auto;max-height:none}
+html[data-contrast="high"] body[data-route-group="portal"] .portal-sidebar--citizen{background:#000!important;border-right:2px solid #fff!important;box-shadow:none!important}
+html[data-contrast="high"] body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat>button.is-active{background:#000!important;color:#fff!important;border:2px solid #ff0!important;box-shadow:none!important}
+html[data-contrast="high"] body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-ghost,.topbar-icon-button,.portal-topbar__icon,.portal-voice-trigger){background:#000!important;color:#fff!important;border:2px solid #fff!important;box-shadow:none!important}

@@ -1,60 +1,121 @@
 :where(body[data-route-group="portal"]) .portal-pagination{
+  position:relative;
   width:100%;
   min-width:0;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  padding:12px 2px 2px;
-  color:#756d80;
-  font-size:.8125rem;
+  gap:14px;
+  margin-top:14px;
+  padding:12px 2px 1px;
+  border-top:1px solid #e7dfee;
+  color:#746b7d;
+  font-size:.72rem;
 }
-:where(body[data-route-group="portal"]) .portal-pagination__count{min-width:0}
+:where(body[data-route-group="portal"]) .portal-pagination__count{
+  min-width:0;
+  font-weight:720;
+}
 :where(body[data-route-group="portal"]) .portal-pagination__controls{
   display:flex;
   align-items:center;
-  gap:7px;
+  gap:5px;
   flex:0 0 auto;
 }
+:where(body[data-route-group="portal"]) .portal-pagination__numbers{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
 :where(body[data-route-group="portal"]) .portal-pagination__controls button{
+  display:grid;
   width:34px;
   height:34px;
-  border:1px solid #e5deea;
-  border-radius:10px;
+  place-items:center;
+  padding:0;
+  border:1px solid #d7cce2;
+  border-radius:0!important;
   background:#fff;
-  color:#322a3d;
+  color:#5d18cd;
   font:inherit;
-  font-size:1.05rem;
+  font-size:.76rem;
+  font-weight:900;
   cursor:pointer;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease,background .15s ease;
 }
-:where(body[data-route-group="portal"]) .portal-pagination__controls button:disabled{opacity:.38;cursor:not-allowed}
-:where(body[data-route-group="portal"]) .portal-pagination__controls span{
-  min-width:54px;
-  text-align:center;
-  color:#44384f;
-  font-weight:750;
+:where(body[data-route-group="portal"]) .portal-pagination__controls .portal-pagination__nav{
+  font-size:1.05rem;
+}
+:where(body[data-route-group="portal"]) .portal-pagination__controls button:hover:not(:disabled):not(.is-active){
+  transform:translateY(-1px);
+  border-color:#8b42e7;
+  background:#faf6ff;
+  box-shadow:0 7px 15px rgba(94,31,179,.09);
+}
+:where(body[data-route-group="portal"]) .portal-pagination__controls button.is-active{
+  border-color:#7421ed;
+  color:#fff;
+  background:linear-gradient(105deg,#4e0f9f,#7118ed 62%,#9634ff);
+  box-shadow:0 7px 16px rgba(103,27,220,.16);
+}
+:where(body[data-route-group="portal"]) .portal-pagination__controls button:disabled{
+  opacity:.30;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+:where(body[data-route-group="portal"]) .portal-pagination__ellipsis{
+  display:grid;
+  min-width:20px;
+  height:34px;
+  place-items:center;
+  color:#9a8fa1;
+  font-weight:900;
 }
 :where(body[data-route-group="portal"]) .portal-pagination__controls button:focus-visible{
-  outline:3px solid color-mix(in srgb,#6b18df 35%,transparent);
+  outline:3px solid color-mix(in srgb,#6b18df 34%,transparent);
   outline-offset:2px;
 }
-html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination,
-html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination__controls span{color:#fff!important}
-html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination__controls button{background:#000!important;color:#fff!important;border-color:#fff!important}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination{
+  color:#fff!important;
+  border-color:#fff!important;
+}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination__controls button{
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+}
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .portal-pagination__controls button.is-active{
+  background:#ff0!important;
+  color:#000!important;
+  border-color:#ff0!important;
+}
+:where(body[data-route-group="portal"]) :is(
+  .project-admin-ideas,
+  .project-admin-list,
+  .project-admin-contributions,
+  .agent-project-list,
+  .portal-table,
+  .management-list,
+  .tr87-admin-list,
+  .api-request-list,
+  .agent-security-list
+)>.portal-pagination{
+  grid-column:1/-1;
+  width:100%;
+}
 @media(max-width:560px){
-  :where(body[data-route-group="portal"]) .portal-pagination{align-items:flex-start;flex-direction:column}
-}
-:where(body[data-route-group="portal"]) .project-admin-ideas>.portal-pagination{grid-column:1/-1}
-
-/* Pagination spanning project administration grids. */
-:where(body[data-route-group="portal"]) .project-admin-ideas > .portal-pagination,
-:where(body[data-route-group="portal"]) .project-admin-list > .portal-pagination{
-  grid-column:1 / -1;
-  width:100%;
-}
-:where(body[data-route-group="portal"]) .portal-table > .portal-pagination,
-:where(body[data-route-group="portal"]) .project-admin-contributions > .portal-pagination,
-:where(body[data-route-group="portal"]) .agent-project-list > .portal-pagination{
-  grid-column:1 / -1;
-  width:100%;
+  :where(body[data-route-group="portal"]) .portal-pagination{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  :where(body[data-route-group="portal"]) .portal-pagination__controls{
+    width:100%;
+    justify-content:space-between;
+  }
+  :where(body[data-route-group="portal"]) .portal-pagination__numbers{
+    min-width:0;
+    overflow-x:auto;
+  }
 }

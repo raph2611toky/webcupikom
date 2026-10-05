@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalActionDialog from "../../components/ui/PortalActionDialog.jsx";
 import {
   cancelCitizenAppointment,
   getAppointmentStatusLabel,
@@ -26,6 +27,7 @@ export default function CitizenAppointmentDetails({ params }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderMinutes, setReminderMinutes] = useState(60);
 
@@ -61,12 +63,18 @@ export default function CitizenAppointmentDetails({ params }) {
     } finally { setSaving(false); }
   }
 
-  async function cancel() {
-    if (!item?.canCancel || !window.confirm("Annuler ce rendez-vous ?")) return;
+  function cancel() {
+    if (!item?.canCancel) return;
+    setCancelOpen(true);
+  }
+
+  async function confirmCancel() {
+    if (!item?.canCancel) return;
     setSaving(true); setError(""); setNotice("");
     try {
       await cancelCitizenAppointment(item.reference);
       setNotice("Rendez-vous annulé.");
+      setCancelOpen(false);
       await load();
     } catch (err) {
       setError(getApiErrorMessage(err, "Impossible d’annuler le rendez-vous."));
@@ -130,6 +138,26 @@ export default function CitizenAppointmentDetails({ params }) {
           </article>
         </section>
       </>}
+
+      <PortalActionDialog
+        open={cancelOpen}
+        eyebrow="Rendez-vous"
+        title="Annuler ce rendez-vous"
+        description="Cette action annulera le rendez-vous. Vérifiez les informations avant de confirmer."
+        icon="!"
+        tone="danger"
+        confirmLabel="Confirmer l’annulation"
+        cancelLabel="Retour"
+        busy={saving}
+        onClose={()=>{if(!saving)setCancelOpen(false)}}
+        onConfirm={confirmCancel}
+        details={item?[
+          {label:"Service",value:item.serviceName},
+          {label:"Agent",value:item.agentName},
+          {label:"Date et heure",value:formatDateTime(item.startsAt,locale)},
+          {label:"Référence",value:item.reference},
+        ]:[]}
+      />
     </main>
   </div></div>;
 }

@@ -1,0 +1,11 @@
+NOVA TERRA V117 — TRANSPORT MAP
+
+- L'espace citoyen Transport utilise maintenant le même composant NovaTerraMap que Services.
+- Le fond OpenFreeMap fictif, le drag, le zoom, la recherche, le recentrage et le panneau latéral sont partagés.
+- Les arrêts de transport deviennent des marqueurs bleus sur cette carte.
+- Les filtres Quartier / Ligne restent au-dessus de la carte.
+- Cliquer sur « Voir l'arrêt » ouvre la fiche détaillée de l'arrêt.
+- Les horaires du transport utilisent maintenant le même langage visuel que la disponibilité d'un service.
+- Les objets d'horaires starts_at / ends_at / duration_minutes / frequency_minutes sont formatés proprement.
+- Les anciens #1 / #2 sont remplacés par Passage 1 / Passage 2 quand aucun libellé n'est fourni.
+- Aucun fichier Landing ou Accessibilité n'est modifié.

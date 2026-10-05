@@ -35,3 +35,51 @@
   .terra-footer__nav { grid-template-columns: 1fr; }
   .terra-footer__bottom { flex-direction: column; }
 }
+
+
+/* ---------- footer motion ---------- */
+
+.terra-footer {
+  position: relative;
+  overflow: hidden;
+}
+
+.terra-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 7%;
+  right: 7%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(135,63,255,.8), transparent);
+}
+
+.terra-footer__pulse {
+  position: absolute;
+  right: 7%;
+  bottom: 19px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7c2aff;
+  box-shadow: 0 0 14px rgba(124,42,255,.7);
+  animation: terraFooterPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes terraFooterPulse {
+  0%,
+  100% {
+    opacity: .42;
+    transform: scale(.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terra-footer__pulse {
+    animation: none;
+  }
+}

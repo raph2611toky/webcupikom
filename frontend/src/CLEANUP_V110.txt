@@ -1,0 +1,13 @@
+Nova Terra citizen UI cleanup V110
+
+- Removed accidental nested src/src duplicate tree.
+- Removed unused citizen-future-v100.css.
+- Replaced citizen-ui-system-v109.css with one citizen-theme-v110.css owner.
+- Removed duplicated V93/V94/V95 citizen sidebar blocks from portal-layout.css.
+- Sidebar now uses the angular/technical borders consistently in expanded and collapsed states.
+- Citizen topbar controls are restored and no longer hidden on mobile breakpoints.
+- Header buttons, form inputs/selects/textareas and main citizen buttons share one angular visual grammar.
+- Profile fields and profile hero are conformed to the Nova Terra design.
+- Accessibility trigger/panel now uses the same angular Nova Terra portal design.
+- Language selector uses a body-level popup to avoid clipping and reliably works after login.
+- Contextual Indications stays purple, bottom by default, draggable, and uses a V110 position key.

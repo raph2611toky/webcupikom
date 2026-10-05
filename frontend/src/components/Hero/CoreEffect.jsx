@@ -416,8 +416,15 @@ export default function CoreEffect({ active = true }) {
       const tilt = -0.12 + pointer.x * 0.11;
       const postRevealBreath =
         !reduceMotion && opening > 0.96 ? Math.sin(rawTime * 0.82) * 0.028 : 0;
+      // After the intro, park the two ring clusters close to the screen edges.
+      // This keeps the futuristic fragments visible but prevents them from
+      // entering the BIENVENUE / NOVA TERRA reading area.
+      const finalSplitTarget = Math.min(width * 0.44, coreSize * 2.35);
       const splitDistance =
-        coreSize * (0.025 + 1.62 * opening + revealKick * 0.105 + postRevealBreath);
+        coreSize * 0.025 +
+        finalSplitTarget * opening +
+        revealKick * coreSize * 0.085 +
+        postRevealBreath * coreSize;
       const finalCalm = 1 - settle * 0.27;
 
       // Ambient background halo.
@@ -439,9 +446,9 @@ export default function CoreEffect({ active = true }) {
         cx,
         cy,
         coreSize,
-        (0.13 + 0.64 * assemble) * (1 - centerClear * 0.22),
+        (0.13 + 0.64 * assemble) * Math.pow(1 - centerClear, 2.6),
         motionTime,
-        Math.pow(1 - centerClear, 1.7),
+        Math.pow(1 - centerClear, 2.2),
       );
 
       // Large lateral secondary arcs.
@@ -517,9 +524,17 @@ export default function CoreEffect({ active = true }) {
           const entrance = (1 - localAssemble) * coreSize * (0.28 + ringIndex * 0.18) * (i % 2 ? 1 : -1);
           const radialGrow = 0.68 + localAssemble * 0.32;
           const openX = side * splitDistance * (0.92 + ringIndex * 0.12);
+          const frameDirection = Math.sin(homeMid) >= 0 ? 1 : -1;
+          const frameLift =
+            frameDirection *
+            settle *
+            coreSize *
+            (0.10 + ringIndex * 0.025);
+
           const openY =
-            Math.sin(baseMid * 1.15) * opening * coreSize * 0.11 +
-            Math.sin(baseMid * 2.0) * revealKick * coreSize * 0.035;
+            Math.sin(baseMid * 1.15) * opening * coreSize * 0.09 +
+            Math.sin(baseMid * 2.0) * revealKick * coreSize * 0.03 +
+            frameLift;
           const a0 = baseMid - segmentSpan * 0.5 + gap;
           const a1 = baseMid + segmentSpan * 0.5 - gap;
 
@@ -662,7 +677,7 @@ export default function CoreEffect({ active = true }) {
         const x =
           cx +
           Math.cos(angle) * radius +
-          side * splitDistance * 0.74 +
+          side * splitDistance * 0.88 +
           side * debrisOut;
         const y = cy + Math.sin(angle) * radius * 0.72 + fragment.vertical * coreSize * (1 - local) - opening * fragment.vertical * coreSize * 0.22;
         const scale = 0.55 + local * 0.52;
@@ -688,7 +703,7 @@ export default function CoreEffect({ active = true }) {
         const x =
           cx +
           Math.cos(a) * radius +
-          side * splitDistance * (0.50 + (index % 4) * 0.022) +
+          side * splitDistance * (0.72 + (index % 4) * 0.018) +
           side * revealKick * coreSize * 0.045;
         const y = cy + Math.sin(a) * radius * 0.68 + Math.sin(a * 2.1 + particle.phase) * coreSize * particle.lift;
         const size =
@@ -737,19 +752,22 @@ export default function CoreEffect({ active = true }) {
       // A blurred destination-out ellipse softly erases anything that still drifts
       // behind the headline/subtitle, while keeping the two edge clusters alive.
       if (centerClear > 0.001) {
-        const clearRadiusX = Math.min(width * 0.285, coreSize * 1.86);
-        const clearRadiusY = Math.min(height * 0.235, coreSize * 0.98);
+        // Wider reading-safe zone: it covers BIENVENUE, the NOVA TERRA card,
+        // LA VILLE ÉVOLUE and the description, while keeping the side clusters.
+        const clearRadiusX = Math.min(width * 0.365, coreSize * 2.34);
+        const clearRadiusY = Math.min(height * 0.285, coreSize * 1.20);
 
-        // Soft clear zone without ctx.filter blur. A scaled radial gradient is much
-        // cheaper to composite while preserving the same feathered ellipse.
+        // Shift the protected zone slightly upward because the headline sits
+        // above the geometric center of the old CoreEffect.
         ctx.save();
         ctx.globalCompositeOperation = "destination-out";
-        ctx.globalAlpha = 0.985 * centerClear;
-        ctx.translate(cx, cy + height * 0.008);
+        ctx.globalAlpha = 0.995 * centerClear;
+        ctx.translate(cx, cy - height * 0.035);
         ctx.scale(clearRadiusX, clearRadiusY);
         const clearGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
         clearGradient.addColorStop(0, "rgba(0,0,0,1)");
-        clearGradient.addColorStop(0.74, "rgba(0,0,0,.96)");
+        clearGradient.addColorStop(0.80, "rgba(0,0,0,.985)");
+        clearGradient.addColorStop(0.93, "rgba(0,0,0,.72)");
         clearGradient.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = clearGradient;
         ctx.beginPath();

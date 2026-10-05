@@ -1,0 +1,8 @@
+NOVA TERRA V122
+
+- Suppression complète du grand bandeau noir en haut du détail d'une demande/signalement Agent/Admin.
+- Les textes visibles sur la capture (À prendre en charge, titre, citoyen, badges statut/priorité,
+  Action agent requise, Aucune réponse envoyée) ne sont plus affichés dans ce bandeau.
+- Les sélecteurs Statut / Priorité / Responsable / Service ne sont pas perdus :
+  ils sont déplacés dans la carte « Faire avancer le dossier », là où ils servent réellement.
+- Aucun changement Landing / Accessibilité.

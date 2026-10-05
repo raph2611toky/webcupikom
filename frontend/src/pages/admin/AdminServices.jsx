@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { ServiceAvailabilityBadge } from "../../components/ui/ServiceAvailability.jsx";
 import ServiceAvailabilityEditor from "../../components/ui/ServiceAvailabilityEditor.jsx";
 import { createService, getServices, updateService } from "../../api/services.js";
@@ -18,6 +19,7 @@ export default function AdminServices(){
   const [documentsText,setDocumentsText]=useState("");
   const [query,setQuery]=useState("");
   const [filter,setFilter]=useState("all");
+  const [page,setPage]=useState(1);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
 
@@ -30,6 +32,10 @@ export default function AdminServices(){
     return status&&(!term||`${item.name} ${item.category} ${item.unavailabilityReason||""}`.toLowerCase().includes(term));
   }),[items,query,filter]);
   const unavailableCount=items.filter(item=>item.isAvailable===false).length;
+  const perPage=8;
+  const totalPages=Math.max(1,Math.ceil(filtered.length/perPage));
+  const pageItems=filtered.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>setPage(1),[query,filter]);
 
   const openCreate=()=>{setEditing("new");setForm(EMPTY);setActionsText("");setDocumentsText("");setError("")};
   const openEdit=(item)=>{setEditing(item.id);setForm({...item});setActionsText((item.actions||[]).join("\n"));setDocumentsText((item.requiredDocuments||[]).join("\n"));setError("")};
@@ -56,11 +62,12 @@ export default function AdminServices(){
       </section>
 
       <section className="portal-card management-list service-management-list">
-        {filtered.map(item=><article key={item.id||item.slug} className={`management-row service-management-row ${item.isAvailable===false?"is-unavailable":""}`}>
+        {pageItems.map(item=><article key={item.id||item.slug} className={`management-row service-management-row ${item.isAvailable===false?"is-unavailable":""}`}>
           <div className="management-row__main"><div className="service-admin-icon">{item.icon}</div><div><span>{item.category}</span><h3>{item.name}</h3><p>{item.isAvailable===false?(item.unavailabilityReason||"Interruption connue"):item.shortDescription}</p></div></div>
           <div className="management-row__meta"><ServiceAvailabilityBadge service={item}/><span>{item.openingHours||"Horaires à compléter"}</span></div>
           <div className="management-row__actions"><button className="secondary-action" onClick={()=>setAvailabilityEditing(item)}>Disponibilité</button><button className="secondary-action" onClick={()=>openEdit(item)}>Modifier</button></div>
         </article>)}
+        {filtered.length?<PortalPagination page={page} totalPages={totalPages} totalItems={filtered.length} perPage={perPage} onPageChange={setPage} itemLabel="service" itemLabelPlural="services"/>:null}
       </section>
     </main>
 

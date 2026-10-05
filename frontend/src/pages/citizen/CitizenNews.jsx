@@ -7,7 +7,7 @@ import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
 import { useDataMode } from "../../utils/useDataMode.js";
 import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
-import "../../styles/pages/citizen-news-v94.css";
+import "../../styles/pages/citizen-news-v120.css";
 
 const COPY={
   fr:{eyebrow:"Informations municipales",title:"Actualités",kicker:"Nova Terra aujourd’hui",headline:<>Les informations utiles,<br/>au même endroit.</>,intro:"Annonces municipales, changements de service et informations pratiques publiés pour les habitants.",all:"Toutes",news:"Actualités",announcement:"Annonces",alert:"Alertes",read:"Lire",loading:"Chargement…",error:"Impossible de charger les actualités.",search:"Rechercher une publication…",category:"Toutes les catégories",empty:"Aucune publication pour ce filtre.",emptyHint:"Modifiez le type, la catégorie ou la recherche.",result:"publication",results:"publications"},
@@ -118,6 +118,9 @@ export default function CitizenNews(){
               <div className="citizen-news-card__content">
                 <div className="news-meta"><span>{item.category}</span><time>{item.date}</time></div>
                 <h3>{item.title}</h3><p>{item.excerpt}</p>
+                {(item.instructions||item.audienceGuidanceList?.length)?
+                  <span className="citizen-news-card__guidance">! Consignes disponibles</span>
+                :null}
                 <button className="news-read-link" onClick={()=>navigate(`/citizen/news/${item.slug}`)}>{copy.read} →</button>
               </div>
             </article>;

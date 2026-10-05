@@ -1,0 +1,23 @@
+NOVA TERRA V114 — RESTAURATION CIBLÉE
+
+Cause de la régression:
+Le premier assemblage "src complet" V109 est reparti d'une base plus ancienne.
+Il a remplacé des fichiers Landing construits dans les révisions dédiées.
+Les versions V110–V113 ont ensuite hérité de cette mauvaise base.
+
+Restauré SANS réécriture:
+- Hero.jsx / Hero.css : révision landing V28
+- CoreEffect.jsx : dernière révision de fragments V29
+- LandingPage.jsx / LandingPage.css : révision landing V42
+- Features.jsx : V42
+- Features.css : dernière correction de position/hauteur V45
+- Mission.jsx / Mission.css : V42
+- LandingContact.jsx / LandingContact.css : V42
+- Footer.jsx / Footer.css : V42
+- accessibility.css : design accessibilité validé V46
+
+Important:
+- aucun nettoyage de bordure V113 n'est appliqué au Landing;
+- aucun redesign V113 n'est appliqué à Accessibilité;
+- les corrections citoyen / admin / agent / services / transport des versions récentes restent conservées;
+- les overrides .a11y-* ajoutés plus tard dans citizen-theme ont été retirés pour éviter les doublons.

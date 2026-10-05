@@ -1,0 +1,553 @@
+.nova-landing {
+  width: 100%;
+  overflow-x: clip;
+  background: #fff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .nova-landing a,
+  .nova-landing button {
+    transition:
+      transform .18s ease,
+      filter .18s ease,
+      box-shadow .18s ease,
+      color .18s ease,
+      background-color .18s ease;
+  }
+
+  .nova-landing a:active,
+  .nova-landing button:active {
+    transform: scale(.985);
+  }
+}
+
+/* ==========================================================================
+   NOVA TERRA — LANDING HIGH CONTRAST V115
+   Single contrast owner for the public Landing.
+   No geometry/layout changes: only colors, borders, visibility and focus.
+   Palette:
+   - background: #000
+   - primary text: #fff
+   - accent/action: #f2d34b
+   - action text on yellow: #000
+   ========================================================================== */
+
+html[data-contrast="high"] .nova-landing {
+  --landing-hc-bg:#000;
+  --landing-hc-surface:#000;
+  --landing-hc-text:#fff;
+  --landing-hc-accent:#f2d34b;
+  --landing-hc-action-text:#000;
+  --landing-hc-line:#fff;
+  background:var(--landing-hc-bg)!important;
+  color:var(--landing-hc-text)!important;
+  color-scheme:dark;
+}
+
+/* Strong keyboard focus everywhere on the Landing. */
+html[data-contrast="high"] .nova-landing :is(a,button,input,select,textarea):focus-visible {
+  outline:3px solid var(--landing-hc-accent)!important;
+  outline-offset:4px!important;
+}
+
+/* Prevent transparent/white intermediate loading areas. */
+html[data-contrast="high"] .nova-landing .landing-section-fallback {
+  background:#000!important;
+  border-block:1px solid #fff!important;
+}
+
+/* ---------- HERO ---------- */
+
+html[data-contrast="high"] .nova-landing .kamo-hero {
+  --hero-purple:var(--landing-hc-accent);
+  --hero-purple-2:var(--landing-hc-accent);
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .kamo-hero :is(
+  .hero-title,
+  .hero-title__top,
+  .hero-title__bottom,
+  .hero-subtitle,
+  .hero-eyebrow,
+  .kamo-logo,
+  .demo-link
+) {
+  color:#fff!important;
+  -webkit-text-fill-color:currentColor!important;
+  text-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .kamo-hero :is(
+  .hero-eyebrow,
+  .kamo-logo span,
+  .hero-photo-number
+) {
+  color:var(--landing-hc-accent)!important;
+  -webkit-text-fill-color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .kamo-header {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .kamo-nav a {
+  color:#fff!important;
+  text-decoration:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .kamo-nav a:is(:hover,:focus-visible,.is-active) {
+  color:var(--landing-hc-accent)!important;
+  text-decoration:underline!important;
+  text-underline-offset:.28em;
+  text-decoration-thickness:2px!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-title__band,
+html[data-contrast="high"] .nova-landing .start-button,
+html[data-contrast="high"] .nova-landing .kamo-login {
+  border-color:var(--landing-hc-accent)!important;
+  background:var(--landing-hc-accent)!important;
+  color:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-title__band::before {
+  display:none!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .hero-title__band-text,
+  .start-button span,
+  .start-button i,
+  .kamo-login span,
+  .kamo-login i
+) {
+  color:#000!important;
+  -webkit-text-fill-color:#000!important;
+}
+
+html[data-contrast="high"] .nova-landing .demo-link {
+  border-color:#fff!important;
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .demo-link:is(:hover,:focus-visible) {
+  border-color:var(--landing-hc-accent)!important;
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-info-card {
+  border-color:#fff!important;
+  background:#000!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-info-card :is(span,i) {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-info-card i {
+  background:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-photo-shell {
+  border-color:var(--landing-hc-accent)!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-photo img {
+  filter:grayscale(.2) brightness(.58) contrast(1.35)!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-tech :is(path,circle) {
+  stroke:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-tech__dot,
+html[data-contrast="high"] .nova-landing .hero-tech__microdots circle {
+  fill:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .hero-low-data-note {
+  border:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+}
+
+/* Landing language control: readable even above the dark hero. */
+html[data-contrast="high"] .nova-landing .language-switcher__button,
+html[data-contrast="high"] .nova-landing .hero-language-switcher select {
+  border:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .language-switcher__menu {
+  border:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .language-switcher__menu > button {
+  color:#fff!important;
+  background:#000!important;
+}
+
+html[data-contrast="high"] .language-switcher__menu > button:is(:hover,:focus-visible,.is-active) {
+  color:#000!important;
+  background:#f2d34b!important;
+}
+
+html[data-contrast="high"] .language-switcher__menu > button:is(:hover,:focus-visible,.is-active) * {
+  color:#000!important;
+}
+
+/* ---------- FEATURES ---------- */
+
+html[data-contrast="high"] .nova-landing .features-section {
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .features-section :is(
+  .features-kicker,
+  .features-stage__index,
+  .feature-card__number
+) {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .features-heading h2,
+html[data-contrast="high"] .nova-landing .features-heading h2 span,
+html[data-contrast="high"] .nova-landing .features-lead,
+html[data-contrast="high"] .nova-landing .features-lead--soft {
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  background:none!important;
+  text-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .features-heading h2 span {
+  color:var(--landing-hc-accent)!important;
+  -webkit-text-fill-color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .features-stage-shell {
+  border-color:var(--landing-hc-accent)!important;
+  background:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .features-stage {
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .features-stage__intro,
+  .features-note,
+  .features-microcopy,
+  .features-stats
+) {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .feature-card__surface {
+  border:3px solid var(--landing-hc-accent)!important;
+  background:#fff!important;
+  color:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .feature-card__surface * {
+  color:#000!important;
+  text-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .feature-card__icon,
+  .feature-arrow-circle,
+  .automation-seal
+) {
+  border-color:#000!important;
+  background:var(--landing-hc-accent)!important;
+  color:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .features-stage__tech,
+  .features-heading-tech
+) path {
+  stroke:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .features-debris {
+  opacity:.3!important;
+  filter:grayscale(1) contrast(1.2);
+}
+
+/* ---------- MISSION ---------- */
+
+html[data-contrast="high"] .nova-landing .terra-mission {
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__kicker {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .terra-mission h2,
+  .terra-mission__title-base,
+  .terra-mission__head > p,
+  .terra-mission__side-note
+) {
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  background:none!important;
+  text-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__title-accent {
+  color:var(--landing-hc-accent)!important;
+  -webkit-text-fill-color:var(--landing-hc-accent)!important;
+  background:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__card {
+  border:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__card :is(h3,p,.terra-mission__index) {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__card .terra-mission__index {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__icon {
+  border:2px solid var(--landing-hc-accent)!important;
+  background:var(--landing-hc-accent)!important;
+  color:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__arrow {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-mission__tech-bg path {
+  stroke:var(--landing-hc-accent)!important;
+  opacity:.8!important;
+}
+
+/* ---------- CONTACT ---------- */
+
+html[data-contrast="high"] .nova-landing .landing-contact {
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__kicker {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .landing-contact__copy h2,
+  .landing-contact__copy p
+) {
+  color:#fff!important;
+  text-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__full-link {
+  border-color:#fff!important;
+  color:var(--landing-hc-accent)!important;
+  text-decoration:underline!important;
+  text-underline-offset:.2em;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__panel,
+html[data-contrast="high"] .nova-landing .landing-contact__form,
+html[data-contrast="high"] .nova-landing .landing-contact__success {
+  border-color:#fff!important;
+  background:#000!important;
+  color:#fff!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__form label > span,
+html[data-contrast="high"] .nova-landing .landing-contact__submit > span,
+html[data-contrast="high"] .nova-landing .landing-contact__success :is(strong,p,small) {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__form :is(input,select,textarea) {
+  border:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__form :is(input,textarea)::placeholder {
+  color:#fff!important;
+  opacity:.78;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__submit button,
+html[data-contrast="high"] .nova-landing .landing-contact__success button {
+  border:2px solid var(--landing-hc-accent)!important;
+  background:var(--landing-hc-accent)!important;
+  color:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__submit button *,
+html[data-contrast="high"] .nova-landing .landing-contact__success button * {
+  color:#000!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__error {
+  border-color:var(--landing-hc-accent)!important;
+  color:var(--landing-hc-accent)!important;
+  background:#000!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-contact__tech path {
+  stroke:var(--landing-hc-accent)!important;
+}
+
+/* ---------- FOOTER ---------- */
+
+html[data-contrast="high"] .nova-landing .terra-footer {
+  border-top:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-footer::before {
+  background:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-footer__logo {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-footer__logo span {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .terra-footer__brand p,
+  .terra-footer__nav strong,
+  .terra-footer__nav a,
+  .terra-footer__nav span,
+  .terra-footer__bottom
+) {
+  color:#fff!important;
+  opacity:1!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-footer__nav a {
+  text-decoration:underline!important;
+  text-underline-offset:.18em;
+}
+
+html[data-contrast="high"] .nova-landing .terra-footer__nav a:is(:hover,:focus-visible) {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-footer__bottom {
+  border-color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .terra-footer__pulse {
+  background:var(--landing-hc-accent)!important;
+  box-shadow:0 0 0 2px #000,0 0 0 4px var(--landing-hc-accent)!important;
+}
+
+/* ---------- LIGHT / REDUCED-DATA LANDING ---------- */
+
+html[data-contrast="high"] .nova-landing :is(.light-hero,.landing-light-overview) {
+  border-color:#fff!important;
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .light-hero__logo,
+  .light-hero__header nav a,
+  .light-hero__login,
+  .light-hero__content h1,
+  .light-hero__content p,
+  .landing-light-overview h2,
+  .landing-light-overview > p
+) {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing :is(
+  .light-hero__logo span,
+  .light-hero__content > span,
+  .landing-light-overview > span,
+  .landing-light-overview article > strong
+) {
+  color:var(--landing-hc-accent)!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-light-overview article {
+  border:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-light-overview article :is(h3,p) {
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .landing-light-overview article a {
+  color:var(--landing-hc-accent)!important;
+  text-decoration:underline!important;
+}
+
+html[data-contrast="high"] .nova-landing .light-hero__content > div a {
+  border:2px solid #fff!important;
+  background:#000!important;
+  color:#fff!important;
+}
+
+html[data-contrast="high"] .nova-landing .light-hero__content > div a:first-child {
+  border-color:var(--landing-hc-accent)!important;
+  background:var(--landing-hc-accent)!important;
+  color:#000!important;
+}
+
+/* Keep motion preference authoritative in high contrast too. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-contrast="high"] .nova-landing *,
+  html[data-contrast="high"] .nova-landing *::before,
+  html[data-contrast="high"] .nova-landing *::after {
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+  }
+}
+

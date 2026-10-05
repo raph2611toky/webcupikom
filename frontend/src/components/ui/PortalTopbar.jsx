@@ -57,9 +57,11 @@ export default function PortalTopbar({ eyebrow, title, subtitle, actions }) {
   const displayName = user?.display_name || `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || user?.email || "Nova Terra";
   const initials = displayName.split(/\s+/).filter(Boolean).map((part)=>part[0]).join("").slice(0,2).toUpperCase() || "NT";
 
+  const roleClass = user?.role ? ` portal-topbar--${user.role}` : "";
+
   return (
     <>
-      <header className="portal-topbar">
+      <header className={`portal-topbar${roleClass}`}>
         <div className="portal-topbar__title">
           <div className="portal-topbar__meta">
             <Breadcrumbs locale={locale} />
@@ -71,18 +73,19 @@ export default function PortalTopbar({ eyebrow, title, subtitle, actions }) {
           {subtitle ? <p className="portal-topbar__subtitle">{subtitle}</p> : null}
         </div>
         <div className="portal-topbar__right">
-          {actions}
+          {actions ? <div className="portal-topbar__actions">{actions}</div> : null}
           {user?.role === "citizen" ? <Suspense fallback={null}><VoiceControl /></Suspense> : null}
           {user?.role === "citizen" ? <Suspense fallback={null}><LanguageSwitcher compact /></Suspense> : null}
           {user?.role === "citizen" ? <Suspense fallback={null}><AlertShortcut label={locale === "en" ? "City alerts" : locale === "mg" ? "Fanairana avy amin’ny tanàna" : "Alertes municipales"} /></Suspense> : null}
           {user?.role === "citizen" ? <Suspense fallback={null}><NotificationBell label={t("notifications", locale)} /></Suspense> : null}
-          <div className="portal-user">
+          <div className={`portal-user${user?.role ? ` portal-user--${user.role}` : ""}`} title={displayName}>
             <span className="portal-user__avatar">{initials}</span>
             <div><strong>{displayName}</strong><span>{
               user?.role === "citizen"
                 ? (locale === "mg" ? "Mponina" : locale === "en" ? "Citizen" : "Citoyen")
                 : user?.role === "agent" ? "Agent" : user?.role === "admin" ? "Admin" : (locale === "en" ? "Visitor" : locale === "mg" ? "Mpitsidika" : "Visiteur")
             }</span></div>
+            {user?.role === "citizen" ? <span className="portal-user__chevron" aria-hidden="true">⌄</span> : null}
           </div>
         </div>
       </header>

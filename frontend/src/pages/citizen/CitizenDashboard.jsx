@@ -22,7 +22,7 @@ const DASH_COPY = {
     my:"MES DÉMARCHES",now:"À suivre maintenant",empty:"Aucune démarche en cours.",priority:"SERVICES PRIORITAIRES",quick:"Accès rapide",
     first:"COMMENCER",welcome:"Bienvenue sur Nova Terra",steps:"Trois étapes rapides pour bien démarrer.",
     profileStep:"Compléter mon profil",profileText:"Coordonnées et langue préférée.",servicesStep:"Découvrir les services",servicesText:"Trouver le bon service municipal.",
-    requestStep:"Commencer une démarche",requestText:"Envoyer puis suivre une demande.",skip:"Passer pour le moment",watch:"À surveiller"
+    requestStep:"Commencer une démarche",requestText:"Envoyer puis suivre une demande.",skip:"Passer pour le moment",watch:"À surveiller",createRequest:"Créer une demande",emptyHelp:"Commencez par signaler un problème ou consulter les services."
   },
   en:{
     hello:"Hello",space:"Citizen space",subtitle:"Glad to see you again. Here’s what’s happening in Nova Terra today.",
@@ -33,7 +33,7 @@ const DASH_COPY = {
     my:"MY REQUESTS",now:"Track now",empty:"No request in progress.",priority:"PRIORITY SERVICES",quick:"Quick access",
     first:"GET STARTED",welcome:"Welcome to Nova Terra",steps:"Three quick steps to get started.",
     profileStep:"Complete my profile",profileText:"Contact details and preferred language.",servicesStep:"Discover services",servicesText:"Find the right city service.",
-    requestStep:"Start a request",requestText:"Submit and track a request.",skip:"Skip for now",watch:"Watch"
+    requestStep:"Start a request",requestText:"Submit and track a request.",skip:"Skip for now",watch:"Watch",createRequest:"Create a request",emptyHelp:"Start by reporting an issue or browsing city services."
   },
   mg:{
     hello:"Manao ahoana",space:"Habaka mponina",subtitle:"Faly mahita anao indray. Ireto ny zava-misy eto Nova Terra androany.",
@@ -44,7 +44,7 @@ const DASH_COPY = {
     my:"NY FANGATAHAKO",now:"Araho izao",empty:"Tsy misy fangatahana mandeha.",priority:"SAMPAN-DRAHARAHA LAHARAM-PAHAMEHANA",quick:"Fidirana haingana",
     first:"HANOMBOKA",welcome:"Tongasoa eto Nova Terra",steps:"Dingana telo hanombohana haingana.",
     profileStep:"Fenoy ny mombamomba ahy",profileText:"Fifandraisana sy fiteny tiana ampiasaina.",servicesStep:"Hijery sampan-draharaha",servicesText:"Tadiavo ny sampan-draharaha mety.",
-    requestStep:"Hanomboka fangatahana",requestText:"Alefaso ary araho ny fangatahana.",skip:"Handalo aloha",watch:"Araho maso"
+    requestStep:"Hanomboka fangatahana",requestText:"Alefaso ary araho ny fangatahana.",skip:"Handalo aloha",watch:"Araho maso",createRequest:"Hamorona fangatahana",emptyHelp:"Atombohy amin’ny fitaterana olana na fijerena ireo sampan-draharaha."
   },
 };
 
@@ -135,10 +135,10 @@ export default function CitizenDashboard(){
         title={`${copy.hello} ${firstName} 👋`}
         subtitle={copy.subtitle}
         actions={<>
-          <button className="topbar-icon-button" type="button" aria-label={locale==="en"?"Search services":"Rechercher dans les services"} onClick={()=>navigate("/citizen/services")}>⌕</button>
-          <button className="topbar-ghost" onClick={()=>navigate("/citizen/projects")}>✦ {copy.projects}</button>
-          <button className="topbar-ghost" onClick={()=>navigate("/citizen/news")}>▤ {copy.news}</button>
-          <button className="topbar-cta" onClick={()=>navigate('/citizen/signalements')}>⚑ {copy.newRequest}</button>
+          <button className="topbar-icon-button" type="button" aria-label={locale==="en"?"Search services":"Rechercher dans les services"} onClick={()=>navigate("/citizen/services")}><span aria-hidden="true">⌕</span></button>
+          <button className="topbar-ghost" type="button" aria-label={copy.projects} onClick={()=>navigate("/citizen/projects")}><span aria-hidden="true">⌁</span><span className="topbar-action__label">{copy.projects}</span></button>
+          <button className="topbar-ghost" type="button" aria-label={copy.news} onClick={()=>navigate("/citizen/news")}><span aria-hidden="true">▤</span><span className="topbar-action__label">{copy.news}</span></button>
+          <button className="topbar-cta" type="button" aria-label={copy.newRequest} onClick={()=>navigate('/citizen/signalements')}><span aria-hidden="true">＋</span><span className="topbar-action__label">{copy.newRequest}</span></button>
         </>}
       />
 
@@ -149,10 +149,11 @@ export default function CitizenDashboard(){
             <h2>{copy.headline}</h2>
             <p>{copy.intro}</p>
           </div>
-          <div className="citizen-home-profile-card" style={{"--profile-progress":`${profileCompletion*3.6}deg`}}>
+          <button type="button" className="citizen-home-profile-card" style={{"--profile-progress":`${profileCompletion*3.6}deg`}} onClick={()=>navigate('/citizen/profile')}>
             <div className="citizen-home-profile-ring"><strong>{profileCompletion}%</strong></div>
             <span>{copy.profile}</span>
-          </div>
+            <b aria-hidden="true">›</b>
+          </button>
         </section>
 
         <CitizenOrientationAssistant compact />
@@ -163,9 +164,9 @@ export default function CitizenDashboard(){
             <button type="button" onClick={()=>{localStorage.setItem("nova_terra_first_steps_done","done");setShowStartGuide(false)}}>{copy.skip}</button>
           </div>
           <div className="citizen-home-onboarding__steps">
-            <button type="button" onClick={()=>navigate('/citizen/profile')}><i>1</i><b>○</b><div><strong>{copy.profileStep}</strong><span>{copy.profileText}</span></div><em>›</em></button>
-            <button type="button" onClick={()=>navigate('/citizen/services')}><i>2</i><b>▦</b><div><strong>{copy.servicesStep}</strong><span>{copy.servicesText}</span></div><em>›</em></button>
-            <button type="button" onClick={()=>navigate('/citizen/requests')}><i>3</i><b>▤</b><div><strong>{copy.requestStep}</strong><span>{copy.requestText}</span></div><em>›</em></button>
+            <button type="button" className="is-profile-step" onClick={()=>navigate('/citizen/profile')}><i>1</i><b>○</b><div><strong>{copy.profileStep}</strong><span>{copy.profileText}</span></div><em>›</em></button>
+            <button type="button" className="is-services-step" onClick={()=>navigate('/citizen/services')}><i>2</i><b>▦</b><div><strong>{copy.servicesStep}</strong><span>{copy.servicesText}</span></div><em>›</em></button>
+            <button type="button" className="is-request-step" onClick={()=>navigate('/citizen/requests')}><i>3</i><b>▤</b><div><strong>{copy.requestStep}</strong><span>{copy.requestText}</span></div><em>›</em></button>
           </div>
         </section>:null}
 
@@ -194,7 +195,10 @@ export default function CitizenDashboard(){
                   <b aria-hidden="true">›</b>
                 </button>;
               })}
-              {!active.length ? <div className="citizen-home-empty">{copy.empty}</div> : null}
+              {!active.length ? <div className="citizen-home-empty">
+                <i aria-hidden="true">⌕</i>
+                <div><strong>{copy.empty}</strong><span>{copy.emptyHelp}</span><button type="button" onClick={()=>navigate('/citizen/requests')}>{copy.createRequest}<b aria-hidden="true">→</b></button></div>
+              </div> : null}
             </div>
           </article>
 

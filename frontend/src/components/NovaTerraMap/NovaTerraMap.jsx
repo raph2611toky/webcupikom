@@ -2,472 +2,734 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getCitizenRequests } from "../../api/requests.js";
 import { getAlerts } from "../../api/news.js";
 import { navigate } from "../../utils/navigation.js";
-import { CITY_DISTRICTS, CITY_POIS, buildServiceLocations, projectAlert, projectReport, projectReportAlert } from "./locations.js";
+import {
+  CITY_DISTRICTS,
+  CITY_POIS,
+  buildServiceLocations,
+  buildTransportLocations,
+  projectAlert,
+  projectReport,
+  projectReportAlert,
+} from "./locations.js";
 import "./NovaTerraMap.css";
 
-const WIDTH = 1000;
-const HEIGHT = 680;
+const MAP_WIDTH = 1000;
+const MAP_HEIGHT = 680;
 
-const DISTRICT_SHAPES = {
-  aster: "72,62 330,56 355,230 86,248",
-  orion: "348,52 650,56 658,248 346,238",
-  helios: "660,70 945,95 930,288 664,254",
-  aurore: "305,244 635,248 660,452 298,446",
-  solaris: "666,292 940,296 930,504 664,490",
-  azura: "70,282 298,262 296,586 64,610",
-  nexus: "305,454 654,456 650,626 304,624",
-  lyra: "664,500 938,510 922,640 666,636",
+const GEO_BOUNDS = {
+  north: 45.82,
+  south: 45.72,
+  west: 4.76,
+  east: 4.96,
 };
 
-const PRIMARY_ROADS = [
-  { d: "M 40 270 C 230 248, 392 282, 590 266 S 820 240, 960 276", name: "Boulevard des Pionniers", x: 508, y: 260 },
-  { d: "M 330 20 C 340 170, 325 320, 330 660", name: "Avenue Aster", x: 338, y: 330 },
-  { d: "M 650 25 C 648 180, 651 382, 656 660", name: "Avenue des Comètes", x: 664, y: 344 },
-  { d: "M 86 456 C 258 430, 432 450, 624 440 S 822 430, 956 446", name: "Rue Nébula", x: 500, y: 434 },
-  { d: "M 88 606 C 260 570, 448 596, 612 582 S 810 566, 932 592", name: "Quai d’Azura", x: 486, y: 584 },
-  { d: "M 730 70 C 758 210, 772 366, 810 620", name: "Allée Solstice", x: 776, y: 350 },
-];
+const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
-const SECONDARY_ROADS = [
-  "M 155 90 C 200 140, 220 205, 230 248",
-  "M 455 70 C 460 140, 482 190, 520 242",
-  "M 770 112 C 790 156, 814 206, 834 255",
-  "M 145 360 C 240 346, 310 360, 364 390",
-  "M 446 300 C 500 326, 566 352, 620 386",
-  "M 725 520 C 776 530, 838 548, 900 588",
-  "M 445 522 C 505 520, 565 530, 620 560",
-  "M 565 140 C 608 175, 636 205, 655 242",
-];
+let mapLibrePromise = null;
 
-const WATER_SHAPES = [
-  "210,300 250,286 275,308 268,350 224,356 202,332",
-  "742,360 812,340 846,376 830,428 756,422 724,388",
-  "574,508 664,494 692,530 670,590 576,584 540,540",
-];
+function loadMapLibre() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Browser only"));
+  }
 
-const GREEN_AREAS = [
-  "96,92 182,82 220,120 210,178 138,196 92,156",
-  "385,88 472,72 548,112 548,182 470,196 396,166",
-  "754,78 886,96 902,164 818,208 728,174 712,114",
-  "126,500 242,476 274,548 232,612 118,600 90,544",
-  "746,524 884,534 900,610 812,638 720,616 704,554",
-];
+  if (window.maplibregl) return Promise.resolve(window.maplibregl);
+  if (mapLibrePromise) return mapLibrePromise;
 
-const MAP_CHIPS = [
-  ["services", "Services"],
-  ["emergency", "Urgences"],
-  ["alerts", "Alertes"],
-  ["reports", "Signalements"],
-];
+  mapLibrePromise = new Promise((resolve, reject) => {
+    if (!document.querySelector('link[data-nova-maplibre="css"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css";
+      link.dataset.novaMaplibre = "css";
+      document.head.appendChild(link);
+    }
+
+    const existing = document.querySelector('script[data-nova-maplibre="js"]');
+    if (existing) {
+      if (window.maplibregl) {
+        resolve(window.maplibregl);
+        return;
+      }
+      existing.addEventListener("load", () => resolve(window.maplibregl), { once: true });
+      existing.addEventListener("error", reject, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js";
+    script.async = true;
+    script.dataset.novaMaplibre = "js";
+    script.onload = () => (
+      window.maplibregl
+        ? resolve(window.maplibregl)
+        : reject(new Error("MapLibre unavailable"))
+    );
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+
+  return mapLibrePromise;
+}
+
+async function loadNovaBaseStyle() {
+  const response = await fetch(OPENFREEMAP_STYLE);
+  if (!response.ok) throw new Error("OpenFreeMap style unavailable");
+
+  const style = await response.json();
+
+  /*
+   * Nova Terra est fictive :
+   * on garde rues, bâtiments, eau, parcs, etc. mais on supprime TOUS
+   * les calques symboles du fond OpenStreetMap afin qu'aucun nom réel,
+   * numéro de route, POI ou pictogramme réel n'apparaisse.
+   */
+  return {
+    ...style,
+    layers: (style.layers || []).filter((layer) => layer.type !== "symbol"),
+  };
+}
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function markerLabel(item) {
-  if (item.kind === "report") return `${item.name}. ${item.statusLabel || "Signalement"}. ${item.district}`;
-  if (item.kind === "alert") return `${item.name}. ${item.category}. ${item.district}`;
-  return `${item.name}. ${item.category}. ${item.address}`;
-}
-
 function normalizeText(value) {
-  return String(value || "").toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").trim();
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
 }
 
-export default function NovaTerraMap({ services = [], visibleSlugs = null, locale = "fr" }) {
-  const svgRef = useRef(null);
-  const dragRef = useRef(null);
+function xyToLngLat(x, y) {
+  const ratioX = clamp(Number(x || 0) / MAP_WIDTH, 0, 1);
+  const ratioY = clamp(Number(y || 0) / MAP_HEIGHT, 0, 1);
+
+  return [
+    GEO_BOUNDS.west + ratioX * (GEO_BOUNDS.east - GEO_BOUNDS.west),
+    GEO_BOUNDS.north - ratioY * (GEO_BOUNDS.north - GEO_BOUNDS.south),
+  ];
+}
+
+function getMapBounds() {
+  return [
+    [GEO_BOUNDS.west, GEO_BOUNDS.south],
+    [GEO_BOUNDS.east, GEO_BOUNDS.north],
+  ];
+}
+
+function createMarkerElement(item, selected = false) {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = `nova-gl-marker marker-${item.kind || "service"}${selected ? " is-selected" : ""}`;
+  element.style.setProperty("--marker", item.color || "#6d28d9");
+  element.setAttribute(
+    "aria-label",
+    `${item.name}. ${item.category || ""}. ${item.district || item.address || ""}`,
+  );
+
+  const pin = document.createElement("span");
+  pin.className = "nova-gl-marker__pin";
+  pin.textContent = item.icon || "•";
+
+  const label = document.createElement("span");
+  label.className = "nova-gl-marker__label";
+  label.textContent = item.name;
+
+  element.append(pin, label);
+  return element;
+}
+
+function createDistrictElement(district) {
+  const element = document.createElement("div");
+  element.className = "nova-gl-district";
+
+  const strong = document.createElement("strong");
+  strong.textContent = district.name;
+
+  const subtitle = document.createElement("span");
+  subtitle.textContent = district.subtitle;
+
+  element.append(strong, subtitle);
+  return element;
+}
+
+const COPY = {
+  fr: {
+    title: "Carte 2D de Nova Terra",
+    hint: "Plan urbain interactif de Nova Terra. Le fond reste sans noms réels ; seuls les lieux fictifs de la ville sont affichés.",
+    fiction: "Plan fictif de Nova Terra",
+    mapStyle: "Fond cartographique OpenFreeMap · sans libellés réels",
+    list: "Lieux et événements visibles",
+    searchPlaceholder: "Rechercher dans Nova Terra",
+    searchHint: "Filtrez par nom, quartier ou catégorie",
+    visibleCount: "éléments visibles",
+    zoomIn: "Zoom avant",
+    zoomOut: "Zoom arrière",
+    reset: "Recentrer",
+    openService: "Ouvrir le service",
+    openReport: "Voir le signalement",
+    openAlert: "Voir l'alerte",
+    noSelection: "Sélectionnez un lieu sur la carte.",
+    empty: "Aucun résultat avec ces filtres.",
+    address: "Emplacement",
+    hours: "Horaires",
+    loading: "Chargement de la carte…",
+    mapError: "Le fond cartographique n'a pas pu être chargé. Vérifiez la connexion internet.",
+    locate: "Localiser",
+    layers: {
+      services: "Services",
+      emergency: "Urgences",
+      alerts: "Alertes",
+      reports: "Signalements",
+    },
+  },
+  en: {
+    title: "Nova Terra 2D map",
+    hint: "Interactive Nova Terra city map. The base map has no real-world names; only fictional city locations are shown.",
+    fiction: "Fictional Nova Terra map",
+    mapStyle: "OpenFreeMap basemap · real labels hidden",
+    list: "Visible places and events",
+    searchPlaceholder: "Search Nova Terra",
+    searchHint: "Filter by name, district or category",
+    visibleCount: "visible items",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    reset: "Reset",
+    openService: "Open service",
+    openReport: "View report",
+    openAlert: "View alert",
+    noSelection: "Select a place on the map.",
+    empty: "No result with these filters.",
+    address: "Location",
+    hours: "Hours",
+    loading: "Loading map…",
+    mapError: "The map background could not be loaded. Check the internet connection.",
+    locate: "Locate",
+    layers: {
+      services: "Services",
+      emergency: "Emergency",
+      alerts: "Alerts",
+      reports: "Reports",
+    },
+  },
+};
+
+export default function NovaTerraMap({
+  services = [],
+  visibleSlugs = null,
+  locale = "fr",
+  mode = "services",
+  transportStops = [],
+  onTransportOpen = null,
+}) {
+  const mapElementRef = useRef(null);
+  const mapRef = useRef(null);
+  const mapLibreRef = useRef(null);
+  const markerRefs = useRef([]);
+
   const [alerts, setAlerts] = useState([]);
   const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
+  const [mapState, setMapState] = useState("loading");
   const [selectedId, setSelectedId] = useState("");
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [layers, setLayers] = useState({ services: true, emergency: true, alerts: true, reports: true });
   const [query, setQuery] = useState("");
+  const [layers, setLayers] = useState({
+    transport: true,
+    services: true,
+    emergency: true,
+    alerts: true,
+    reports: true,
+  });
 
-  const copy = {
-    fr: {
-      title: "Carte 2D de Nova Terra",
-      hint: "Plan fictif inspiré d’une carte moderne. Les données dynamiques restent celles de la plateforme.",
-      list: "Lieux et événements visibles",
-      details: "Informations",
-      openService: "Ouvrir le service",
-      openReport: "Voir le signalement",
-      openAlert: "Voir l’alerte",
-      empty: "Aucun élément visible avec ces filtres.",
-      hours: "Horaires",
-      address: "Emplacement",
-      reset: "Recentrer",
-      zoomIn: "Zoom avant",
-      zoomOut: "Zoom arrière",
-      fiction: "Plan fictif de Nova Terra",
-      searchPlaceholder: "Rechercher dans Nova Terra",
-      searchHint: "Filtrez par nom, quartier ou catégorie",
-      loading: "Synchronisation des alertes et signalements…",
-      visibleCount: "éléments visibles",
-      filters: "Filtres",
-      noSelection: "Sélectionnez un lieu, une alerte ou un signalement pour voir ses détails.",
-      mapStyle: "Vue 2D · style carte urbaine",
-    },
-    en: {
-      title: "Nova Terra 2D map",
-      hint: "Fictional plan inspired by a modern map. Dynamic data still comes from the platform.",
-      list: "Visible places and events",
-      details: "Information",
-      openService: "Open service",
-      openReport: "View report",
-      openAlert: "View alert",
-      empty: "No visible item with these filters.",
-      hours: "Hours",
-      address: "Location",
-      reset: "Reset map",
-      zoomIn: "Zoom in",
-      zoomOut: "Zoom out",
-      fiction: "Fictional Nova Terra map",
-      searchPlaceholder: "Search in Nova Terra",
-      searchHint: "Filter by name, district or category",
-      loading: "Syncing alerts and reports…",
-      visibleCount: "visible items",
-      filters: "Filters",
-      noSelection: "Select a place, alert or report to see its details.",
-      mapStyle: "2D view · urban map style",
-    },
-    mg: {
-      title: "Sarintany 2D Nova Terra",
-      hint: "Sarintany foronina mitovitovy amin’ny sarintany maoderina. Mbola avy amin’ny sehatra ihany ny angona mihetsika.",
-      list: "Toerana sy zava-mitranga hita",
-      details: "Fanazavana",
-      openService: "Hijery serivisy",
-      openReport: "Hijery tatitra",
-      openAlert: "Hijery fanairana",
-      empty: "Tsy misy zavatra hita amin’ireo sivana ireo.",
-      hours: "Ora",
-      address: "Toerana",
-      reset: "Avereno afovoany",
-      zoomIn: "Ampitomboy",
-      zoomOut: "Ahena",
-      fiction: "Sarintany foronina Nova Terra",
-      searchPlaceholder: "Hitady ao Nova Terra",
-      searchHint: "Sivano amin’ny anarana, faritra na sokajy",
-      loading: "Ampifanarahana ny fanairana sy ny tatitra…",
-      visibleCount: "zavatra hita",
-      filters: "Sivana",
-      noSelection: "Misafidiana toerana, fanairana na tatitra raha hijery ny antsipiriany.",
-      mapStyle: "Fijery 2D · endrika sarintany an-tanàna",
-    },
-  }[locale] || null;
+  const copy = COPY[locale] || COPY.fr;
+  const transportMode = mode === "transport";
+  const activeCopy = transportMode
+    ? {
+        ...copy,
+        title: locale === "en" ? "Nova Terra transport map" : locale === "mg" ? "Sarintanin’ny fitaterana Nova Terra" : "Carte 2D du transport de Nova Terra",
+        hint: locale === "en"
+          ? "The same interactive Nova Terra map used by municipal services, focused on stops and transport lines."
+          : locale === "mg"
+            ? "Ilay sarintany Nova Terra mitovy amin’ny serivisy, mifantoka amin’ny fijanonana sy ny zotra."
+            : "Le même plan interactif Nova Terra que dans Services, centré sur les arrêts et les lignes.",
+        list: locale === "en" ? "Visible stops" : locale === "mg" ? "Fijanonana hita" : "Arrêts visibles",
+        searchPlaceholder: locale === "en" ? "Search a transport stop" : locale === "mg" ? "Hitady fijanonana" : "Rechercher un arrêt",
+        searchHint: locale === "en" ? "Filter by stop, district or line" : locale === "mg" ? "Sivano amin’ny fijanonana, faritra na zotra" : "Filtrez par arrêt, quartier ou ligne",
+        openTransport: locale === "en" ? "Open stop" : locale === "mg" ? "Hijery ny fijanonana" : "Voir l’arrêt",
+        layers: { ...copy.layers, transport: locale === "en" ? "Stops" : locale === "mg" ? "Fijanonana" : "Arrêts" },
+      }
+    : copy;
 
   useEffect(() => {
+    if (transportMode) {
+      setAlerts([]);
+      setReports([]);
+      setLoadingData(false);
+      return undefined;
+    }
+
     let active = true;
-    setLoading(true);
+    setLoadingData(true);
+
     Promise.allSettled([
       getAlerts({ page_size: 50 }),
       getCitizenRequests({ type: "report", page_size: 100, ordering: "-created_at" }),
-    ]).then((results) => {
+    ]).then(([alertsResult, reportsResult]) => {
       if (!active) return;
-      const alertRows = results[0].status === "fulfilled" ? results[0].value : [];
-      const reportRows = results[1].status === "fulfilled" ? results[1].value : [];
-      setAlerts(alertRows.filter((item) => item.publication_state !== "expired").slice(0, 20));
+
+      const alertRows = alertsResult.status === "fulfilled" ? alertsResult.value : [];
+      const reportRows = reportsResult.status === "fulfilled" ? reportsResult.value : [];
+
+      setAlerts(
+        alertRows.filter((item) => item.publication_state !== "expired").slice(0, 20),
+      );
       setReports(reportRows.filter((item) => !item.isClosed).slice(0, 40));
-      setLoading(false);
+      setLoadingData(false);
     });
-    return () => { active = false; };
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [transportMode]);
 
   const serviceLocations = useMemo(
-    () => buildServiceLocations(services).filter((item) => !visibleSlugs || visibleSlugs.has(item.slug)),
+    () =>
+      buildServiceLocations(services).filter(
+        (item) => !visibleSlugs || visibleSlugs.has(item.slug),
+      ),
     [services, visibleSlugs],
   );
-  const officialAlertLocations = useMemo(() => alerts.map(projectAlert), [alerts]);
-  const reportLocations = useMemo(() => reports.map(projectReport), [reports]);
-  const reportAlertLocations = useMemo(() => reports.map(projectReportAlert), [reports]);
-  const alertLocations = useMemo(() => [...officialAlertLocations, ...reportAlertLocations], [officialAlertLocations, reportAlertLocations]);
-  const allItems = useMemo(() => ([
-    ...serviceLocations,
-    ...CITY_POIS,
-    ...alertLocations,
-    ...reportLocations,
-  ]), [serviceLocations, alertLocations, reportLocations]);
 
-  const visibleItems = useMemo(() => allItems.filter((item) => {
-    if (item.kind === "service") return layers.services;
-    if (item.kind === "emergency") return layers.emergency;
-    if (item.kind === "alert") return layers.alerts;
-    if (item.kind === "report") return layers.reports;
-    return true;
-  }), [allItems, layers]);
+  const transportLocations = useMemo(
+    () => buildTransportLocations(transportStops),
+    [transportStops],
+  );
+
+  const reportLocations = useMemo(() => reports.map(projectReport), [reports]);
+
+  const alertLocations = useMemo(
+    () => [...alerts.map(projectAlert), ...reports.map(projectReportAlert)],
+    [alerts, reports],
+  );
+
+  const allItems = useMemo(
+    () =>
+      transportMode
+        ? transportLocations
+        : [...serviceLocations, ...CITY_POIS, ...alertLocations, ...reportLocations],
+    [transportMode, transportLocations, serviceLocations, alertLocations, reportLocations],
+  );
+
+  const visibleItems = useMemo(
+    () =>
+      allItems.filter((item) => {
+        if (item.kind === "transport") return layers.transport;
+        if (item.kind === "service") return layers.services;
+        if (item.kind === "emergency") return layers.emergency;
+        if (item.kind === "alert") return layers.alerts;
+        if (item.kind === "report") return layers.reports;
+        return true;
+      }),
+    [allItems, layers],
+  );
 
   const searchedItems = useMemo(() => {
     const needle = normalizeText(query);
     if (!needle) return visibleItems;
-    return visibleItems.filter((item) => normalizeText(`${item.name} ${item.category} ${item.district} ${item.address}`).includes(needle));
+
+    return visibleItems.filter((item) =>
+      normalizeText(
+        `${item.name} ${item.category} ${item.district} ${item.address}`,
+      ).includes(needle),
+    );
   }, [visibleItems, query]);
 
-  const selected = searchedItems.find((item) => item.id === selectedId) || searchedItems[0] || null;
-  useEffect(() => { if (selected && !selectedId) setSelectedId(selected.id); }, [selected, selectedId]);
+  const selected =
+    searchedItems.find((item) => item.id === selectedId) ||
+    searchedItems[0] ||
+    null;
+
   useEffect(() => {
-    if (selectedId && !searchedItems.some((item) => item.id === selectedId)) setSelectedId(searchedItems[0]?.id || "");
+    if (!selectedId && searchedItems[0]) setSelectedId(searchedItems[0].id);
   }, [searchedItems, selectedId]);
 
-  const viewWidth = WIDTH / zoom;
-  const viewHeight = HEIGHT / zoom;
-  const viewX = clamp(pan.x, 0, WIDTH - viewWidth);
-  const viewY = clamp(pan.y, 0, HEIGHT - viewHeight);
+  useEffect(() => {
+    if (selectedId && !searchedItems.some((item) => item.id === selectedId)) {
+      setSelectedId(searchedItems[0]?.id || "");
+    }
+  }, [searchedItems, selectedId]);
 
-  function setZoomSafe(next) {
-    const value = clamp(next, 1, 2.5);
-    setZoom(value);
-    setPan((current) => ({
-      x: clamp(current.x, 0, WIDTH - WIDTH / value),
-      y: clamp(current.y, 0, HEIGHT - HEIGHT / value),
-    }));
-  }
+  useEffect(() => {
+    let cancelled = false;
 
-  function resetView() {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  }
+    Promise.all([loadMapLibre(), loadNovaBaseStyle()])
+      .then(([maplibregl, style]) => {
+        if (cancelled || !mapElementRef.current || mapRef.current) return;
 
-  function onPointerDown(event) {
-    if (event.button !== 0) return;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    dragRef.current = { clientX: event.clientX, clientY: event.clientY, panX: viewX, panY: viewY };
-  }
+        mapLibreRef.current = maplibregl;
 
-  function onPointerMove(event) {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const scaleX = viewWidth / rect.width;
-    const scaleY = viewHeight / rect.height;
-    setPan({
-      x: clamp(drag.panX - (event.clientX - drag.clientX) * scaleX, 0, WIDTH - viewWidth),
-      y: clamp(drag.panY - (event.clientY - drag.clientY) * scaleY, 0, HEIGHT - viewHeight),
+        const map = new maplibregl.Map({
+          container: mapElementRef.current,
+          style,
+          bounds: getMapBounds(),
+          fitBoundsOptions: { padding: 18, duration: 0 },
+          minZoom: 11.5,
+          maxZoom: 17.5,
+          attributionControl: false,
+          dragRotate: false,
+          pitchWithRotate: false,
+          touchPitch: false,
+          maxBounds: getMapBounds(),
+        });
+
+        map.dragRotate.disable();
+        map.touchZoomRotate.disableRotation();
+
+        map.on("load", () => {
+          if (cancelled) return;
+          mapRef.current = map;
+          setMapState("ready");
+          window.setTimeout(() => map.resize(), 0);
+        });
+
+        map.on("error", (event) => {
+          if (!map.loaded() && event?.error) setMapState("error");
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setMapState("error");
+      });
+
+    return () => {
+      cancelled = true;
+      markerRefs.current.forEach((marker) => marker.remove());
+      markerRefs.current = [];
+
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+
+      mapLibreRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const maplibregl = mapLibreRef.current;
+    const map = mapRef.current;
+    if (!maplibregl || !map || mapState !== "ready") return;
+
+    markerRefs.current.forEach((marker) => marker.remove());
+    markerRefs.current = [];
+
+    CITY_DISTRICTS.forEach((district) => {
+      const element = createDistrictElement(district);
+      const marker = new maplibregl.Marker({
+        element,
+        anchor: "center",
+      })
+        .setLngLat(xyToLngLat(district.center[0], district.center[1]))
+        .addTo(map);
+
+      markerRefs.current.push(marker);
+    });
+
+    searchedItems.forEach((item) => {
+      const element = createMarkerElement(item, selected?.id === item.id);
+
+      element.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setSelectedId(item.id);
+        focusItem(item);
+      });
+
+      const marker = new maplibregl.Marker({
+        element,
+        anchor: "left",
+      })
+        .setLngLat(xyToLngLat(item.x, item.y))
+        .addTo(map);
+
+      markerRefs.current.push(marker);
+    });
+  }, [searchedItems, selected?.id, mapState]);
+
+  useEffect(() => {
+    if (mapState !== "ready" || !mapRef.current) return;
+    const timer = window.setTimeout(() => mapRef.current?.resize(), 60);
+    return () => window.clearTimeout(timer);
+  }, [mapState]);
+
+  function focusItem(item) {
+    const map = mapRef.current;
+    if (!map || !item) return;
+
+    setSelectedId(item.id);
+
+    map.flyTo({
+      center: xyToLngLat(item.x, item.y),
+      zoom: Math.max(map.getZoom(), 15.1),
+      duration: 550,
+      essential: true,
     });
   }
 
-  function onPointerUp(event) {
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    dragRef.current = null;
-  }
+  function resetView() {
+    const map = mapRef.current;
+    if (!map) return;
 
-  function onWheel(event) {
-    event.preventDefault();
-    setZoomSafe(zoom + (event.deltaY < 0 ? 0.18 : -0.18));
-  }
-
-  function selectItem(item) {
-    setSelectedId(item.id);
-  }
-
-  function activateItem(event, item) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      selectItem(item);
-    }
+    map.fitBounds(getMapBounds(), {
+      padding: 18,
+      duration: 450,
+      essential: true,
+    });
   }
 
   function openSelected() {
     if (!selected) return;
-    if (selected.kind === "report" && selected.reference) return navigate(`/citizen/requests/${encodeURIComponent(selected.reference)}`);
-    if (selected.kind === "alert" && selected.reference) return navigate(`/citizen/requests/${encodeURIComponent(selected.reference)}`);
-    if (selected.kind === "alert" && selected.slug) return navigate(`/citizen/news/${encodeURIComponent(selected.slug)}`);
-    if (selected.kind === "service" && selected.slug) return navigate(`/citizen/services/${encodeURIComponent(selected.slug)}`);
-    if (selected.kind === "emergency") return navigate("/citizen/services");
+
+    if (
+      (selected.kind === "report" || selected.alertSource === "report") &&
+      selected.reference
+    ) {
+      navigate(`/citizen/requests/${encodeURIComponent(selected.reference)}`);
+      return;
+    }
+
+    if (selected.kind === "alert" && selected.slug) {
+      navigate(`/citizen/news/${encodeURIComponent(selected.slug)}`);
+      return;
+    }
+
+    if (selected.kind === "service" && selected.slug) {
+      navigate(`/citizen/services/${encodeURIComponent(selected.slug)}`);
+      return;
+    }
+
+    if (selected.kind === "transport") {
+      if (typeof onTransportOpen === "function") {
+        onTransportOpen(selected.source);
+        return;
+      }
+      navigate("/citizen/transport");
+      return;
+    }
+
+    if (selected.kind === "emergency") {
+      navigate("/citizen/services");
+    }
   }
 
-  const actionLabel = selected?.kind === "report" || selected?.alertSource === "report"
-    ? copy.openReport
-    : selected?.kind === "alert"
-      ? copy.openAlert
-      : copy.openService;
+  const actionLabel =
+    selected?.kind === "transport"
+      ? activeCopy.openTransport
+      : selected?.kind === "report" || selected?.alertSource === "report"
+        ? activeCopy.openReport
+        : selected?.kind === "alert"
+          ? activeCopy.openAlert
+          : activeCopy.openService;
 
-  return <section className="nova-city-map nova-city-map--2d" aria-label={copy.title}>
-    <header className="nova-city-map__header nova-city-map__header--map">
-      <div>
-        <span className="section-label">Nova Terra</span>
-        <h3>{copy.title}</h3>
-        <p>{copy.hint}</p>
-      </div>
-      <div className="nova-city-map__header-note">
-        <strong>{copy.fiction}</strong>
-        <small>{copy.mapStyle}</small>
-      </div>
-    </header>
+  const counts = {
+    transport: transportLocations.length,
+    services: serviceLocations.length,
+    emergency: CITY_POIS.length,
+    alerts: alertLocations.length,
+    reports: reportLocations.length,
+  };
 
-    <div className="nova-city-map__layout nova-city-map__layout--immersive">
-      <div className="nova-city-map__scene-card">
-        <div className="nova-map-toolbar" aria-label={copy.filters}>
-          <label className="nova-map-search">
-            <span aria-hidden="true">⌕</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={copy.searchPlaceholder}
-              aria-label={copy.searchPlaceholder}
-            />
-          </label>
-          <div className="nova-map-chipbar" role="toolbar" aria-label={copy.filters}>
-            {MAP_CHIPS.map(([key, label]) => {
-              const count = key === "services"
-                ? serviceLocations.length
-                : key === "emergency"
-                  ? CITY_POIS.length
-                  : key === "alerts"
-                    ? alertLocations.length
-                    : reportLocations.length;
-              return <button
-                type="button"
-                key={key}
-                aria-pressed={layers[key]}
-                className={`${layers[key] ? "is-active" : ""} chip-${key}`.trim()}
-                onClick={() => setLayers((current) => ({ ...current, [key]: !current[key] }))}
-              >
-                <i aria-hidden="true" />
-                <span>{label}</span>
-                <b>{count}</b>
-              </button>;
-            })}
+  const layerButtons = transportMode
+    ? [["transport", activeCopy.layers.transport]]
+    : [
+        ["services", activeCopy.layers.services],
+        ["emergency", activeCopy.layers.emergency],
+        ["alerts", activeCopy.layers.alerts],
+        ["reports", activeCopy.layers.reports],
+      ];
+
+  return (
+    <section className={`nova-city-map${transportMode ? " nova-city-map--transport" : ""}`} aria-label={activeCopy.title}>
+      <header className="nova-city-map__header">
+        <div>
+          <span className="section-label">Nova Terra</span>
+          <h3>{activeCopy.title}</h3>
+          <p>{activeCopy.hint}</p>
+        </div>
+
+        <div className="nova-city-map__header-note">
+          <strong>{activeCopy.fiction}</strong>
+          <small>{activeCopy.mapStyle}</small>
+        </div>
+      </header>
+
+      <div className="nova-city-map__layout">
+        <div className="nova-map-frame">
+          <div ref={mapElementRef} className="nova-map-canvas" />
+
+          <div className="nova-map-toolbar">
+            <label className="nova-map-search">
+              <span aria-hidden="true">⌕</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={activeCopy.searchPlaceholder}
+                aria-label={activeCopy.searchPlaceholder}
+              />
+            </label>
+
+            <div className="nova-map-chipbar" role="toolbar" aria-label="Calques de la carte">
+              {layerButtons.map(([key, label]) => (
+                <button
+                  type="button"
+                  key={key}
+                  aria-pressed={layers[key]}
+                  className={`chip-${key} ${layers[key] ? "is-active" : ""}`}
+                  onClick={() =>
+                    setLayers((current) => ({ ...current, [key]: !current[key] }))
+                  }
+                >
+                  <i aria-hidden="true" />
+                  <span>{label}</span>
+                  <b>{counts[key]}</b>
+                </button>
+              ))}
+            </div>
+
+            <span className="nova-map-search-hint">{activeCopy.searchHint}</span>
           </div>
+
+          <div className="nova-map-watermark" aria-live="polite">
+            <strong>{searchedItems.length}</strong>
+            <span>{activeCopy.visibleCount}</span>
+          </div>
+
+          <div className="nova-map-controls" aria-label="Contrôles de la carte">
+            <button
+              type="button"
+              onClick={() => mapRef.current?.zoomIn({ duration: 250 })}
+              aria-label={activeCopy.zoomIn}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              onClick={() => mapRef.current?.zoomOut({ duration: 250 })}
+              aria-label={activeCopy.zoomOut}
+            >
+              −
+            </button>
+            <button type="button" onClick={resetView} aria-label={activeCopy.reset}>
+              ⌂
+            </button>
+          </div>
+
+          <div className="nova-map-legend" aria-label="Légende">
+            {transportMode ? (
+              <span><i className="transport" />{activeCopy.layers.transport}</span>
+            ) : (
+              <>
+                <span><i className="service" />Service</span>
+                <span><i className="emergency" />Urgence</span>
+                <span><i className="alert" />Alerte</span>
+                <span><i className="report" />Signalement</span>
+              </>
+            )}
+          </div>
+
+          <div className="nova-map-attribution">
+            © OpenStreetMap contributors · OpenFreeMap
+          </div>
+
+          {mapState === "loading" || loadingData ? (
+            <div className="nova-map-state" role="status">{activeCopy.loading}</div>
+          ) : null}
+
+          {mapState === "error" ? (
+            <div className="nova-map-state nova-map-state--error" role="alert">
+              {activeCopy.mapError}
+            </div>
+          ) : null}
         </div>
 
-        <div className="nova-map-search-hint">{copy.searchHint}</div>
-
-        <div className="nova-map-controls" aria-label="Contrôles de la carte">
-          <button type="button" onClick={() => setZoomSafe(zoom + 0.2)} aria-label={copy.zoomIn}>+</button>
-          <button type="button" onClick={() => setZoomSafe(zoom - 0.2)} aria-label={copy.zoomOut}>−</button>
-          <button type="button" onClick={resetView} aria-label={copy.reset}>⌂</button>
-        </div>
-
-        <div className="nova-map-watermark">
-          <strong>{searchedItems.length}</strong>
-          <span>{copy.visibleCount}</span>
-        </div>
-
-        <svg
-          ref={svgRef}
-          className="nova-map-svg"
-          viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
-          role="img"
-          aria-label={`${copy.title}. ${searchedItems.length} ${copy.visibleCount}.`}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onWheel={onWheel}
-        >
-          <defs>
-            <linearGradient id="nova-ground" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0%" stopColor="#2d4736" />
-              <stop offset="35%" stopColor="#5f7354" />
-              <stop offset="65%" stopColor="#897c5e" />
-              <stop offset="100%" stopColor="#513f37" />
-            </linearGradient>
-            <pattern id="nova-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M40 0H0V40" fill="none" stroke="currentColor" strokeOpacity=".05" strokeWidth="1" />
-            </pattern>
-            <filter id="nova-shadow" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="0" dy="4" stdDeviation="5" floodOpacity=".28" />
-            </filter>
-          </defs>
-
-          <rect width={WIDTH} height={HEIGHT} className="nova-map-bg" />
-          <rect width={WIDTH} height={HEIGHT} fill="url(#nova-ground)" opacity=".28" />
-
-          <g className="nova-map-landuse">
-            {GREEN_AREAS.map((points, index) => <polygon key={`green-${index}`} points={points} className="nova-map-park" />)}
-            {WATER_SHAPES.map((points, index) => <polygon key={`water-${index}`} points={points} className="nova-map-water" />)}
-          </g>
-
-          <g className="nova-map-districts">
-            {CITY_DISTRICTS.map((district) => <g key={district.id} className="nova-map-district">
-              <polygon points={DISTRICT_SHAPES[district.id]} style={{ "--district": district.color }} />
-              <text x={district.center[0]} y={district.center[1] - 8} textAnchor="middle" className="nova-map-district__name">{district.name}</text>
-              <text x={district.center[0]} y={district.center[1] + 11} textAnchor="middle" className="nova-map-district__subtitle">{district.subtitle}</text>
-            </g>)}
-          </g>
-
-          <rect width={WIDTH} height={HEIGHT} fill="url(#nova-grid)" className="nova-map-grid" />
-
-          <g className="nova-map-roads nova-map-roads--secondary">
-            {SECONDARY_ROADS.map((path, index) => <path key={`secondary-${index}`} d={path} />)}
-          </g>
-
-          <g className="nova-map-roads nova-map-roads--primary">
-            {PRIMARY_ROADS.map((road) => <g key={road.name}><path d={road.d} /><text x={road.x} y={road.y}>{road.name}</text></g>)}
-          </g>
-
-          {layers.alerts ? alertLocations.map((item) => <g key={`${item.id}-zone`} className={`nova-alert-zone severity-${item.severity}`} aria-hidden="true">
-            <circle cx={item.x} cy={item.y} r={item.radius} style={{ "--marker": item.color }} />
-            <circle cx={item.x} cy={item.y} r={Math.max(30, item.radius * 0.48)} style={{ "--marker": item.color }} />
-          </g>) : null}
-
-          <g className="nova-map-markers">
-            {searchedItems.map((item) => {
-              const selectedNow = selected?.id === item.id;
-              return <g
-                key={item.id}
-                transform={`translate(${item.x} ${item.y})`}
-                className={`nova-map-marker marker-${item.kind} ${selectedNow ? "is-selected" : ""}`}
-                style={{ "--marker": item.color }}
-                role="button"
-                tabIndex="0"
-                aria-label={markerLabel(item)}
-                aria-pressed={selectedNow}
-                onClick={(event) => { event.stopPropagation(); selectItem(item); }}
-                onKeyDown={(event) => activateItem(event, item)}
+        <aside className="nova-city-map__panel">
+          {selected ? (
+            <div className="nova-city-map__selected">
+              <div
+                className={`nova-city-map__selected-icon kind-${selected.kind}`}
+                style={{ "--location-color": selected.color }}
+                aria-hidden="true"
               >
-                <circle r={item.kind === "alert" ? 16 : item.kind === "report" ? 14 : 17} className="nova-map-marker__halo" />
-                <circle r={item.kind === "alert" ? 10 : item.kind === "report" ? 9.5 : 12} className="nova-map-marker__pin" filter="url(#nova-shadow)" />
-                <text y="4" textAnchor="middle" className="nova-map-marker__icon">{item.icon}</text>
-                {selectedNow ? <text y="-24" textAnchor="middle" className="nova-map-marker__label">{item.name}</text> : null}
-              </g>;
-            })}
-          </g>
-        </svg>
+                {selected.icon}
+              </div>
 
-        {loading ? <div className="nova-map-loading" role="status">{copy.loading}</div> : null}
+              <span>{selected.category}</span>
+              <h3>{selected.name}</h3>
+              <p>{selected.description}</p>
 
-        <div className="nova-map-legend" aria-label="Légende">
-          <span><i className="service" />Service</span>
-          <span><i className="emergency" />Urgence</span>
-          <span><i className="alert" />Alerte</span>
-          <span><i className="report" />Signalement</span>
-        </div>
+              <dl>
+                <div>
+                  <dt>{activeCopy.address}</dt>
+                  <dd>{selected.address || selected.district}</dd>
+                </div>
+
+                {selected.openingHours ? (
+                  <div>
+                    <dt>{activeCopy.hours}</dt>
+                    <dd>{selected.openingHours}</dd>
+                  </div>
+                ) : null}
+
+                {(selected.details || []).map((detail, index) => (
+                  <div key={`${detail.label}-${index}`}>
+                    <dt>{detail.label}</dt>
+                    <dd>{detail.value}</dd>
+                  </div>
+                ))}
+
+                {selected.statusLabel ? (
+                  <div>
+                    <dt>Statut</dt>
+                    <dd>{selected.statusLabel}</dd>
+                  </div>
+                ) : null}
+              </dl>
+
+              <button type="button" className="primary-action" onClick={openSelected}>
+                {actionLabel} →
+              </button>
+            </div>
+          ) : (
+            <div className="nova-city-map__empty">{activeCopy.noSelection}</div>
+          )}
+
+          <div className="nova-city-map__accessible-list">
+            <span className="section-label">{activeCopy.list}</span>
+
+            {searchedItems.length ? (
+              searchedItems.map((item) => (
+                <button
+                  type="button"
+                  key={item.id}
+                  className={selected?.id === item.id ? "is-active" : ""}
+                  aria-pressed={selected?.id === item.id}
+                  onClick={() => focusItem(item)}
+                >
+                  <i style={{ "--location-color": item.color }} aria-hidden="true">
+                    {item.icon}
+                  </i>
+                  <span>
+                    <b>{item.name}</b>
+                    <small>{item.category} · {item.district}</small>
+                  </span>
+                  <em>{activeCopy.locate}</em>
+                </button>
+              ))
+            ) : (
+              <p>{activeCopy.empty}</p>
+            )}
+          </div>
+        </aside>
       </div>
-
-      <aside className="nova-city-map__panel">
-        {selected ? <div className="nova-city-map__selected">
-          <div className={`nova-city-map__selected-icon kind-${selected.kind}`} style={{ "--location-color": selected.color }} aria-hidden="true">{selected.icon}</div>
-          <span>{selected.category}</span>
-          <h3>{selected.name}</h3>
-          <p>{selected.description}</p>
-          <dl>
-            <div><dt>{copy.address}</dt><dd>{selected.address || selected.district}</dd></div>
-            {selected.openingHours ? <div><dt>{copy.hours}</dt><dd>{selected.openingHours}</dd></div> : null}
-            {selected.kind === "report" ? <div><dt>Statut</dt><dd>{selected.statusLabel}</dd></div> : null}
-            {selected.kind === "service" ? <div><dt>Disponibilité</dt><dd>{selected.availabilityLabel || (selected.isAvailable===false?"Indisponible":"Disponible")}</dd></div> : null}
-          </dl>
-          <button type="button" className="primary-action" onClick={openSelected}>{actionLabel} →</button>
-        </div> : <div className="nova-city-map__empty">{copy.noSelection}</div>}
-
-        <div className="nova-city-map__accessible-list">
-          <span className="section-label">{copy.list}</span>
-          {searchedItems.length ? searchedItems.map((item) => <button
-            type="button"
-            key={item.id}
-            className={`${selected?.id === item.id ? "is-active" : ""} list-${item.kind}`.trim()}
-            aria-pressed={selected?.id === item.id}
-            onClick={() => selectItem(item)}
-          >
-            <i style={{ "--location-color": item.color }} aria-hidden="true">{item.icon}</i>
-            <span><b>{item.name}</b><small>{item.category} · {item.district}</small></span>
-            <em>Localiser</em>
-          </button>) : <p>{copy.empty}</p>}
-        </div>
-      </aside>
-    </div>
-  </section>;
+    </section>
+  );
 }

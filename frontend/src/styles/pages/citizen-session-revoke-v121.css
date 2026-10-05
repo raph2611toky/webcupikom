@@ -1,0 +1,118 @@
+/* ==========================================================================
+   NOVA TERRA — NOTIFICATION SESSION REVOCATION V121
+   ========================================================================== */
+
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen~.portal-main
+.notification-list--backend>button.type-security{
+  --notif-accent:#d63a55!important;
+  border-color:#ead3d9!important;
+  background:linear-gradient(90deg,#fff 0%,#fff 82%,#fff7f8 100%)!important;
+}
+
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen~.portal-main
+.notification-list--backend>button.type-security.is-unread{
+  box-shadow:inset 3px 0 #d63a55,0 9px 24px rgba(52,39,91,.045)!important;
+}
+
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen~.portal-main
+.type-security .notification-type-icon,
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen~.portal-main
+.notification-type-icon.type-security{
+  color:#bd2942!important;
+  background:#fff0f3!important;
+}
+
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen~.portal-main
+.notification-session-security{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:4px 8px;
+  border-left:2px solid #cf314c;
+  border-radius:0!important;
+  color:#9f2338!important;
+  background:#fff2f4!important;
+  font-size:.67rem!important;
+  font-style:normal;
+  font-weight:850!important;
+}
+
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen~.portal-main
+.notification-arrow.is-security{
+  border-radius:0!important;
+  color:#b72840!important;
+  background:#fff0f3!important;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+:where(body[data-route-group="portal"]) .portal-sidebar--citizen~.portal-main
+.notification-detail-revoke{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:100%;
+  border-color:#b9253e!important;
+  background:linear-gradient(105deg,#a91f36,#d83a54)!important;
+}
+
+:where(body[data-route-group="portal"]) .notification-session-warning{
+  margin:0;
+  padding:10px 11px;
+  border-left:3px solid #d0324c;
+  color:#852137;
+  background:#fff3f5;
+  font-size:.75rem;
+  font-weight:750;
+  line-height:1.45;
+}
+
+:where(body[data-route-group="portal"]) .notification-session-otp{
+  text-align:center;
+  letter-spacing:.36em;
+  font-size:1.18rem!important;
+  font-weight:900!important;
+}
+
+:where(body[data-route-group="portal"]) .notification-session-notice{
+  position:fixed;
+  z-index:35500;
+  right:22px;
+  bottom:82px;
+  max-width:min(430px,calc(100vw - 32px));
+  padding:11px 13px;
+  border:1px solid #b887ed;
+  border-radius:0!important;
+  color:#35184f;
+  background:#fff;
+  box-shadow:0 15px 38px rgba(45,19,78,.18);
+  font-size:.75rem;
+  font-weight:750;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"])
+.notification-list--backend>button.type-security,
+html[data-contrast="high"] :where(body[data-route-group="portal"])
+.notification-session-notice{
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"])
+.notification-session-security{
+  border-color:#ff0!important;
+  color:#000!important;
+  background:#ff0!important;
+}
+
+@media(max-width:700px){
+  :where(body[data-route-group="portal"]) .notification-session-notice{
+    left:12px;
+    right:12px;
+    bottom:84px;
+    max-width:none;
+  }
+}

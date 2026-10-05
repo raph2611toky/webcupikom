@@ -1,36 +1,97 @@
+import PortalIcon from "./PortalIcon.jsx";
 import "../../styles/portal.css";
-import { useState } from "react";
+import novaSidebarLogo from "../../assets/sidebar/nova-sidebar-logo.png";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { navigate } from "../../utils/navigation.js";
 
-const items = [
-  ["/admin", "◫", "Tableau de bord"],
-  ["/admin/users", "◉", "Utilisateurs"],
-  ["/admin/requests", "▤", "Demandes"],
-  ["/admin/services", "◇", "Services"],
-  ["/admin/service-usage", "▥", "Usage services"],
-  ["/admin/transport", "⇄", "Transport"],
-  ["/admin/partners", "◎", "Partenaires"],
-  ["/admin/appointments", "◷", "Rendez-vous"],
-  ["/admin/news", "▤", "Actualités"],
-  ["/admin/projects", "✦", "Projets municipaux"],
-  ["/admin/settings", "⚙", "Paramètres"],
+const groups = [
+  {
+    label:"Pilotage",
+    items:[
+      ["/admin", "home", "Tableau de bord"],
+      ["/admin/users", "users", "Utilisateurs"],
+      ["/admin/requests", "requests", "Demandes"],
+      ["/admin/services", "services", "Services"],
+      ["/admin/service-usage", "usage", "Usage services"],
+      ["/admin/transport", "transport", "Transport"],
+    ],
+  },
+  {
+    label:"Ville",
+    items:[
+      ["/admin/partners", "partners", "Partenaires"],
+      ["/admin/appointments", "appointments", "Rendez-vous"],
+      ["/admin/news", "news", "Actualités"],
+      ["/admin/projects", "projects", "Projets municipaux"],
+    ],
+  },
+  {
+    label:"Système",
+    items:[
+      ["/admin/settings", "settings", "Paramètres"],
+    ],
+  },
 ];
 
 export default function AdminSidebar() {
   const path = window.location.pathname;
   const { logout } = useAuth();
   const [leaving,setLeaving]=useState(false);
-  async function signOut(){if(leaving)return;setLeaving(true);try{await logout()}finally{navigate("/",{replace:true})}}
-  return <aside className="portal-sidebar portal-sidebar--admin">
-    <button className="portal-sidebar__brand" aria-label="Nova Terra, tableau de bord" onClick={() => navigate("/admin")}>Nova<span>Terra</span></button>
-    <div className="portal-sidebar__role">Administration</div>
-    <nav aria-label="Navigation de l’administration">{items.map(([to, icon, label]) => {
-      const active = to === "/admin" ? path === to : path.startsWith(to);
-      return <button key={to} className={active ? "is-active" : ""} aria-current={active ? "page" : undefined} onClick={() => navigate(to)}><i aria-hidden="true">{icon}</i><span>{label}</span></button>;
-    })}</nav>
+  const [collapsed,setCollapsed]=useState(()=>{
+    try{return localStorage.getItem("nova-admin-sidebar-collapsed")==="1"}catch{return false}
+  });
+
+  useEffect(()=>{
+    document.body.classList.toggle("portal-sidebar-collapsed",collapsed);
+    try{localStorage.setItem("nova-admin-sidebar-collapsed",collapsed?"1":"0")}catch{}
+    return()=>document.body.classList.remove("portal-sidebar-collapsed");
+  },[collapsed]);
+
+  async function signOut(){
+    if(leaving)return;
+    setLeaving(true);
+    try{await logout()}finally{navigate("/",{replace:true})}
+  }
+
+  return <aside className={`portal-sidebar portal-sidebar--admin staff-sidebar${collapsed?" is-collapsed":""}`}>
+    <button
+      type="button"
+      className="staff-sidebar-toggle"
+      aria-label={collapsed?"Développer le menu":"Réduire le menu"}
+      aria-expanded={!collapsed}
+      title={collapsed?"Développer le menu":"Réduire le menu"}
+      onClick={()=>setCollapsed(value=>!value)}
+    ><span aria-hidden="true">{collapsed?"›":"‹"}</span></button>
+
+    <button className="portal-sidebar__brand staff-sidebar-brand" aria-label="Nova Terra, administration" onClick={()=>navigate("/admin")}>
+      <img src={novaSidebarLogo} alt="" aria-hidden="true" />
+      <span className="sr-only">Nova Terra</span>
+    </button>
+
+    <div className="portal-sidebar__role staff-sidebar-role"><span>ADMIN</span> Centre de pilotage</div>
+
+    <nav className="staff-nav" aria-label="Navigation de l’administration">
+      {groups.map(group=><div className="staff-nav-group" key={group.label}>
+        <span className="staff-nav-group__label">{group.label}</span>
+        <div className="staff-nav-group__items">
+          {group.items.map(([to,icon,label])=>{
+            const active=to==="/admin"?path===to:path.startsWith(to);
+            return <button key={to} title={label} className={active?"is-active":""} aria-current={active?"page":undefined} onClick={()=>navigate(to)}>
+              <i aria-hidden="true"><PortalIcon name={icon}/></i><span>{label}</span>
+            </button>;
+          })}
+        </div>
+      </div>)}
+    </nav>
+
     <div className="portal-sidebar__bottom">
-      <button onClick={signOut}><i aria-hidden="true">↗</i><span>Déconnexion</span></button>
+      <button title="Déconnexion" onClick={signOut} disabled={leaving}><i aria-hidden="true">↗</i><span>{leaving?"Déconnexion…":"Déconnexion"}</span></button>
+    </div>
+
+    <div className="staff-sidebar-signature" aria-hidden="true">
+      <span className="staff-sidebar-signature__core">A</span>
+      <span><strong>Nova Terra</strong><small>Superviser · décider<br/>faire évoluer la ville.</small></span>
     </div>
   </aside>;
 }

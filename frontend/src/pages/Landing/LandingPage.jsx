@@ -1,10 +1,12 @@
 import { lazy, Suspense } from "react";
 import DeferredSection from "../../components/ui/DeferredSection.jsx";
 import { useDataMode } from "../../utils/useDataMode.js";
+import "./LandingPage.css";
 
 const Hero = lazy(() => import("../../components/Hero/Hero.jsx"));
 const Features = lazy(() => import("../../components/Features/Features.jsx"));
 const Mission = lazy(() => import("../../components/Mission/Mission.jsx"));
+const LandingContact = lazy(() => import("../../components/LandingContact/LandingContact.jsx"));
 const Footer = lazy(() => import("../../components/Footer/Footer.jsx"));
 
 function SectionFallback({ height = 320 }) {
@@ -45,7 +47,7 @@ export default function LandingPage() {
   const dataProfile = useDataMode();
 
   return (
-    <>
+    <div className="nova-landing">
       {dataProfile.reduced ? <LightHero /> : <Suspense fallback={<SectionFallback height={720} />}><Hero /></Suspense>}
       {dataProfile.reduced ? <LightOverview /> : <>
         <DeferredSection minHeight={720} rootMargin="700px 0px" label="Chargement des fonctionnalités">
@@ -55,9 +57,13 @@ export default function LandingPage() {
           <Suspense fallback={<SectionFallback height={520} />}><Mission /></Suspense>
         </DeferredSection>
       </>}
+      <DeferredSection minHeight={440} rootMargin="650px 0px" label="Chargement du formulaire de contact">
+        <Suspense fallback={<SectionFallback height={440} />}><LandingContact /></Suspense>
+      </DeferredSection>
+
       <DeferredSection minHeight={280} rootMargin="500px 0px" label="Chargement du pied de page">
         <Suspense fallback={<SectionFallback height={280} />}><Footer /></Suspense>
       </DeferredSection>
-    </>
+    </div>
   );
 }

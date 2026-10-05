@@ -1,0 +1,685 @@
+/* ==========================================================================
+   NOVA TERRA — CITIZEN UI SYSTEM V109
+   Shared visual language for authenticated citizen cards.
+   One theme layer, scoped to body[data-route-group="portal"].
+   ========================================================================== */
+
+:where(body[data-route-group="portal"]) {
+  --nt-card-border:#ddd2e8;
+  --nt-card-border-strong:#bb96e7;
+  --nt-card-bg:#fff;
+  --nt-card-soft:#fbf8ff;
+  --nt-card-ink:#17121e;
+  --nt-card-muted:#746b7d;
+  --nt-card-purple:#7421ef;
+  --nt-card-purple-2:#9638ff;
+  --nt-card-shadow:0 10px 26px rgba(43,24,70,.055);
+  --nt-card-shadow-hover:0 15px 34px rgba(64,26,109,.09);
+  --nt-card-cut:9px;
+}
+
+/* --------------------------------------------------------------------------
+   Shared card shell
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) :is(
+  .portal-card,
+  .project-card,
+  .project-toolbar,
+  .project-empty-state,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-hero-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side,
+  .appointment-reference-card,
+  .appointment-reminder-card,
+  .appointment-confirmation-dialog,
+  .requests-intro-card,
+  .requests-toolbar-card,
+  .request-export-panel,
+  .request-list-card,
+  .request-details-card,
+  .request-history-card,
+  .request-attachments-card,
+  .municipal-replies-card,
+  .report-form--wizard,
+  .report-history--wizard,
+  .notification-category-card,
+  .notification-detail-panel,
+  .notification-kpi-card,
+  .citizen-contact-form-card,
+  .data-export-card,
+  .delete-account-form-card,
+  .performance-settings-card,
+  .privacy-concern-card,
+  .settings-deferred-card,
+  .settings-tab-panel,
+  .toolbar-card,
+  .tr87-map-card,
+  .tr87-stop-card
+) {
+  border-radius:0!important;
+  border-color:var(--nt-card-border);
+  box-shadow:var(--nt-card-shadow);
+  clip-path:polygon(
+    var(--nt-card-cut) 0,
+    100% 0,
+    100% calc(100% - var(--nt-card-cut)),
+    calc(100% - var(--nt-card-cut)) 100%,
+    0 100%,
+    0 var(--nt-card-cut)
+  );
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .project-card,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .request-list-card,
+  .notification-category-card,
+  .svc84-card
+) {
+  transition:
+    transform .17s ease,
+    border-color .17s ease,
+    box-shadow .17s ease;
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .project-card,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .request-list-card,
+  .notification-category-card,
+  .svc84-card
+):hover {
+  transform:translateY(-2px);
+  border-color:var(--nt-card-border-strong);
+  box-shadow:var(--nt-card-shadow-hover);
+}
+
+/* Common technical buttons used inside citizen cards. */
+:where(body[data-route-group="portal"]) :is(
+  .project-card > .secondary-action,
+  .project-form__actions button,
+  .project-modal__head > button,
+  .appointment-confirmation-actions button,
+  .cit-appt-view-btn,
+  .cit-appt-menu-btn,
+  .cit-appt-primary,
+  .cit-appt-secondary,
+  .partner-card__actions a,
+  .citizen-news-card button
+) {
+  border-radius:0!important;
+  clip-path:polygon(
+    6px 0,
+    100% 0,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    0 100%,
+    0 6px
+  );
+}
+
+/* --------------------------------------------------------------------------
+   PROJECTS — cards + toolbar
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) .project-toolbar {
+  position:relative;
+  min-height:66px;
+  padding:9px 10px;
+  overflow:visible;
+  background:
+    linear-gradient(120deg,#fff 0%,#fdfaff 72%,#f6f0ff 100%);
+}
+
+:where(body[data-route-group="portal"]) .project-toolbar::after {
+  content:"";
+  position:absolute;
+  top:0;
+  right:13px;
+  width:76px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--nt-card-purple-2));
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row {
+  gap:7px;
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button {
+  --project-filter:#7421ef;
+  position:relative;
+  min-height:40px;
+  height:40px;
+  padding:0 13px;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--project-filter) 22%,#ded7e5);
+  border-radius:0!important;
+  color:#514759;
+  background:#fff;
+  font-weight:800;
+  font-size:.74rem;
+  cursor:pointer;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(1){--project-filter:#7421ef}
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(2){--project-filter:#16925d}
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(3){--project-filter:#2b7ff0}
+:where(body[data-route-group="portal"]) .project-filter-row button:nth-child(4){--project-filter:#696174}
+
+:where(body[data-route-group="portal"]) .project-filter-row button::before {
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:24px;
+  height:2px;
+  background:var(--project-filter);
+  opacity:.55;
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button:hover {
+  transform:translateY(-1px);
+  border-color:color-mix(in srgb,var(--project-filter) 54%,#d9d1e0);
+  box-shadow:0 7px 15px color-mix(in srgb,var(--project-filter) 10%,transparent);
+}
+
+:where(body[data-route-group="portal"]) .project-filter-row button.is-active {
+  border-color:var(--project-filter);
+  color:#fff;
+  background:linear-gradient(
+    105deg,
+    color-mix(in srgb,var(--project-filter) 72%,#25043f),
+    var(--project-filter)
+  );
+  box-shadow:0 8px 18px color-mix(in srgb,var(--project-filter) 18%,transparent);
+}
+
+:where(body[data-route-group="portal"]) .project-mini-stats span {
+  min-height:36px;
+  padding:0 10px;
+  border:1px solid #e2d9ea;
+  border-radius:0!important;
+  background:#faf7fd;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .project-card {
+  --project-accent:#7421ef;
+  position:relative;
+  min-height:330px!important;
+  height:auto!important;
+  gap:11px;
+  padding:16px!important;
+  overflow:hidden;
+  background:
+    linear-gradient(145deg,#fff 0%,#fff 72%,color-mix(in srgb,var(--project-accent) 4%,#fff));
+  border-color:color-mix(in srgb,var(--project-accent) 20%,#ded7e6);
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb,var(--project-accent) 68%,transparent),
+    var(--nt-card-shadow);
+}
+
+:where(body[data-route-group="portal"]) .project-card:has(.status-in_progress) {--project-accent:#15945d}
+:where(body[data-route-group="portal"]) .project-card:has(.status-planned) {--project-accent:#2a7be8}
+:where(body[data-route-group="portal"]) .project-card:has(.status-completed) {--project-accent:#677282}
+:where(body[data-route-group="portal"]) .project-card:has(.status-paused) {--project-accent:#d48c16}
+:where(body[data-route-group="portal"]) .project-card:has(.status-cancelled) {--project-accent:#b75469}
+
+:where(body[data-route-group="portal"]) .project-card__icon {
+  border-radius:0!important;
+  color:var(--project-accent)!important;
+  background:color-mix(in srgb,var(--project-accent) 9%,#fff)!important;
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+}
+
+:where(body[data-route-group="portal"]) .project-card h3 {
+  color:#17121e;
+  letter-spacing:-.025em;
+}
+
+:where(body[data-route-group="portal"]) .project-card p,
+:where(body[data-route-group="portal"]) .project-card dd {
+  color:var(--nt-card-muted);
+}
+
+:where(body[data-route-group="portal"]) .project-progress progress {
+  height:6px!important;
+  border:0;
+  border-radius:0;
+  overflow:hidden;
+  accent-color:var(--project-accent)!important;
+  background:#eee8f2;
+}
+
+:where(body[data-route-group="portal"]) .project-progress progress::-webkit-progress-bar {
+  background:#eee8f2;
+}
+
+:where(body[data-route-group="portal"]) .project-progress progress::-webkit-progress-value {
+  background:linear-gradient(90deg,var(--project-accent),color-mix(in srgb,var(--project-accent) 65%,#a44dff));
+}
+
+:where(body[data-route-group="portal"]) .project-card > .secondary-action {
+  position:relative;
+  min-height:38px!important;
+  margin-top:auto;
+  border:1px solid color-mix(in srgb,var(--project-accent) 35%,#d9d0e2)!important;
+  color:var(--project-accent)!important;
+  background:color-mix(in srgb,var(--project-accent) 4%,#fff)!important;
+  font-weight:850;
+  transition:background .16s ease,color .16s ease,box-shadow .16s ease;
+}
+
+:where(body[data-route-group="portal"]) .project-card > .secondary-action:hover {
+  color:#fff!important;
+  background:linear-gradient(105deg,color-mix(in srgb,var(--project-accent) 72%,#280544),var(--project-accent))!important;
+  box-shadow:0 8px 17px color-mix(in srgb,var(--project-accent) 15%,transparent);
+}
+
+/* --------------------------------------------------------------------------
+   APPOINTMENTS — booking/list cards and confirmation
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) :is(
+  .cit-appt-hero-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side
+) {
+  --nt-card-cut:10px;
+  border:1px solid #ddd3e8;
+  background:#fff;
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button,
+:where(body[data-route-group="portal"]) .cit-appt-view-btn,
+:where(body[data-route-group="portal"]) .cit-appt-menu-btn {
+  border-radius:0!important;
+  border:1px solid #ddd4e6;
+  background:#fff;
+  box-shadow:none!important;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .cit-appt-filter-tabs button.is-active {
+  border-color:#7421ef;
+  background:linear-gradient(105deg,#4e0fa2,#7118ed 62%,#9634ff);
+  box-shadow:0 8px 18px rgba(107,29,226,.15)!important;
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .cit-appt-search-field,
+  .cit-appt-date-filter,
+  .cit-appt-service-chip i
+) {
+  border-radius:0!important;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-backdrop {
+  z-index:8200!important;
+  background:rgba(13,7,24,.54)!important;
+  backdrop-filter:blur(9px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog {
+  position:relative;
+  width:min(760px,calc(100vw - 28px))!important;
+  max-height:min(88dvh,760px);
+  overflow:auto;
+  padding:24px!important;
+  border:1px solid #aa78e3!important;
+  background:
+    radial-gradient(circle at 94% 8%,rgba(126,38,244,.08),transparent 23%),
+    #fff!important;
+  box-shadow:0 28px 70px rgba(22,10,40,.28)!important;
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)!important;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog::before {
+  content:"";
+  position:absolute;
+  top:0;
+  right:20px;
+  width:84px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#943dff);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-check {
+  width:48px!important;
+  height:48px!important;
+  margin-bottom:10px!important;
+  border-radius:0!important;
+  color:#fff!important;
+  background:linear-gradient(145deg,#13935a,#24bd78)!important;
+  box-shadow:0 9px 19px rgba(18,151,91,.16);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog h2 {
+  margin:7px 0 6px!important;
+  color:#17111f!important;
+  font-size:clamp(1.35rem,2.4vw,1.85rem);
+  line-height:1.12;
+  letter-spacing:-.04em;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog > p {
+  margin:0 0 16px!important;
+  color:#72687c!important;
+  line-height:1.48;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts {
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin:16px 0 18px!important;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div {
+  --fact-accent:#7421ef;
+  position:relative;
+  min-height:78px;
+  padding:12px 13px!important;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--fact-accent) 22%,#e1d9e8);
+  border-radius:0!important;
+  background:linear-gradient(135deg,#fff,color-mix(in srgb,var(--fact-accent) 5%,#fff))!important;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  width:2px;
+  height:100%;
+  background:var(--fact-accent);
+  opacity:.66;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(1){--fact-accent:#7421ef}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(2){--fact-accent:#287cf1}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(3){--fact-accent:#16945d}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(4){--fact-accent:#dd8d13}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(5){--fact-accent:#8b45e9}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div:nth-child(6){--fact-accent:#d15e26}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts span {
+  color:#786f82!important;
+  font-size:.72rem!important;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts b {
+  margin-top:3px;
+  color:#1d1726!important;
+  font-size:.82rem;
+  overflow-wrap:anywhere;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-actions {
+  display:flex!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+  padding-top:14px;
+  border-top:1px solid #e8e1ed;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-actions button {
+  min-height:42px;
+  padding:0 13px;
+  border:1px solid #d9cfe3;
+  background:#fff;
+  color:#3d3247;
+  font-weight:850;
+}
+
+:where(body[data-route-group="portal"]) .appointment-confirmation-actions .primary-action {
+  border-color:#7421ed!important;
+  color:#fff!important;
+  background:linear-gradient(105deg,#4e0fa2,#7118ed 62%,#9634ff)!important;
+  box-shadow:0 8px 18px rgba(105,27,225,.17);
+}
+
+/* --------------------------------------------------------------------------
+   OTHER CITIZEN CARD FAMILIES
+   -------------------------------------------------------------------------- */
+
+:where(body[data-route-group="portal"]) .partner-card {
+  border:1px solid #ded4e8;
+  background:linear-gradient(145deg,#fff,#fcf9ff);
+}
+
+:where(body[data-route-group="portal"]) .partner-card.is-available {
+  box-shadow:inset 0 2px 0 rgba(24,157,94,.48),var(--nt-card-shadow);
+}
+
+:where(body[data-route-group="portal"]) .partner-card.is-unavailable {
+  box-shadow:inset 0 2px 0 rgba(179,83,101,.42),var(--nt-card-shadow);
+}
+
+:where(body[data-route-group="portal"]) .citizen-news-card {
+  overflow:hidden;
+  border:1px solid #ded4e8;
+  background:#fff;
+}
+
+:where(body[data-route-group="portal"]) .notification-category-card {
+  border:1px solid #ddd4e8;
+  background:linear-gradient(140deg,#fff,#fcf9ff);
+}
+
+:where(body[data-route-group="portal"]) :is(
+  .data-export-card,
+  .performance-settings-card,
+  .privacy-concern-card,
+  .settings-deferred-card,
+  .settings-tab-panel,
+  .delete-account-form-card
+) {
+  position:relative;
+  overflow:hidden;
+  border:1px solid #ddd4e8;
+  background:linear-gradient(145deg,#fff,#fdfaff);
+}
+
+/* Services already have their own art. Only normalize the shell. */
+:where(body[data-route-group="portal"]) .svc84-card {
+  border-radius:0!important;
+  border-color:#ddd4e8!important;
+  box-shadow:var(--nt-card-shadow)!important;
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+}
+
+/* --------------------------------------------------------------------------
+   Large text / responsive
+   -------------------------------------------------------------------------- */
+
+html:is([data-font-size="large"],[data-font-size="xlarge"])
+:where(body[data-route-group="portal"]) :is(
+  .project-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side,
+  .appointment-confirmation-dialog,
+  .appointment-confirmation-facts > div,
+  .partner-card,
+  .citizen-news-card,
+  .notification-category-card,
+  .portal-card
+) {
+  height:auto!important;
+  max-height:none!important;
+}
+
+html:is([data-font-size="large"],[data-font-size="xlarge"])
+:where(body[data-route-group="portal"]) .project-card :is(p,dd,h3),
+html:is([data-font-size="large"],[data-font-size="xlarge"])
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts :is(span,b) {
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:normal!important;
+}
+
+@media(max-width:900px) {
+  :where(body[data-route-group="portal"]) .project-grid--compact {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-dialog {
+    padding:20px!important;
+  }
+}
+
+@media(max-width:650px) {
+  :where(body[data-route-group="portal"]) .project-grid--compact {
+    grid-template-columns:1fr!important;
+  }
+
+  :where(body[data-route-group="portal"]) .project-toolbar {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  :where(body[data-route-group="portal"]) .project-toolbar .project-filter-row {
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    justify-content:flex-start;
+    padding-bottom:3px;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-facts {
+    grid-template-columns:1fr!important;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-actions {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  :where(body[data-route-group="portal"]) .appointment-confirmation-actions button {
+    width:100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Accessibility
+   -------------------------------------------------------------------------- */
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) :is(
+  .portal-card,
+  .project-card,
+  .project-toolbar,
+  .partner-card,
+  .citizen-news-card,
+  .cit-appt-hero-card,
+  .cit-appt-table-card,
+  .cit-appt-next-card,
+  .cit-appt-calendar-card,
+  .cit-appt-booking-main,
+  .cit-appt-booking-side,
+  .appointment-confirmation-dialog,
+  .appointment-confirmation-facts > div,
+  .notification-category-card,
+  .notification-detail-panel,
+  .notification-kpi-card
+) {
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-filter-row button {
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .project-filter-row button.is-active,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .appointment-confirmation-actions .primary-action {
+  color:#000!important;
+  background:#f1d55e!important;
+}
+
+@media(prefers-reduced-motion:reduce) {
+  :where(body[data-route-group="portal"]) :is(
+    .project-card,
+    .partner-card,
+    .citizen-news-card,
+    .cit-appt-next-card,
+    .cit-appt-calendar-card,
+    .request-list-card,
+    .notification-category-card,
+    .svc84-card,
+    .project-filter-row button
+  ) {
+    transition:none!important;
+  }
+}
+
+
+/* ========================================================================
+   V109 — shared citizen controls. One final layer after portal layout.
+   ======================================================================== */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(
+  .portal-card,.toolbar-card,.project-card,.partner-card,.citizen-news-card,
+  .cit-appt-hero-card,.cit-appt-table-card,.cit-appt-next-card,.cit-appt-calendar-card,
+  .cit-appt-booking-main,.cit-appt-booking-side,.request-list-card,.requests-intro-card,
+  .requests-toolbar-card,.request-export-panel,.report-form--wizard,.report-history--wizard,
+  .notification-category-card,.notification-detail-panel,.settings-tab-panel
+){
+  height:auto!important;
+  max-height:none!important;
+}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(
+  .primary-action,.secondary-action,.request-export-panel__actions button,
+  .accessible-table__action,.request-pagination button,.report-wizard-actions button,
+  .report-priority button,.report-geolocation>button,.report-file>button,
+  .cit-appt-primary,.cit-appt-secondary,.cit-appt-view-btn,.cit-appt-menu-btn,
+  .partner-card__actions a
+){
+  position:relative;
+  border-radius:0!important;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .primary-action{
+  border-color:#7421ed!important;
+  color:#fff!important;
+  background:linear-gradient(105deg,#4e0fa2,#7118ed 62%,#9634ff)!important;
+  box-shadow:0 8px 18px rgba(105,27,225,.16);
+}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .secondary-action{
+  border:1px solid #d8cce5!important;
+  color:#5f18c9!important;
+  background:#fff!important;
+}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.primary-action,.secondary-action):hover:not(:disabled){
+  transform:translateY(-1px);
+}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(
+  .filter-row button,.settings-tabs button,.cit-appt-filter-tabs button
+){
+  border-radius:0!important;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}

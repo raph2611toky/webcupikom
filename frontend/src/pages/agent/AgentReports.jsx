@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { acknowledgeAgentReportAlert, getAgentRequestCount, getAgentRequests, getAgentUnacknowledgedReportAlerts } from "../../api/requests.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
@@ -228,7 +229,7 @@ export default function AgentReports() {
     });
   }, [requests, dateFrom, dateTo, emergencyOnly]);
 
-  const perPage = 5;
+  const perPage = 8;
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
   const pageRows = filteredRows.slice((page - 1) * perPage, page * perPage);
 
@@ -310,10 +311,7 @@ export default function AgentReports() {
                       </tbody>
                     </table>
                   </div>
-                  <footer className="arp85-table-footer">
-                    <span>{filteredRows.length} {emergencyOnly ? "urgence" : "signalement"}{filteredRows.length > 1 ? "s" : ""} affiché{filteredRows.length > 1 ? "s" : ""}</span>
-                    <div><button type="button" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>‹</button><b>{page}</b><button type="button" disabled={page >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>›</button></div>
-                  </footer>
+                  {filteredRows.length ? <PortalPagination page={page} totalPages={totalPages} totalItems={filteredRows.length} perPage={perPage} onPageChange={setPage} itemLabel={emergencyOnly ? "urgence" : "signalement"} itemLabelPlural={emergencyOnly ? "urgences" : "signalements"} className="arp85-pagination" /> : null}
                 </>
               )}
             </section>

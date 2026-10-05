@@ -292,26 +292,46 @@ export default function AgentRequestDetails({ params, mode = "agent" }) {
       {request.duplicateOf ? <div className="duplicate-link-banner" role="status"><div><strong>↪ Dossier lié comme doublon</strong><span>{request.duplicateOfReference ? `Doublon de ${request.duplicateOfReference}` : `Demande source #${request.duplicateOf}`}</span></div><button type="button" className="secondary-action" disabled={duplicateSaving} onClick={clearDuplicateLink}>{duplicateSaving ? "Mise à jour…" : "Retirer le lien"}</button></div> : null}
       {request.handlingRoute === "emergency" ? <div className={`request-emergency-banner ${request.alertStatus === "acknowledged" ? "is-acknowledged" : ""}`} role="status"><div><span aria-hidden="true">!</span><div><strong>F86 · CIRCUIT D’URGENCE</strong><small>{request.alertStatus === "acknowledged" ? `Prise en charge${request.alertAcknowledgedByName ? ` par ${request.alertAcknowledgedByName}` : ""}${request.alertAcknowledgedAt ? ` · ${displayDate(request.alertAcknowledgedAt)}` : ""}` : `Alerte ${request.alertStatus || "active"} · intervention prioritaire requise`}</small></div></div>{request.alertStatus !== "acknowledged" ? <button type="button" disabled={alertSaving} onClick={acknowledgeEmergencyAlert}>{alertSaving ? "Prise en charge…" : "Prendre en charge maintenant"}</button> : <b>✓ Acquittée</b>}</div> : null}
 
-      <section className="agent-detail-head agent-detail-head--smart request-operations-hero">
-        <div>
-          <span>{request.workflowLabel || request.category || request.service}</span>
+      <section className={`request-operations-banner ${request.requiresAgentAction ? "is-action-required" : ""}`} aria-label="Résumé du dossier">
+        <div className="request-operations-banner__main">
+          <div className="request-operations-banner__eyebrow">
+            <span>{request.workflowLabel || request.category || request.service}</span>
+            <em>{request.requestType === "signalement" ? "Signalement" : "Demande"}</em>
+          </div>
+
           <h2>{request.title}</h2>
-          <p>{request.citizen} · {request.citizenEmail || "sans e-mail"} · créée {request.created}</p>
-          <div className="workflow-flags request-top-badges">
-            <em className="request-inline-status">Statut : {request.status}</em>
-            <em className="request-inline-status">Priorité : {request.priority}</em>
-            {request.requiresAgentAction ? <em>Action agent requise</em> : null}
-            {request.requiresCitizenAction ? <em>Attente du citoyen</em> : null}
-            {request.needsTriage ? <em>À router</em> : null}
-            {request.hasAgentReply ? <em>{request.agentReplyCount} réponse{request.agentReplyCount > 1 ? "s" : ""} envoyée{request.agentReplyCount > 1 ? "s" : ""}</em> : <em>Aucune réponse envoyée</em>}
+
+          <div className="request-operations-banner__meta">
+            <span>{request.citizen}</span>
+            <i aria-hidden="true">•</i>
+            <span>{request.citizenEmail || "sans e-mail"}</span>
+            <i aria-hidden="true">•</i>
+            <span>Créée {request.created}</span>
+          </div>
+
+          <div className="request-operations-banner__states">
+            <span className="request-operation-chip is-status">Statut · {request.status}</span>
+            <span className={`request-operation-chip is-priority priority-${request.priorityCode || "normal"}`}>Priorité · {request.priority}</span>
+            {request.requiresAgentAction ? <span className="request-operation-chip is-action">Action agent requise</span> : null}
+            {request.requiresCitizenAction ? <span className="request-operation-chip is-waiting">Attente du citoyen</span> : null}
+            {request.needsTriage ? <span className="request-operation-chip is-routing">À router</span> : null}
           </div>
         </div>
-        <div className="agent-detail-controls agent-detail-controls--v50 agent-detail-controls--cards">
-          <label><span>Statut</span><select value={form.status} onChange={(e) => setForm((v) => ({ ...v, status: e.target.value }))}>{STATUS_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-          <label><span>Priorité</span><select value={form.priority} onChange={(e) => setForm((v) => ({ ...v, priority: e.target.value }))}>{PRIORITY_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-          <label><span>Responsable</span><select value={form.assigned_to ?? ""} onChange={(e) => setForm((v) => ({ ...v, assigned_to: e.target.value ? Number(e.target.value) : "" }))}><option value="">Non assigné</option>{assignees.map((a) => <option key={a.id} value={a.id}>{a.display_name} · {a.role}</option>)}</select></label>
-          <label><span>Service</span><select value={form.service ?? ""} onChange={(e) => setForm((v) => ({ ...v, service: e.target.value ? Number(e.target.value) : "" }))}><option value="">À trier</option>{services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-        </div>
+
+        <aside className="request-operations-banner__summary" aria-label="Informations de prise en charge">
+          <div>
+            <span>Responsable</span>
+            <b>{request.assignedToName || "Non assigné"}</b>
+          </div>
+          <div>
+            <span>Service</span>
+            <b>{request.service || "À trier"}</b>
+          </div>
+          <div>
+            <span>Réponses</span>
+            <b>{request.agentReplyCount || 0}</b>
+          </div>
+        </aside>
       </section>
 
       <section className="portal-grid portal-grid--detail agent-smart-grid request-detail-layout-v90">
@@ -330,7 +350,45 @@ export default function AgentRequestDetails({ params, mode = "agent" }) {
         </article>
 
         <article className="portal-card portal-card--wide request-workbench">
-          <div><span className="section-label">Traitement</span><h3>Faire avancer le dossier</h3><p className="detail-copy">Modifiez le statut, le routage ou la priorité. Le backend reste la source de vérité et crée automatiquement le suivi associé aux changements de statut.</p><div className="request-current-state"><div><span>Statut actuel</span><strong>{request.status}</strong></div><div><span>Après enregistrement</span><strong>{STATUS_LABELS[form.status] || form.status}</strong></div></div></div>
+          <div>
+            <span className="section-label">Traitement</span>
+            <h3>Faire avancer le dossier</h3>
+            <p className="detail-copy">Modifiez le statut, le routage, le responsable ou la priorité. Le backend reste la source de vérité et crée automatiquement le suivi associé aux changements.</p>
+            <div className="request-current-state">
+              <div><span>Statut actuel</span><strong>{request.status}</strong></div>
+              <div><span>Après enregistrement</span><strong>{STATUS_LABELS[form.status] || form.status}</strong></div>
+            </div>
+          </div>
+
+          <div className="request-workbench-controls" aria-label="Paramètres de traitement">
+            <label>
+              <span>Statut</span>
+              <select value={form.status} onChange={(e) => setForm((v) => ({ ...v, status: e.target.value }))}>
+                {STATUS_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Priorité</span>
+              <select value={form.priority} onChange={(e) => setForm((v) => ({ ...v, priority: e.target.value }))}>
+                {PRIORITY_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Responsable</span>
+              <select value={form.assigned_to ?? ""} onChange={(e) => setForm((v) => ({ ...v, assigned_to: e.target.value ? Number(e.target.value) : "" }))}>
+                <option value="">Non assigné</option>
+                {assignees.map((a) => <option key={a.id} value={a.id}>{a.display_name} · {a.role}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Service</span>
+              <select value={form.service ?? ""} onChange={(e) => setForm((v) => ({ ...v, service: e.target.value ? Number(e.target.value) : "" }))}>
+                <option value="">À trier</option>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </label>
+          </div>
+
           <div className="request-workbench-grid"><label><span>Résumé / décision / information demandée</span><textarea ref={summaryRef} value={form.resolution_summary} onChange={(e) => setForm((v) => ({ ...v, resolution_summary: e.target.value }))} placeholder="Ex. Merci de fournir un justificatif de domicile..." /></label><div className="request-change-preview"><h4>Résumé des changements à enregistrer</h4>{changePreview.length ? <div className="request-change-preview__list">{changePreview.map((item) => <div key={item.key}><span>{item.label}</span><del>{item.from}</del><i aria-hidden="true">→</i><ins>{item.to}</ins></div>)}</div> : <p className="detail-copy">Aucune modification en attente.</p>}</div><div className="request-workbench-actions"><button type="button" className="secondary-action" disabled={saving} onClick={takeOwnership}>Prendre en charge</button><button type="button" className="secondary-action" disabled={saving} onClick={prepareCitizenAction}>Demander une action au citoyen</button><button type="button" className="primary-action" disabled={saving} onClick={() => saveChanges()}>{saving ? "Enregistrement…" : "Enregistrer les changements"}</button></div></div>
           {sensitiveStatus ? <p className="field-help field-help--important">Un résumé est requis pour l’état sélectionné.</p> : null}
         </article>

@@ -6,7 +6,7 @@ import { getAccountSecurityEvents } from "../../api/securityEvents.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import "../../styles/pages/agent-security-events.css";
 
-const PER_PAGE = 50;
+const PER_PAGE = 12;
 
 function relativeAge(value) {
   const date = value ? new Date(value) : null;
@@ -39,7 +39,7 @@ export default function AgentSecurityEvents() {
       setLoading(true);
       setError("");
       try {
-        const result = await getAccountSecurityEvents({ page });
+        const result = await getAccountSecurityEvents({ page, page_size: PER_PAGE });
         if (!mounted) return;
         setItems(result.results || []);
         setCount(result.count || 0);
@@ -99,7 +99,7 @@ export default function AgentSecurityEvents() {
             </button>)}
             {!items.length ? <p className="detail-copy">Aucun événement de sécurité enregistré pour ce compte.</p> : null}
           </div>}
-          {!loading && count > PER_PAGE ? <PortalPagination page={page} totalPages={totalPages} totalItems={count} perPage={PER_PAGE} onPageChange={(next) => { setPage(next); setSelected(null); }} itemLabel="événement" itemLabelPlural="événements" /> : null}
+          {!loading && count > 0 ? <PortalPagination page={page} totalPages={totalPages} totalItems={count} perPage={PER_PAGE} onPageChange={(next) => { setPage(next); setSelected(null); }} itemLabel="événement" itemLabelPlural="événements" /> : null}
         </article>
 
         <aside className="portal-card agent-security-detail" aria-live="polite">

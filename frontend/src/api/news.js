@@ -27,7 +27,31 @@ function formatDate(value) {
 
 
 function normalizeAudienceGuidance(value) {
+  if (!value) return [];
+
+  if (!Array.isArray(value) && typeof value === "object") {
+    if (Array.isArray(value.items)) value = value.items;
+    else if (Array.isArray(value.results)) value = value.results;
+    else {
+      value = Object.entries(value).map(([audience, instructions]) => ({
+        audience,
+        instructions: typeof instructions === "string"
+          ? instructions
+          : instructions?.instructions || instructions?.message || "",
+      }));
+    }
+  }
+
+  if (typeof value === "string") {
+    value = value
+      .split(/\r?\n|;/g)
+      .map((audience) => audience.trim())
+      .filter(Boolean)
+      .map((audience) => ({ audience, instructions: "" }));
+  }
+
   if (!Array.isArray(value)) return [];
+
   return value
     .map((item) => {
       if (typeof item === "string") {
@@ -35,11 +59,113 @@ function normalizeAudienceGuidance(value) {
         return audience ? { audience, instructions: "" } : null;
       }
       if (!item || typeof item !== "object") return null;
-      const audience = String(item.audience || "").trim();
-      const instructions = String(item.instructions || "").trim();
+      const audience = String(
+        item.audience ||
+        item.public ||
+        item.target ||
+        item.group ||
+        item.name ||
+        ""
+      ).trim();
+      const instructions = String(
+        item.instructions ||
+        item.instruction ||
+        item.message ||
+        item.guidance ||
+        item.recommendation ||
+        ""
+      ).trim();
       return audience ? { audience, instructions } : null;
     })
     .filter(Boolean);
+}
+
+function firstRichValue(...values) {
+  for (const value of values) {
+    if (Array.isArray(value) && value.length) return value;
+    if (value && typeof value === "object" && Object.keys(value).length) return value;
+    if (typeof value === "string" && value.trim()) return value;
+    if (value !== undefined && value !== null && typeof value !== "string") return value;
+  }
+  return "";
+}
+
+function richNewsFields(item = {}) {
+  const details = item.details && typeof item.details === "object" ? item.details : {};
+  const alert = item.alert && typeof item.alert === "object" ? item.alert : {};
+  const guidance = item.guidance && typeof item.guidance === "object" ? item.guidance : {};
+
+  return {
+    affectedAreas: firstRichValue(
+      item.affected_areas,
+      item.affectedAreas,
+      item.affected_zones,
+      item.areas,
+      details.affected_areas,
+      details.affectedAreas,
+      alert.affected_areas,
+    ),
+    instructions: firstRichValue(
+      item.instructions,
+      item.public_instructions,
+      item.safety_instructions,
+      item.recommendations,
+      item.recommendation,
+      typeof item.guidance === "string" ? item.guidance : "",
+      details.instructions,
+      details.recommendations,
+      alert.instructions,
+      alert.recommendations,
+      guidance.instructions,
+      guidance.recommendations,
+    ),
+    audienceGuidanceRaw: firstRichValue(
+      item.audience_guidance,
+      item.audienceGuidance,
+      item.public_guidance,
+      item.target_guidance,
+      details.audience_guidance,
+      alert.audience_guidance,
+      guidance.audience_guidance,
+      guidance.audiences,
+    ),
+    sourceName: firstRichValue(item.source_name, item.sourceName, details.source_name, alert.source_name),
+    sourceUrl: firstRichValue(item.source_url, item.sourceUrl, details.source_url, alert.source_url),
+    actionLabel: firstRichValue(item.action_label, item.actionLabel, details.action_label, alert.action_label),
+    actionUrl: firstRichValue(item.action_url, item.actionUrl, details.action_url, alert.action_url),
+  };
+}
+
+function isBlankRichValue(value) {
+  if (Array.isArray(value)) return value.length === 0;
+  if (value && typeof value === "object") return Object.keys(value).length === 0;
+  return value === undefined || value === null || String(value).trim() === "";
+}
+
+function mergeNewsDetail(primary, ...fallbacks) {
+  const merged = { ...primary };
+  const richKeys = [
+    "affectedAreas",
+    "instructions",
+    "audienceGuidance",
+    "audienceGuidanceList",
+    "sourceName",
+    "sourceUrl",
+    "actionLabel",
+    "actionUrl",
+  ];
+
+  for (const fallback of fallbacks.filter(Boolean)) {
+    for (const key of richKeys) {
+      if (isBlankRichValue(merged[key]) && !isBlankRichValue(fallback[key])) {
+        merged[key] = fallback[key];
+      }
+    }
+    if (!merged.important && fallback.important) merged.important = true;
+    if (!merged.pinned && fallback.pinned) merged.pinned = true;
+  }
+
+  return merged;
 }
 
 function audienceGuidanceText(value) {
@@ -71,6 +197,8 @@ function toAudienceGuidance(value, fallbackInstructions = "") {
 
 function normalizeNews(item) {
   const publicationType = item.publication_type || item.publicationType || "news";
+  const rich = richNewsFields(item);
+  const audienceGuidanceList = normalizeAudienceGuidance(rich.audienceGuidanceRaw);
   return {
     ...item,
     id: item.id ?? item.slug,
@@ -94,15 +222,17 @@ function normalizeNews(item) {
     pinned: Boolean(item.is_pinned),
     notifyResidents: item.notify_residents !== false,
     targetDistricts: Array.isArray(item.target_districts) ? item.target_districts : [],
-    affectedAreas: item.affected_areas || "",
-    instructions: item.instructions || "",
-    audienceGuidance: audienceGuidanceText(item.audience_guidance),
-    audienceGuidanceList: normalizeAudienceGuidance(item.audience_guidance),
-    sourceName: item.source_name || "",
-    sourceUrl: item.source_url || "",
+    affectedAreas: String(rich.affectedAreas || ""),
+    instructions: Array.isArray(rich.instructions)
+      ? rich.instructions.map((value) => typeof value === "string" ? value : value?.text || value?.message || value?.instruction || "").filter(Boolean).join("\n")
+      : String(rich.instructions || ""),
+    audienceGuidance: audienceGuidanceList.map((entry) => entry.audience).join("\n"),
+    audienceGuidanceList,
+    sourceName: String(rich.sourceName || ""),
+    sourceUrl: String(rich.sourceUrl || ""),
     contactPhone: item.contact_phone || "",
-    actionLabel: item.action_label || "",
-    actionUrl: item.action_url || "",
+    actionLabel: String(rich.actionLabel || ""),
+    actionUrl: String(rich.actionUrl || ""),
     serviceId: item.service ?? null,
     expiresAt: item.expires_at || "",
     publishedAt: item.published_at || "",
@@ -132,12 +262,37 @@ export async function getNewsItem(slug, { includeDrafts = false, force = false }
   const endpoint = includeDrafts
     ? `/admin/news/${encodeURIComponent(slug)}/`
     : `/city/news/${encodeURIComponent(slug)}/`;
+
   const load = async () => {
     const { data } = await api.get(endpoint, includeDrafts ? {} : { skipAccessToken: true });
-    return normalizeNews(data);
+    const detail = normalizeNews(data);
+
+    if (includeDrafts) return detail;
+
+    const missingRichData =
+      !detail.instructions &&
+      !detail.affectedAreas &&
+      !detail.audienceGuidanceList?.length &&
+      !detail.sourceName &&
+      !detail.actionUrl;
+
+    if (!missingRichData) return detail;
+
+    const [newsResult, alertsResult] = await Promise.allSettled([
+      getNews({ publishedOnly: true, force: true }),
+      getAlerts({}),
+    ]);
+
+    const candidates = [
+      ...(newsResult.status === "fulfilled" ? newsResult.value : []),
+      ...(alertsResult.status === "fulfilled" ? alertsResult.value : []),
+    ].filter((item) => String(item.slug) === String(slug));
+
+    return mergeNewsDetail(detail, ...candidates);
   };
+
   if (includeDrafts || force) return load();
-  return cachedRequest(`news:item:${slug}`, load, { ttl: 60_000 });
+  return cachedRequest(`news:item:${slug}:v120`, load, { ttl: 30_000 });
 }
 
 function splitDistricts(payload) {

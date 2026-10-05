@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import AdminSidebar from "../../components/ui/AdminSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { getAdminRequestSummary, getAdminRequestsPage, getAgentRequestSummary, getAgentRequestsPage } from "../../api/requests.js";
 import { getServices } from "../../api/services.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
 import useRealtimeRefresh from "../../realtime/useRealtimeRefresh.js";
+
+const REQUESTS_PER_PAGE = 8;
 
 const FLOW_FILTERS = [
   ["all", "Toutes"],
@@ -72,7 +75,7 @@ export default function AgentRequests({ mode = "agent" } = {}) {
     const timer = window.setTimeout(() => {
       setLoading(true);
       setError("");
-      const params = { page, page_size: 30, search: filters.query, service: filters.service, priority: filters.priority, type: filters.type };
+      const params = { page, page_size: REQUESTS_PER_PAGE, search: filters.query, service: filters.service, priority: filters.priority, type: filters.type };
       if (filters.reply === "answered") params.has_agent_reply = true;
       if (filters.reply === "unanswered") params.has_agent_reply = false;
       if (filters.workflow === "needs_action") params.needs_action = true;
@@ -93,6 +96,7 @@ export default function AgentRequests({ mode = "agent" } = {}) {
   }, [filters, page, realtimeVersion]);
 
   const hasFilters = useMemo(() => filters.workflow !== "all" || filters.query || filters.service || filters.priority || filters.type || filters.reply !== "all", [filters]);
+  const totalPages = Math.max(1, Math.ceil(total / REQUESTS_PER_PAGE));
   const setWorkflow = (workflow) => { setFilters((value) => ({ ...value, workflow })); setPage(1); };
 
   return (
@@ -149,6 +153,9 @@ export default function AgentRequests({ mode = "agent" } = {}) {
 
             {loading ? <div className="loading-card">Chargement…</div> : (
               <div className="agent-request-list" role="list" aria-label="Liste des demandes citoyennes">
+                <div className="agent-request-list__columns" aria-hidden="true">
+                  <span>Référence</span><span>Dossier</span><span>Priorité</span><span>Statut</span><span>Communication</span><span>Responsable</span><span>Actions</span>
+                </div>
                 {rows.map((row) => (
                   <article role="listitem" key={row.ref} className={`agent-request-item ${row.requiresAgentAction ? "is-attention" : ""}`}>
                     <div className="agent-request-item__ref">
@@ -163,8 +170,11 @@ export default function AgentRequests({ mode = "agent" } = {}) {
                       <small>{row.service}{row.needsTriage ? " · À router" : ""}</small>
                     </div>
 
-                    <div className="agent-request-item__status">
+                    <div className="agent-request-item__priority">
                       <span className={`priority-badge priority-${row.priorityCode}`}>{row.priority}</span>
+                    </div>
+
+                    <div className="agent-request-item__workflow">
                       <span className={`status-pill status-${String(row.status).replaceAll(" ", "-").toLowerCase()}`}>{row.workflowLabel || row.status}</span>
                       {row.requiresAgentAction ? <small className="attention-label">Action attendue</small> : row.requiresCitizenAction ? <small className="citizen-wait-label">Attente citoyen</small> : null}
                     </div>
@@ -186,7 +196,7 @@ export default function AgentRequests({ mode = "agent" } = {}) {
               </div>
             )}
 
-            {total > 30 ? <div className="staff-request-pagination" aria-label="Pagination des demandes"><button type="button" className="secondary-action" disabled={!hasPrevious || loading} onClick={() => setPage((value) => Math.max(1, value - 1))}>← Précédent</button><span>Page {page}</span><button type="button" className="secondary-action" disabled={!hasNext || loading} onClick={() => setPage((value) => value + 1)}>Suivant →</button></div> : null}
+            {total > 0 ? <PortalPagination page={page} totalPages={totalPages} totalItems={total} perPage={REQUESTS_PER_PAGE} onPageChange={setPage} itemLabel="demande" itemLabelPlural="demandes" className="agent-worklist__pagination" /> : null}
           </section>
         </main>
       </div>

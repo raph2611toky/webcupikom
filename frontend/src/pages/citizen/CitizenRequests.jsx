@@ -264,7 +264,13 @@ export default function CitizenRequests() {
 
           <section className="toolbar-card requests-toolbar-card">
             <label className="portal-search requests-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} aria-label={copy.search} placeholder={copy.search} /></label>
-            <div className="filter-row filter-row--portal requests-filter-row">{filters.map(([value, label]) => <button type="button" className={value === filter ? "is-active" : ""} aria-pressed={value === filter} key={value || "all"} onClick={() => { setFilter(value); setPage(1); }}>{statusLabel(label, locale)}</button>)}</div>
+            <div className="filter-row filter-row--portal requests-filter-row">{filters.map(([value, label]) => <button
+              type="button"
+              className={`request-filter request-filter--${value || "all"}${value === filter ? " is-active" : ""}`}
+              aria-pressed={value === filter}
+              key={value || "all"}
+              onClick={() => { setFilter(value); setPage(1); }}
+            >{statusLabel(label, locale)}</button>)}</div>
           </section>
 
           <section className="portal-card request-export-panel" aria-labelledby="request-export-title">

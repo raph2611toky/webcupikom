@@ -39,11 +39,19 @@ body[data-route-group="portal"] .portal-sidebar {
   min-height: 0;
   padding: 24px 14px 16px;
   overflow-y: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background: #0c0b12;
   color: #eeedf5;
   border-right: 1px solid #211b30;
 }
+
+body[data-route-group="portal"] .portal-sidebar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 body[data-route-group="portal"] .portal-sidebar__brand {
   padding: 0 10px;
   border: 0;
@@ -159,11 +167,11 @@ body[data-route-group="portal"] .portal-content {
   grid-template-columns: minmax(0, 1fr);
 }
 body[data-route-group="portal"] .portal-card,
-body[data-route-group="portal"] .toolbar-card { border-radius: 16px; border-color: var(--tn-line); box-shadow: 0 4px 18px #231c4506; }
+body[data-route-group="portal"] .toolbar-card { border-radius:0; border-color: var(--tn-line); box-shadow: 0 4px 18px #231c4506; }
 body[data-route-group="portal"] .portal-card { padding: 20px; }
 body[data-route-group="portal"] .toolbar-card { padding: 14px; gap: 12px; }
 body[data-route-group="portal"] :is(input, select, textarea, button) { font-family: var(--portal-font); }
-body[data-route-group="portal"] :is(.primary-action, .secondary-action, .topbar-cta, .topbar-ghost) { min-height: 42px; height: auto; padding: 10px 14px; font-size: .8125rem; line-height: 1.35; border-radius: 10px; }
+body[data-route-group="portal"] :is(.primary-action, .secondary-action, .topbar-cta, .topbar-ghost) { min-height: 42px; height: auto; padding: 10px 14px; font-size: .8125rem; line-height: 1.35; border-radius:0; }
 body[data-route-group="portal"] :is(.portal-search input, input, select, textarea) { font-size: .875rem; }
 body[data-route-group="portal"] .portal-search { min-height: 44px; height: auto; }
 body[data-route-group="portal"] :is(h2, h3) { font-family: var(--portal-font); letter-spacing: -.025em; }
@@ -179,7 +187,6 @@ body[data-route-group="portal"] :is(.topbar-action-group, .notification-top-acti
 body[data-route-group="portal"] .portal-user { max-width: 210px; }
 body[data-route-group="portal"] .portal-user strong { overflow-wrap: anywhere; }
 body[data-route-group="portal"] .portal-user span:last-child { color: var(--tn-muted); }
-body[data-route-group="portal"] .citizen-context-guide-trigger { left: calc(var(--portal-sidebar-width) + 20px); }
 body[data-route-group="portal"] :is(.settings-general-grid, .settings-tab-panel) { gap: 18px; }
 body[data-route-group="portal"] .settings-general-grid { display: grid; grid-template-columns: 1fr; }
 body[data-route-group="portal"] .settings-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--tn-line); }
@@ -231,7 +238,7 @@ body[data-route-group="portal"] button:disabled { cursor: not-allowed; }
   body[data-route-group="portal"] .portal-user > div { display: none; }
   body[data-route-group="portal"] .portal-content { padding: 16px 12px 80px; }
   body[data-route-group="portal"] .toolbar-card { align-items: stretch; }
-  body[data-route-group="portal"] .citizen-context-guide-trigger { left: 12px; bottom: 86px; }
+  
 }
 body[data-route-group="portal"] .settings-account-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin: 0; }
 body[data-route-group="portal"] .settings-account-fields dt { color: var(--tn-muted); font-size: .8125rem; margin-bottom: 7px; }
@@ -242,7 +249,6 @@ body[data-route-group="portal"] .settings-account-fields .language-switcher { wi
 body[data-route-group="portal"] .portal-breadcrumb { display: flex; flex-wrap: wrap; gap: 4px; width: auto; max-width: none; overflow: visible; }
 body[data-route-group="portal"] .portal-breadcrumb > span { display: inline-flex; align-items: center; gap: 4px; max-width: none; }
 body[data-route-group="portal"] .tr87-summary article > div { display: grid; gap: 3px; }
-@media (max-width:700px) { body[data-route-group="portal"] .a11y-trigger { bottom: 86px; } }
 
 /* Grid children may shrink; wide data tables scroll within their own region. */
 body[data-route-group="portal"] .portal-content > * { min-width: 0; }
@@ -310,3 +316,34 @@ body[data-route-group="portal"] :is(.request-list-card, .cit-appt-table-card, .c
   }
 }
 
+
+/* ==========================================================================
+   Citizen visual theme is owned by pages/citizen-theme-v110.css.
+   Keep this file responsible only for shared portal geometry/layout.
+   ========================================================================== */
+
+/* V109 — citizen page content must grow; the scroll belongs to .portal-content. */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content:is(
+  .citizen-news-page,
+  .citizen-requests-page,
+  .report-page--wizard,
+  .project-page,
+  .citizen-projects-page,
+  .cit-appt-page,
+  .citizen-services-page,
+  .citizen-notifications-page,
+  .partners-page,
+  .citizen-contact-page
+) {
+  height:auto!important;
+  max-height:none!important;
+  grid-auto-rows:max-content;
+  align-content:start;
+}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content > :is(
+  .portal-card,.toolbar-card,.citizen-news-grid-v94,.project-grid--compact,.report-layout--wizard,.request-list-card
+) {
+  min-width:0;
+  height:auto;
+  max-height:none;
+}

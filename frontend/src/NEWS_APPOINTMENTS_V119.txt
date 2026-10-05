@@ -1,0 +1,24 @@
+NOVA TERRA V119 — ACTUALITÉ + RENDEZ-VOUS
+
+ACTUALITÉ / ALERTE
+- détail d'une publication recomposé pour éviter la grande zone vide;
+- image et texte équilibrés;
+- badge Alerte / Annonce / Actualité + Important;
+- zone concernée affichée quand elle existe;
+- contenu principal lisible;
+- section « Recommandations à suivre » ajoutée;
+- instructions globales affichées clairement;
+- audience_guidance affiché par public avec ses instructions;
+- source et bouton d'action affichés quand fournis par le backend;
+- ancien CSS du détail Actualité supprimé de dashboard.css pour éviter le doublon;
+- citizen-news-v94.css devient l'unique propriétaire visuel du détail citoyen.
+
+RENDEZ-VOUS
+- Agent : aucun window.prompt lors de « Confirmer »;
+- une vraie fenêtre Nova Terra s'ouvre avec le citoyen, service, date, créneau,
+  référence, motif, lieu et instructions de préparation;
+- Citizen : les annulations n'utilisent plus window.confirm;
+- une fenêtre Nova Terra récapitule le rendez-vous avant l'annulation;
+- PortalActionDialog est partagé et compatible responsive / contraste.
+
+Landing et Accessibilité ne sont pas modifiés.

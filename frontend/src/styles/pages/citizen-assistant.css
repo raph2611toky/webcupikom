@@ -1,55 +1,332 @@
-:where(body[data-route-group="portal"]) .citizen-assistant{
-  border:1px solid #e8e2ef;border-radius:16px;background:#fff;padding:14px 16px;display:grid;gap:12px;min-width:0;
-}
-:where(body[data-route-group="portal"]) .citizen-assistant__intro{display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center;min-width:0}
-:where(body[data-route-group="portal"]) .citizen-assistant__intro>span{font-size:.7rem;font-weight:900;letter-spacing:.09em;color:#6d18ee;white-space:nowrap}
-:where(body[data-route-group="portal"]) .citizen-assistant__intro>div{min-width:0}
-:where(body[data-route-group="portal"]) .citizen-assistant__intro h3{font-size:.94rem;margin:0;color:#17131e}
-:where(body[data-route-group="portal"]) .citizen-assistant__intro p{margin:2px 0 0;color:#696174;font-size:.78rem;line-height:1.45}
-:where(body[data-route-group="portal"]) .citizen-assistant__intro small{padding:5px 8px;border-radius:999px;background:#f4f1f7;color:#716a79;font-size:.67rem;font-weight:800;white-space:nowrap}
-:where(body[data-route-group="portal"]) .citizen-assistant__intro small.is-online{background:#edf9f1;color:#167441}
-:where(body[data-route-group="portal"]) .citizen-assistant__form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
-:where(body[data-route-group="portal"]) .citizen-assistant__form label{min-width:0}
-:where(body[data-route-group="portal"]) .citizen-assistant__form input{width:100%;min-height:40px;box-sizing:border-box;border:1px solid #ddd5e8;border-radius:11px;padding:0 12px;background:#fbfafc;color:#1b1720;font:inherit;font-size:.82rem;outline:none}
-:where(body[data-route-group="portal"]) .citizen-assistant__form input:focus{border-color:#9b6ad7;box-shadow:0 0 0 3px rgba(109,24,238,.09)}
-:where(body[data-route-group="portal"]) .citizen-assistant__form button,
-:where(body[data-route-group="portal"]) .citizen-assistant__result>button{min-height:40px;border:0;border-radius:11px;padding:0 13px;background:#6d18ee;color:#fff;font:inherit;font-size:.78rem;font-weight:850;cursor:pointer;display:flex;align-items:center;gap:9px;justify-content:center}
-:where(body[data-route-group="portal"]) .citizen-assistant__form button:disabled{opacity:.55;cursor:not-allowed}
-:where(body[data-route-group="portal"]) .citizen-assistant__form button i{font-style:normal;font-size:1rem}
-:where(body[data-route-group="portal"]) .citizen-assistant__result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border-top:1px solid #eee9f3;padding-top:11px}
-:where(body[data-route-group="portal"]) .citizen-assistant__result-copy{min-width:0;display:grid;gap:4px}
-:where(body[data-route-group="portal"]) .citizen-assistant__result strong{font-size:.85rem;color:#1c1722}
-:where(body[data-route-group="portal"]) .citizen-assistant__result p{margin:0;color:#645d6d;font-size:.76rem;line-height:1.45}
-:where(body[data-route-group="portal"]) .citizen-assistant__badges{display:flex;flex-wrap:wrap;gap:5px}
-:where(body[data-route-group="portal"]) .citizen-assistant__badges span{padding:3px 7px;border-radius:999px;background:#f3eff8;color:#685d75;font-size:.64rem;font-weight:850}
-:where(body[data-route-group="portal"]) .citizen-assistant__badges span.is-emergency{background:#ffedf0;color:#b82742}
-:where(body[data-route-group="portal"]) .citizen-assistant.is-emergency{border-color:#efc3cc}
-:where(body[data-route-group="portal"]) .citizen-assistant.is-emergency .citizen-assistant__result>button{background:#bd2946}
-:where(body[data-route-group="portal"]) .citizen-assistant__error{padding:8px 10px;border-radius:9px;background:#fff1f3;color:#a6223b;font-size:.76rem}
-:where(body[data-route-group="portal"]) .citizen-assistant.is-compact{padding:12px 14px}
-:where(body[data-route-group="portal"]) .citizen-assistant.is-compact .citizen-assistant__intro p{display:none}
-@media(max-width:720px){
-  :where(body[data-route-group="portal"]) .citizen-assistant__intro{grid-template-columns:1fr auto}
-  :where(body[data-route-group="portal"]) .citizen-assistant__intro>span{grid-column:1/-1}
-  :where(body[data-route-group="portal"]) .citizen-assistant__form,
-  :where(body[data-route-group="portal"]) .citizen-assistant__result{grid-template-columns:1fr}
-  :where(body[data-route-group="portal"]) .citizen-assistant__form button,
-  :where(body[data-route-group="portal"]) .citizen-assistant__result>button{width:100%}
-}
-html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-assistant{border-color:currentColor;background:Canvas;color:CanvasText}
-html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-assistant input{border:2px solid currentColor;background:Canvas;color:CanvasText}
+/* ==========================================================================
+   NOVA TERRA — CITIZEN ORIENTATION ASSISTANT V102
+   ========================================================================== */
 
-/* V94 — le fallback frontend expose les mêmes actions utiles que l'assistant backend. */
-:where(body[data-route-group="portal"]) .citizen-assistant__result-actions{display:grid;gap:8px;justify-items:end;min-width:190px}
-:where(body[data-route-group="portal"]) .citizen-assistant__result-actions>.citizen-assistant__primary-action{width:100%}
-:where(body[data-route-group="portal"]) .citizen-assistant__suggestions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
-:where(body[data-route-group="portal"]) .citizen-assistant__suggestions button{min-height:30px;padding:5px 9px;border:1px solid #e1d8eb;border-radius:999px;background:#fff;color:#5e5268;font-size:.75rem;font-weight:700;cursor:pointer}
-@media(max-width:760px){
-  :where(body[data-route-group="portal"]) .citizen-assistant__result-actions{width:100%;justify-items:stretch}
-  :where(body[data-route-group="portal"]) .citizen-assistant__suggestions{justify-content:flex-start}
+:where(body[data-route-group="portal"]) .citizen-assistant {
+  position:relative;
+  display:grid;
+  grid-template-rows:auto auto;
+  gap:10px;
+  width:100%;
+  min-width:0;
+  min-height:104px;
+  height:auto!important;
+  max-height:none!important;
+  margin:0;
+  padding:13px 15px 14px;
+  overflow:visible!important;
+  border:1px solid #d9c9eb;
+  border-radius:0;
+  background:rgba(255,255,255,.96);
+  box-shadow:0 8px 22px rgba(54,28,85,.045);
+  clip-path:polygon(8px 0,calc(100% - 12px) 0,100% 12px,100% 100%,10px 100%,0 calc(100% - 10px),0 8px);
 }
-:where(body[data-route-group="portal"]) .citizen-assistant__primary-action{
-  min-height:40px;border:0;border-radius:11px;padding:0 13px;background:#6d18ee;color:#fff;font:inherit;font-size:.78rem;font-weight:850;cursor:pointer;display:flex;align-items:center;gap:9px;justify-content:center;
+
+:where(body[data-route-group="portal"]) .citizen-assistant::before {
+  content:"";
+  position:absolute;
+  right:16px;
+  top:0;
+  width:42px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#984bff);
 }
-:where(body[data-route-group="portal"]) .citizen-assistant.is-emergency .citizen-assistant__primary-action{background:#bd2946}
-html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-assistant__primary-action{background:Highlight;color:HighlightText;border:2px solid currentColor}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__intro {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:8px 12px;
+  align-items:center;
+  min-width:0;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__intro>span {
+  color:#6d18ee;
+  font-size:.69rem;
+  font-weight:900;
+  letter-spacing:.09em;
+  white-space:nowrap;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__intro>div {
+  min-width:0;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__intro h3 {
+  margin:0;
+  color:#17131e;
+  font-size:.92rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__intro p {
+  margin:2px 0 0;
+  color:#696174;
+  font-size:.75rem;
+  line-height:1.45;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__intro small {
+  padding:5px 8px;
+  border:1px solid #e3dbe9;
+  border-radius:999px;
+  color:#716a79;
+  background:#f7f4f9;
+  font-size:.65rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__intro small.is-online {
+  border-color:#ccebd8;
+  color:#167441;
+  background:#edf9f1;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__form {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  min-height:42px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__form label {
+  min-width:0;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__form input {
+  box-sizing:border-box;
+  width:100%;
+  min-height:42px;
+  padding:0 13px;
+  border:1px solid #ddd4e7;
+  border-radius:0;
+  outline:0;
+  color:#1b1720;
+  background:#fff;
+  font:inherit;
+  font-size:.80rem;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__form input:focus {
+  border-color:#8d4be0;
+  box-shadow:0 0 0 3px rgba(109,24,238,.08);
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__form>button,
+:where(body[data-route-group="portal"]) .citizen-assistant__primary-action {
+  display:flex;
+  min-height:42px;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  padding:0 14px;
+  border:0;
+  border-radius:0;
+  color:#fff;
+  background:linear-gradient(105deg,#4e0fa5,#7119ee 62%,#9534ff);
+  font:850 .76rem/1 var(--portal-font);
+  cursor:pointer;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__form>button:disabled {
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__form button i {
+  font-size:1rem;
+  font-style:normal;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__result {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding-top:11px;
+  border-top:1px solid #eee9f3;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__result-copy {
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__result strong {
+  color:#1c1722;
+  font-size:.83rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__result p {
+  margin:0;
+  color:#645d6d;
+  font-size:.74rem;
+  line-height:1.45;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__badges {
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__badges span {
+  padding:3px 7px;
+  border-radius:999px;
+  color:#685d75;
+  background:#f3eff8;
+  font-size:.62rem;
+  font-weight:850;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__badges span.is-emergency {
+  color:#b82742;
+  background:#ffedf0;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant.is-emergency {
+  border-color:#efc3cc;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant.is-emergency .citizen-assistant__primary-action {
+  background:#bd2946;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__error {
+  padding:8px 10px;
+  color:#a6223b;
+  background:#fff1f3;
+  font-size:.74rem;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__result-actions {
+  display:grid;
+  min-width:190px;
+  gap:8px;
+  justify-items:end;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__result-actions>.citizen-assistant__primary-action {
+  width:100%;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__suggestions {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:6px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant__suggestions button {
+  min-height:30px;
+  padding:5px 9px;
+  border:1px solid #e1d8eb;
+  border-radius:999px;
+  color:#5e5268;
+  background:#fff;
+  font-size:.70rem;
+  font-weight:700;
+  cursor:pointer;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant.is-compact {
+  min-height:96px;
+  height:auto!important;
+  max-height:none!important;
+  padding:11px 13px 12px;
+  overflow:visible!important;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant.is-compact .citizen-assistant__intro {
+  min-height:26px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-assistant.is-compact .citizen-assistant__intro p {
+  display:none;
+}
+
+/* A+ / A++: never collapse the assistant into a thin bar. */
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant {
+  min-height:128px;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible;
+  padding:16px;
+}
+
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant__intro {
+  grid-template-columns:1fr auto;
+  align-items:start;
+}
+
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant__intro>span {
+  grid-column:1/-1;
+  white-space:normal;
+}
+
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant.is-compact .citizen-assistant__intro p {
+  display:block;
+}
+
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant__form,
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant__result {
+  grid-template-columns:1fr;
+}
+
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant__form>button,
+html:is([data-font-size="large"],[data-font-size="xlarge"]) :where(body[data-route-group="portal"]) .citizen-assistant__primary-action {
+  width:100%;
+}
+
+@media(max-width:720px) {
+  :where(body[data-route-group="portal"]) .citizen-assistant__intro {
+    grid-template-columns:1fr auto;
+  }
+
+  :where(body[data-route-group="portal"]) .citizen-assistant__intro>span {
+    grid-column:1/-1;
+  }
+
+  :where(body[data-route-group="portal"]) .citizen-assistant__form,
+  :where(body[data-route-group="portal"]) .citizen-assistant__result {
+    grid-template-columns:1fr;
+  }
+
+  :where(body[data-route-group="portal"]) .citizen-assistant__form>button,
+  :where(body[data-route-group="portal"]) .citizen-assistant__primary-action {
+    width:100%;
+  }
+
+  :where(body[data-route-group="portal"]) .citizen-assistant__result-actions {
+    width:100%;
+    min-width:0;
+    justify-items:stretch;
+  }
+
+  :where(body[data-route-group="portal"]) .citizen-assistant__suggestions {
+    justify-content:flex-start;
+  }
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-assistant {
+  border-color:currentColor;
+  color:CanvasText;
+  background:Canvas;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-assistant input {
+  border:2px solid currentColor;
+  color:CanvasText;
+  background:Canvas;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-assistant__primary-action {
+  border:2px solid currentColor;
+  color:HighlightText;
+  background:Highlight;
+}

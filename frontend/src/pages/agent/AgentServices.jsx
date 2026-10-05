@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalPagination from "../../components/ui/PortalPagination.jsx";
 import { ServiceAvailabilityBadge } from "../../components/ui/ServiceAvailability.jsx";
 import ServiceAvailabilityEditor from "../../components/ui/ServiceAvailabilityEditor.jsx";
 import { getServices } from "../../api/services.js";
@@ -11,6 +12,7 @@ export default function AgentServices(){
   const [editing,setEditing]=useState(null);
   const [query,setQuery]=useState("");
   const [filter,setFilter]=useState("all");
+  const [page,setPage]=useState(1);
 
   const load=()=>getServices({force:true}).then(setItems).catch(()=>setItems([]));
   useEffect(()=>{load()},[]);
@@ -23,6 +25,10 @@ export default function AgentServices(){
   }),[items,query,filter]);
 
   const down=items.filter(item=>item.isAvailable===false).length;
+  const perPage=8;
+  const totalPages=Math.max(1,Math.ceil(filtered.length/perPage));
+  const pageItems=filtered.slice((page-1)*perPage,page*perPage);
+  useEffect(()=>setPage(1),[query,filter]);
 
   return <div className="portal-layout"><AgentSidebar/><div className="portal-main">
     <PortalTopbar eyebrow="Catalogue municipal" title="Services municipaux"/>
@@ -34,12 +40,13 @@ export default function AgentServices(){
       </section>
 
       <section className="portal-card management-list service-management-list">
-        {filtered.map(item=><article key={item.slug} className={`management-row service-management-row ${item.isAvailable===false?"is-unavailable":""}`}>
+        {pageItems.map(item=><article key={item.slug} className={`management-row service-management-row ${item.isAvailable===false?"is-unavailable":""}`}>
           <div className="management-row__main"><div className="service-admin-icon">{item.icon}</div><div><span>{item.category}</span><h3>{item.name}</h3><p>{item.isAvailable===false?(item.unavailabilityReason||"Interruption connue"):item.shortDescription}</p></div></div>
           <div className="management-row__meta"><ServiceAvailabilityBadge service={item}/>{item.isAvailable===false&&item.expectedRestoreAt?<span>Retour estimé : {new Date(item.expectedRestoreAt).toLocaleString("fr-FR")}</span>:null}</div>
           <div className="management-row__actions"><button className="secondary-action" onClick={()=>setEditing(item)}>Disponibilité</button><button className="secondary-action" onClick={()=>navigate(`/agent/services/${item.slug}`)}>Consulter →</button></div>
         </article>)}
         {!filtered.length?<div className="portal-empty-centered"><p>Aucun service correspondant.</p></div>:null}
+        {filtered.length?<PortalPagination page={page} totalPages={totalPages} totalItems={filtered.length} perPage={perPage} onPageChange={setPage} itemLabel="service" itemLabelPlural="services"/>:null}
       </section>
     </main>
 

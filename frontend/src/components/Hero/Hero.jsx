@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
@@ -14,7 +14,6 @@ import { useDataMode } from "../../utils/useDataMode.js";
 import heroPhone from "../../assets/hero/hero-phone.webp";
 import hero1 from "../../assets/hero/hero-1.webp";
 
-// Keep each side coherent, but avoid repeating the same visual every second.
 const LEFT_IMAGES = [heroPhone, hero1];
 const RIGHT_IMAGES = [hero1, heroPhone];
 const IMAGE_INTERVAL_LEFT = 7200;
@@ -23,23 +22,64 @@ const EASE = [0.16, 1, 0.3, 1];
 
 const HERO_TEXT = {
   fr: {
-    nav:["Accueil","Services","Actualités","Contact"], login:"Se connecter", top:"BIENVENUE", bottom:["LA","VILLE","ÉVOLUE"],
-    subtitle1:"Accédez aux services de la ville, informez-vous, communiquez", subtitle2:"et faites remonter vos besoins depuis un même espace.",
-    discover:"Découvrir", start:"Créer mon espace", altLeft:"Habitante utilisant les services numériques de Nova Terra", altRight:"Habitante connectée aux services de Nova Terra",
+    nav: ["Accueil", "Services", "Actualités", "Contact"],
+    login: "Se connecter",
+    eyebrow: "VOTRE VILLE, DEMAIN",
+    top: "BIENVENUE",
+    bottom: ["LA", "VILLE", "ÉVOLUE"],
+    subtitle1: "Accédez aux services de la ville, informez-vous, communiquez",
+    subtitle2: "et faites remonter vos besoins depuis un même espace.",
+    discover: "Découvrir",
+    discoverCaption: "UNE VILLE À VOTRE ÉCOUTE",
+    start: "Créer mon espace",
+    leftCard: ["SERVICES", "CITOYENS", "PLUS PROCHES", "DE VOUS"],
+    rightCard: ["UNE VILLE", "PLUS HUMAINE", "PLUS CONNECTÉE", "PLUS DURABLE"],
+    altLeft: "Habitante utilisant les services numériques de Nova Terra",
+    altRight: "Habitante connectée aux services de Nova Terra",
   },
   en: {
-    nav:["Home","Services","News","Contact"], login:"Sign in", top:"WELCOME", bottom:["THE","CITY","EVOLVES"],
-    subtitle1:"Access city services, stay informed and communicate", subtitle2:"from one place while sharing the needs that matter to you.",
-    discover:"Discover", start:"Create my space", altLeft:"Resident using Nova Terra digital services", altRight:"Resident connected to Nova Terra services",
+    nav: ["Home", "Services", "News", "Contact"],
+    login: "Sign in",
+    eyebrow: "YOUR CITY, TOMORROW",
+    top: "WELCOME",
+    bottom: ["THE", "CITY", "EVOLVES"],
+    subtitle1: "Access city services, stay informed and communicate",
+    subtitle2: "from one place while sharing the needs that matter to you.",
+    discover: "Discover",
+    discoverCaption: "A CITY THAT LISTENS",
+    start: "Create my space",
+    leftCard: ["CITIZEN", "SERVICES", "CLOSER", "TO YOU"],
+    rightCard: ["A CITY", "MORE HUMAN", "MORE CONNECTED", "MORE SUSTAINABLE"],
+    altLeft: "Resident using Nova Terra digital services",
+    altRight: "Resident connected to Nova Terra services",
   },
   mg: {
-    nav:["Fandraisana","Sampan-draharaha","Vaovao","Fifandraisana"], login:"Hiditra", top:"TONGASOA", bottom:["MIVOATRA","NY","TANÀNA"],
-    subtitle1:"Midira amin'ny sampan-draharahan'ny tanàna, araho ny vaovao", subtitle2:"ary ampitao amin'ny toerana iray ihany ny filànareo.",
-    discover:"Hijery", start:"Hamorona ny habakako", altLeft:"Mponina mampiasa ny tolotra nomerika Nova Terra", altRight:"Mponina mifandray amin'ny sampan-draharaha Nova Terra",
+    nav: ["Fandraisana", "Sampan-draharaha", "Vaovao", "Fifandraisana"],
+    login: "Hiditra",
+    eyebrow: "NY TANÀNANAO, RAHAMPITSO",
+    top: "TONGASOA",
+    bottom: ["MIVOATRA", "NY", "TANÀNA"],
+    subtitle1: "Midira amin'ny sampan-draharahan'ny tanàna, araho ny vaovao",
+    subtitle2: "ary ampitao amin'ny toerana iray ihany ny filànareo.",
+    discover: "Hijery",
+    discoverCaption: "TANÀNA MIHAINO ANAO",
+    start: "Hamorona ny habakako",
+    leftCard: ["TOLOTRA", "HO AN'NY", "VAHOAKA", "AKAIKY ANAO"],
+    rightCard: ["TANÀNA", "MAHA-OLONA", "MIFANDRAY", "MAHARITRA"],
+    altLeft: "Mponina mampiasa ny tolotra nomerika Nova Terra",
+    altRight: "Mponina mifandray amin'ny sampan-draharaha Nova Terra",
   },
 };
 
-function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 5600, active = true, priority = false }) {
+function RotatingImage({
+  className,
+  images,
+  start = 0,
+  alt = "",
+  intervalMs = 5600,
+  active = true,
+  priority = false,
+}) {
   const [index, setIndex] = useState(start);
   const reduceMotion = useReducedMotion();
 
@@ -61,17 +101,9 @@ function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 56
           src={images[index]}
           alt={alt}
           draggable="false"
-          initial={
-            reduceMotion
-              ? false
-              : { opacity: 0, scale: 1.008 }
-          }
+          initial={reduceMotion ? false : { opacity: 0, scale: 1.012 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={
-            reduceMotion
-              ? undefined
-              : { opacity: 0, scale: 0.997 }
-          }
+          exit={reduceMotion ? undefined : { opacity: 0, scale: 0.996 }}
           transition={{ duration: 0.52, ease: EASE }}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
@@ -81,102 +113,6 @@ function RotatingImage({ className, images, start = 0, alt = "", intervalMs = 56
         />
       </AnimatePresence>
     </div>
-  );
-}
-
-function OrbitText({ active = true }) {
-  const id = useId().replace(/:/g, "");
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <motion.svg
-      className="kamo-orbit"
-      viewBox="0 0 230 230"
-      aria-hidden="true"
-      initial={{ rotate: -12 }}
-      animate={{ rotate: reduceMotion || !active ? -12 : 348 }}
-      whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-      transition={
-        reduceMotion || !active
-          ? { duration: 0.2 }
-          : {
-              rotate: { duration: 20, repeat: Infinity, ease: "linear" },
-              scale: { duration: 0.25, ease: "easeOut" },
-            }
-      }
-    >
-      <defs>
-        <path
-          id={id}
-          d="M115,115 m-66,0 a66,66 0 1,1 132,0 a66,66 0 1,1 -132,0"
-        />
-      </defs>
-      <text>
-        <textPath href={`#${id}`} startOffset="1%">
-          NOVA TERRA · SERVICES · CITOYENS · VILLE · NOVA TERRA ·
-        </textPath>
-      </text>
-      <circle className="dot d1" cx="49" cy="114" r="4.1" />
-      <circle className="dot d2" cx="115" cy="49" r="4.1" />
-      <circle className="dot d3" cx="181" cy="113" r="4.1" />
-    </motion.svg>
-  );
-}
-
-function Scribbles() {
-  const reduceMotion = useReducedMotion();
-  const pathAnimation = reduceMotion
-    ? { pathLength: 1, opacity: 1 }
-    : { pathLength: 1, opacity: 1 };
-
-  return (
-    <>
-      <svg
-        className="scribble scribble-left"
-        viewBox="0 0 90 120"
-        aria-hidden="true"
-      >
-        <motion.path
-          d="M72 7C59 21 48 33 37 48c-7 10-8 18-3 21 7 4 19-9 28-12 7-2 13 2 11 9-2 8-11 15-20 24"
-          initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
-          animate={pathAnimation}
-          transition={{ duration: 1.05, delay: reduceMotion ? 0 : 3.50, ease: "easeInOut" }}
-        />
-      </svg>
-
-      <svg
-        className="scribble scribble-right"
-        viewBox="0 0 110 110"
-        aria-hidden="true"
-      >
-        <motion.path
-          d="M29 8c-5 25-5 39 3 38 8-1 12-29 19-29 10 0 5 36 12 46 8 10 23-10 32-24"
-          initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
-          animate={pathAnimation}
-          transition={{ duration: 1.0, delay: reduceMotion ? 0 : 3.56, ease: "easeInOut" }}
-        />
-      </svg>
-    </>
-  );
-}
-
-function Sparkles({ active = true }) {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <motion.span
-      className="demo-sparkles"
-      aria-hidden="true"
-      animate={
-        reduceMotion || !active
-          ? { rotate: 0, scale: 1 }
-          : { rotate: [0, 8, -4, 0], scale: [1, 1.08, 1, 1] }
-      }
-      transition={{ duration: active && !reduceMotion ? 2.6 : 0.2, repeat: active && !reduceMotion ? Infinity : 0, repeatDelay: 0.7 }}
-    >
-      <span className="spark spark-big">✦</span>
-      <span className="spark spark-small">✦</span>
-    </motion.span>
   );
 }
 
@@ -201,6 +137,64 @@ function AnimatedWords({ words, delay = 0 }) {
   ));
 }
 
+function TechFrame() {
+  return (
+    <svg
+      className="hero-tech"
+      viewBox="0 0 1672 941"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="hero-tech-purple" x1="0" x2="1">
+          <stop offset="0" stopColor="#6813ff" stopOpacity="0" />
+          <stop offset="0.32" stopColor="#6813ff" stopOpacity=".75" />
+          <stop offset="0.7" stopColor="#b05cff" stopOpacity=".76" />
+          <stop offset="1" stopColor="#6813ff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      <path className="hero-tech__line hero-tech__line--soft" d="M0 22 H195 L230 10 H598 L632 42 H706" />
+      <path className="hero-tech__line hero-tech__line--soft" d="M990 42 H1096 L1131 12 H1444 L1482 44 H1672" />
+      <path className="hero-tech__line" d="M0 120 H575 L613 84" />
+      <path className="hero-tech__line" d="M1090 84 L1126 120 H1672" />
+      <path className="hero-tech__line hero-tech__line--soft" d="M0 740 H464 L500 780 H1040 L1078 740 H1672" />
+      <path className="hero-tech__line hero-tech__line--soft" d="M0 898 H456 L492 926 H1170 L1206 898 H1672" />
+
+      <path
+        className="hero-tech__line hero-tech__line--glow"
+        d="M200 735 C320 606 490 725 638 638 C804 541 1005 663 1200 558 C1320 494 1425 444 1584 430"
+      />
+
+      <circle className="hero-tech__dot" cx="506" cy="184" r="3.2" />
+      <circle className="hero-tech__dot" cx="1028" cy="178" r="3.2" />
+      <circle className="hero-tech__dot" cx="1382" cy="348" r="3.2" />
+
+      <g className="hero-tech__microdots">
+        <circle cx="190" cy="300" r="2" />
+        <circle cx="205" cy="300" r="2" />
+        <circle cx="220" cy="300" r="2" />
+        <circle cx="235" cy="300" r="2" />
+        <circle cx="190" cy="315" r="2" />
+        <circle cx="205" cy="315" r="2" />
+        <circle cx="220" cy="315" r="2" />
+        <circle cx="235" cy="315" r="2" />
+      </g>
+    </svg>
+  );
+}
+
+function InfoCard({ className, lines }) {
+  return (
+    <div className={`hero-info-card ${className}`} aria-hidden="true">
+      {lines.map((line) => (
+        <span key={line}>{line}</span>
+      ))}
+      <i />
+    </div>
+  );
+}
+
 export default function Hero() {
   const reduceMotion = useReducedMotion();
   const dataProfile = useDataMode();
@@ -209,12 +203,16 @@ export default function Hero() {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { amount: 0.2, initial: true });
   const richMotionActive = heroInView && !dataProfile.reduced;
+
   return (
     <main ref={heroRef} className="kamo-hero">
+      <TechFrame />
+
       <div className="kamo-hero__glow kamo-hero__glow--tl" />
       <div className="kamo-hero__glow kamo-hero__glow--right" />
       <div className="kamo-hero__glow kamo-hero__glow--br" />
 
+      {/* Existing opening animation is preserved. */}
       <CoreEffect active={richMotionActive} />
 
       <motion.header
@@ -224,7 +222,7 @@ export default function Hero() {
         transition={{ duration: 0.75, delay: 0.08, ease: EASE }}
       >
         <nav className="kamo-nav" aria-label="Navigation principale">
-          <a href="#home">{copy.nav[0]}</a>
+          <a className="is-active" href="#home">{copy.nav[0]}</a>
           <a href="/services">{copy.nav[1]}</a>
           <a href="/news">{copy.nav[2]}</a>
           <a href="/contact">{copy.nav[3]}</a>
@@ -235,62 +233,78 @@ export default function Hero() {
         </a>
 
         <a className="kamo-login" href="/login">
-          {copy.login}
+          <span>{copy.login}</span>
+          <i aria-hidden="true">↗</i>
         </a>
 
         <LanguageSwitcher className="hero-language-switcher" compact />
       </motion.header>
 
-      {!dataProfile.reduced ? <>
-        <motion.div
-          className="hero-photo-motion hero-photo-motion--left"
-          initial={reduceMotion ? false : { opacity: 0, x: -45 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.95, delay: reduceMotion ? 0 : 3.42, ease: EASE }}
-        >
-          <RotatingImage
-            className="hero-photo hero-photo--left"
-            images={LEFT_IMAGES}
-            start={0}
-            alt={copy.altLeft}
-            intervalMs={IMAGE_INTERVAL_LEFT}
-            active={richMotionActive}
-            priority
-          />
-        </motion.div>
+      {!dataProfile.reduced ? (
+        <>
+          <InfoCard className="hero-info-card--left" lines={copy.leftCard} />
+          <InfoCard className="hero-info-card--right" lines={copy.rightCard} />
 
-        <motion.div
-          className="hero-top-right-motion"
-          initial={reduceMotion ? false : { opacity: 0, x: 45, y: -20 }}
-          animate={{ opacity: 1, x: 0, y: 0 }}
-          transition={{ duration: 1.0, delay: reduceMotion ? 0 : 3.58, ease: EASE }}
-        >
-          <div className="hero-top-right" aria-hidden="true">
-            <OrbitText active={richMotionActive} />
+          <motion.div
+            className="hero-photo-shell hero-photo-shell--left"
+            initial={reduceMotion ? false : { opacity: 0, x: -48 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.95, delay: reduceMotion ? 0 : 3.42, ease: EASE }}
+          >
+            <div className="hero-photo-shell__backdrop" aria-hidden="true" />
             <RotatingImage
-              className="hero-photo hero-photo--right"
+              className="hero-photo"
+              images={LEFT_IMAGES}
+              start={0}
+              alt={copy.altLeft}
+              intervalMs={IMAGE_INTERVAL_LEFT}
+              active={richMotionActive}
+              priority
+            />
+            <span className="hero-photo-number" aria-hidden="true">01</span>
+          </motion.div>
+
+          <motion.div
+            className="hero-photo-shell hero-photo-shell--right"
+            initial={reduceMotion ? false : { opacity: 0, x: 48, y: -18 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 1, delay: reduceMotion ? 0 : 3.58, ease: EASE }}
+          >
+            <div className="hero-photo-shell__backdrop" aria-hidden="true" />
+            <RotatingImage
+              className="hero-photo"
               images={RIGHT_IMAGES}
               start={0}
               alt={copy.altRight}
               intervalMs={IMAGE_INTERVAL_RIGHT}
               active={richMotionActive}
             />
-          </div>
-        </motion.div>
-
-        <Scribbles />
-      </> : <div className="hero-low-data-note" role="status">Mode léger : visuels décoratifs différés.</div>}
+            <span className="hero-photo-number" aria-hidden="true">02</span>
+          </motion.div>
+        </>
+      ) : (
+        <div className="hero-low-data-note" role="status">
+          Mode léger : visuels décoratifs différés.
+        </div>
+      )}
 
       <section className="hero-copy" id="home" aria-labelledby="hero-title">
+        <motion.div
+          className="hero-eyebrow"
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: reduceMotion ? 0 : 2.72, ease: EASE }}
+        >
+          <i />
+          <span>{copy.eyebrow}</span>
+          <i />
+        </motion.div>
+
         <h1 className="hero-title" id="hero-title">
-          <span className="hero-title__mask hero-title__mask--top">
+          <span className="hero-title__mask">
             <motion.span
               className="hero-title__line-motion"
-              initial={
-                reduceMotion
-                  ? false
-                  : { y: "-135%", opacity: 0, scale: 0.97 }
-              }
+              initial={reduceMotion ? false : { y: "-135%", opacity: 0, scale: 0.97 }}
               animate={{ y: "0%", opacity: 1, scale: 1 }}
               transition={{ duration: 0.82, delay: reduceMotion ? 0 : 2.86, ease: EASE }}
             >
@@ -303,22 +317,16 @@ export default function Hero() {
             initial={
               reduceMotion
                 ? false
-                : {
-                    clipPath: "inset(0 50% 0 50%)",
-                    opacity: 0,
-                    scale: 0.92,
-                  }
+                : { opacity: 0, scaleX: 0.12, scaleY: 0.92 }
             }
-            animate={{
-              clipPath: "inset(0 0% 0 0%)",
-              opacity: 1,
-              scale: 1,
-            }}
+            animate={{ opacity: 1, scaleX: 1, scaleY: 1 }}
             transition={{ duration: 0.72, delay: reduceMotion ? 0 : 2.94, ease: EASE }}
           >
+            <span className="hero-title__band-tech" aria-hidden="true" />
             <span className="hero-title__band-text">
               <AnimatedWords words={["NOVA", "TERRA"]} delay={reduceMotion ? 0 : 3.10} />
             </span>
+            <span className="hero-title__band-id" aria-hidden="true">01</span>
           </motion.span>
 
           <span className="hero-title__mask hero-title__mask--bottom">
@@ -340,59 +348,36 @@ export default function Hero() {
         </motion.p>
       </section>
 
-      <svg
-        className="hero-wave"
-        viewBox="0 0 1672 941"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <defs>
-          <mask id="hero-wave-copy-safe-zone">
-            <rect width="1672" height="941" fill="white" />
-            <rect x="505" y="260" width="665" height="430" rx="150" fill="black" />
-          </mask>
-        </defs>
-        <motion.path
-          mask="url(#hero-wave-copy-safe-zone)"
-          d="M-14 716 C 78 659, 132 637, 179 670 C 216 696, 236 791, 303 791 C 355 791, 397 698, 450 704 C 502 710, 511 757, 555 751 C 620 742, 650 692, 735 700 C 850 710, 932 746, 1040 735 C 1190 720, 1325 674, 1429 647 C 1527 621, 1608 582, 1691 540"
-          initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 1.8, delay: reduceMotion ? 0 : 3.28, ease: "easeInOut" }}
-        />
-      </svg>
-
       <motion.a
         className="demo-link"
         href="#fonctionnalites"
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.65, delay: reduceMotion ? 0 : 3.82, ease: EASE }}
-        whileHover={reduceMotion ? undefined : { x: 4, scale: 1.025 }}
+        whileHover={reduceMotion ? undefined : { x: 3 }}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
       >
-        <span>{copy.discover}</span>
-        <Sparkles active={richMotionActive} />
+        <small>01</small>
+        <span className="demo-link__main">
+          <b>{copy.discover}</b>
+          <i aria-hidden="true">→</i>
+        </span>
+        <em>{copy.discoverCaption}</em>
       </motion.a>
 
       <motion.a
         className="start-button"
         href="/inscription"
-        initial={reduceMotion ? false : { opacity: 0, y: 18, rotate: -2.55 }}
-        animate={{ opacity: 1, y: 0, rotate: -2.55 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: reduceMotion ? 0 : 3.75, ease: EASE }}
-        whileHover={
-          reduceMotion
-            ? undefined
-            : {
-                scale: 1.04,
-                rotate: -1.5,
-                boxShadow: "0 30px 42px rgba(102, 0, 252, 0.32)",
-              }
-        }
-        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+        whileHover={reduceMotion ? undefined : { y: -3, scale: 1.015 }}
+        whileTap={reduceMotion ? undefined : { scale: 0.985 }}
       >
-        {copy.start}
+        <span>{copy.start}</span>
+        <i aria-hidden="true">→</i>
       </motion.a>
+
     </main>
   );
 }

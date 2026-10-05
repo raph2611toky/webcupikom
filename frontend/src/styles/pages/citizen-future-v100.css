@@ -1,0 +1,638 @@
+/* ==========================================================================
+   NOVA TERRA — Citizen UI theme V100
+   Shared visual language for every authenticated citizen page.
+   It changes presentation only; existing page layouts and API behavior remain.
+   ========================================================================== */
+
+body[data-route-group="portal"] {
+  --cit-purple:#6f1cf1;
+  --cit-purple-2:#973cff;
+  --cit-purple-soft:#f0e6ff;
+  --cit-line:#ddd3e8;
+  --cit-card:#fff;
+  --cit-ink:#100b18;
+  --cit-muted:#6e6678;
+}
+
+/* Citizen app background */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main {
+  position:relative;
+  background:
+    radial-gradient(circle at 86% 7%,rgba(116,36,255,.06),transparent 24%),
+    linear-gradient(180deg,#fbfaff,#f6f4fb 100%);
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  opacity:.16;
+  background:
+    linear-gradient(90deg,transparent 0 18%,rgba(116,36,255,.17) 18% 18.08%,transparent 18.08% 100%) top/100% 125px no-repeat,
+    radial-gradient(circle,#8141e8 0 1px,transparent 1.2px) right 34px top 126px/9px 9px no-repeat;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main > * {
+  position:relative;
+  z-index:1;
+}
+
+/* Topbar — single line, technical controls, no horizontal drift */
+body[data-route-group="portal"] .portal-topbar--citizen {
+  display:grid;
+  grid-template-columns:minmax(240px,.82fr) minmax(0,1.78fr);
+  align-items:center;
+  gap:12px;
+  min-height:88px;
+  height:auto;
+  padding:12px 20px 11px 28px;
+  overflow:visible;
+  border-bottom:1px solid #e5dcf0;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 7px 24px rgba(47,23,76,.035);
+  backdrop-filter:blur(16px);
+}
+
+body[data-route-group="portal"] .portal-main {
+  overflow-x:hidden;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen::after {
+  content:"";
+  position:absolute;
+  right:3%;
+  bottom:0;
+  width:34%;
+  height:1px;
+  background:linear-gradient(90deg,transparent,#9d59f3,transparent);
+  opacity:.55;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__title {
+  min-width:0;
+  max-width:100%;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__eyebrow {
+  color:#7322e9;
+  font-size:.68rem;
+  font-weight:900;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen h1 {
+  margin:2px 0 0;
+  overflow:hidden;
+  color:#0d0914;
+  font-size:clamp(1.22rem,1.55vw,1.5rem);
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.055em;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__subtitle {
+  margin:5px 0 0;
+  overflow:hidden;
+  color:#70677a;
+  font-size:.70rem;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__right {
+  display:flex;
+  min-width:0;
+  width:100%;
+  flex-wrap:nowrap!important;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__actions {
+  display:flex;
+  min-width:0;
+  flex:0 1 auto;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:6px;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen :is(
+  .topbar-ghost,
+  .topbar-cta,
+  .topbar-icon-button,
+  .portal-topbar__icon,
+  .portal-voice-trigger
+) {
+  position:relative;
+  flex:0 0 auto;
+  min-height:42px;
+  height:42px;
+  border-radius:0;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen :is(
+  .topbar-ghost,
+  .topbar-icon-button,
+  .portal-topbar__icon,
+  .portal-voice-trigger
+) {
+  border:1px solid #d9d0e4;
+  color:#21182c;
+  background:#fff;
+  box-shadow:0 5px 14px rgba(43,22,67,.035);
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen :is(
+  .topbar-ghost,
+  .topbar-icon-button,
+  .portal-topbar__icon,
+  .portal-voice-trigger
+)::before {
+  content:"";
+  position:absolute;
+  right:8px;
+  top:0;
+  width:26px;
+  height:2px;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,#963cff);
+  opacity:.55;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .topbar-ghost,
+body[data-route-group="portal"] .portal-topbar--citizen .portal-voice-trigger {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  padding:0 11px;
+  white-space:nowrap;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .topbar-cta {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  padding:0 13px;
+  border:1px solid #7623ee;
+  color:#fff;
+  background:linear-gradient(105deg,#5110a6,#7119ee 62%,#9734ff);
+  box-shadow:0 9px 20px rgba(102,19,235,.20);
+  white-space:nowrap;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .topbar-icon-button,
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__icon {
+  display:grid;
+  width:42px;
+  min-width:42px;
+  padding:0;
+  place-items:center;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-ghost,.topbar-cta,.topbar-icon-button)>span:first-child {
+  display:inline-grid;
+  min-width:14px;
+  place-items:center;
+  font-weight:900;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__icon svg {
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-alert-shortcut {
+  color:#a86700;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-notification-bell {
+  color:#35263f;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__icon>b {
+  position:absolute;
+  right:-4px;
+  top:-7px;
+  display:grid;
+  min-width:18px;
+  height:18px;
+  padding:0 4px;
+  place-items:center;
+  border:2px solid #fff;
+  border-radius:999px;
+  color:#fff;
+  background:#7b24ef;
+  font-size:.60rem;
+  font-weight:900;
+  line-height:1;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-alert-shortcut>b {
+  background:#e69200;
+}
+
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user {
+  position:relative;
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr) 14px;
+  min-width:146px;
+  max-width:190px;
+  flex:0 1 190px;
+  align-items:center;
+  gap:7px;
+  padding:2px 0;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user__avatar {
+  display:grid;
+  width:38px;
+  height:38px;
+  place-items:center;
+  border-radius:50%;
+  color:#fff;
+  background:linear-gradient(145deg,#6c1de3,#9b43ff);
+  box-shadow:0 7px 18px rgba(104,26,225,.17);
+  font-size:.72rem;
+  font-weight:850;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div {
+  min-width:0;
+  display:grid;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user strong {
+  overflow:hidden;
+  color:#161020;
+  font-size:.71rem;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div>span {
+  color:#776f82;
+  font-size:.66rem;
+}
+
+body[data-route-group="portal"] .portal-user__chevron {
+  color:#3f344b!important;
+  font-size:.82rem!important;
+  text-align:center;
+}
+
+/* Keep the full citizen topbar on one line by progressively compacting labels. */
+@media(max-width:1420px) {
+  body[data-route-group="portal"] .portal-topbar--citizen {
+    grid-template-columns:minmax(220px,.72fr) minmax(0,1.85fr);
+    padding-inline:22px 16px;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen :is(.topbar-ghost,.topbar-cta,.portal-voice-trigger) {
+    padding-inline:9px;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .portal-user {
+    min-width:126px;
+    max-width:158px;
+    flex-basis:158px;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div>span {
+    display:none;
+  }
+}
+
+@media(max-width:1240px) {
+  body[data-route-group="portal"] .portal-topbar--citizen {
+    grid-template-columns:minmax(190px,.62fr) minmax(0,2fr);
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .topbar-ghost .topbar-action__label,
+  body[data-route-group="portal"] .portal-topbar--citizen .portal-voice-trigger b {
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    padding:0!important;
+    margin:-1px!important;
+    overflow:hidden!important;
+    clip:rect(0,0,0,0)!important;
+    white-space:nowrap!important;
+    border:0!important;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .topbar-ghost,
+  body[data-route-group="portal"] .portal-topbar--citizen .portal-voice-trigger {
+    width:42px;
+    padding:0;
+  }
+}
+
+@media(max-width:1050px) {
+  body[data-route-group="portal"] .portal-topbar--citizen {
+    grid-template-columns:minmax(170px,.52fr) minmax(0,2fr);
+    gap:8px;
+    padding-inline:16px 12px;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .portal-user {
+    min-width:38px;
+    max-width:38px;
+    flex-basis:38px;
+    grid-template-columns:38px;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div,
+  body[data-route-group="portal"] .portal-topbar--citizen .portal-user__chevron {
+    display:none;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .topbar-cta .topbar-action__label {
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    padding:0!important;
+    margin:-1px!important;
+    overflow:hidden!important;
+    clip:rect(0,0,0,0)!important;
+    white-space:nowrap!important;
+    border:0!important;
+  }
+
+  body[data-route-group="portal"] .portal-topbar--citizen .topbar-cta {
+    width:42px;
+    padding:0;
+  }
+}
+
+/* A+ / A++: preserve readable content but never overlap the topbar. */
+html[data-font-size="large"] body[data-route-group="portal"] .portal-topbar--citizen,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen {
+  grid-template-columns:minmax(235px,.72fr) minmax(0,1.9fr);
+  min-height:104px;
+  padding-block:14px;
+}
+
+html[data-font-size="large"] body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__subtitle,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__subtitle {
+  max-width:100%;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:normal;
+}
+
+html[data-font-size="large"] body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__right,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen .portal-topbar__right {
+  flex-wrap:nowrap!important;
+}
+
+html[data-font-size="large"] body[data-route-group="portal"] .portal-topbar--citizen .topbar-ghost .topbar-action__label,
+html[data-font-size="large"] body[data-route-group="portal"] .portal-topbar--citizen .portal-voice-trigger b,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen .topbar-ghost .topbar-action__label,
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen .portal-voice-trigger b {
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  padding:0!important;
+  margin:-1px!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  border:0!important;
+}
+
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen .portal-user>div {
+  display:none;
+}
+
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen .portal-user {
+  min-width:38px;
+  max-width:38px;
+  flex-basis:38px;
+  grid-template-columns:38px;
+}
+
+html[data-font-size="xlarge"] body[data-route-group="portal"] .portal-topbar--citizen .portal-user__chevron {
+  display:none;
+}
+
+/* Every citizen content page */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content {
+  position:relative;
+  max-width:1640px;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content > * {
+  animation:citizenPageEnter .42s cubic-bezier(.16,1,.3,1) both;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content > *:nth-child(2) {animation-delay:.045s}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content > *:nth-child(3) {animation-delay:.08s}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content > *:nth-child(4) {animation-delay:.115s}
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content > *:nth-child(5) {animation-delay:.15s}
+
+/* Shared cards */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.portal-card,.toolbar-card,.requests-intro-card,.request-list-card,.notification-category-card,.notification-detail-panel,.cit-appt-panel,.settings-tab-panel,.delete-account-form-card,.request-soft-panel,.project-receipt,.appointment-preparation-docs) {
+  position:relative;
+  overflow:hidden;
+  border:1px solid #ddd4e7;
+  border-radius:0;
+  background:rgba(255,255,255,.95);
+  box-shadow:0 8px 24px rgba(43,22,65,.045);
+  clip-path:polygon(9px 0,calc(100% - 12px) 0,100% 12px,100% 100%,10px 100%,0 calc(100% - 10px),0 9px);
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.portal-card,.toolbar-card,.requests-intro-card,.request-list-card,.notification-category-card,.notification-detail-panel,.cit-appt-panel,.settings-tab-panel)::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  right:11px;
+  top:0;
+  width:42px;
+  height:2px;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,#9c53f5);
+  opacity:.68;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.portal-card,.toolbar-card,.requests-intro-card,.request-list-card,.notification-category-card,.notification-detail-panel,.cit-appt-panel,.settings-tab-panel)>* {
+  position:relative;
+  z-index:1;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.portal-card,.toolbar-card,.management-row,.notification-main,.citizen-news-card,.citizen-service-card,.project-card,.cit-appt-panel) {
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.portal-card,.management-row,.notification-main,.citizen-news-card,.citizen-service-card,.project-card):hover {
+  border-color:#c5abe5;
+  box-shadow:0 11px 28px rgba(74,34,116,.07);
+}
+
+/* Typography */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(h2,h3,h4) {
+  color:#100b18;
+  letter-spacing:-.035em;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.section-label,.panel-kicker) {
+  color:#6f22df;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .detail-copy {
+  color:#706879;
+}
+
+/* Actions */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.primary-action,.secondary-action,.text-action,.danger-action,.accessible-table__action) {
+  border-radius:0;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .primary-action {
+  border:0;
+  color:#fff;
+  background:linear-gradient(105deg,#4d0f9e,#7119ee 62%,#9635ff);
+  box-shadow:0 8px 18px rgba(102,24,225,.15);
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .secondary-action {
+  border:1px solid #d8cde3;
+  color:#2b2133;
+  background:#fff;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.primary-action,.secondary-action,.text-action,.accessible-table__action):hover {
+  transform:translateY(-1px);
+}
+
+/* Form controls */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  border-radius:0;
+  border-color:#ddd4e7;
+  background:
+    linear-gradient(90deg,rgba(104,19,255,.08),transparent 72%) bottom right/42px 1px no-repeat,
+    #fff;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea):focus {
+  outline:0;
+  border-color:#8c4ae1;
+  box-shadow:0 0 0 3px rgba(111,29,238,.075);
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-search {
+  border-radius:0;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+/* Tables and lists */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.accessible-table-wrap,.portal-table) {
+  overflow:hidden;
+  border:1px solid #e0d8e8;
+  border-radius:0;
+  background:#fff;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.accessible-table th,.portal-table__head) {
+  color:#665b72;
+  background:#f8f5fb;
+  font-weight:850;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.accessible-table tbody tr,.portal-table__row,.management-row,.notification-main) {
+  border-color:#eee8f3;
+}
+
+/* Status pills */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .status-pill {
+  border-radius:999px;
+  font-weight:800;
+}
+
+/* Modals */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.portal-modal,.request-studio,.project-modal,.compact-note-modal) {
+  border-radius:0;
+  border:1px solid #cdb5eb;
+  box-shadow:0 24px 70px rgba(29,11,50,.20);
+  clip-path:polygon(14px 0,calc(100% - 18px) 0,100% 18px,100% calc(100% - 14px),calc(100% - 14px) 100%,12px 100%,0 calc(100% - 12px),0 14px);
+}
+
+/* Settings tabs */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .settings-tabs {
+  gap:6px;
+  border-bottom:1px solid #e2d9ea;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .settings-tabs button {
+  position:relative;
+  border-radius:0;
+}
+
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .settings-tabs button.is-active {
+  color:#6e1ceb;
+  border-bottom-color:#6e1ceb;
+}
+
+/* Empty / loading states */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.loading-card,.error-card,.dashboard-empty,.empty-inline,.svc84-empty,.cit-appt-empty,.notification-empty-state) {
+  border-radius:0;
+  border-color:#dfd6e8;
+  background:rgba(255,255,255,.92);
+}
+
+/* Scrollbar */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content {
+  scrollbar-width:thin;
+  scrollbar-color:#b69bd8 transparent;
+}
+
+/* Focus */
+body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(button,a,input,select,textarea):focus-visible {
+  outline:3px solid #7d2df1;
+  outline-offset:2px;
+}
+
+@keyframes citizenPageEnter {
+  from {opacity:0;transform:translateY(10px)}
+  to {opacity:1;transform:translateY(0)}
+}
+
+}
+
+@media(prefers-reduced-motion:reduce) {
+  body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main .portal-content > * {animation:none!important}
+  body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main * {transition:none!important}
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main {
+  background:#000!important;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .portal-sidebar--citizen ~ .portal-main :is(.portal-card,.toolbar-card,.portal-modal,.request-studio,.project-modal) {
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+  box-shadow:none!important;
+}

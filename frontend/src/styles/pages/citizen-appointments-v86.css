@@ -21,7 +21,7 @@
   grid-template-columns:auto 1fr auto;
   gap:1rem;
   align-items:center;
-  border-radius:1.65rem;
+  border-radius:0;
   padding:1rem 1.25rem;
   background:linear-gradient(180deg,#f4efff 0%,#efe8ff 100%);
   box-shadow:0 14px 34px rgba(112,68,198,.08);
@@ -31,7 +31,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-side-visual{
   width:58px;
   height:58px;
-  border-radius:1.25rem;
+  border-radius:0;
   display:grid;
   place-items:center;
   background:linear-gradient(180deg,#ffffff,#efe6ff);
@@ -53,7 +53,7 @@
 
 :where(body[data-route-group="portal"]) .cit-appt-hero-visual{
   min-height:96px;
-  border-radius:1.65rem;
+  border-radius:0;
   position:relative;
   overflow:hidden;
   background:linear-gradient(180deg,#f4edff 0%,#eee7fb 100%);
@@ -92,7 +92,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-primary{
   height:52px;
   padding:0 1.35rem;
-  border-radius:1rem;
+  border-radius:0;
   color:#fff;
   font-weight:700;
   background:linear-gradient(90deg,#6d1dff,#7a2fff);
@@ -107,7 +107,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-secondary{
   height:52px;
   padding:0 1.15rem;
-  border-radius:1rem;
+  border-radius:0;
   color:#373152;
   font-weight:700;
   background:#fff;
@@ -120,7 +120,7 @@
   justify-content:space-between;
   gap:1rem;
   padding:1rem 1.1rem;
-  border-radius:1.5rem;
+  border-radius:0;
 }
 
 :where(body[data-route-group="portal"]) .cit-appt-filter-tabs{
@@ -135,7 +135,7 @@
   cursor:pointer;
   min-height:40px;
   padding:0 .9rem;
-  border-radius:1rem;
+  border-radius:0;
   background:#fff;
   box-shadow:inset 0 0 0 1px #e8e2f1;
   color:#5e5876;
@@ -175,7 +175,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-search-field,
 :where(body[data-route-group="portal"]) .cit-appt-date-filter{
   min-height:38px;
-  border-radius:1rem;
+  border-radius:0;
   background:#fbf9fe;
   box-shadow:inset 0 0 0 1px #e8e2f1;
   display:flex;
@@ -202,7 +202,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-calendar-card,
 :where(body[data-route-group="portal"]) .cit-appt-booking-main,
 :where(body[data-route-group="portal"]) .cit-appt-booking-side{
-  border-radius:1.55rem;
+  border-radius:0;
   box-shadow:0 12px 32px rgba(49,35,94,.06);
 }
 
@@ -271,7 +271,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-service-chip i{
   width:2.3rem;
   height:2.3rem;
-  border-radius:.8rem;
+  border-radius:0;
   display:block;
   background:#ece8f8;
 }
@@ -306,7 +306,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-view-btn{
   min-height:38px;
   padding:0 .9rem;
-  border-radius:.95rem;
+  border-radius:0;
   background:#fff;
   box-shadow:inset 0 0 0 1px #dfdaec;
   color:#1d1933;
@@ -317,7 +317,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-menu-btn{
   width:38px;
   height:38px;
-  border-radius:.95rem;
+  border-radius:0;
   background:#fff;
   box-shadow:inset 0 0 0 1px #dfdaec;
   color:#393451;
@@ -353,7 +353,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-pagination b{
   width:2.2rem;
   height:2.2rem;
-  border-radius:.8rem;
+  border-radius:0;
   display:grid;
   place-items:center;
 }
@@ -424,7 +424,7 @@
   height:2.3rem;
   border:0;
   cursor:pointer;
-  border-radius:.85rem;
+  border-radius:0;
   color:#332d4d;
   background:#fff;
   box-shadow:inset 0 0 0 1px #e5e0ef;
@@ -455,7 +455,7 @@
 
 :where(body[data-route-group="portal"]) .cit-appt-calendar-day{
   min-height:2.5rem;
-  border-radius:.85rem;
+  border-radius:0;
   display:grid;
   place-items:center;
   background:#f7f3fd;
@@ -538,7 +538,7 @@
   align-items:center;
   min-height:3rem;
   padding:0 .95rem;
-  border-radius:1rem;
+  border-radius:0;
   background:#fff;
   box-shadow:inset 0 0 0 1px #e4dff0;
 }
@@ -546,7 +546,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-input-wrap i{
   width:2.2rem;
   height:2.2rem;
-  border-radius:.85rem;
+  border-radius:0;
   background:#f1e8ff;
   position:relative;
 }
@@ -557,7 +557,7 @@
   content:"";
   position:absolute;
   inset:.55rem;
-  border-radius:.35rem;
+  border-radius:0;
   background:#7a34ff;
   opacity:.82;
 }
@@ -618,7 +618,7 @@
   align-items:center;
   gap:.75rem;
   padding:0 .9rem;
-  border-radius:1rem;
+  border-radius:0;
   background:#eef4ff;
   color:#2156a8;
   margin-bottom:1rem;
@@ -633,7 +633,7 @@
 
 :where(body[data-route-group="portal"]) .cit-appt-slot-grid button{
   min-height:4rem;
-  border-radius:1rem;
+  border-radius:0;
   border:0;
   background:#fff;
   box-shadow:inset 0 0 0 1px #e5dff0;
@@ -680,7 +680,7 @@
 :where(body[data-route-group="portal"]) .cit-appt-summary-list > div{display:grid;gap:.2rem;padding-bottom:.9rem;border-bottom:1px solid #eee8f6}
 
 :where(body[data-route-group="portal"]) .cit-appt-note-box{
-  border-radius:1rem;
+  border-radius:0;
   padding:1rem;
   color:#2854aa;
   background:#eef4ff;
@@ -688,12 +688,12 @@
 }
 
 :where(body[data-route-group="portal"]) .appointment-confirmation-backdrop{position:fixed;inset:0;background:rgba(18,14,35,.46);display:grid;place-items:center;padding:1rem;z-index:50}
-:where(body[data-route-group="portal"]) .appointment-confirmation-dialog{width:min(720px,100%);border-radius:1.5rem;background:#fff;padding:1.5rem;box-shadow:0 28px 60px rgba(21,15,41,.24)}
+:where(body[data-route-group="portal"]) .appointment-confirmation-dialog{width:min(720px,100%);border-radius:0;background:#fff;padding:1.5rem;box-shadow:0 28px 60px rgba(21,15,41,.24)}
 :where(body[data-route-group="portal"]) .appointment-confirmation-check{width:3.5rem;height:3.5rem;border-radius:999px;display:grid;place-items:center;background:#ecfff4;color:#1ca861;font-size:1.5rem;margin-bottom:.7rem}
 :where(body[data-route-group="portal"]) .appointment-confirmation-dialog h2{margin:.25rem 0 .35rem;color:#111228}
 :where(body[data-route-group="portal"]) .appointment-confirmation-dialog p{margin:0 0 1rem;color:#706987}
 :where(body[data-route-group="portal"]) .appointment-confirmation-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem 1rem;margin:1rem 0}
-:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div{padding:.85rem 1rem;border-radius:1rem;background:#f8f5fd;display:grid;gap:.22rem}
+:where(body[data-route-group="portal"]) .appointment-confirmation-facts > div{padding:.85rem 1rem;border-radius:0;background:#f8f5fd;display:grid;gap:.22rem}
 :where(body[data-route-group="portal"]) .appointment-confirmation-facts span{color:#655f77;font-size:.9rem}
 :where(body[data-route-group="portal"]) .appointment-confirmation-facts b{color:#12142d}
 :where(body[data-route-group="portal"]) .appointment-confirmation-actions{display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap}

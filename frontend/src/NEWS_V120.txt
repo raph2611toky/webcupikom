@@ -1,0 +1,23 @@
+NOVA TERRA V120 — ACTUALITÉS / ALERTES
+
+Pourquoi V119 semblait ne rien changer:
+- citizen-news-v94.css était chargé AVANT citizen-theme-v110.css;
+- le thème citoyen global reprenait certaines règles ensuite;
+- surtout, la recommandation était placée sous le grand hero: sur un écran 16:9
+  elle était souvent sous la ligne de flottaison et donc invisible sur la capture.
+
+V120:
+- citizen-news-v120.css est le SEUL propriétaire CSS Actualités.
+- sélecteurs plus spécifiques: la grille ne peut plus redevenir une liste compacte.
+- les publications reviennent en vraies cards avec grande image + contenu.
+- la recommandation est DANS la partie droite de la fiche, immédiatement sous le texte.
+- pour une alerte elle est toujours visible.
+- si aucune consigne n'existe réellement dans l'API, le site le dit explicitement
+  au lieu de cacher complètement le bloc.
+- audience_guidance est montré directement dans la fiche (jusqu'à 3 publics).
+- zones concernées, source et action restent affichées si disponibles.
+- getNewsItem fusionne maintenant le détail avec /city/news/ et /city/alerts/
+  si le endpoint de détail omet les champs avancés.
+- normalisation compatible avec plusieurs noms/structures backend.
+
+Landing et Accessibilité non modifiés.

@@ -1,0 +1,8 @@
+NOVA TERRA V113 — BORDER / SHAPE CLEANUP
+
+- Carte Nova Terra : cadre, recherche, filtres, panneaux, liste et boutons en coins techniques.
+- Services : filtres de disponibilité retirés du style pill arrondi.
+- Détail signalement/demande : hero, icône, historique, détails, action bar et soutien conformisés.
+- Rendez-vous / notifications / dashboard / polish : suppression des anciens border-radius structurels.
+- Conservés volontairement : 999px / 50% uniquement pour status pills, avatars, points et marqueurs.
+- citizen-theme-v110.css reste la couche canonique du design citoyen.

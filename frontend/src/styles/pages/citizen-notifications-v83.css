@@ -22,7 +22,7 @@
   padding:20px 20px 18px!important;
   overflow:hidden!important;
   border:1px solid #ece8f4!important;
-  border-radius:22px!important;
+  border-radius:0!important;
   background:#fff!important;
   box-shadow:0 12px 30px rgba(42,31,79,.05)!important;
 }
@@ -34,7 +34,7 @@
   height:58px;
   right:-22px;
   bottom:-24px;
-  border-radius:55% 50% 0 0;
+  border-radius:0;
   background:rgba(114,62,241,.06);
   transform:rotate(-8deg);
 }
@@ -42,7 +42,7 @@
 :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .notification-kpi-icon{
   width:54px!important;
   height:54px!important;
-  border-radius:16px!important;
+  border-radius:0!important;
   display:grid!important;
   place-items:center!important;
   color:#6427f5!important;
@@ -81,7 +81,7 @@
 :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .notification-category-card{
   display:block!important;
   padding:14px 16px!important;
-  border-radius:20px!important;
+  border-radius:0!important;
   border:1px solid #ece8f4!important;
   background:#fff!important;
   box-shadow:0 10px 25px rgba(42,31,79,.04)!important;
@@ -189,7 +189,7 @@
   overflow:hidden!important;
   border:1px solid #e9e5f1!important;
   border-left:1px solid #e9e5f1!important;
-  border-radius:20px!important;
+  border-radius:0!important;
   background:#fff!important;
   box-shadow:0 9px 24px rgba(52,39,91,.045)!important;
   text-align:left!important;
@@ -209,7 +209,7 @@
 :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .notification-type-icon{
   width:52px!important;
   height:52px!important;
-  border-radius:15px!important;
+  border-radius:0!important;
   display:grid!important;
   place-items:center!important;
   background:#f1ebff!important;
@@ -298,7 +298,7 @@
 :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .notification-loading-state{
   min-height:180px!important;
   border:1px solid #ece8f4!important;
-  border-radius:20px!important;
+  border-radius:0!important;
   background:#fff!important;
   box-shadow:none!important;
 }
@@ -308,7 +308,7 @@
   top:90px!important;
   max-height:calc(100vh - 120px)!important;
   overflow:auto!important;
-  border-radius:20px!important;
+  border-radius:0!important;
   border:1px solid #e8e2f1!important;
   box-shadow:0 12px 28px rgba(45,33,81,.08)!important;
 }

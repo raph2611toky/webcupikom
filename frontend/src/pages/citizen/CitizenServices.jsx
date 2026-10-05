@@ -140,7 +140,7 @@ export default function CitizenServices() {
   const [category, setCategory] = useState("all");
   const [availability, setAvailability] = useState("all");
   const [page, setPage] = useState(1);
-  const [view, setView] = useState(() => localStorage.getItem("nova_terra_services_view") || "cards");
+  const [view, setView] = useState(() => localStorage.getItem("nova_terra_services_view") || "map");
 
   useEffect(() => {
     let active = true;
@@ -197,85 +197,118 @@ export default function CitizenServices() {
     <div className="portal-layout">
       <CitizenSidebar />
       <div className="portal-main">
-        <PortalTopbar eyebrow={copy.eyebrow} title={copy.title} actions={<button type="button" className="topbar-ghost" onClick={()=>navigate("/citizen/partners")}>Services partenaires →</button>} />
-        <main className="portal-content svc84-page">
-          <section className="svc84-hero">
-            <div className="svc84-hero__copy">
-              <span>{copy.kicker}</span>
-              <h2>{copy.hero}</h2>
-              <p>{copy.intro}</p>
-              {profile.reduced ? <small>{copy.saver}</small> : null}
+        <PortalTopbar
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          actions={(
+            <div className="svc84-topbar-actions">
+              {!profile.reduced ? (
+                <button
+                  type="button"
+                  className="topbar-ghost"
+                  onClick={() => setDisplay(view === "map" ? "cards" : "map")}
+                >
+                  {view === "map" ? `▦ ${copy.cards}` : `◇ ${copy.map}`}
+                </button>
+              ) : null}
+              <button type="button" className="topbar-ghost" onClick={() => navigate("/citizen/partners")}>Services partenaires →</button>
             </div>
-            {!profile.reduced ? <img className="svc84-hero__art" src={cityArt} alt="" aria-hidden="true" decoding="async" /> : null}
-          </section>
+          )}
+        />
 
-          <CitizenOrientationAssistant compact />
-
-          <section className="svc84-toolbar" aria-label="Recherche et filtres des services">
-            <label className="svc84-search">
-              <span aria-hidden="true">⌕</span>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.search} aria-label={copy.search} />
-            </label>
-
-            <div className="svc84-categories" role="group" aria-label="Catégories">
-              <button type="button" className={category === "all" ? "is-active" : ""} onClick={() => setCategory("all")}>{copy.all}</button>
-              {categories.map((item) => (
-                <button type="button" key={item} className={category === item ? "is-active" : ""} onClick={() => setCategory(item)}>{item}</button>
-              ))}
-            </div>
-
-            <div className="svc84-view" role="group" aria-label="Mode d'affichage">
-              <button type="button" className={view === "cards" ? "is-active" : ""} onClick={() => setDisplay("cards")}>▦ {copy.cards}</button>
-              <button type="button" className={view === "map" ? "is-active" : ""} onClick={() => setDisplay("map")} disabled={profile.reduced}>◇ {copy.map}</button>
-            </div>
-          </section>
-
-          <section className="svc84-summary" aria-live="polite">
-            <strong>{filtered.length} {filtered.length > 1 ? copy.results : copy.result}</strong>
-            <div className="svc84-status-filters" role="group" aria-label="Disponibilité">
-              <button type="button" aria-pressed={availability === "available"} className={availability === "available" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "available" ? "all" : "available")}><i className="available" />{copy.available}</button>
-              <button type="button" aria-pressed={availability === "limited"} className={availability === "limited" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "limited" ? "all" : "limited")}><i className="limited" />{copy.limited}</button>
-              <button type="button" aria-pressed={availability === "unavailable"} className={availability === "unavailable" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "unavailable" ? "all" : "unavailable")}><i className="unavailable" />{copy.unavailable}</button>
-            </div>
-          </section>
-
+        <main className={`portal-content svc84-page ${view === "map" ? "svc84-page--map" : ""}`}>
           {view === "map" ? (
-            <Suspense fallback={<div className="svc84-empty">Chargement de la carte 2D…</div>}>
-              <NovaTerraMap services={rows} visibleSlugs={visibleSlugs} locale={locale} />
-            </Suspense>
-          ) : filtered.length ? (
             <>
-            <section className="svc84-grid">
-              {paginated.map((service) => (
-                <article key={service.slug} className={`svc84-card tone-${service.visual.tone} state-${service.availabilityState}`}>
-                  <div className="svc84-card__body">
-                    <div className="svc84-card__head">
-                      <span className="svc84-card__icon" aria-hidden="true">{service.visual.symbol}</span>
-                      <div>
-                        <span className="svc84-card__category">{service.category}</span>
-                        <h3>{service.name}</h3>
-                      </div>
-                      <span className={`svc84-badge is-${service.availabilityState}`}>
-                        <i />
-                        {service.availabilityState === "unavailable" ? copy.unavailable : service.availabilityState === "limited" ? copy.limited : copy.available}
-                      </span>
-                    </div>
-                    <p>{service.isAvailable === false ? (service.unavailabilityReason || service.shortDescription) : service.shortDescription}</p>
-                    {service.isAvailable === false && service.alternativeAction ? <small><b>{copy.alternative} :</b> {service.alternativeAction}</small> : null}
-                    <div className="svc84-card__hours" aria-label={`${copy.hours} : ${service.cardOpeningHours}`}>
-                      <span aria-hidden="true">◷</span>
-                      <div><small>{copy.hours}</small><strong>{service.cardOpeningHours}</strong></div>
-                    </div>
-                    <button type="button" className="svc84-card__cta" onClick={() => navigate(/transport|mobilit/.test(plain(`${service.slug || ""} ${service.name || ""} ${service.category || ""}`)) ? "/citizen/transport" : `/citizen/services/${service.slug}`)}>{copy.open}<span>→</span></button>
-                  </div>
-                  {!profile.reduced && service.visual.art ? <img className="svc84-card__art" src={service.visual.art} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : null}
-                </article>
-              ))}
-            </section>
-            <PortalPagination page={page} totalPages={totalPages} totalItems={filtered.length} perPage={perPage} onPageChange={setPage} itemLabel={copy.result} itemLabelPlural={copy.results}/>
+              <section className="svc84-map-summary" aria-live="polite">
+                <strong>{filtered.length} {filtered.length > 1 ? copy.results : copy.result}</strong>
+                <div className="svc84-status-filters" role="group" aria-label="Disponibilité">
+                  <button type="button" aria-pressed={availability === "available"} className={availability === "available" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "available" ? "all" : "available")}><i className="available" />{copy.available}</button>
+                  <button type="button" aria-pressed={availability === "limited"} className={availability === "limited" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "limited" ? "all" : "limited")}><i className="limited" />{copy.limited}</button>
+                  <button type="button" aria-pressed={availability === "unavailable"} className={availability === "unavailable" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "unavailable" ? "all" : "unavailable")}><i className="unavailable" />{copy.unavailable}</button>
+                </div>
+              </section>
+
+              <Suspense fallback={<div className="svc84-empty">Chargement de la carte 2D…</div>}>
+                <NovaTerraMap services={rows} visibleSlugs={visibleSlugs} locale={locale} />
+              </Suspense>
             </>
           ) : (
-            <div className="svc84-empty"><span>⌕</span><strong>{copy.empty}</strong></div>
+            <>
+              <section className="svc84-hero">
+                <div className="svc84-hero__copy">
+                  <span>{copy.kicker}</span>
+                  <h2>{copy.hero}</h2>
+                  <p>{copy.intro}</p>
+                  {profile.reduced ? <small>{copy.saver}</small> : null}
+                </div>
+                {!profile.reduced ? <img className="svc84-hero__art" src={cityArt} alt="" aria-hidden="true" decoding="async" /> : null}
+              </section>
+
+              <CitizenOrientationAssistant compact />
+
+              <section className="svc84-toolbar" aria-label="Recherche et filtres des services">
+                <label className="svc84-search">
+                  <span aria-hidden="true">⌕</span>
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.search} aria-label={copy.search} />
+                </label>
+
+                <div className="svc84-categories" role="group" aria-label="Catégories">
+                  <button type="button" className={category === "all" ? "is-active" : ""} onClick={() => setCategory("all")}>{copy.all}</button>
+                  {categories.map((item) => (
+                    <button type="button" key={item} className={category === item ? "is-active" : ""} onClick={() => setCategory(item)}>{item}</button>
+                  ))}
+                </div>
+
+                <div className="svc84-view" role="group" aria-label="Mode d'affichage">
+                  <button type="button" className={view === "cards" ? "is-active" : ""} onClick={() => setDisplay("cards")}>▦ {copy.cards}</button>
+                  <button type="button" className={view === "map" ? "is-active" : ""} onClick={() => setDisplay("map")} disabled={profile.reduced}>◇ {copy.map}</button>
+                </div>
+              </section>
+
+              <section className="svc84-summary" aria-live="polite">
+                <strong>{filtered.length} {filtered.length > 1 ? copy.results : copy.result}</strong>
+                <div className="svc84-status-filters" role="group" aria-label="Disponibilité">
+                  <button type="button" aria-pressed={availability === "available"} className={availability === "available" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "available" ? "all" : "available")}><i className="available" />{copy.available}</button>
+                  <button type="button" aria-pressed={availability === "limited"} className={availability === "limited" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "limited" ? "all" : "limited")}><i className="limited" />{copy.limited}</button>
+                  <button type="button" aria-pressed={availability === "unavailable"} className={availability === "unavailable" ? "is-active" : ""} onClick={() => setAvailability((current) => current === "unavailable" ? "all" : "unavailable")}><i className="unavailable" />{copy.unavailable}</button>
+                </div>
+              </section>
+
+              {filtered.length ? (
+                <>
+                  <section className="svc84-grid">
+                    {paginated.map((service) => (
+                      <article key={service.slug} className={`svc84-card tone-${service.visual.tone} state-${service.availabilityState}`}>
+                        <div className="svc84-card__body">
+                          <div className="svc84-card__head">
+                            <span className="svc84-card__icon" aria-hidden="true">{service.visual.symbol}</span>
+                            <div>
+                              <span className="svc84-card__category">{service.category}</span>
+                              <h3>{service.name}</h3>
+                            </div>
+                            <span className={`svc84-badge is-${service.availabilityState}`}>
+                              <i />
+                              {service.availabilityState === "unavailable" ? copy.unavailable : service.availabilityState === "limited" ? copy.limited : copy.available}
+                            </span>
+                          </div>
+                          <p>{service.isAvailable === false ? (service.unavailabilityReason || service.shortDescription) : service.shortDescription}</p>
+                          {service.isAvailable === false && service.alternativeAction ? <small><b>{copy.alternative} :</b> {service.alternativeAction}</small> : null}
+                          <div className="svc84-card__hours" aria-label={`${copy.hours} : ${service.cardOpeningHours}`}>
+                            <span aria-hidden="true">◷</span>
+                            <div><small>{copy.hours}</small><strong>{service.cardOpeningHours}</strong></div>
+                          </div>
+                          <button type="button" className="svc84-card__cta" onClick={() => navigate(/transport|mobilit/.test(plain(`${service.slug || ""} ${service.name || ""} ${service.category || ""}`)) ? "/citizen/transport" : `/citizen/services/${service.slug}`)}>{copy.open}<span>→</span></button>
+                        </div>
+                        {!profile.reduced && service.visual.art ? <img className="svc84-card__art" src={service.visual.art} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : null}
+                      </article>
+                    ))}
+                  </section>
+                  <PortalPagination page={page} totalPages={totalPages} totalItems={filtered.length} perPage={perPage} onPageChange={setPage} itemLabel={copy.result} itemLabelPlural={copy.results}/>
+                </>
+              ) : (
+                <div className="svc84-empty"><span>⌕</span><strong>{copy.empty}</strong></div>
+              )}
+            </>
           )}
         </main>
       </div>

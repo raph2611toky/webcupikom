@@ -1,0 +1,26 @@
+NOVA TERRA V118 — STAFF LISTS / PAGINATION / ANGULAR THEME
+
+Demandes Agent + Admin
+- 8 dossiers par page côté serveur.
+- Colonnes séparées : Référence / Dossier / Priorité / Statut / Communication / Responsable / Actions.
+- Priorité et statut ne partagent plus la même colonne.
+- pagination visible même sur une seule page (ex. 1–8 sur 8, page 1).
+- pagination numérotée, précédent/suivant, style Nova Terra angulaire.
+
+Pagination
+Toutes les vues de gestion réellement destinées à parcourir des listes sont paginées :
+Admin : rendez-vous, messages, actualités, partenaires, projets/contributions/idées,
+usage services, services, transport, utilisateurs, WebCup.
+Agent : flux WebCup, rendez-vous, audit, citoyens, messages, actualités, projets,
+signalements, demandes, sécurité, services.
+
+Les tableaux de bord et les pages de détail restent volontairement des résumés/détails,
+et renvoient vers les vraies listes paginées.
+
+Bordures Admin / Agent
+- staff-theme-v111.css supprimé.
+- staff-theme-v118.css devient l'unique couche finale Admin + Agent.
+- aucune carte, bouton, champ, filtre, ligne, badge ou modal staff ne conserve
+  d'ancien border-radius.
+- géométrie technique Nova Terra avec coins coupés.
+- Landing, espace Citoyen et portail Accessibilité non modifiés.

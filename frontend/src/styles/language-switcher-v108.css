@@ -1,0 +1,176 @@
+/* ==========================================================================
+   NOVA TERRA — LANGUAGE SWITCHER V108
+   Single owner. Menu is portalled to body to avoid dashboard clipping.
+   ========================================================================== */
+
+.language-switcher--menu {
+  position:relative;
+  display:inline-flex;
+  min-width:78px;
+  flex:0 0 auto;
+  font-family:var(--portal-font,var(--kamo-body-font,sans-serif));
+}
+
+.language-switcher--menu .language-switcher__button {
+  position:relative;
+  display:grid;
+  grid-template-columns:20px auto 12px;
+  align-items:center;
+  gap:7px;
+  width:100%;
+  min-height:42px;
+  padding:0 9px;
+  overflow:hidden;
+  border:1px solid #d8cce7;
+  border-radius:0;
+  color:#21172c;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 6px 16px rgba(43,22,67,.045);
+  cursor:pointer;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+.language-switcher--menu .language-switcher__button::before {
+  content:"";
+  position:absolute;
+  right:8px;
+  top:0;
+  width:27px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#8b36f3);
+  opacity:.6;
+}
+
+.language-switcher--menu .language-switcher__button:hover,
+.language-switcher--menu .language-switcher__button[aria-expanded="true"] {
+  border-color:#9e69dc;
+  box-shadow:0 9px 20px rgba(67,28,108,.09);
+}
+
+.language-switcher__flag,
+.language-switcher__option-flag {
+  display:grid;
+  overflow:hidden;
+  place-items:center;
+  border:1px solid rgba(40,29,52,.10);
+  border-radius:2px;
+  box-shadow:0 1px 4px rgba(22,12,33,.08);
+}
+
+.language-switcher__flag { width:20px; height:14px; }
+.language-switcher__option-flag { width:24px; height:16px; }
+
+.language-switcher__flag svg,
+.language-switcher__option-flag svg {
+  display:block;
+  width:100%;
+  height:100%;
+}
+
+.language-switcher__button strong {
+  font-size:.72rem;
+  font-weight:900;
+  line-height:1;
+}
+
+.language-switcher__chevron {
+  color:#665275;
+  font-size:.72rem;
+  line-height:1;
+  transition:transform .16s ease;
+}
+
+.language-switcher__button[aria-expanded="true"] .language-switcher__chevron {
+  transform:rotate(180deg);
+}
+
+.language-switcher__menu {
+  position:fixed;
+  z-index:32000;
+  display:grid;
+  width:214px;
+  padding:7px;
+  border:1px solid #cdb8e6;
+  color:#281e32;
+  background:rgba(255,255,255,.995);
+  box-shadow:0 22px 54px rgba(35,15,59,.22);
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+  animation:ntLanguageMenuIn .16s cubic-bezier(.16,1,.3,1) both;
+}
+
+.language-switcher__menu::before {
+  content:"";
+  position:absolute;
+  top:0;
+  right:12px;
+  width:44px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#923aff);
+}
+
+.language-switcher__menu > button {
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr) 18px;
+  align-items:center;
+  gap:9px;
+  min-height:48px;
+  padding:7px 9px;
+  border:0;
+  color:#281e32;
+  background:transparent;
+  text-align:left;
+  cursor:pointer;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+}
+
+.language-switcher__menu > button:hover,
+.language-switcher__menu > button:focus-visible { background:#f7f1ff; }
+
+.language-switcher__menu > button.is-active {
+  color:#5f15ca;
+  background:linear-gradient(90deg,#efe5ff,#fbf8ff);
+}
+
+.language-switcher__menu > button > span:nth-child(2) {
+  display:grid;
+  gap:2px;
+}
+
+.language-switcher__menu strong { font-size:.75rem; font-weight:850; }
+.language-switcher__menu small { color:#817589; font-size:.66rem; }
+.language-switcher__menu i {
+  color:#6e1de4;
+  font-size:.82rem;
+  font-style:normal;
+  font-weight:900;
+  text-align:center;
+}
+
+.language-switcher--compact { min-width:76px; }
+
+html[data-contrast="high"] .language-switcher--menu .language-switcher__button,
+html[data-contrast="high"] .language-switcher__menu {
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] .language-switcher__menu > button { color:#fff!important; }
+html[data-contrast="high"] .language-switcher__menu > button.is-active {
+  color:#000!important;
+  background:#f0d56a!important;
+}
+
+@keyframes ntLanguageMenuIn {
+  from { opacity:0; transform:translateY(-5px) scale(.985); }
+  to { opacity:1; transform:translateY(0) scale(1); }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .language-switcher__menu,
+  .language-switcher__chevron {
+    animation:none!important;
+    transition:none!important;
+  }
+}

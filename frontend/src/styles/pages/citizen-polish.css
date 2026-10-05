@@ -12,7 +12,7 @@ body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat::-web
   width:100%;
   min-width:0;
   padding:24px;
-  border-radius:16px;
+  border-radius:0;
 }
 :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .settings-data-grid h3{
   margin:4px 0 7px;
@@ -48,7 +48,7 @@ body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat::-web
   min-height:38px;
   padding:8px 12px;
   border:1px solid #e4dbea;
-  border-radius:10px;
+  border-radius:0;
   background:#fff;
   color:#5f21c7;
   font-weight:750;
@@ -71,7 +71,7 @@ body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat::-web
   min-height:92px;
   padding:14px;
   border:1px solid #ebe4ef;
-  border-radius:12px;
+  border-radius:0;
   background:#fbfafc;
 }
 :where(body[data-route-group="portal"]) .portal-sidebar--citizen ~ .portal-main .privacy-use-grid strong{font-size:.84rem;color:#2d2533}
@@ -89,7 +89,7 @@ body[data-route-group="portal"] .portal-sidebar--citizen .citizen-nav-flat::-web
   width:100%;
   min-width:0;
   border:1px solid #ded7e4;
-  border-radius:10px;
+  border-radius:0;
   outline:none;
   background:#fff;
   color:#29222f;

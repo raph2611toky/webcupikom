@@ -1,0 +1,17 @@
+NOVA TERRA V123 — BANDEAU DOSSIER RESTAURÉ ET CORRIGÉ
+
+Le bandeau n'est plus supprimé.
+
+Correction:
+- suppression de l'ancien gros bloc noir arrondi;
+- restauration d'un bandeau résumé compact et futuriste;
+- fond violet sombre Nova Terra, grille technique discrète, coins découpés;
+- titre, citoyen, e-mail et date restent visibles;
+- statut, priorité et état d'action restent visibles mais sous forme de chips techniques;
+- responsable, service et nombre de réponses sont présentés à droite;
+- responsive: le résumé passe sous le titre puis en une colonne sur mobile.
+
+Les contrôles Statut / Priorité / Responsable / Service restent dans « Faire avancer le dossier »
+pour éviter de dupliquer les mêmes champs dans le bandeau.
+
+Landing / Accessibilité non modifiés.

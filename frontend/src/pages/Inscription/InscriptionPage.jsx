@@ -3,8 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage, register, resendVerification, startGoogleAuth } from "../../api/auth.js";
 import LanguageSwitcher from "../../components/ui/LanguageSwitcher.jsx";
 import HumanCheckCaptcha from "../../components/auth/HumanCheckCaptcha.jsx";
+import AuthJourneyLoader from "../../components/auth/AuthJourneyLoader.jsx";
 import { useLocale } from "../../utils/i18n.js";
 import { navigate } from "../../utils/navigation.js";
+import { navigateAuth } from "../../utils/authTransition.js";
+import novaTerraCity from "../../assets/auth/nova-terra-city.png";
 import "../auth.css";
 
 const COPY = {
@@ -18,7 +21,7 @@ const COPY = {
     already:"Déjà un compte ?", login:"Se connecter", visualEyebrow:"BIENVENUE À NOVA TERRA",
     visualTitle:<>Votre ville commence<br/><strong>avec vous.</strong></>,
     visualText:"Créez votre espace citoyen et accédez aux services, démarches et informations de la ville.",
-    profile:"Profil citoyen", services:"Services municipaux", requests:"Demandes suivies",
+    profile:"Profil citoyen", profileDesc:"Gérez vos informations en toute simplicité.", services:"Services municipaux", servicesDesc:"Accédez à tous les services de votre ville.", requests:"Demandes suivies", requestsDesc:"Suivez l’avancement de vos démarches.",
     verifyBack:"Retour", verifyTitle:"Vérifiez votre e-mail", verifyText:"Nous avons envoyé un lien de vérification à",
     verifyNote:"Ouvrez ce lien pour activer votre compte. Après validation, vous pourrez compléter votre profil maintenant ou passer cette étape.",
     resend:"Renvoyer l’e-mail", resending:"Envoi…", checked:"J’ai déjà vérifié mon e-mail",
@@ -28,7 +31,8 @@ const COPY = {
     created:"Compte créé. Vérifiez maintenant votre e-mail.", captchaRequired:"Validez la vérification de sécurité avant de créer votre compte.",
     weakPassword:"Ce mot de passe est trop faible. Utilisez au moins 8 caractères et mélangez au moins 3 types : minuscules, majuscules, chiffres et caractères spéciaux.",
     passwordStrength:"Sécurité", weak:"Faible", fair:"Correct", strong:"Fort",
-    passwordHint:"8 caractères minimum et au moins 3 types de caractères."
+    passwordHint:"8 caractères minimum et au moins 3 types de caractères.",
+    createJourney:"Création de votre accès", createJourneyText:"Votre identité citoyenne prend place dans Nova Terra.", googleJourney:"Passage par Google", googleJourneyText:"Connexion sécurisée avant votre arrivée dans la ville.", resendJourney:"Transmission du signal", resendJourneyText:"Nous renvoyons votre lien de vérification vers votre adresse e-mail."
   },
   en: {
     back:"Back to home", kicker:"CITIZEN SPACE", title:"Create your account",
@@ -40,7 +44,7 @@ const COPY = {
     already:"Already have an account?", login:"Sign in", visualEyebrow:"WELCOME TO NOVA TERRA",
     visualTitle:<>Your city starts<br/><strong>with you.</strong></>,
     visualText:"Create your citizen space and access city services, requests and information.",
-    profile:"Citizen profile", services:"City services", requests:"Tracked requests",
+    profile:"Citizen profile", profileDesc:"Manage your information with ease.", services:"City services", servicesDesc:"Access all your city services.", requests:"Tracked requests", requestsDesc:"Follow the progress of your requests.",
     verifyBack:"Back", verifyTitle:"Check your email", verifyText:"We sent a verification link to",
     verifyNote:"Open the link to activate your account. After verification, you can complete your profile now or skip that step.",
     resend:"Resend email", resending:"Sending…", checked:"I already verified my email",
@@ -50,7 +54,8 @@ const COPY = {
     created:"Account created. Check your email now.", captchaRequired:"Complete the security check before creating your account.",
     weakPassword:"This password is too weak. Use at least 8 characters and combine at least 3 types: lowercase, uppercase, numbers and special characters.",
     passwordStrength:"Security", weak:"Weak", fair:"Good", strong:"Strong",
-    passwordHint:"At least 8 characters and at least 3 character types."
+    passwordHint:"At least 8 characters and at least 3 character types.",
+    createJourney:"Creating your access", createJourneyText:"Your citizen identity is taking its place in Nova Terra.", googleJourney:"Passing through Google", googleJourneyText:"Secure sign-in before your arrival in the city.", resendJourney:"Sending the signal", resendJourneyText:"We are sending a new verification link to your email address."
   },
   mg: {
     back:"Hiverina amin'ny fandraisana", kicker:"HABAKA MPONINA", title:"Hamorona kaonty",
@@ -62,7 +67,7 @@ const COPY = {
     already:"Efa manana kaonty?", login:"Hiditra", visualEyebrow:"TONGASOA ETO NOVA TERRA",
     visualTitle:<>Ny tanànanao dia manomboka<br/><strong>aminao.</strong></>,
     visualText:"Mamoròna habaka ho anao ary midira amin'ny sampan-draharaha, fangatahana ary vaovaon'ny tanàna.",
-    profile:"Mombamomba ny mponina", services:"Sampan-draharahan'ny tanàna", requests:"Fangatahana arahina",
+    profile:"Mombamomba ny mponina", profileDesc:"Tantano mora ny mombamomba anao.", services:"Sampan-draharahan'ny tanàna", servicesDesc:"Midira amin'ny tolotra rehetra ao an-tanàna.", requests:"Fangatahana arahina", requestsDesc:"Araho ny fivoaran'ny fangatahanao.",
     verifyBack:"Hiverina", verifyTitle:"Hamarino ny mailakao", verifyText:"Nandefa rohy fanamarinana izahay ho an'ny",
     verifyNote:"Sokafy ilay rohy mba hampavitrika ny kaontinao. Rehefa voamarina dia afaka mameno ny mombamomba anao ianao na mandalo aloha.",
     resend:"Alefa indray ny mailaka", resending:"Mandefa…", checked:"Efa nanamarina ny mailaka aho",
@@ -72,7 +77,8 @@ const COPY = {
     created:"Vita ny kaonty. Hamarino izao ny mailakao.", captchaRequired:"Ataovy aloha ny fanamarinana fiarovana vao mamorona kaonty.",
     weakPassword:"Malemy loatra ity teny miafina ity. Mampiasà tarehintsoratra 8 farafahakeliny ary afangaro karazana 3: litera kely, litera lehibe, isa ary marika manokana.",
     passwordStrength:"Fiarovana", weak:"Malemy", fair:"Mety", strong:"Matanjaka",
-    passwordHint:"Tarehintsoratra 8 farafahakeliny ary karazana tarehintsoratra 3 farafahakeliny."
+    passwordHint:"Tarehintsoratra 8 farafahakeliny ary karazana tarehintsoratra 3 farafahakeliny.",
+    createJourney:"Mamorona ny fidiranao", createJourneyText:"Mametraka ny mombamomba anao ao Nova Terra izahay.", googleJourney:"Mandalo amin’i Google", googleJourneyText:"Fidirana azo antoka alohan’ny hahatongavana ao an-tanàna.", resendJourney:"Mandefa famantarana", resendJourneyText:"Mandefa rohy fanamarinana vaovao amin’ny mailakao izahay."
   },
 };
 
@@ -135,6 +141,18 @@ function EyeIcon({ open }) {
   ) : (
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.4-6 9-6c5.6 0 9 6 9 6a17 17 0 0 1-2.3 3.1M6.2 7.7A15.5 15.5 0 0 0 3 12s3.4 6 9 6a8.8 8.8 0 0 0 3.8-.9M4 4l16 16"/></svg>
   );
+}
+
+function UserFieldIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.6 19c.7-3.7 3.1-5.7 6.4-5.7s5.7 2 6.4 5.7"/></svg>;
+}
+
+function MailFieldIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>;
+}
+
+function LockFieldIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/><circle cx="12" cy="15" r="1.2"/></svg>;
 }
 
 export default function InscriptionPage() {
@@ -228,6 +246,14 @@ export default function InscriptionPage() {
   const busy = loading || googleLoading;
   const transition = { duration: 0.32, ease: [0.22, 1, 0.36, 1] };
 
+  const journey = googleLoading
+    ? { variant: "google", title: copy.googleJourney, message: copy.googleJourneyText }
+    : loading
+      ? stage === "verify"
+        ? { variant: "verify", title: copy.resendJourney, message: copy.resendJourneyText }
+        : { variant: "register", title: copy.createJourney, message: copy.createJourneyText }
+      : null;
+
   if (stage === "verify") {
     return (
       <main className="auth-screen auth-screen--register-flow" style={pageStyle}>
@@ -243,12 +269,22 @@ export default function InscriptionPage() {
             <p className="auth-verification-note">{copy.verifyNote}</p>
             {status ? <p className={`auth-feedback auth-feedback--${status.type}`} role={status.type==="error" ? "alert" : "status"} aria-live="polite">{status.message}</p> : null}
             <button className="auth-primary-button" type="button" onClick={resend} disabled={loading}><span>{loading ? copy.resending : copy.resend}</span><span className="auth-button-arrow">→</span></button>
-            <button className="auth-secondary-link" type="button" onClick={()=>navigate("/login")}>{copy.checked}</button>
+            <button className="auth-secondary-link" type="button" onClick={()=>navigateAuth("/login")}>{copy.checked}</button>
             <small>{copy.spam}</small>
           </motion.section>
         </AnimatePresence>
 
         <div className="auth-flow-legal"><a href="#confidentialite">{copy.privacyShort}</a><span>•</span><a href="#conditions">{copy.termsShort}</a></div>
+
+        <AnimatePresence>
+          {journey ? (
+            <AuthJourneyLoader
+              variant={journey.variant}
+              title={journey.title}
+              message={journey.message}
+            />
+          ) : null}
+        </AnimatePresence>
       </main>
     );
   }
@@ -260,15 +296,21 @@ export default function InscriptionPage() {
           <LanguageSwitcher className="auth-language-switcher" compact />
           <a className="auth-back" href="/" onClick={(e)=>{e.preventDefault();navigate("/")}}><span>←</span> {copy.back}</a>
 
+          <nav className="auth-legal auth-legal--top" aria-label="Informations légales">
+            <a href="#confidentialite">{copy.privacyShort}</a>
+            <span aria-hidden="true">•</span>
+            <a href="#conditions">{copy.termsShort}</a>
+          </nav>
+
           <div className="auth-form-wrap auth-form-wrap--register">
             <div className="auth-page-brand auth-page-brand--mobile">Nova<span>Terra</span></div>
-            <div className="auth-title-block">
+            <div className="auth-title-block auth-reveal-block">
               <span className="auth-mini-kicker">{copy.kicker}</span>
               <h2 id="register-title">{copy.title}</h2>
               <p>{copy.intro}</p>
             </div>
 
-            <form className="auth-modern-form" onSubmit={handleAccountSubmit}>
+            <form className="auth-modern-form auth-reveal-form" onSubmit={handleAccountSubmit}>
               <HumanCheckCaptcha locale={locale} disabled={busy} onValidChange={setCaptchaValid} />
 
               <button className="auth-google-modern" type="button" onClick={handleGoogle} disabled={busy || !captchaValid} aria-disabled={busy || !captchaValid}>
@@ -279,16 +321,35 @@ export default function InscriptionPage() {
               <div className="auth-modern-divider" aria-hidden="true"><span>{copy.or}</span></div>
 
               <div className="auth-grid-two">
-                <label className="auth-modern-field"><span>{copy.first}</span><input name="firstName" autoComplete="given-name" placeholder={copy.firstPh} disabled={busy} required /></label>
-                <label className="auth-modern-field"><span>{copy.last}</span><input name="lastName" autoComplete="family-name" placeholder={copy.lastPh} disabled={busy} required /></label>
+                <label className="auth-modern-field">
+                  <span>{copy.first}</span>
+                  <div className="auth-field-control">
+                    <span className="auth-field-control__icon"><UserFieldIcon /></span>
+                    <input name="firstName" autoComplete="given-name" placeholder={copy.firstPh} disabled={busy} required />
+                  </div>
+                </label>
+                <label className="auth-modern-field">
+                  <span>{copy.last}</span>
+                  <div className="auth-field-control">
+                    <span className="auth-field-control__icon"><UserFieldIcon /></span>
+                    <input name="lastName" autoComplete="family-name" placeholder={copy.lastPh} disabled={busy} required />
+                  </div>
+                </label>
               </div>
 
-              <label className="auth-modern-field"><span>{copy.email}</span><input type="email" name="email" autoComplete="email" placeholder="vous@exemple.com" disabled={busy} required /></label>
+              <label className="auth-modern-field">
+                <span>{copy.email}</span>
+                <div className="auth-field-control">
+                  <span className="auth-field-control__icon"><MailFieldIcon /></span>
+                  <input type="email" name="email" autoComplete="email" placeholder="vous@exemple.com" disabled={busy} required />
+                </div>
+              </label>
 
               <div className="auth-grid-two">
                 <label className="auth-modern-field">
                   <span>{copy.password}</span>
                   <div className="auth-input-with-action">
+                    <span className="auth-field-control__icon"><LockFieldIcon /></span>
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
@@ -311,7 +372,14 @@ export default function InscriptionPage() {
                   </div>
                   <small id="register-password-hint">{copy.passwordHint}</small>
                 </label>
-                <label className="auth-modern-field"><span>{copy.confirm}</span><input type={showPassword ? "text" : "password"} name="passwordConfirm" autoComplete="new-password" placeholder={copy.confirmPh} minLength="8" disabled={busy} required /></label>
+                <label className="auth-modern-field">
+                  <span>{copy.confirm}</span>
+                  <div className="auth-input-with-action">
+                    <span className="auth-field-control__icon"><LockFieldIcon /></span>
+                    <input type={showPassword ? "text" : "password"} name="passwordConfirm" autoComplete="new-password" placeholder={copy.confirmPh} minLength="8" disabled={busy} required />
+                    <button type="button" className="auth-eye" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}><EyeIcon open={showPassword}/></button>
+                  </div>
+                </label>
               </div>
 
               <label className="auth-checkbox auth-checkbox--terms"><input type="checkbox" disabled={busy} required/><span>{copy.accept} <a href="#conditions">{copy.terms}</a> {copy.and} <a href="#confidentialite">{copy.privacy}</a>.</span></label>
@@ -320,31 +388,60 @@ export default function InscriptionPage() {
               {status ? <p className={`auth-feedback auth-feedback--${status.type}`} role={status.type==="error" ? "alert" : "status"} aria-live="polite">{status.message}</p> : null}
             </form>
 
-            <p className="auth-switch-line">{copy.already} <a href="/login" onClick={(e)=>{e.preventDefault();navigate("/login")}}>{copy.login}</a></p>
+            <p className="auth-switch-line">{copy.already} <a href="/login" onClick={(e)=>{e.preventDefault();navigateAuth("/login")}}>{copy.login}</a></p>
           </div>
 
-          <div className="auth-legal"><a href="#confidentialite">{copy.privacyShort}</a><span>•</span><a href="#conditions">{copy.termsShort}</a></div>
         </section>
 
         <aside className="auth-visual auth-visual--register" aria-hidden="true">
+          <img className="auth-visual__city-background" src={novaTerraCity} alt="" />
+          <div className="auth-visual__city-overlay" />
           <a className="auth-visual__brand" href="/" tabIndex="-1">Nova<span>Terra</span></a>
+
           <div className="auth-visual__copy auth-visual__copy--register">
             <p className="auth-visual__eyebrow">{copy.visualEyebrow}</p>
             <h1>{copy.visualTitle}</h1>
             <p>{copy.visualText}</p>
           </div>
+
           <div className="auth-orbit-scene auth-orbit-scene--register">
             <div className="auth-orbit auth-orbit--one" />
             <div className="auth-orbit auth-orbit--two" />
             <div className="auth-city-core"><span>NT</span><i/><i/><i/></div>
-            <article className="auth-float-card auth-float-card--reg-a"><span className="auth-float-card__icon">◎</span><strong>{copy.profile}</strong><i/><i/></article>
-            <article className="auth-float-card auth-float-card--reg-b"><span className="auth-float-card__icon">⌂</span><strong>{copy.services}</strong><i/><i/></article>
-            <article className="auth-float-card auth-float-card--reg-c"><span className="auth-float-card__icon">✓</span><strong>{copy.requests}</strong><i/><i/></article>
+
+            <article className="auth-float-card auth-float-card--reg-a">
+              <span className="auth-float-card__icon">◎</span>
+              <strong>{copy.profile}</strong>
+              <p>{copy.profileDesc}</p>
+            </article>
+
+            <article className="auth-float-card auth-float-card--reg-b">
+              <span className="auth-float-card__icon">⌂</span>
+              <strong>{copy.services}</strong>
+              <p>{copy.servicesDesc}</p>
+            </article>
+
+            <article className="auth-float-card auth-float-card--reg-c">
+              <span className="auth-float-card__icon">✓</span>
+              <strong>{copy.requests}</strong>
+              <p>{copy.requestsDesc}</p>
+            </article>
           </div>
+
           <div className="auth-visual__line auth-visual__line--register" />
           <span className="auth-visual__spark">✦</span>
         </aside>
       </div>
+
+      <AnimatePresence>
+        {journey ? (
+          <AuthJourneyLoader
+            variant={journey.variant}
+            title={journey.title}
+            message={journey.message}
+          />
+        ) : null}
+      </AnimatePresence>
     </main>
   );
 }

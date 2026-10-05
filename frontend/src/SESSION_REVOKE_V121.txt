@@ -1,0 +1,28 @@
+NOVA TERRA V121 — RÉVOCATION DE SESSION DEPUIS UNE NOTIFICATION
+
+Comportement:
+- Une notification liée à une session / connexion / nouvel appareil n'est PLUS
+  automatiquement marquée comme lue au clic.
+- Le clic ouvre le flux de sécurité de la session.
+- Le frontend récupère les sessions du compte.
+- Si session_id est absent de la notification, il essaie d'abord de le retrouver
+  via l'événement de sécurité puis, uniquement si la correspondance est sans
+  ambiguïté, via appareil / IP / heure de création.
+- Session distante:
+  1. confirmation Nova Terra;
+  2. POST /account/sessions/revoke/request/;
+  3. modale OTP email;
+  4. POST /account/sessions/revoke/confirm/;
+  5. rafraîchissement sessions + événements de sécurité;
+  6. la notification est marquée lue seulement APRÈS révocation réussie.
+- Session courante:
+  POST /account/sessions/current/logout/, nettoyage du token local, retour /login.
+- Si la session est déjà révoquée ou impossible à identifier précisément,
+  aucune session n'est déconnectée arbitrairement.
+
+Sécurité / UX:
+- aucun window.prompt / window.confirm;
+- PortalActionDialog réutilisé;
+- code OTP numérique, autocomplete one-time-code;
+- contraste renforcé pris en charge;
+- Landing et Accessibilité non modifiés.

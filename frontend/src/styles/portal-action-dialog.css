@@ -1,0 +1,275 @@
+/* ==========================================================================
+   NOVA TERRA — PORTAL ACTION DIALOG V119
+   Custom confirmation / action window. Replaces browser confirm() and prompt()
+   in appointment flows.
+   ========================================================================== */
+
+body[data-route-group="portal"] .portal-action-dialog-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:36000;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(16,8,27,.58);
+  backdrop-filter:blur(8px);
+}
+
+body[data-route-group="portal"] .portal-action-dialog{
+  --dialog-accent:#7421ed;
+  --dialog-accent-soft:#f2e9ff;
+  position:relative;
+  width:min(680px,calc(100vw - 32px));
+  max-height:min(88dvh,760px);
+  overflow:auto;
+  padding:22px;
+  border:1px solid #aa7ce3;
+  border-radius:0!important;
+  color:#1d1625;
+  background:
+    radial-gradient(circle at 92% 8%,rgba(120,34,241,.08),transparent 25%),
+    #fff;
+  box-shadow:0 28px 78px rgba(26,11,46,.32);
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+}
+
+body[data-route-group="portal"] .portal-action-dialog.tone-danger{
+  --dialog-accent:#cf2f46;
+  --dialog-accent-soft:#fff0f2;
+  border-color:#e08b98;
+}
+
+body[data-route-group="portal"] .portal-action-dialog.tone-success{
+  --dialog-accent:#7421ed;
+  --dialog-accent-soft:#f2e9ff;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__topline{
+  position:absolute;
+  top:0;
+  right:18px;
+  width:90px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--dialog-accent));
+}
+
+body[data-route-group="portal"] .portal-action-dialog__header{
+  display:grid;
+  grid-template-columns:52px minmax(0,1fr);
+  gap:14px;
+  align-items:start;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__icon{
+  display:grid;
+  width:52px;
+  height:52px;
+  place-items:center;
+  border:1px solid color-mix(in srgb,var(--dialog-accent) 35%,#ddd);
+  color:var(--dialog-accent);
+  background:var(--dialog-accent-soft);
+  font-size:1.25rem;
+  font-weight:950;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+}
+
+body[data-route-group="portal"] .portal-action-dialog__header h2{
+  margin:5px 0 5px;
+  color:#17111f;
+  font-size:clamp(1.25rem,2vw,1.65rem);
+  line-height:1.12;
+  letter-spacing:-.035em;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__header p{
+  margin:0;
+  color:#716779;
+  font-size:.8rem;
+  line-height:1.5;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__facts{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:18px;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__facts>div{
+  position:relative;
+  min-width:0;
+  min-height:64px;
+  display:grid;
+  align-content:center;
+  gap:3px;
+  padding:10px 12px;
+  border:1px solid #e1d8e9;
+  background:#fbf8ff;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+body[data-route-group="portal"] .portal-action-dialog__facts>div::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  width:2px;
+  height:100%;
+  background:var(--dialog-accent);
+  opacity:.7;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__facts span{
+  color:#81758a;
+  font-size:.66rem;
+  font-weight:750;
+  text-transform:uppercase;
+  letter-spacing:.035em;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__facts b{
+  min-width:0;
+  overflow-wrap:anywhere;
+  color:#211829;
+  font-size:.78rem;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__content{
+  display:grid;
+  gap:12px;
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid #e7dfea;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields label{
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields label.full{
+  grid-column:1/-1;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields label>span{
+  color:#4e4358;
+  font-size:.72rem;
+  font-weight:850;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields :is(input,textarea,select){
+  width:100%;
+  min-width:0;
+  border:1px solid #d9cde4;
+  border-radius:0!important;
+  color:#241b2c;
+  background:#fff;
+  font:inherit;
+  font-size:.8rem;
+  outline:0;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields input,
+body[data-route-group="portal"] .portal-action-dialog__fields select{
+  min-height:44px;
+  padding:0 12px;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields textarea{
+  min-height:92px;
+  resize:vertical;
+  padding:11px 12px;
+  line-height:1.45;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__fields :is(input,textarea,select):focus{
+  border-color:var(--dialog-accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--dialog-accent) 14%,transparent);
+}
+
+body[data-route-group="portal"] .portal-action-dialog__hint{
+  margin:-2px 0 0;
+  color:#82778b;
+  font-size:.68rem;
+  line-height:1.45;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:18px;
+  padding-top:14px;
+  border-top:1px solid #e7dfea;
+}
+
+body[data-route-group="portal"] .portal-action-dialog__actions button{
+  min-height:42px;
+  padding:0 14px;
+  border-radius:0!important;
+  font-size:.75rem;
+  font-weight:900;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+body[data-route-group="portal"] .portal-action-dialog__danger{
+  border:1px solid #c82e44;
+  color:#fff;
+  background:linear-gradient(105deg,#a51c30,#d73950);
+  box-shadow:0 8px 18px rgba(190,39,61,.15);
+}
+
+body[data-route-group="portal"] .portal-action-dialog__danger:hover{
+  background:#b82036;
+}
+
+html[data-contrast="high"] body[data-route-group="portal"] .portal-action-dialog{
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+  box-shadow:none!important;
+}
+html[data-contrast="high"] body[data-route-group="portal"] .portal-action-dialog :is(h2,p,b,span,label){
+  color:#fff!important;
+}
+html[data-contrast="high"] body[data-route-group="portal"] .portal-action-dialog__facts>div,
+html[data-contrast="high"] body[data-route-group="portal"] .portal-action-dialog__fields :is(input,textarea,select){
+  border:2px solid #fff!important;
+  color:#fff!important;
+  background:#000!important;
+}
+
+@media(max-width:620px){
+  body[data-route-group="portal"] .portal-action-dialog{
+    width:min(100%,calc(100vw - 20px));
+    padding:18px;
+  }
+  body[data-route-group="portal"] .portal-action-dialog__header{
+    grid-template-columns:44px minmax(0,1fr);
+  }
+  body[data-route-group="portal"] .portal-action-dialog__icon{
+    width:44px;
+    height:44px;
+  }
+  body[data-route-group="portal"] .portal-action-dialog__facts,
+  body[data-route-group="portal"] .portal-action-dialog__fields{
+    grid-template-columns:1fr;
+  }
+  body[data-route-group="portal"] .portal-action-dialog__fields label.full{
+    grid-column:auto;
+  }
+  body[data-route-group="portal"] .portal-action-dialog__actions{
+    flex-direction:column-reverse;
+  }
+  body[data-route-group="portal"] .portal-action-dialog__actions button{
+    width:100%;
+  }
+}

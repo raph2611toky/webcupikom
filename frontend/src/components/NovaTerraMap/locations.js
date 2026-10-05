@@ -161,3 +161,91 @@ export function projectReportAlert(report={}){
     icon:"!",
   };
 }
+
+
+function schedulePreview(stop = {}) {
+  if (stop.openingHours) return stop.openingHours;
+  const rows = Array.isArray(stop.timetable) ? stop.timetable : [];
+  if (!rows.length) return "Horaires disponibles dans la fiche de l’arrêt";
+  const first = rows[0];
+  const value = first?.value ?? first;
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  return "Horaires disponibles dans la fiche de l’arrêt";
+}
+
+export function buildTransportLocations(stops = []) {
+  const geoStops = stops.filter(
+    (stop) => Number.isFinite(stop?.latitude) && Number.isFinite(stop?.longitude),
+  );
+
+  const latitudes = geoStops.map((stop) => stop.latitude);
+  const longitudes = geoStops.map((stop) => stop.longitude);
+  const minLat = latitudes.length ? Math.min(...latitudes) : 0;
+  const maxLat = latitudes.length ? Math.max(...latitudes) : 0;
+  const minLon = longitudes.length ? Math.min(...longitudes) : 0;
+  const maxLon = longitudes.length ? Math.max(...longitudes) : 0;
+  const latSpan = Math.max(maxLat - minLat, 0.00001);
+  const lonSpan = Math.max(maxLon - minLon, 0.00001);
+
+  return stops.map((stop, index) => {
+    const seed = `${stop.slug || stop.id || stop.name || index}|${stop.district || ""}`;
+    const district =
+      CITY_DISTRICTS.find((item) =>
+        normalizeDistrictName(stop.district).includes(normalizeDistrictName(item.name)),
+      ) || mappedDistrict(seed);
+    const [dx, dy] = offsetFromSeed(seed);
+
+    const hasGeo =
+      Number.isFinite(stop?.latitude) && Number.isFinite(stop?.longitude);
+
+    const x = hasGeo
+      ? 120 + ((stop.longitude - minLon) / lonSpan) * 760
+      : district.center[0] + dx * 0.7;
+
+    const y = hasGeo
+      ? 565 - ((stop.latitude - minLat) / latSpan) * 450
+      : district.center[1] + dy * 0.7;
+
+    const lines = Array.isArray(stop.lines) ? stop.lines : [];
+    const linesLabel = lines
+      .map((line) => line?.name || line?.label || line?.id || line)
+      .filter(Boolean)
+      .join(", ");
+
+    return {
+      id: `transport-${stop.slug || stop.id || index}`,
+      kind: "transport",
+      slug: stop.slug || String(stop.id || ""),
+      name: stop.name || "Arrêt de transport",
+      category: stop.kindLabel || stop.category || "Transport",
+      description:
+        stop.description ||
+        "Point d’information et de correspondance des transports municipaux.",
+      address: stop.address || stop.district || district.name,
+      district: stop.district || district.name,
+      openingHours: schedulePreview(stop),
+      icon: "↔",
+      color: stop.isActive === false ? "#b95c6c" : "#14a9df",
+      x: clampMapCoordinate(x, 70, 930),
+      y: clampMapCoordinate(y, 75, 610),
+      details: [
+        { label: "Lignes", value: linesLabel || "—" },
+        { label: "Disponibilité", value: stop.isActive === false ? "Indisponible" : "En service" },
+      ],
+      isAvailable: stop.isActive !== false,
+      source: stop,
+    };
+  });
+}
+
+function normalizeDistrictName(value = "") {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+}
+
+function clampMapCoordinate(value, min, max) {
+  return Math.max(min, Math.min(max, Number(value) || min));
+}

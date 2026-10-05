@@ -4,6 +4,15 @@ import { formatDateTime, unwrapList } from "./helpers.js";
 function canonicalCategory(value = "") {
   const text = String(value).trim().toLowerCase();
   if (!text) return "";
+  if (
+    text.includes("sécur") ||
+    text.includes("secur") ||
+    text.includes("session") ||
+    text.includes("connexion") ||
+    text.includes("login") ||
+    text.includes("appareil") ||
+    text.includes("device")
+  ) return "Sécurité";
   if (text.includes("rendez") || text.includes("appointment")) return "Rendez-vous";
   if (text.includes("signal") || text.includes("incident") || text.includes("report")) return "Signalement";
   if (text.includes("service")) return "Service";
@@ -26,6 +35,15 @@ function inferCategory(item = {}) {
     item.event,
   ].filter(Boolean).join(" ").toLowerCase();
 
+  if (
+    text.includes("sécur") ||
+    text.includes("secur") ||
+    text.includes("session") ||
+    text.includes("connexion") ||
+    text.includes("login") ||
+    text.includes("appareil") ||
+    text.includes("device")
+  ) return "Sécurité";
   if (text.includes("rendez") || text.includes("appointment")) return "Rendez-vous";
   if (text.includes("signal") || text.includes("incident")) return "Signalement";
   if (text.includes("service")) return "Service";
@@ -52,11 +70,114 @@ function requestReferenceFromNotification(item = {}) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+
+function nestedObject(item = {}, key) {
+  const value = item?.[key];
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+function sessionSecurityFields(item = {}) {
+  const details = nestedObject(item, "details");
+  const metadata = nestedObject(item, "metadata");
+  const payload = nestedObject(item, "payload");
+  const data = nestedObject(item, "data");
+  const securityEvent = nestedObject(item, "security_event");
+
+  const sessionId =
+    item.session_id ||
+    item.sessionId ||
+    details.session_id ||
+    details.sessionId ||
+    metadata.session_id ||
+    metadata.sessionId ||
+    payload.session_id ||
+    payload.sessionId ||
+    data.session_id ||
+    data.sessionId ||
+    securityEvent.session_id ||
+    securityEvent.sessionId ||
+    "";
+
+  const securityEventId =
+    item.security_event_id ||
+    item.securityEventId ||
+    details.security_event_id ||
+    metadata.security_event_id ||
+    payload.security_event_id ||
+    data.security_event_id ||
+    securityEvent.id ||
+    "";
+
+  const securityKind =
+    item.security_kind ||
+    item.securityKind ||
+    item.kind ||
+    item.event ||
+    details.kind ||
+    metadata.kind ||
+    payload.kind ||
+    data.kind ||
+    securityEvent.kind ||
+    "";
+
+  const deviceLabel =
+    item.device_label ||
+    details.device_label ||
+    details.device ||
+    metadata.device_label ||
+    payload.device_label ||
+    data.device_label ||
+    securityEvent.device_label ||
+    "";
+
+  const ipAddress =
+    item.ip_address ||
+    details.ip_address ||
+    details.ip ||
+    metadata.ip_address ||
+    payload.ip_address ||
+    data.ip_address ||
+    securityEvent.ip_address ||
+    "";
+
+  return {
+    sessionId: String(sessionId || ""),
+    securityEventId: securityEventId === undefined || securityEventId === null ? "" : String(securityEventId),
+    securityKind: String(securityKind || ""),
+    deviceLabel: String(deviceLabel || ""),
+    ipAddress: String(ipAddress || ""),
+  };
+}
+
+function isSessionSecurityNotification(item = {}, fields = sessionSecurityFields(item)) {
+  const haystack = [
+    fields.securityKind,
+    item.category,
+    item.notification_category,
+    item.notification_type,
+    item.type,
+    item.title,
+    item.message,
+    item.body,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  const securityWords =
+    /session|connexion|login|appareil|device|nouvel appareil|new device|sécur|secur|révoqu|revoqu/;
+
+  return Boolean(fields.sessionId || fields.securityEventId || securityWords.test(haystack));
+}
+
 export function normalizeNotification(item = {}) {
   const id = item.id ?? item.uuid ?? item.pk ?? item.notification_id;
   const createdAt = item.created_at || item.created || item.timestamp || item.date || "";
   const requestReference = requestReferenceFromNotification(item);
-  const category = requestReference && /^SIG-/i.test(String(requestReference)) ? "Signalement" : inferCategory(item);
+  const security = sessionSecurityFields(item);
+  const sessionSecurity = isSessionSecurityNotification(item, security);
+  const category = sessionSecurity
+    ? "Sécurité"
+    : requestReference && /^SIG-/i.test(String(requestReference))
+      ? "Signalement"
+      : inferCategory(item);
   return {
     ...item,
     id,
@@ -73,6 +194,12 @@ export function normalizeNotification(item = {}) {
     appointment_id: item.appointment_id || item.appointment || null,
     contact_reference: item.contact_reference || item.contact_ref || null,
     service_slug: item.service_slug || item.service?.slug || null,
+    session_id: security.sessionId || null,
+    security_event_id: security.securityEventId || null,
+    security_kind: security.securityKind || "",
+    security_device_label: security.deviceLabel || "",
+    security_ip_address: security.ipAddress || "",
+    is_session_security: sessionSecurity,
   };
 }
 

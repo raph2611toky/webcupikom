@@ -1,0 +1,13 @@
+NOVA TERRA V116 — LISTES AGENT / ADMIN + PAGINATION
+
+- File des demandes Agent/Admin : 10 éléments par page, pagination standard PortalPagination.
+- Ajout d'une vraie ligne d'entête des colonnes pour améliorer la lecture.
+- Signalements Agent : 8 éléments par page, remplacement de la pagination locale par PortalPagination.
+- Services Admin : pagination 8 éléments.
+- Services Agent : pagination 8 éléments.
+- Transport Admin : pagination 8 arrêts.
+- PortalPagination : design Nova Terra angulaire, pas de gros arrondis.
+- Signalements : métriques, toolbar, table, actions et file urgence utilisent des découpes techniques.
+- Les pills de statut/priorité restent volontairement arrondies car elles portent un statut, pas une structure.
+- Suppression de l'ancien staff-request-pagination devenu inutile.
+- Landing et Accessibilité V115 ne sont pas modifiés.

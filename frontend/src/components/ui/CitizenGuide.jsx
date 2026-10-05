@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { navigate } from "../../utils/navigation.js";
 import { useLocale } from "../../utils/i18n.js";
-import "../../styles/app-shell.css";
+import "../../styles/pages/citizen-guide-v110.css";
 
 const GUIDES = {
   dashboard: {
@@ -66,9 +67,28 @@ function getGuide(path) {
   return Object.entries(GUIDES).find(([,guide])=>guide.match(path)) || ["general",GENERIC_GUIDE];
 }
 
+const GUIDE_POSITION_KEY = "nova_terra_context_help_position_v110";
+
+function readSavedPosition() {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = JSON.parse(localStorage.getItem(GUIDE_POSITION_KEY) || "null");
+    return Number.isFinite(value?.x) && Number.isFinite(value?.y) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CitizenGuide() {
   const [locale]=useLocale();
   const [visible,setVisible]=useState(false);
+  const [position,setPosition]=useState(readSavedPosition);
+  const [dragging,setDragging]=useState(false);
+  const [pointerFx,setPointerFx]=useState(null);
+  const positionRef=useRef(position);
+  const guideRef=useRef(null);
+  const triggerRef=useRef(null);
+  const dragRef=useRef(null);
   const path=window.location.pathname;
   const matched=useMemo(()=>getGuide(path),[path]);
 
@@ -77,6 +97,9 @@ export default function CitizenGuide() {
     setVisible(localStorage.getItem(`nova_terra_context_help_${key}`)!=="done");
   },[matched]);
 
+  useEffect(()=>{ positionRef.current=position; },[position]);
+  useEffect(()=>()=>document.documentElement.classList.remove("is-dragging-citizen-guide"),[]);
+
   const [key,guide]=matched;
   const copy=guide[locale]||guide.fr;
 
@@ -84,32 +107,77 @@ export default function CitizenGuide() {
     localStorage.setItem(`nova_terra_context_help_${key}`,"done");
     setVisible(false);
   }
+  function reopen(){ setVisible(true); }
+  function act(){ close(); if(guide.action) navigate(guide.action); }
 
-  function reopen(){
-    setVisible(true);
+  function startDrag(event, element) {
+    if(event.button!==0 || !element) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect=element.getBoundingClientRect();
+    dragRef.current={pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top,width:rect.width,height:rect.height};
+    setDragging(true);
+    setPointerFx({x:event.clientX,y:event.clientY});
+    document.documentElement.classList.add("is-dragging-citizen-guide");
+    event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
-  function act(){
-    close();
-    if(guide.action) navigate(guide.action);
+  function moveDrag(event) {
+    const drag=dragRef.current;
+    if(!drag || drag.pointerId!==event.pointerId) return;
+    const x=Math.max(8,Math.min(event.clientX-drag.offsetX,window.innerWidth-drag.width-8));
+    const y=Math.max(8,Math.min(event.clientY-drag.offsetY,window.innerHeight-drag.height-8));
+    const next={x,y};
+    positionRef.current=next;
+    setPosition(next);
+    setPointerFx({x:event.clientX,y:event.clientY});
   }
+
+  function endDrag(event) {
+    const drag=dragRef.current;
+    if(!drag || drag.pointerId!==event.pointerId) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    dragRef.current=null;
+    setDragging(false);
+    setPointerFx(null);
+    document.documentElement.classList.remove("is-dragging-citizen-guide");
+    if(positionRef.current) localStorage.setItem(GUIDE_POSITION_KEY,JSON.stringify(positionRef.current));
+  }
+
+  function resetPosition() {
+    localStorage.removeItem(GUIDE_POSITION_KEY);
+    positionRef.current=null;
+    setPosition(null);
+  }
+
+  const floatingStyle=position?{left:`${position.x}px`,top:`${position.y}px`,right:"auto",bottom:"auto"}:undefined;
+  if(typeof document==="undefined") return null;
+  const cursorFx=dragging&&pointerFx?<span className="citizen-context-guide__cursor-fx" style={{left:pointerFx.x,top:pointerFx.y}} aria-hidden="true"><i/><b/></span>:null;
 
   if(!visible){
-    return <button className="citizen-context-guide-trigger" type="button" onClick={reopen} aria-label={locale==="en"?"Open contextual tips":locale==="mg"?"Sokafy ny toromarika":"Ouvrir les indications contextuelles"}>
-      <span aria-hidden="true">?</span><b>{locale==="en"?"Tips":locale==="mg"?"Toromarika":"Indications"}</b>
-    </button>;
+    return createPortal(<>
+      <div ref={triggerRef} className={`citizen-context-guide-trigger${dragging?" is-dragging":""}`} style={floatingStyle}>
+        <button className="citizen-context-guide-trigger__open" type="button" onClick={reopen} aria-label={locale==="en"?"Open contextual tips":locale==="mg"?"Sokafy ny toromarika":"Ouvrir les indications contextuelles"}>
+          <span aria-hidden="true">?</span><b>{locale==="en"?"Tips":locale==="mg"?"Toromarika":"Indications"}</b>
+        </button>
+        <button className="citizen-context-guide-trigger__move" type="button"
+          onPointerDown={(event)=>startDrag(event,triggerRef.current)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onDoubleClick={resetPosition}
+          aria-label={locale==="en"?"Move tips":locale==="mg"?"Afindrao ny toromarika":"Déplacer les indications"}>⠿</button>
+      </div>{cursorFx}
+    </>,document.body);
   }
 
-  return <aside className="citizen-context-guide" role="status" aria-live="polite">
-    <div className="citizen-context-guide__icon" aria-hidden="true">?</div>
-    <div className="citizen-context-guide__body">
-      <strong>{copy.title}</strong>
-      <p>{copy.text}</p>
-      <div className="citizen-context-guide__actions">
-        {guide.action ? <button className="primary-action" type="button" onClick={act}>{copy.action}</button> : null}
+  return createPortal(<>
+    <aside ref={guideRef} className={`citizen-context-guide${dragging?" is-dragging":""}`} style={floatingStyle} role="status" aria-live="polite">
+      <button className="citizen-context-guide__drag" type="button"
+        onPointerDown={(event)=>startDrag(event,guideRef.current)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onDoubleClick={resetPosition}
+        aria-label={locale==="en"?"Move tips":locale==="mg"?"Afindrao ny toromarika":"Déplacer les indications"}>⠿</button>
+      <div className="citizen-context-guide__icon" aria-hidden="true">?</div>
+      <div className="citizen-context-guide__body"><strong>{copy.title}</strong><p>{copy.text}</p><div className="citizen-context-guide__actions">
+        {guide.action?<button className="primary-action" type="button" onClick={act}>{copy.action}</button>:null}
         <button className="guide-dismiss" type="button" onClick={close}>{locale==="en"?"Got it":locale==="mg"?"Azoko":"Compris"}</button>
-      </div>
-    </div>
-    <button className="citizen-context-guide__close" type="button" onClick={close} aria-label={locale==="en"?"Close":locale==="mg"?"Hidio":"Fermer"}>×</button>
-  </aside>;
+      </div></div>
+      <button className="citizen-context-guide__close" type="button" onClick={close} aria-label={locale==="en"?"Close":locale==="mg"?"Hidio":"Fermer"}>×</button>
+    </aside>{cursorFx}
+  </>,document.body);
 }

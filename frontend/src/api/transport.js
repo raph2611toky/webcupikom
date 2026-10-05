@@ -27,9 +27,67 @@ function normalizeLines(value) {
   return [];
 }
 
+function timetableEntry(entry, index) {
+  const fallbackKey = `Passage ${index + 1}`;
+  if (entry == null) return { key: fallbackKey, value: "—" };
+  if (typeof entry !== "object") return { key: fallbackKey, value: entry };
+
+  if (
+    Object.prototype.hasOwnProperty.call(entry, "key") &&
+    Object.prototype.hasOwnProperty.call(entry, "value")
+  ) {
+    return { key: entry.key || fallbackKey, value: entry.value };
+  }
+
+  const labelKeys = [
+    "label", "day", "jour", "weekday", "name", "title", "period", "periode",
+    "line", "route", "direction", "destination",
+  ];
+  const valueKeys = [
+    "value", "hours", "horaires", "time", "schedule", "slots", "periods",
+    "opening_hours",
+  ];
+  const startKeys = ["starts_at", "start_at", "start", "from", "departure"];
+  const endKeys = ["ends_at", "end_at", "end", "to", "arrival"];
+
+  const labelKey = labelKeys.find((key) => entry[key] != null && entry[key] !== "");
+  const valueKey = valueKeys.find((key) => entry[key] != null && entry[key] !== "");
+  const startKey = startKeys.find((key) => entry[key] != null && entry[key] !== "");
+  const endKey = endKeys.find((key) => entry[key] != null && entry[key] !== "");
+
+  if (labelKey && valueKey) {
+    return { key: entry[labelKey], value: entry[valueKey] };
+  }
+
+  if (startKey || endKey) {
+    const key = labelKey ? entry[labelKey] : fallbackKey;
+    return {
+      key,
+      value: {
+        starts_at: startKey ? entry[startKey] : "",
+        ends_at: endKey ? entry[endKey] : "",
+        duration_minutes: entry.duration_minutes ?? entry.duration ?? null,
+        frequency_minutes: entry.frequency_minutes ?? entry.frequency ?? null,
+        timezone: entry.timezone ?? entry.tz ?? "",
+      },
+    };
+  }
+
+  const remaining = Object.entries(entry).filter(([key]) => key !== labelKey);
+  if (remaining.length === 1) {
+    const [key, value] = remaining[0];
+    return { key: labelKey ? entry[labelKey] : key, value };
+  }
+
+  return {
+    key: labelKey ? entry[labelKey] : fallbackKey,
+    value: Object.fromEntries(remaining.length ? remaining : Object.entries(entry)),
+  };
+}
+
 function normalizeTimetable(value) {
   const source = parseMaybeObject(value, value);
-  if (Array.isArray(source)) return source;
+  if (Array.isArray(source)) return source.map(timetableEntry);
   if (source && typeof source === "object") {
     return Object.entries(source).map(([key, entry]) => ({ key, value: entry }));
   }

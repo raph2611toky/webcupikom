@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CitizenSidebar from "../../components/ui/CitizenSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
+import PortalActionDialog from "../../components/ui/PortalActionDialog.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getServices } from "../../api/services.js";
 import {
@@ -80,6 +81,9 @@ const COPY = {
     another: "Prendre un autre rendez-vous",
     reference: "Référence",
     cancelAsk: "Annuler ce rendez-vous ?",
+    cancelTitle: "Annuler ce rendez-vous",
+    cancelText: "Cette action annulera le rendez-vous sélectionné. Vérifiez les informations avant de continuer.",
+    cancelConfirm: "Confirmer l’annulation",
     cancelled: "Rendez-vous annulé.",
     error: "Impossible d’enregistrer ce rendez-vous.",
     availabilityError: "Impossible de vérifier les disponibilités de cet agent.",
@@ -150,6 +154,9 @@ const COPY = {
     another: "Book another appointment",
     reference: "Reference",
     cancelAsk: "Cancel this appointment?",
+    cancelTitle: "Cancel this appointment",
+    cancelText: "This will cancel the selected appointment. Check the details before continuing.",
+    cancelConfirm: "Confirm cancellation",
     cancelled: "Appointment cancelled.",
     error: "Unable to save this appointment.",
     availabilityError: "Unable to check this agent's availability.",
@@ -220,6 +227,9 @@ const COPY = {
     another: "Haka fotoana hafa",
     reference: "Laharana",
     cancelAsk: "Hanafoana ity fotoana ity?",
+    cancelTitle: "Hanafoana ity fotoana ity",
+    cancelText: "Hofoanana ity fotoana voafidy ity. Hamarino aloha ny antsipiriany.",
+    cancelConfirm: "Hamarino ny fanafoanana",
     cancelled: "Nofoanana ny fotoana.",
     error: "Tsy afaka mitahiry ny fotoana.",
     availabilityError: "Tsy afaka manamarina ny fahafahana.",
@@ -309,6 +319,7 @@ export default function CitizenAppointments() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [confirmedAppointment, setConfirmedAppointment] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
   const [pageMode, setPageMode] = useState("list");
   const [listFilter, setListFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
@@ -478,14 +489,24 @@ export default function CitizenAppointments() {
     }
   }
 
-  async function cancel(item) {
-    if (!window.confirm(copy.cancelAsk)) return;
+  function cancel(item) {
+    setCancelTarget(item);
+  }
+
+  async function confirmCancellation() {
+    if (!cancelTarget) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
     try {
-      await cancelCitizenAppointment(item.reference);
+      await cancelCitizenAppointment(cancelTarget.reference);
       setNotice(copy.cancelled);
+      setCancelTarget(null);
       await loadLists();
     } catch (err) {
       setError(getApiErrorMessage(err, copy.error));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -792,6 +813,28 @@ export default function CitizenAppointments() {
               </section>
             </div>
           ) : null}
+
+          <PortalActionDialog
+            open={Boolean(cancelTarget)}
+            eyebrow={copy.title}
+            title={copy.cancelTitle}
+            description={copy.cancelText}
+            icon="!"
+            tone="danger"
+            confirmLabel={copy.cancelConfirm}
+            cancelLabel={copy.cancelForm}
+            busy={saving}
+            onClose={()=>{if(!saving)setCancelTarget(null)}}
+            onConfirm={confirmCancellation}
+            details={cancelTarget?[
+              {label:copy.service,value:cancelTarget.serviceName},
+              {label:copy.agent,value:cancelTarget.agentName},
+              {label:copy.dateLabel,value:cancelTarget.date?longDate(parseDate(cancelTarget.date),locale):"—"},
+              {label:copy.timeLabel,value:timeRange(cancelTarget)},
+              {label:copy.reference,value:cancelTarget.reference},
+              {label:copy.reasonLabel,value:cancelTarget.reason||"—"},
+            ]:[]}
+          />
         </main>
       </div>
     </div>

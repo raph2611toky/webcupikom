@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AgentSidebar from "../../components/ui/AgentSidebar.jsx";
 import PortalTopbar from "../../components/ui/PortalTopbar.jsx";
 import PortalPagination from "../../components/ui/PortalPagination.jsx";
+import PortalActionDialog from "../../components/ui/PortalActionDialog.jsx";
 import { getAgentAppointments, getAgentAppointmentSummary, getAppointmentStatusLabel, updateAgentAppointment } from "../../api/appointments.js";
 import { getApiErrorMessage } from "../../api/auth.js";
 import { navigate } from "../../utils/navigation.js";
@@ -15,6 +16,8 @@ export default function AgentAppointments(){
   const [appointments,setAppointments]=useState([]),[summary,setSummary]=useState({}),[loading,setLoading]=useState(true),[savingReference,setSavingReference]=useState(""),[notice,setNotice]=useState(""),[error,setError]=useState("");
   const [filters,setFilters]=useState({status:"",search:"",upcoming:"",date_from:"",date_to:""});
   const [rescheduleTarget,setRescheduleTarget]=useState(null);
+  const [confirmTarget,setConfirmTarget]=useState(null);
+  const [confirmForm,setConfirmForm]=useState({location:"",preparation:""});
   const [page,setPage]=useState(1);
   const [rescheduleForm,setRescheduleForm]=useState({starts_at:"",ends_at:""});
 
@@ -28,17 +31,55 @@ export default function AgentAppointments(){
   const pageRows=visible.slice((page-1)*perPage,page*perPage);
   useEffect(()=>{setPage(1)},[filters.status,filters.search,filters.upcoming,filters.date_from,filters.date_to]);
   useEffect(()=>{if(page>totalPages)setPage(totalPages)},[page,totalPages]);
+  function openConfirm(item){
+    setConfirmTarget(item);
+    setConfirmForm({
+      location:item.location||"",
+      preparation:item.preparationInstructions||item.preparation||"",
+    });
+  }
+
+  async function confirmAppointment(){
+    if(!confirmTarget)return;
+    const item=confirmTarget;
+    const patch={status:"confirmed"};
+    if(confirmForm.location.trim())patch.location=confirmForm.location.trim();
+    if(confirmForm.preparation.trim())patch.preparation_instructions=confirmForm.preparation.trim();
+
+    setError("");setNotice("");setSavingReference(item.reference);
+    try{
+      await updateAgentAppointment(item.reference,patch);
+      setNotice("Rendez-vous confirmé. Les informations de préparation sont visibles côté citoyen.");
+      await loadSummary();
+      setAppointments(rows=>rows.map(row=>row.reference===item.reference?{
+        ...row,
+        ...patch,
+        status:"confirmed",
+        statusLabel:getAppointmentStatusLabel("confirmed"),
+        preparationInstructions:patch.preparation_instructions||row.preparationInstructions,
+        preparation:patch.preparation_instructions||row.preparation,
+      }:row));
+      setConfirmTarget(null);
+    }catch(err){
+      setError(getApiErrorMessage(err,"Impossible de confirmer le rendez-vous."));
+    }finally{
+      setSavingReference("");
+    }
+  }
+
   async function setStatus(item,status){
     setError("");setNotice("");setSavingReference(item.reference);
     try{
       const patch={status};
-      if(status==="confirmed"){
-        const location=window.prompt("Lieu précis du rendez-vous",item.location||"");if(location===null)return;if(location.trim())patch.location=location.trim();
-        const prep=window.prompt("Instructions de préparation pour le citoyen",item.preparationInstructions||item.preparation||"");if(prep!==null&&prep.trim())patch.preparation_instructions=prep.trim();
-      }
-      await updateAgentAppointment(item.reference,patch);setNotice(`Rendez-vous ${getAppointmentStatusLabel(status).toLowerCase()}.`);await loadSummary();
+      await updateAgentAppointment(item.reference,patch);
+      setNotice(`Rendez-vous ${getAppointmentStatusLabel(status).toLowerCase()}.`);
+      await loadSummary();
       setAppointments(rows=>rows.map(row=>row.reference===item.reference?{...row,...patch,status,statusLabel:getAppointmentStatusLabel(status)}:row));
-    }catch(err){setError(getApiErrorMessage(err,"Impossible de mettre à jour le rendez-vous."))}finally{setSavingReference("")}
+    }catch(err){
+      setError(getApiErrorMessage(err,"Impossible de mettre à jour le rendez-vous."));
+    }finally{
+      setSavingReference("");
+    }
   }
   function openReschedule(item){
     setRescheduleTarget(item);
@@ -72,10 +113,53 @@ export default function AgentAppointments(){
         {loading?<div className="loading-card">Chargement…</div>:<div className="agent-appointment-list">{visible.length?pageRows.map(item=><article key={item.reference} className={`agent-appointment status-${item.status}`}>
           <div className="agent-appointment__time"><b>{item.startTime||"—"}</b><span>{formatDate(item.date)}</span></div>
           <div className="agent-appointment__body"><div className="agent-appointment__title"><strong>{item.citizenName}</strong><em>{getAppointmentStatusLabel(item.status)}</em></div><span>{item.serviceName} · {item.reference}</span><p>{item.reason||"Motif non précisé"}</p><div className="agent-appointment__meta"><small>{item.slot||`${item.startTime} - ${item.endTime}`}</small><small>{item.citizenEmail||"—"}</small>{item.location?<small>Lieu : {item.location}</small>:null}{item.preparation?<small>Préparation : {item.preparation}</small>:null}</div>
-          <div className="agent-appointment__actions">{item.status==="requested"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"confirmed")}>Confirmer</button><button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"declined")}>Refuser</button></>:null}{item.status==="confirmed"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"completed")}>Terminer</button><button className="secondary-action" disabled={savingReference===item.reference} onClick={()=>openReschedule(item)}>Replanifier</button>{item.canCancel?<button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"cancelled")}>Annuler</button>:null}</>:null}</div></div>
+          <div className="agent-appointment__actions">{item.status==="requested"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>openConfirm(item)}>Confirmer</button><button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"declined")}>Refuser</button></>:null}{item.status==="confirmed"?<><button className="primary-action" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"completed")}>Terminer</button><button className="secondary-action" disabled={savingReference===item.reference} onClick={()=>openReschedule(item)}>Replanifier</button>{item.canCancel?<button className="text-danger" disabled={savingReference===item.reference} onClick={()=>setStatus(item,"cancelled")}>Annuler</button>:null}</>:null}</div></div>
         </article>):<div className="dashboard-empty">Aucun rendez-vous dans ce filtre.</div>}{visible.length?<PortalPagination page={page} totalPages={totalPages} totalItems={visible.length} perPage={perPage} onPageChange={setPage} itemLabel="rendez-vous" itemLabelPlural="rendez-vous"/>:null}</div>}
       </section>
       {rescheduleTarget?<div className="modal-backdrop" onClick={()=>setRescheduleTarget(null)}><form className="portal-modal compact-note-modal" onClick={e=>e.stopPropagation()} onSubmit={reschedule}><button type="button" className="modal-close" onClick={()=>setRescheduleTarget(null)}>×</button><span className="section-label">Replanification</span><h2>{rescheduleTarget.reference}</h2><label><span>Début</span><input type="datetime-local" required value={rescheduleForm.starts_at} onChange={e=>setRescheduleForm(v=>({...v,starts_at:e.target.value}))}/></label><label><span>Fin</span><input type="datetime-local" required value={rescheduleForm.ends_at} onChange={e=>setRescheduleForm(v=>({...v,ends_at:e.target.value}))}/></label><button className="primary-action" type="submit" disabled={savingReference===rescheduleTarget.reference}>{savingReference===rescheduleTarget.reference?"Enregistrement…":"Enregistrer le nouveau créneau"}</button></form></div>:null}
+
+      <PortalActionDialog
+        open={Boolean(confirmTarget)}
+        eyebrow="Confirmation du rendez-vous"
+        title="Confirmer ce rendez-vous"
+        description="Vérifiez le rendez-vous et ajoutez les informations utiles au citoyen avant de le confirmer."
+        icon="✓"
+        tone="success"
+        confirmLabel="Confirmer le rendez-vous"
+        cancelLabel="Retour"
+        busy={Boolean(confirmTarget&&savingReference===confirmTarget.reference)}
+        onClose={()=>{if(!savingReference)setConfirmTarget(null)}}
+        onConfirm={confirmAppointment}
+        details={confirmTarget?[
+          {label:"Citoyen",value:confirmTarget.citizenName},
+          {label:"Service",value:confirmTarget.serviceName},
+          {label:"Date",value:formatDate(confirmTarget.date)},
+          {label:"Créneau",value:confirmTarget.slot||`${confirmTarget.startTime||"—"} – ${confirmTarget.endTime||"—"}`},
+          {label:"Référence",value:confirmTarget.reference},
+          {label:"Motif",value:confirmTarget.reason||"Non précisé"},
+        ]:[]}
+      >
+        <div className="portal-action-dialog__fields">
+          <label>
+            <span>Lieu précis du rendez-vous</span>
+            <input
+              value={confirmForm.location}
+              onChange={e=>setConfirmForm(v=>({...v,location:e.target.value}))}
+              placeholder="Ex. Hôtel de ville · Guichet 2"
+            />
+          </label>
+          <label className="full">
+            <span>Instructions de préparation</span>
+            <textarea
+              rows="4"
+              value={confirmForm.preparation}
+              onChange={e=>setConfirmForm(v=>({...v,preparation:e.target.value}))}
+              placeholder="Ex. Apporter une pièce d’identité et les documents originaux."
+            />
+          </label>
+        </div>
+        <p className="portal-action-dialog__hint">Ces informations seront visibles immédiatement dans la fiche du rendez-vous côté citoyen.</p>
+      </PortalActionDialog>
     </main>
   </div></div>;
 }

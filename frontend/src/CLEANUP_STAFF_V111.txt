@@ -1,0 +1,27 @@
+NOVA TERRA — STAFF UI V111
+
+Objectif
+- Adapter les espaces ADMIN et AGENT au langage visuel futuriste déjà validé côté citoyen.
+- Conserver toutes les routes, API et logiques métier.
+- Éviter les couches CSS de correction empilées.
+
+Architecture
+- staff-theme-v111.css = propriétaire visuel unique des shells ADMIN/AGENT (sidebar, topbar, cards, boutons, inputs, filtres, tables, modales).
+- agent.css / dashboard.css = conservent les layouts et composants métier spécifiques.
+- agent-polish.css supprimé.
+- ancien bloc V50 de app-shell.css supprimé.
+
+Sidebar
+- même fond spatial / logo Nova Terra que le citoyen.
+- bordures angulaires, actif violet, icônes outline.
+- réduction en rail d’icônes sur desktop, position mémorisée séparément admin/agent.
+- responsive tablette/mobile conservé.
+
+Topbar
+- classes role-specific portal-topbar--admin / --agent.
+- bouton d’action, identité utilisateur et bordures techniques harmonisés.
+
+Contenu
+- cards, métriques, actions rapides, lignes de gestion, filtres, inputs/selects, tables et modales harmonisés.
+- nuances admin = violet/magenta, agent = violet/bleu sans changer le thème principal.
+- A+/A++ et contraste renforcé pris en compte.

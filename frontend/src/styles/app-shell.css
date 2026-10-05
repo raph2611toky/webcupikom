@@ -196,32 +196,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 @keyframes portal-auth-spin { to { transform:rotate(360deg); } }
 
-/* V29 — language selector + thin breadcrumb, without enlarging the approved layout */
-.language-switcher {
-  display:inline-flex;
-  align-items:center;
-  min-height:2rem;
-  border:1px solid #ded8e5;
-  border-radius:.65rem;
-  background:rgba(255,255,255,.94);
-  box-shadow:0 .4rem 1rem rgba(37,20,55,.05);
-}
-.language-switcher select {
-  min-width:3.2rem;
-  height:1.95rem;
-  border:0;
-  outline:0;
-  border-radius:inherit;
-  background:transparent;
-  color:#241d2b;
-  padding:0 .45rem;
-  font:inherit;
-  font-size:.8125rem;
-  font-weight:850;
-  cursor:pointer;
-}
-.language-switcher--compact { min-height:1.95rem; }
-.language-switcher--compact select { height:1.9rem; min-width:3.1rem; }
+/* V29 — breadcrumb/meta only.
+   LanguageSwitcher owns its own CSS in language-switcher-v110.css. */
 .portal-topbar__meta { display:flex; align-items:center; gap:.55rem; min-width:0; }
 .portal-breadcrumb { display:flex; align-items:center; gap:.25rem; min-width:0; max-width:min(40vw,34rem); overflow:hidden; white-space:nowrap; color:#82798b; font-size:.8125rem; line-height:1; }
 .portal-breadcrumb span { display:flex; align-items:center; gap:.25rem; min-width:0; }
@@ -229,13 +205,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .portal-breadcrumb b { max-width:12rem; overflow:hidden; text-overflow:ellipsis; color:#4d4554; font-weight:800; }
 .portal-breadcrumb i { color:#b1a8b7; font-style:normal; }
 .portal-topbar__meta .portal-topbar__eyebrow { margin:0; white-space:nowrap; }
-html[data-contrast="high"] .language-switcher { background:#fff!important; border:2px solid #111!important; box-shadow:none!important; }
-html[data-contrast="high"] .language-switcher select { background:#fff!important; color:#000!important; border:0!important; }
-html[data-contrast="high"] .portal-breadcrumb button, html[data-contrast="high"] .portal-breadcrumb b { color:#000!important; }
+html[data-contrast="high"] .portal-breadcrumb button,
+html[data-contrast="high"] .portal-breadcrumb b { color:#000!important; }
 @media(max-width:680px){
   .portal-breadcrumb { max-width:42vw; }
   .portal-topbar__meta .portal-topbar__eyebrow { display:none; }
-  .portal-topbar__right .language-switcher { display:inline-flex; }
 }
 
 
@@ -549,88 +523,10 @@ body[data-route-group="portal"] .portal-table__row small {
   50% { box-shadow:0 0 0 7px rgba(102,0,252,0); }
 }
 
-/* Contextual "right moment" help */
-.citizen-context-guide {
-  position:fixed;
-  z-index:640;
-  left:272px;
-  bottom:24px;
-  width:min(430px,calc(100vw - 310px));
-  display:grid;
-  grid-template-columns:38px minmax(0,1fr) 28px;
-  gap:11px;
-  align-items:start;
-  padding:15px;
-  border:1px solid #dfd7e6;
-  border-radius:15px;
-  background:#fff;
-  box-shadow:0 16px 48px rgba(26,14,35,.14);
-}
-
-.citizen-context-guide__icon {
-  width:36px;
-  height:36px;
-  display:grid;
-  place-items:center;
-  border-radius:11px;
-  background:#efe7ff;
-  color:#6414d4;
-  font-size:.9rem;
-  font-weight:900;
-}
-
-.citizen-context-guide__body {
-  min-width:0;
-}
-
-.citizen-context-guide__body > strong {
-  display:block;
-  color:#211a27;
-  font-size:.82rem;
-}
-
-.citizen-context-guide__body > p {
-  margin:4px 0 0;
-  color:#706777;
-  font-size:.8125rem;
-  line-height:1.5;
-}
-
-.citizen-context-guide__actions {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-top:10px;
-}
-
-.citizen-context-guide__actions .primary-action {
-  min-height:34px!important;
-  font-size:.8125rem!important;
-}
-
-.guide-dismiss {
-  min-height:34px;
-  border:0;
-  background:transparent;
-  color:#6c6373;
-  padding:0 7px;
-  font-size:.8125rem;
-  font-weight:800;
-}
-
-.citizen-context-guide__close {
-  width:27px;
-  height:27px;
-  border:0;
-  border-radius:50%;
-  background:#f3f0f5;
-  color:#655d6b;
-  font-size:.95rem;
-}
-
+/* Voice control contrast/mobile safeguards.
+   CitizenGuide owns its CSS in citizen-guide-v110.css. */
 html[data-contrast="high"] .portal-voice-trigger,
-html[data-contrast="high"] .portal-voice-panel,
-html[data-contrast="high"] .citizen-context-guide {
+html[data-contrast="high"] .portal-voice-panel {
   background:#fff!important;
   color:#000!important;
   border:2px solid #111!important;
@@ -638,24 +534,12 @@ html[data-contrast="high"] .citizen-context-guide {
 
 html[data-contrast="high"] .portal-voice-panel__head span,
 html[data-contrast="high"] .portal-voice-panel__head small,
-html[data-contrast="high"] .portal-voice-panel__status,
-html[data-contrast="high"] .citizen-context-guide__body > strong,
-html[data-contrast="high"] .citizen-context-guide__body > p,
-html[data-contrast="high"] .guide-dismiss {
+html[data-contrast="high"] .portal-voice-panel__status {
   color:#000!important;
 }
 
 @media(max-width:1000px) {
-
-  .citizen-context-guide {
-    left:98px;
-    width:min(430px,calc(100vw - 120px));
-  }
-
-  .portal-voice-trigger b {
-    display:none;
-  }
-
+  .portal-voice-trigger b { display:none; }
   .portal-voice-trigger {
     width:36px;
     padding:0;
@@ -664,14 +548,6 @@ html[data-contrast="high"] .guide-dismiss {
 }
 
 @media(max-width:700px) {
-
-  .citizen-context-guide {
-    left:12px;
-    right:12px;
-    bottom:78px;
-    width:auto;
-  }
-
   .portal-voice-panel {
     top:72px;
     right:12px;
@@ -716,15 +592,13 @@ html[data-contrast="high"] .portal-notification-bell>b{
 
 /* ==========================================================================
    V42 — high contrast shell safeguards
+   Language + contextual help are owned by dedicated layers.
    ========================================================================== */
-html[data-contrast="high"] .language-switcher,
-html[data-contrast="high"] .language-switcher select,
 html[data-contrast="high"] .portal-topbar__icon,
 html[data-contrast="high"] .topbar-ghost,
 html[data-contrast="high"] .portal-voice-trigger,
 html[data-contrast="high"] .portal-voice-panel,
-html[data-contrast="high"] .portal-voice-panel__status,
-html[data-contrast="high"] .citizen-context-guide{
+html[data-contrast="high"] .portal-voice-panel__status {
   background:var(--tn-card)!important;
   color:var(--tn-text)!important;
   border-color:var(--tn-line)!important;
@@ -739,49 +613,30 @@ html[data-contrast="high"] .portal-breadcrumb button,
 html[data-contrast="high"] .portal-breadcrumb b,
 html[data-contrast="high"] .portal-voice-panel__head span,
 html[data-contrast="high"] .portal-voice-panel__head small,
-html[data-contrast="high"] .portal-voice-panel__status,
-html[data-contrast="high"] .citizen-context-guide__body>strong,
-html[data-contrast="high"] .citizen-context-guide__body>p{
+html[data-contrast="high"] .portal-voice-panel__status {
   color:var(--tn-text)!important;
   opacity:1!important;
 }
 
 html[data-contrast="high"] .portal-topbar__eyebrow,
-html[data-contrast="high"] .guide-dismiss,
-html[data-contrast="high"] .portal-voice-trigger>span{
+html[data-contrast="high"] .portal-voice-trigger>span {
   color:var(--tn-purple)!important;
 }
 
-html[data-contrast="high"] .portal-voice-trigger>span,
-html[data-contrast="high"] .citizen-context-guide__icon{
+html[data-contrast="high"] .portal-voice-trigger>span {
   background:var(--tn-card)!important;
   color:var(--tn-purple)!important;
   border:2px solid var(--tn-purple)!important;
 }
 
-html[data-contrast="high"] .citizen-context-guide__close,
-html[data-contrast="high"] .portal-voice-panel__head>button{
+html[data-contrast="high"] .portal-voice-panel__head>button {
   background:var(--tn-purple)!important;
   color:#111!important;
   border:2px solid var(--tn-purple)!important;
 }
 
-/* V50 — toutes les fonctions agent restent accessibles, y compris sur petit écran */
-body[data-route-group="portal"] .portal-sidebar--agent nav{overflow-y:auto;scrollbar-width:thin;min-height:0}
-@media(max-width:700px){
-  body[data-route-group="portal"] .portal-sidebar--agent nav{display:flex;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:2px}
-  body[data-route-group="portal"] .portal-sidebar--agent nav::-webkit-scrollbar{display:none}
-  body[data-route-group="portal"] .portal-sidebar--agent nav button:nth-child(n+5){display:flex}
-  body[data-route-group="portal"] .portal-sidebar--agent nav button{flex:0 0 58px;width:58px}
-}
-
 /* V53 — raccourcis header Signalements + Notifications */
 .portal-report-shortcut,.portal-notification-bell{position:relative;display:grid;place-items:center}.portal-report-shortcut svg,.portal-notification-bell svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.portal-report-shortcut>b,.portal-notification-bell>b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#6b18df;color:#fff;font-size:.8125rem;font-weight:900;line-height:1}.portal-report-shortcut{color:#8b3b23}.portal-report-shortcut:hover,.portal-notification-bell:hover{border-color:color-mix(in srgb,var(--tn-purple) 38%,var(--tn-line));background:var(--tn-purple-soft);color:var(--tn-purple)}html[data-contrast="high"] .portal-report-shortcut>b,html[data-contrast="high"] .portal-notification-bell>b{background:#fff!important;color:#000!important;border-color:#000!important}
-
-/* v58 — F35 contextual indication remains reopenable */
-.citizen-context-guide-trigger{position:fixed;z-index:639;left:272px;bottom:24px;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px 6px 7px;border:1px solid #dfd7e6;border-radius:999px;background:#fff;color:#4f405d;box-shadow:0 10px 28px rgba(26,14,35,.12);font-size:.8125rem;font-weight:800}.citizen-context-guide-trigger>span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#efe7ff;color:#6414d4;font-size:.8125rem;font-weight:900}.citizen-context-guide-trigger:hover{border-color:#cbb9dc;background:#fbf9fd}.citizen-context-guide-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--tn-purple) 35%,transparent);outline-offset:3px}
-html[data-contrast="high"] .citizen-context-guide-trigger{background:#fff!important;color:#000!important;border:2px solid #111!important}html[data-contrast="high"] .citizen-context-guide-trigger>span{background:#000!important;color:#fff!important}
-@media(max-width:1000px){.citizen-context-guide-trigger{left:98px}}@media(max-width:700px){.citizen-context-guide-trigger{left:12px;bottom:78px}.citizen-context-guide-trigger b{display:none}}
 
 /* v64 — true municipal alert shortcut */
 .portal-alert-shortcut{position:relative;display:grid;place-items:center;color:#b26a00}

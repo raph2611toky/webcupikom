@@ -1,0 +1,771 @@
+/* ==========================================================================
+   NOVA TERRA — Citizen dashboard V100
+   Dashboard-only composition inspired by the landing-page visual language.
+   ========================================================================== */
+
+:where(body[data-route-group="portal"]) .citizen-dashboard-layout {
+  background:#f7f5ff;
+}
+
+:where(body[data-route-group="portal"]) .citizen-dashboard-layout .portal-main {
+  background:
+    radial-gradient(circle at 82% 12%,rgba(112,38,255,.055),transparent 27%),
+    linear-gradient(180deg,#fbfaff 0%,#f7f5ff 100%);
+}
+
+:where(body[data-route-group="portal"]) .citizen-dashboard-layout .portal-content.citizen-home {
+  width:100%;
+  max-width:none;
+  padding:18px 22px 24px;
+  display:grid;
+  align-content:start;
+  gap:12px;
+}
+
+/* Hero */
+:where(body[data-route-group="portal"]) .citizen-home-hero {
+  position:relative;
+  min-height:200px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:30px;
+  overflow:hidden;
+  padding:26px 34px;
+  color:#fff;
+  background-image:
+    linear-gradient(90deg,rgba(9,7,20,.96) 0%,rgba(17,10,35,.86) 31%,rgba(22,12,39,.46) 58%,rgba(10,8,19,.12) 100%),
+    url("../../assets/dashboard/nova-terra-city.webp");
+  background-size:cover;
+  background-position:center 53%;
+  border:1px solid rgba(132,70,255,.8);
+  box-shadow:0 14px 34px rgba(37,13,78,.14),0 0 0 4px rgba(124,50,255,.035);
+  clip-path:polygon(18px 0,84% 0,86% 8px,100% 8px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-hero::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:8px;
+  pointer-events:none;
+  border-top:1px solid rgba(185,132,255,.58);
+  border-bottom:1px solid rgba(145,81,255,.32);
+  clip-path:inherit;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-hero::after {
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  opacity:.72;
+  background:
+    linear-gradient(90deg,#8e3cff,transparent 17%) 26px 17px/190px 1px no-repeat,
+    linear-gradient(90deg,transparent,#8e3cff) calc(100% - 28px) 17px/190px 1px no-repeat,
+    radial-gradient(circle,#b978ff 0 2px,transparent 2.5px) calc(100% - 155px) 15px/10px 10px no-repeat;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-hero__copy {
+  position:relative;
+  z-index:2;
+  max-width:760px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-hero__copy>span,
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__head>div>span,
+:where(body[data-route-group="portal"]) .citizen-home-panel__head>div>span {
+  display:block;
+  color:#bc8cff;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-hero h2 {
+  margin:8px 0 10px;
+  color:#fff;
+  font-family:var(--portal-font);
+  font-size:clamp(2.5rem,4.4vw,4rem);
+  font-weight:900;
+  line-height:.98;
+  letter-spacing:-.066em;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-hero h2 em {
+  color:#b86fff;
+  font-style:normal;
+  text-shadow:0 0 24px rgba(137,53,255,.20);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-hero p {
+  max-width:630px;
+  margin:0;
+  color:rgba(255,255,255,.77);
+  font-size:.84rem;
+  line-height:1.55;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-profile-card {
+  position:relative;
+  z-index:3;
+  flex:0 0 156px;
+  min-height:156px;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:9px;
+  overflow:hidden;
+  padding:16px 22px 16px 16px;
+  border:1px solid rgba(179,116,255,.58);
+  border-radius:0;
+  color:#fff;
+  background:linear-gradient(155deg,rgba(22,13,38,.82),rgba(9,7,17,.95));
+  box-shadow:0 16px 34px rgba(4,2,10,.28),inset 0 0 28px rgba(129,49,255,.07);
+  backdrop-filter:blur(12px);
+  cursor:pointer;
+  clip-path:polygon(15px 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%,0 15px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-profile-card::before {
+  content:"";
+  position:absolute;
+  right:13px;
+  top:0;
+  width:44px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#9b52ff);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-profile-card>b {
+  position:absolute;
+  right:8px;
+  top:50%;
+  display:grid;
+  width:24px;
+  height:36px;
+  place-items:center;
+  transform:translateY(-50%);
+  color:#fff;
+  font-size:1.2rem;
+  font-weight:600;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-profile-card>span {
+  color:rgba(255,255,255,.74);
+  font-size:.72rem;
+  font-weight:850;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-profile-ring {
+  display:grid;
+  width:82px;
+  height:82px;
+  padding:6px;
+  place-items:center;
+  border-radius:50%;
+  background:conic-gradient(#8a2cff var(--profile-progress),rgba(255,255,255,.13) 0);
+  box-shadow:0 0 24px rgba(124,39,255,.22);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-profile-ring strong {
+  display:grid;
+  width:100%;
+  height:100%;
+  place-items:center;
+  border-radius:50%;
+  color:#fff;
+  background:#100b1c;
+  font-size:1.18rem;
+  letter-spacing:-.04em;
+}
+
+/* Onboarding */
+:where(body[data-route-group="portal"]) .citizen-home-onboarding {
+  position:relative;
+  overflow:hidden;
+  padding:14px 17px 16px;
+  border:1px solid #d9c7f0;
+  background:rgba(255,255,255,.88);
+  box-shadow:0 9px 24px rgba(54,28,85,.05);
+  clip-path:polygon(10px 0,calc(100% - 16px) 0,100% 16px,100% 100%,14px 100%,0 calc(100% - 14px),0 10px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding::after,
+:where(body[data-route-group="portal"]) .citizen-home-panel::after {
+  content:"";
+  position:absolute;
+  right:18px;
+  top:12px;
+  width:110px;
+  height:36px;
+  pointer-events:none;
+  opacity:.15;
+  background-image:radial-gradient(circle,#7c2aff 0 1px,transparent 1.2px);
+  background-size:8px 8px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__head {
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:10px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__head h3,
+:where(body[data-route-group="portal"]) .citizen-home-panel__head h3 {
+  margin:2px 0 2px;
+  color:#0e0917;
+  font-size:.94rem;
+  font-weight:850;
+  letter-spacing:-.035em;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__head p {
+  margin:0;
+  color:#686076;
+  font-size:.76rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__head>button,
+:where(body[data-route-group="portal"]) .citizen-home-panel__head>button {
+  border:0;
+  background:transparent;
+  color:#6d1dec;
+  font:800 .68rem/1 var(--portal-font);
+  cursor:pointer;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps {
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps>button {
+  position:relative;
+  min-width:0;
+  min-height:64px;
+  display:grid;
+  grid-template-columns:34px 36px minmax(0,1fr) 18px;
+  align-items:center;
+  gap:9px;
+  padding:9px 13px;
+  border:1px solid #cdb4ec;
+  border-radius:0;
+  background:linear-gradient(135deg,#fff,#fcf9ff);
+  color:#20162d;
+  text-align:left;
+  cursor:pointer;
+  clip-path:polygon(8px 0,calc(100% - 12px) 0,100% 12px,100% 100%,10px 100%,0 calc(100% - 10px),0 8px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps>button::before {
+  content:"";
+  position:absolute;
+  right:10px;
+  top:0;
+  width:36px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#9c4eff);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps i,
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps b {
+  display:grid;
+  width:34px;
+  height:34px;
+  place-items:center;
+  border-radius:50%;
+  color:#6d1bf0;
+  background:#efe7ff;
+  font-style:normal;
+  font-size:.78rem;
+  font-weight:900;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps b {
+  width:36px;
+  height:36px;
+  border-radius:10px;
+  font-size:.95rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps strong {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.79rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps span {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#756d7f;
+  font-size:.69rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-onboarding__steps em {
+  color:#7421f4;
+  font-style:normal;
+  font-size:1.1rem;
+}
+
+/* Metrics */
+:where(body[data-route-group="portal"]) .citizen-home-metrics {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button {
+  --metric-accent:#7b24f4;
+  --metric-soft:#f0e6ff;
+  position:relative;
+  min-width:0;
+  min-height:88px;
+  display:grid;
+  grid-template-columns:46px minmax(0,1fr) 26px;
+  align-items:center;
+  gap:11px;
+  padding:12px 14px;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--metric-accent) 30%,#ddd7e8);
+  border-radius:0;
+  color:#171020;
+  background:linear-gradient(135deg,#fff 0%,color-mix(in srgb,var(--metric-soft) 46%,#fff) 100%);
+  box-shadow:0 8px 20px rgba(35,18,54,.04);
+  text-align:left;
+  cursor:pointer;
+  clip-path:polygon(8px 0,calc(100% - 12px) 0,100% 12px,100% 100%,10px 100%,0 calc(100% - 10px),0 8px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button::before {
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:0;
+  width:48px;
+  height:3px;
+  background:linear-gradient(90deg,var(--metric-accent),transparent);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button>i,
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button>em {
+  display:grid;
+  place-items:center;
+  color:var(--metric-accent);
+  background:var(--metric-soft);
+  font-style:normal;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button>i {
+  width:46px;
+  height:46px;
+  border-radius:12px;
+  font-size:1.05rem;
+  font-weight:900;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button>em {
+  width:26px;
+  height:26px;
+  border-radius:50%;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button>div {
+  min-width:0;
+  display:grid;
+  gap:1px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button span {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#5d5570;
+  font-size:.68rem;
+  font-weight:900;
+  letter-spacing:.07em;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button strong {
+  color:#15101d;
+  font-size:1.42rem;
+  line-height:1;
+  letter-spacing:-.055em;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics>button small {
+  color:#756d80;
+  font-size:.7rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-metrics .is-orange {--metric-accent:#ef8d00;--metric-soft:#fff0d5}
+:where(body[data-route-group="portal"]) .citizen-home-metrics .is-blue {--metric-accent:#2584ff;--metric-soft:#e8f3ff}
+:where(body[data-route-group="portal"]) .citizen-home-metrics .is-green {--metric-accent:#15a862;--metric-soft:#e6f8ed}
+
+/* Alert */
+:where(body[data-route-group="portal"]) .citizen-home-alert {
+  min-height:54px;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) 18px;
+  align-items:center;
+  gap:10px;
+  padding:9px 13px;
+  border:1px solid #f2b6c2;
+  border-radius:0;
+  color:#28131a;
+  background:linear-gradient(90deg,#fff2f5,#fffafb);
+  text-align:left;
+  cursor:pointer;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-alert>i {
+  display:grid;
+  width:34px;
+  height:34px;
+  place-items:center;
+  border-radius:50%;
+  color:#d62d50;
+  background:#ffe2e9;
+  font-style:normal;
+  font-weight:900;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-alert>div {
+  min-width:0;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:2px 9px;
+  align-items:center;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-alert span {
+  color:#d02e4e;
+  font-size:.68rem;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-alert strong {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.76rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-alert small {
+  grid-column:1/-1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#6d5f68;
+  font-size:.69rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-alert>em {
+  color:#d62d50;
+  font-style:normal;
+}
+
+/* Bottom panels */
+:where(body[data-route-group="portal"]) .citizen-home-grid {
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);
+  gap:14px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-panel {
+  position:relative;
+  min-width:0;
+  min-height:196px;
+  overflow:hidden;
+  padding:14px 17px 16px;
+  border:1px solid #ddd2e8;
+  background:rgba(255,255,255,.92);
+  box-shadow:0 8px 22px rgba(41,22,62,.04);
+  clip-path:polygon(9px 0,calc(100% - 14px) 0,100% 14px,100% 100%,12px 100%,0 calc(100% - 12px),0 9px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-panel__head {
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-panel__head>div>span {
+  color:#756986;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests {
+  position:relative;
+  z-index:1;
+  display:grid;
+  gap:7px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests>button {
+  min-width:0;
+  min-height:54px;
+  display:grid;
+  grid-template-columns:40px minmax(0,1fr) auto 16px;
+  gap:10px;
+  align-items:center;
+  padding:8px 10px;
+  border:1px solid #e6deee;
+  border-radius:0;
+  color:#21182b;
+  background:#fff;
+  text-align:left;
+  cursor:pointer;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests>button>i {
+  display:grid;
+  width:40px;
+  height:40px;
+  place-items:center;
+  border-radius:11px;
+  color:#721cf0;
+  background:#f0e7ff;
+  font-style:normal;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests>button>div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests>button>div>span,
+:where(body[data-route-group="portal"]) .citizen-home-requests>button small {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#756d80;
+  font-size:.69rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests>button strong {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.78rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests>button>b {
+  color:#6d1fed;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-requests .status-pill {
+  min-height:25px;
+  padding:3px 8px;
+  white-space:nowrap;
+  font-size:.67rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-empty {
+  min-height:126px;
+  display:grid;
+  grid-template-columns:78px minmax(0,1fr);
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  max-width:520px;
+  margin:auto;
+  color:#5f586b;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-empty>i {
+  display:grid;
+  width:72px;
+  height:72px;
+  place-items:center;
+  border-radius:22px;
+  color:#8050e6;
+  background:linear-gradient(145deg,#f0e8ff,#fff);
+  box-shadow:0 10px 30px rgba(102,34,213,.08);
+  font-size:1.7rem;
+  font-style:normal;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-empty>div {
+  display:grid;
+  gap:5px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-empty strong {
+  color:#171020;
+  font-size:.80rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-empty span {
+  color:#776f82;
+  font-size:.69rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-empty button {
+  width:max-content;
+  min-height:36px;
+  margin-top:4px;
+  padding:0 14px;
+  border:0;
+  color:#fff;
+  background:linear-gradient(100deg,#5513ac,#7a20f4 65%,#9838ff);
+  font:800 .69rem/1 var(--portal-font);
+  cursor:pointer;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-empty button b {
+  margin-left:8px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-services {
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-services>button {
+  --service-accent:#7d28f5;
+  min-width:0;
+  min-height:112px;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:8px;
+  padding:10px 8px;
+  border:1px solid color-mix(in srgb,var(--service-accent) 30%,#e5ddeb);
+  border-radius:0;
+  color:#251a34;
+  background:linear-gradient(145deg,#fff,#f8f1ff);
+  cursor:pointer;
+  clip-path:polygon(8px 0,calc(100% - 10px) 0,100% 10px,100% 100%,8px 100%,0 calc(100% - 8px),0 8px);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-services>button:nth-child(2) {--service-accent:#ed8d00;background:linear-gradient(145deg,#fff,#fff5e8)}
+:where(body[data-route-group="portal"]) .citizen-home-services>button:nth-child(3) {--service-accent:#2483ff;background:linear-gradient(145deg,#fff,#eef6ff)}
+:where(body[data-route-group="portal"]) .citizen-home-services>button:nth-child(4) {--service-accent:#15a663;background:linear-gradient(145deg,#fff,#ecf9f0)}
+
+:where(body[data-route-group="portal"]) .citizen-home-services i {
+  display:grid;
+  width:40px;
+  height:40px;
+  place-items:center;
+  border-radius:12px;
+  color:var(--service-accent);
+  background:color-mix(in srgb,var(--service-accent) 12%,#fff);
+  font-style:normal;
+  font-size:1.08rem;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-services span {
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.72rem;
+  font-weight:850;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-services small {
+  color:#bd4057;
+  font-size:.66rem;
+  font-weight:800;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home-services .is-unavailable {
+  opacity:.68;
+  filter:grayscale(.25);
+}
+
+/* Interaction */
+:where(body[data-route-group="portal"]) .citizen-home :is(.citizen-home-profile-card,.citizen-home-onboarding__steps>button,.citizen-home-metrics>button,.citizen-home-alert,.citizen-home-requests>button,.citizen-home-services>button) {
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+
+:where(body[data-route-group="portal"]) .citizen-home :is(.citizen-home-profile-card,.citizen-home-onboarding__steps>button,.citizen-home-metrics>button,.citizen-home-alert,.citizen-home-requests>button,.citizen-home-services>button):hover {
+  transform:translateY(-2px);
+  filter:brightness(1.01);
+}
+
+:where(body[data-route-group="portal"]) .citizen-home button:focus-visible {
+  outline:3px solid #7624f2;
+  outline-offset:3px;
+}
+
+@media(max-width:1240px) {
+  :where(body[data-route-group="portal"]) .citizen-home-grid {grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .citizen-home-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:900px) {
+  :where(body[data-route-group="portal"]) .citizen-dashboard-layout .portal-content.citizen-home {padding:14px}
+  :where(body[data-route-group="portal"]) .citizen-home-hero {min-height:184px;padding:22px 24px}
+  :where(body[data-route-group="portal"]) .citizen-home-profile-card {display:none}
+  :where(body[data-route-group="portal"]) .citizen-home-onboarding__steps {grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .citizen-home-services {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:620px) {
+  :where(body[data-route-group="portal"]) .citizen-home-hero {min-height:190px;background-position:64% center}
+  :where(body[data-route-group="portal"]) .citizen-home-hero h2 {font-size:2.05rem}
+  :where(body[data-route-group="portal"]) .citizen-home-metrics {grid-template-columns:1fr}
+  :where(body[data-route-group="portal"]) .citizen-home-services {grid-template-columns:1fr 1fr}
+  :where(body[data-route-group="portal"]) .citizen-home-empty {grid-template-columns:1fr;text-align:center}
+  :where(body[data-route-group="portal"]) .citizen-home-empty>i {margin:auto}
+  :where(body[data-route-group="portal"]) .citizen-home-empty button {justify-self:center}
+  :where(body[data-route-group="portal"]) .citizen-home-requests>button {grid-template-columns:36px minmax(0,1fr) 14px}
+  :where(body[data-route-group="portal"]) .citizen-home-requests .status-pill {grid-column:2;width:max-content}
+  :where(body[data-route-group="portal"]) .citizen-home-requests>button>b {grid-column:3;grid-row:1/3}
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-home-hero,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-home-onboarding,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-home-metrics>button,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-home-panel,
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-home-alert {
+  background:#000!important;
+  color:#fff!important;
+  border-color:#fff!important;
+  box-shadow:none!important;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-home * {
+  border-color:currentColor;
+}
+
+html[data-contrast="high"] :where(body[data-route-group="portal"]) .citizen-home-hero h2 em {
+  color:#ffe500!important;
+}
+
+@media(prefers-reduced-motion:reduce) {
+  :where(body[data-route-group="portal"]) .citizen-home * {transition:none!important;animation:none!important}
+}

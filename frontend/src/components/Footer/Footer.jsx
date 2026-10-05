@@ -1,5 +1,8 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "../../utils/i18n.js";
 import "./Footer.css";
+
+const EASE = [0.16, 1, 0.3, 1];
 
 const COPY = {
   fr: {
@@ -25,46 +28,84 @@ const COPY = {
   },
 };
 
+const group = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.08,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: EASE },
+  },
+};
+
 export default function Footer() {
   const [locale] = useLocale();
   const copy = COPY[locale] || COPY.fr;
+  const reduceMotion = useReducedMotion();
 
   return (
-    <footer className="terra-footer" id="contact">
-      <div className="terra-footer__top">
-        <div className="terra-footer__brand">
+    <motion.footer
+      className="terra-footer"
+      id="footer"
+      initial={reduceMotion ? false : "hidden"}
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={reduceMotion ? undefined : group}
+    >
+      <motion.div className="terra-footer__top" variants={reduceMotion ? undefined : group}>
+        <motion.div className="terra-footer__brand" variants={reduceMotion ? undefined : item}>
           <a href="/" className="terra-footer__logo" aria-label="Nova Terra, retour en haut">
             Nova<span>Terra</span>
           </a>
           <p>{copy.desc}</p>
-        </div>
+        </motion.div>
 
-        <nav className="terra-footer__nav" aria-label="Navigation de pied de page">
-          <div>
+        <motion.nav
+          className="terra-footer__nav"
+          aria-label="Navigation de pied de page"
+          variants={reduceMotion ? undefined : group}
+        >
+          <motion.div variants={reduceMotion ? undefined : item}>
             <strong>{copy.explore}</strong>
             <a href="/">{copy.home}</a>
             <a href="/services">{copy.services}</a>
             <a href="/news">{copy.news}</a>
             <a href="/contact">{copy.contact}</a>
-          </div>
-          <div>
+          </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : item}>
             <strong>{copy.space}</strong>
             <a href="/login">{copy.login}</a>
             <a href="/inscription">{copy.register}</a>
-          </div>
-          <div>
+          </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : item}>
             <strong>Nova Terra</strong>
             <span>{copy.people}</span>
             <span>{copy.cityServices}</span>
             <span>{copy.council}</span>
-          </div>
-        </nav>
-      </div>
+          </motion.div>
+        </motion.nav>
+      </motion.div>
 
-      <div className="terra-footer__bottom">
+      <motion.div
+        className="terra-footer__bottom"
+        variants={reduceMotion ? undefined : item}
+      >
         <span>Nova Terra · 24H By Webcup</span>
         <span>{copy.bottom}</span>
-      </div>
-    </footer>
+      </motion.div>
+
+      <span className="terra-footer__pulse" aria-hidden="true" />
+    </motion.footer>
   );
 }

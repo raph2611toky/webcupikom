@@ -1,0 +1,21 @@
+NOVA TERRA V115 — CONTRASTE LANDING
+
+Le design normal du Landing n'est pas modifié.
+
+Nettoyage:
+- suppression des anciens blocs contraste dispersés dans Hero.css,
+  Features.css, Mission.css et LandingContact.css;
+- un seul propriétaire du contraste Landing:
+  pages/Landing/LandingPage.css.
+
+Contraste renforcé:
+- fond noir / texte blanc;
+- accent et actions importantes jaune #f2d34b avec texte noir;
+- focus clavier jaune 3px;
+- hero, navigation, photos, cartes Features, Mission, Contact et Footer contrôlés;
+- formulaire: champs noirs, bordures blanches, texte blanc;
+- menu langue contrôlé;
+- version allégée / reduced-data contrôlée;
+- mode reduced-motion toujours respecté.
+
+Aucun changement de géométrie, taille, placement ou animation en mode normal.

@@ -1,0 +1,9 @@
+NOVA TERRA V112 — UI cleanup
+
+- Transport: nested timetable/practical data is formatted recursively; no [object Object].
+- Services: compact 250–340px search column; more category filters fit on the same row.
+- Services: toolbar/search/category/view controls use angular Nova Terra borders.
+- Projects: detail cards, dates, milestones, participation and support controls use angular frames.
+- Transport: modal, detail facts, structured sections and stop cards use angular frames.
+- Semantic status pills/counters remain rounded intentionally.
+- Citizen theme shared shell now includes the missing structural families.
