@@ -1,0 +1,12 @@
+NOVA TERRA V125 — CHOIX DE LANGUE LANDING
+
+Correction du sélecteur de langue sur la Landing Page :
+- le sélecteur normal du Hero reste présent mais sa position est maintenant explicitement prioritaire sur le CSS générique LanguageSwitcher;
+- z-index renforcé et visibilité forcée;
+- espace corrigé entre « Se connecter » et le sélecteur pour éviter leur chevauchement;
+- responsive corrigé aux paliers desktop / tablette / mobile;
+- le mode économie de données / LightHero possède maintenant lui aussi le sélecteur de langue;
+- le LightHero réagit au choix FR / EN / MG pour ses principaux textes;
+- le menu de langue reste rendu en portal, donc il n'est pas coupé par le cadre du Hero.
+
+Aucune modification du Landing animé, du CoreEffect, des sections Features/Mission ni de l'Accessibilité.

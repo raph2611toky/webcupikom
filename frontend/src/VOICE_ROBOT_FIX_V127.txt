@@ -1,0 +1,18 @@
+NOVA TERRA V127 — CORRECTION ASSISTANT VOCAL
+
+Corrections visuelles:
+- le cadrage forcé du modèle 3D a été supprimé;
+- model-viewer utilise maintenant un rayon automatique pour cadrer le robot entier;
+- zone robot légèrement agrandie;
+- le robot ne doit plus afficher uniquement ses pieds / le bas du modèle.
+
+Corrections vocales:
+- plus de message « I heard: « » — Command not recognized. »;
+- une transcription vide affiche un message clair indiquant que rien n'a été entendu;
+- au clic sur Mode vocal:
+  1. le panneau s'ouvre;
+  2. l'assistant prononce le petit script d'accueil;
+  3. ensuite seulement le microphone commence à écouter;
+- le statut distingue maintenant Ready / Speaking / Listening.
+
+Le routage vocal, la dictée et l'animation GLB `talking` restent conservés.

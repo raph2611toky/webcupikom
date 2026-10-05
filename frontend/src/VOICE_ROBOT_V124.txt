@@ -1,0 +1,18 @@
+NOVA TERRA V124 — ASSISTANT VOCAL ROBOT
+
+Ajouts:
+- assistant vocal citoyen redesigné avec panneau visuel proche de la maquette fournie;
+- intégration du modèle 3D robotanimation.glb;
+- chargement de <model-viewer> au moment de l’ouverture du mode vocal;
+- lecture de l’animation nommée "talking" du fichier GLB;
+- script d’accueil au lancement du mode vocal;
+- le comportement métier existant est conservé:
+  * écoute vocale;
+  * navigation par commande vocale;
+  * dictée sur les pages demandes / aide;
+  * lecture d’aide contextuelle.
+
+Fichiers modifiés:
+- src/components/ui/VoiceControl.jsx
+- src/styles/app-shell.css
+- src/assets/assistant/robotanimation.glb

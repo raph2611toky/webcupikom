@@ -1,12 +1,76 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../../utils/navigation.js";
 import { useLocale } from "../../utils/i18n.js";
+import robotModelUrl from "../../assets/assistant/robotanimation.glb?url";
 import "../../styles/app-shell.css";
 
 const COPY = {
-  fr:{button:"Mode vocal",title:"Interaction vocale",listen:"Écouter",stop:"Arrêter",read:"Lire l’aide",close:"Fermer",unsupported:"La reconnaissance vocale n’est pas disponible dans ce navigateur.",hint:"Dites par exemple « mes demandes », « services », « rendez-vous », « actualités », « nous contacter » ou « profil ».",listening:"Je vous écoute…",heard:"J’ai entendu",unknown:"Commande non reconnue."},
-  en:{button:"Voice mode",title:"Voice interaction",listen:"Listen",stop:"Stop",read:"Read help",close:"Close",unsupported:"Voice recognition is not available in this browser.",hint:"Try saying “my requests”, “services”, “appointments”, “news”, “contact us” or “profile”.",listening:"Listening…",heard:"I heard",unknown:"Command not recognized."},
-  mg:{button:"Fomba feo",title:"Fifandraisana amin'ny feo",listen:"Hihaino",stop:"Ajanony",read:"Vakio ny fanampiana",close:"Hakatona",unsupported:"Tsy misy fanekena feo amin'ity navigateur ity.",hint:"Azonao lazaina hoe « fangatahako », « sampan-draharaha », « fotoana fihaonana », « vaovao », « hifandray aminay » na « profil ».",listening:"Mihaino aho…",heard:"Henoko",unknown:"Tsy fantatra ilay baiko."},
+  fr:{
+    button:"Mode vocal",
+    title:"Assistant vocal",
+    live:"En écoute…",
+    ready:"Prêt à vous guider",
+    intro:"Bonjour, je suis votre assistant vocal Nova Terra. Décrivez simplement votre besoin et je vous oriente.",
+    listen:"Écouter",
+    stop:"Arrêter",
+    read:"Lire l’aide",
+    close:"Fermer",
+    unsupported:"L’entrée vocale n’est pas disponible ici. L’assistant peut toujours vous lire l’aide.",
+    hint:"Dites par exemple « mes demandes », « services », « rendez-vous », « actualités », « nous contacter » ou « profil ».",
+    listening:"Je vous écoute…",
+    speaking:"Je vous parle…",
+    noSpeech:"Je n’ai rien entendu. Appuyez sur Écouter et réessayez.",
+    heard:"J’ai entendu",
+    unknown:"Commande non reconnue.",
+    welcomePill:"Je vous écoute…",
+    activate:"Activer le mode vocal",
+    micLabel:"Microphone",
+    modelFallback:"Robot en chargement…"
+  },
+  en:{
+    button:"Voice mode",
+    title:"Voice assistant",
+    live:"Listening…",
+    ready:"Ready to guide you",
+    intro:"Hello, I am your Nova Terra voice assistant. Tell me what you need and I will guide you.",
+    listen:"Listen",
+    stop:"Stop",
+    read:"Read help",
+    close:"Close",
+    unsupported:"Voice input is not available here. The assistant can still read guidance aloud.",
+    hint:"Try saying “my requests”, “services”, “appointments”, “news”, “contact us” or “profile”.",
+    listening:"Listening…",
+    speaking:"I’m speaking…",
+    noSpeech:"I didn’t hear anything. Press Listen and try again.",
+    heard:"I heard",
+    unknown:"Command not recognized.",
+    welcomePill:"I’m listening…",
+    activate:"Enable voice mode",
+    micLabel:"Microphone",
+    modelFallback:"Loading robot…"
+  },
+  mg:{
+    button:"Fomba feo",
+    title:"Mpanampy amin'ny feo",
+    live:"Mihaino…",
+    ready:"Vonona hanampy anao",
+    intro:"Salama, izaho no mpanampy amin'ny feo Nova Terra. Lazao izay ilainao dia hitari-dalana anao aho.",
+    listen:"Hihaino",
+    stop:"Ajanony",
+    read:"Vakio ny fanampiana",
+    close:"Hakatona",
+    unsupported:"Tsy misy fidirana amin’ny feo eto. Mbola afaka mamaky ny fanampiana aminao ilay mpanampy.",
+    hint:"Azonao lazaina hoe « fangatahako », « sampan-draharaha », « fotoana fihaonana », « vaovao », « hifandray aminay » na « profil ».",
+    listening:"Mihaino aho…",
+    speaking:"Miresaka aminao aho…",
+    noSpeech:"Tsy naheno teny aho. Tsindrio Hihaino ary avereno indray.",
+    heard:"Henoko",
+    unknown:"Tsy fantatra ilay baiko.",
+    welcomePill:"Mihaino anao aho…",
+    activate:"Alefaso ny maody feo",
+    micLabel:"Mikrô",
+    modelFallback:"Eo am-pitondrana ny robot…"
+  },
 };
 
 const PAGE_HELP = {
@@ -88,42 +152,117 @@ export default function VoiceControl() {
   const [open,setOpen]=useState(false);
   const [listening,setListening]=useState(false);
   const [message,setMessage]=useState("");
+  const [scriptLine,setScriptLine]=useState("");
+  const [speaking,setSpeaking]=useState(false);
+  const [modelViewerReady,setModelViewerReady]=useState(false);
   const recognitionRef=useRef(null);
+  const introTimeoutRef = useRef(null);
+  const typeIntervalRef = useRef(null);
   const speechLang = locale==="en" ? "en-US" : locale==="mg" ? "mg-MG" : "fr-FR";
   const supported = useMemo(() => typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition), []);
 
-  useEffect(()=>()=>{recognitionRef.current?.stop?.();window.speechSynthesis?.cancel?.();},[]);
+  useEffect(() => {
+    if (typeof window === "undefined" || !open) return undefined;
+    if (window.customElements?.get("model-viewer")) {
+      setModelViewerReady(true);
+      return undefined;
+    }
+    setModelViewerReady(false);
+    const existing = document.querySelector('script[data-model-viewer="nova-terra"]');
+    if (existing) {
+      existing.addEventListener("load", () => setModelViewerReady(true), { once:true });
+      return undefined;
+    }
+    const script = document.createElement("script");
+    script.type = "module";
+    script.src = "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
+    script.dataset.modelViewer = "nova-terra";
+    script.onload = () => setModelViewerReady(true);
+    document.head.appendChild(script);
+    return undefined;
+  }, [open]);
 
-  function speak() {
-    const text=getPageHelp(locale) || copy.hint;
-    if(!window.speechSynthesis) return;
+  useEffect(()=>()=>{
+    recognitionRef.current?.stop?.();
+    window.speechSynthesis?.cancel?.();
+    window.clearTimeout(introTimeoutRef.current);
+    window.clearInterval(typeIntervalRef.current);
+  },[]);
+
+  function typeScript(text) {
+    window.clearInterval(typeIntervalRef.current);
+    setScriptLine("");
+    let index = 0;
+    typeIntervalRef.current = window.setInterval(() => {
+      index += 1;
+      setScriptLine(text.slice(0, index));
+      if (index >= text.length) {
+        window.clearInterval(typeIntervalRef.current);
+      }
+    }, 16);
+  }
+
+  function speak(text, { listenAfter = false } = {}) {
+    const sentence = text || getPageHelp(locale) || copy.hint;
+    if(!window.speechSynthesis) {
+      setMessage(sentence);
+      typeScript(sentence);
+      if(listenAfter) window.setTimeout(startListening, 180);
+      return;
+    }
+
     window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(text);
+    const utterance=new SpeechSynthesisUtterance(sentence);
     utterance.lang=speechLang;
     utterance.rate=.96;
+    utterance.pitch=1.02;
+    utterance.onstart=()=>setSpeaking(true);
+    utterance.onend=()=>{
+      setSpeaking(false);
+      if(listenAfter) window.setTimeout(startListening, 180);
+    };
+    utterance.onerror=()=>{
+      setSpeaking(false);
+      if(listenAfter) window.setTimeout(startListening, 180);
+    };
+    setMessage(sentence);
+    typeScript(sentence);
     window.speechSynthesis.speak(utterance);
   }
 
   function stop() {
     recognitionRef.current?.stop?.();
     window.speechSynthesis?.cancel?.();
+    window.clearTimeout(introTimeoutRef.current);
     setListening(false);
+    setSpeaking(false);
   }
 
   function startListening() {
-    if(!supported){setMessage(copy.unsupported);return}
+    if(!supported){setMessage(copy.unsupported);setScriptLine(copy.unsupported);return}
+    window.speechSynthesis?.cancel?.();
+    setSpeaking(false);
     const SpeechRecognition=window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition=new SpeechRecognition();
     recognition.lang=speechLang;
     recognition.interimResults=false;
     recognition.continuous=false;
     recognition.maxAlternatives=1;
-    recognition.onstart=()=>{setListening(true);setMessage(copy.listening)};
+    recognition.onstart=()=>{setListening(true);setMessage(copy.listening);setScriptLine(copy.listening)};
     recognition.onend=()=>setListening(false);
-    recognition.onerror=()=>{setListening(false);setMessage(copy.unsupported)};
+    recognition.onerror=()=>{setListening(false);setMessage(copy.unsupported);setScriptLine(copy.unsupported)};
     recognition.onresult=(event)=>{
-      const text=event.results?.[0]?.[0]?.transcript || "";
-      setMessage(`${copy.heard} : « ${text} »`);
+      const text=String(event.results?.[0]?.[0]?.transcript || "").trim();
+
+      if(!text){
+        setMessage(copy.noSpeech);
+        setScriptLine(copy.noSpeech);
+        return;
+      }
+
+      const heardMessage = `${copy.heard} : « ${text} »`;
+      setMessage(heardMessage);
+      setScriptLine(heardMessage);
       const route=routeFromSpeech(text);
       if(route) {
         window.setTimeout(()=>navigate(route),350);
@@ -133,30 +272,108 @@ export default function VoiceControl() {
       const path=window.location.pathname;
       if(path==="/citizen/requests" || path==="/citizen/help") {
         window.dispatchEvent(new CustomEvent("nova-terra-voice-dictation",{detail:{text,path}}));
-        setMessage(`${copy.heard} : « ${text} »`);
         return;
       }
 
-      window.setTimeout(()=>setMessage(`${copy.heard} : « ${text} » — ${copy.unknown}`),100);
+      window.setTimeout(()=>{
+        const unknownMessage = `${copy.heard} : « ${text} » — ${copy.unknown}`;
+        setMessage(unknownMessage);
+        setScriptLine(unknownMessage);
+      },100);
     };
     recognitionRef.current=recognition;
     recognition.start();
   }
 
+  function activatePanel() {
+    if (open) {
+      stop();
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    const intro = copy.intro;
+    setMessage(intro);
+    typeScript(intro);
+    window.clearTimeout(introTimeoutRef.current);
+    speak(intro, { listenAfter: supported });
+  }
+
+  const visualActive = open && (listening || speaking);
+  const liveLabel = listening ? copy.live : speaking ? copy.speaking : copy.ready;
+  const helperText = scriptLine || message || copy.hint;
+
   return <>
-    <button type="button" className={`portal-voice-trigger ${open?"is-open":""}`} onClick={()=>setOpen(v=>!v)} aria-expanded={open} aria-controls="portal-voice-panel" title={copy.button}>
+    <button
+      type="button"
+      className={`portal-voice-trigger ${open?"is-open":""}`}
+      onClick={activatePanel}
+      aria-expanded={open}
+      aria-controls="portal-voice-panel"
+      title={copy.activate}
+    >
       <span aria-hidden="true">◉</span><b>{copy.button}</b>
     </button>
-    {open ? <section className="portal-voice-panel" id="portal-voice-panel" aria-label={copy.title}>
+
+    {open ? <section className="portal-voice-panel portal-voice-panel--robot" id="portal-voice-panel" aria-label={copy.title}>
       <div className="portal-voice-panel__head">
-        <div><span>{copy.title}</span><small>{copy.hint}</small></div>
+        <div className="portal-voice-panel__head-copy">
+          <span className="portal-voice-panel__icon" aria-hidden="true">◌</span>
+          <div>
+            <strong>{copy.title}</strong>
+            <small className={listening ? "is-live" : ""}>{liveLabel}</small>
+          </div>
+        </div>
         <button type="button" onClick={()=>{stop();setOpen(false)}} aria-label={copy.close}>×</button>
       </div>
-      <div className="portal-voice-panel__actions">
-        <button type="button" className="secondary-action" onClick={speak}>▶ {copy.read}</button>
-        <button type="button" className={listening?"primary-action is-listening":"primary-action"} onClick={listening?stop:startListening}>{listening ? `■ ${copy.stop}` : `● ${copy.listen}`}</button>
+
+      <div className={`portal-voice-panel__stage ${visualActive ? "is-active" : ""}`}>
+        <div className="portal-voice-panel__wave portal-voice-panel__wave--left" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+
+        <div className="portal-voice-panel__robot-shell" aria-hidden="true">
+          {modelViewerReady
+            ? <model-viewer
+                src={robotModelUrl}
+                autoplay
+                animation-name="talking"
+                interaction-prompt="none"
+                shadow-intensity="0.45"
+                exposure="1.08"
+                camera-controls={false}
+                disable-zoom
+                disable-pan
+                camera-target="0m 0.9m 0m"
+                camera-orbit="0deg 78deg 0.95m"
+                field-of-view="26deg"
+              />
+            : <div className="portal-voice-panel__robot-fallback">{copy.modelFallback}</div>}
+        </div>
+
+        <div className="portal-voice-panel__wave portal-voice-panel__wave--right" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
       </div>
-      {message ? <p className="portal-voice-panel__status" aria-live="polite">{message}</p> : null}
+
+      <div className="portal-voice-panel__script" aria-live="polite">{helperText}</div>
+
+      <div className="portal-voice-panel__actions">
+        <button type="button" className="secondary-action" onClick={()=>speak()}>{copy.read}</button>
+        <button
+          type="button"
+          className={listening?"primary-action is-listening":"primary-action"}
+          onClick={listening?stop:startListening}
+          disabled={!supported && !listening}
+          title={!supported ? copy.unsupported : copy.listen}
+        >
+          {listening ? copy.stop : copy.listen}
+        </button>
+      </div>
+
+      <div className="portal-voice-panel__foot-note">
+        <span className={listening ? "is-live" : ""}>{listening ? copy.welcomePill : copy.hint}</span>
+      </div>
     </section> : null}
   </>;
 }

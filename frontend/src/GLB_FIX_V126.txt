@@ -1,0 +1,18 @@
+NOVA TERRA V126 — CORRECTION IMPORT GLB / VITE
+
+Problème:
+Vite essayait d'analyser robotanimation.glb comme du JavaScript:
+[plugin:vite:import-analysis] Failed to parse source...
+
+Correction:
+- ancien import:
+  import robotModelUrl from "../../assets/assistant/robotanimation.glb";
+
+- nouvel import:
+  import robotModelUrl from "../../assets/assistant/robotanimation.glb?url";
+
+Le suffixe ?url force Vite à traiter le fichier GLB comme une ressource URL,
+sans ajouter assetsInclude dans vite.config.js.
+
+Le fonctionnement du mode vocal, l'animation talking et le modèle robot restent inchangés.
+Aucun fichier Landing / Accessibilité / backend n'est modifié.

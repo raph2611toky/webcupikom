@@ -1,0 +1,14 @@
+NOVA TERRA V130 — FIX CSS APP-SHELL
+
+Erreur corrigée :
+postcss-import: app-shell.css:893:1: Unclosed block
+
+Cause :
+le @media(max-width:620px) du panneau vocal n'était pas refermé
+avant les règles du mode contraste.
+
+Correction :
+- ajout de la fermeture `}` manquante ;
+- validation complète de app-shell.css ;
+- accolades vérifiées ;
+- aucune modification du fonctionnement du robot ou du mode vocal.

@@ -1,0 +1,8 @@
+NOVA TERRA V128 — MICRO VISUEL SUPPRIMÉ
+
+- Le gros micro violet au centre du panneau vocal a été supprimé.
+- L'écoute vocale continue de fonctionner via le bouton « Listen / Stop ».
+- L'espace laissé par le micro devient une animation légère:
+  ondes + petits cercles violets, sans icône microphone.
+- Le robot 3D et son animation talking restent inchangés.
+- Le script d'accueil et les commandes vocales restent inchangés.

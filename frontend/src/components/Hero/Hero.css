@@ -216,7 +216,7 @@
 .kamo-login {
   position: absolute;
   top: 50%;
-  right: clamp(350px, 23vw, 425px);
+  right: clamp(365px, 24vw, 440px);
   transform: translateY(-50%);
   display: flex;
   align-items: center;
@@ -259,13 +259,16 @@
   clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%);
 }
 
-.hero-language-switcher {
+.kamo-header .hero-language-switcher.language-switcher--menu {
   position: absolute;
-  z-index: 60;
+  z-index: 70;
   top: 50%;
   right: clamp(275px, 18.2vw, 330px);
+  min-width: 82px;
   transform: translateY(-50%);
   pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
 }
 
 /* ---------- central title ---------- */
@@ -814,13 +817,13 @@ html[data-data-mode="reduced"] .hero-tech {
   }
 
   .kamo-login {
-    right: 290px;
+    right: 310px;
     min-width: 175px;
     min-height: 48px;
   }
 
-  .hero-language-switcher {
-    right: 220px;
+  .kamo-header .hero-language-switcher.language-switcher--menu {
+    right: 210px;
   }
 
   .hero-copy {
@@ -887,13 +890,13 @@ html[data-data-mode="reduced"] .hero-tech {
   }
 
   .kamo-login {
-    right: 90px;
+    right: 112px;
     min-width: 156px;
     min-height: 46px;
     padding-left: 17px;
   }
 
-  .hero-language-switcher {
+  .kamo-header .hero-language-switcher.language-switcher--menu {
     right: 20px;
   }
 
@@ -991,7 +994,7 @@ html[data-data-mode="reduced"] .hero-tech {
     height: 29px;
   }
 
-  .hero-language-switcher {
+  .kamo-header .hero-language-switcher.language-switcher--menu {
     top: 84px;
     right: 18px;
     transform: none;

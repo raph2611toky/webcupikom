@@ -1,0 +1,15 @@
+NOVA TERRA V129 — ASSISTANT VOCAL NETTOYÉ
+
+- Suppression réelle de tout visuel microphone au centre.
+- Suppression du carré/orbite violet central.
+- Le robot 3D devient l'unique visuel principal du panneau.
+- Halo violet léger uniquement autour du robot lorsqu'il parle/écoute.
+- Si SpeechRecognition n'existe pas dans le navigateur:
+  * le script d'accueil continue d'être lu;
+  * le panneau ne remplace plus immédiatement l'accueil par une erreur;
+  * le bouton Écouter est désactivé proprement avec une explication au survol.
+- L'aide vocale via speechSynthesis continue de fonctionner.
+- L'animation `talking` du robot reste conservée.
+
+Après remplacement, si Vite affichait encore l'ancien micro à cause du HMR:
+arrêter puis relancer `npm run dev`, puis faire Ctrl+F5.

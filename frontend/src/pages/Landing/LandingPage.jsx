@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import DeferredSection from "../../components/ui/DeferredSection.jsx";
+import LanguageSwitcher from "../../components/ui/LanguageSwitcher.jsx";
 import { useDataMode } from "../../utils/useDataMode.js";
+import { useLocale } from "../../utils/i18n.js";
 import "./LandingPage.css";
 
 const Hero = lazy(() => import("../../components/Hero/Hero.jsx"));
@@ -9,23 +11,33 @@ const Mission = lazy(() => import("../../components/Mission/Mission.jsx"));
 const LandingContact = lazy(() => import("../../components/LandingContact/LandingContact.jsx"));
 const Footer = lazy(() => import("../../components/Footer/Footer.jsx"));
 
+const LIGHT_COPY = {
+  fr:{services:"Services",news:"Actualités",contact:"Contact",login:"Se connecter",welcome:"Bienvenue à Nova Terra",title:<>La ville évolue.<br/>Vos services restent accessibles.</>,text:"Une version allégée est utilisée pour accélérer le chargement sur cette connexion. Les informations et actions essentielles restent disponibles.",discover:"Découvrir les services",create:"Créer mon espace"},
+  en:{services:"Services",news:"News",contact:"Contact",login:"Sign in",welcome:"Welcome to Nova Terra",title:<>The city evolves.<br/>Your services stay accessible.</>,text:"A lightweight version is used to load faster on this connection. Essential information and actions remain available.",discover:"Discover services",create:"Create my space"},
+  mg:{services:"Sampan-draharaha",news:"Vaovao",contact:"Fifandraisana",login:"Hiditra",welcome:"Tongasoa eto Nova Terra",title:<>Mivoatra ny tanàna.<br/>Mbola mora idirana ny tolotra.</>,text:"Ampiasaina ny endrika maivana mba hanafainganana ny pejy. Mbola azo ampiasaina avokoa ny vaovao sy ny asa ilaina.",discover:"Hijery ny tolotra",create:"Hamorona ny habakako"},
+};
+
 function SectionFallback({ height = 320 }) {
   return <div className="landing-section-fallback" style={{ minHeight: height }} aria-hidden="true" />;
 }
 
 
 function LightHero() {
+  const [locale] = useLocale();
+  const copy = LIGHT_COPY[locale] || LIGHT_COPY.fr;
+
   return <main className="light-hero" id="home">
     <header className="light-hero__header">
       <a className="light-hero__logo" href="/">Nova<span>Terra</span></a>
-      <nav aria-label="Navigation principale"><a href="/services">Services</a><a href="/news">Actualités</a><a href="/contact">Contact</a></nav>
-      <a className="light-hero__login" href="/login">Se connecter</a>
+      <nav aria-label="Navigation principale"><a href="/services">{copy.services}</a><a href="/news">{copy.news}</a><a href="/contact">{copy.contact}</a></nav>
+      <a className="light-hero__login" href="/login">{copy.login}</a>
+      <LanguageSwitcher className="light-hero__language" compact />
     </header>
     <section className="light-hero__content">
-      <span>Bienvenue à Nova Terra</span>
-      <h1>La ville évolue.<br/>Vos services restent accessibles.</h1>
-      <p>Une version allégée est utilisée pour accélérer le chargement sur cette connexion. Les informations et actions essentielles restent disponibles.</p>
-      <div><a href="/services">Découvrir les services</a><a href="/inscription">Créer mon espace</a></div>
+      <span>{copy.welcome}</span>
+      <h1>{copy.title}</h1>
+      <p>{copy.text}</p>
+      <div><a href="/services">{copy.discover}</a><a href="/inscription">{copy.create}</a></div>
     </section>
   </main>;
 }
