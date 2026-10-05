@@ -17,8 +17,8 @@ class SmsMmsReceiver : BroadcastReceiver() {
         }
 
         val prefs = Prefs(context.applicationContext)
-        if (!prefs.isAutoReplyWebhookActive()) {
-            Log.i(TAG, "SMS_RECEIVED ignoré: application ou webhook automatique désactivé")
+        if (!prefs.isAutoReplyAssistantActive()) {
+            Log.i(TAG, "SMS_RECEIVED ignoré: application ou assistant automatique désactivé")
             return
         }
 
@@ -31,7 +31,7 @@ class SmsMmsReceiver : BroadcastReceiver() {
              * message et le confier à WorkManager.
              *
              * WorkManager persiste la tâche. Si Android/OEM tue le processus
-             * juste après onReceive(), le transfert sera repris ensuite.
+             * juste après onReceive(), le traitement sera repris ensuite.
              */
             val workId = IncomingSmsWorker.enqueue(
                 context = context.applicationContext,

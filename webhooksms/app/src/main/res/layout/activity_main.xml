@@ -1,96 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp"
-    android:background="#121212">
+    android:background="#121212"
+    android:fillViewport="true"
+    android:overScrollMode="ifContentScrolls"
+    android:scrollbars="vertical">
 
     <LinearLayout
+        android:id="@+id/main_content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@drawable/bg_card"
-        android:padding="24dp"
-        android:layout_margin="16dp">
+        android:gravity="center_horizontal"
+        android:padding="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="14dp">
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="24dp"
+            android:layout_margin="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Terra Nova SMS"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:fontFamily="sans-serif" />
+
+                <Button
+                    android:id="@+id/settings_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Paramètres"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#4CAF50"
+                    android:fontFamily="sans-serif" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@android:drawable/stat_sys_upload_done"
+                android:tint="#4CAF50"
+                android:layout_gravity="center"
+                android:layout_marginBottom="12dp" />
 
             <TextView
-                android:layout_width="0dp"
+                android:id="@+id/status_text"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="SMS Webhook"
+                android:text="SMS → GEMINI → SMS : ACTIF"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:fontFamily="sans-serif"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/url_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Assistant municipal SMS autonome"
+                android:textColor="#AAAAAA"
+                android:textSize="15sp"
+                android:gravity="center"
+                android:fontFamily="sans-serif"
+                android:layout_marginBottom="20dp" />
+
+            <TextView
+                android:id="@+id/timer_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Assistant Terra Nova : initialisation…"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp"
-                android:fontFamily="@font/poppins" />
+                android:layout_gravity="center"
+                android:fontFamily="sans-serif" />
 
-            <Button
-                android:id="@+id/settings_button"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Paramètres"
-                android:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#4CAF50"
-                android:fontFamily="@font/poppins" />
         </LinearLayout>
 
-        <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:src="@android:drawable/stat_sys_upload_done"
-            android:tint="#4CAF50"
-            android:layout_gravity="center"
-            android:layout_marginBottom="12dp" />
-
         <TextView
-            android:id="@+id/status_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SMS → Django : ACTIF EN ARRIÈRE-PLAN"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:fontFamily="@font/poppins"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/url_text"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="→ https://backend.agriconnect.ik0m.tech/api/chatbot/sms/webhook/"
-            android:textColor="#AAAAAA"
-            android:textSize="15sp"
-            android:gravity="center"
-            android:fontFamily="@font/poppins"
-            android:layout_marginBottom="20dp" />
-
-        <TextView
-            android:id="@+id/timer_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Serveur local Django → Android : initialisation…"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:layout_gravity="center"
-            android:fontFamily="@font/poppins" />
+            android:text="Terra Nova SMS © YouthComputing"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="24dp"
+            android:fontFamily="sans-serif" />
 
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="SMS Webhook © YouthComputing"
-        android:textColor="#666666"
-        android:textSize="14sp"
-        android:layout_marginTop="12dp"
-        android:fontFamily="@font/poppins" />
-</LinearLayout>
+</ScrollView>

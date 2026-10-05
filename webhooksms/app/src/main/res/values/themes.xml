@@ -2,6 +2,6 @@
     <style name="Theme.SMSWebhook" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">#121212</item>
         <item name="android:textColorPrimary">#FFFFFF</item>
-        <item name="android:fontFamily">@font/poppins</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
 </resources>

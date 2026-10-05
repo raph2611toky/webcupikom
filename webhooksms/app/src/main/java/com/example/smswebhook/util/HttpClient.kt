@@ -23,11 +23,9 @@ object HttpClient {
         .build()
 
     /*
-     * Une réponse HTTP non-2xx n'est plus automatiquement jetée.
-     * Le backend peut volontairement renvoyer un "reply" de secours avec un 503.
-     * Le caller peut donc lire ce reply et l'envoyer par SMS.
-     *
-     * Les vraies erreurs réseau (DNS, connexion, timeout...) restent des exceptions.
+     * Client JSON générique utilisé ici pour l'appel REST Gemini.
+     * Les erreurs réseau restent des exceptions; le statut HTTP est ajouté au JSON
+     * pour permettre à GeminiClient de produire un message d'erreur explicite.
      */
     suspend fun postJson(
         url: String,

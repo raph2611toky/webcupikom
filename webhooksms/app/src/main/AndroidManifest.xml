@@ -4,12 +4,10 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.RECEIVE_MMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -26,7 +24,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SMSWebhook"
-        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
         <activity
@@ -58,20 +55,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- SMS entrant -> backend Django. Service court, déclenché par SMS_RECEIVED. -->
-        <service
-            android:name=".service.WebhookService"
-            android:exported="false"
-            android:stopWithTask="false"
-            android:foregroundServiceType="remoteMessaging" />
-
-        <!-- Serveur local Django -> téléphone Android -> envoi SMS. -->
-        <service
-            android:name=".service.SmsSendServerService"
-            android:exported="false"
-            android:process=":sms_gateway"
-            android:stopWithTask="false"
-            android:foregroundServiceType="remoteMessaging" />
 
     </application>
 

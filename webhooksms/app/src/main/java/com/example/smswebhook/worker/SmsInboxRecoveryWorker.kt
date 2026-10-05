@@ -33,8 +33,8 @@ class SmsInboxRecoveryWorker(
         val context = applicationContext
         val prefs = Prefs(context)
 
-        if (!prefs.isAutoReplyWebhookActive()) {
-            Log.i(TAG, "Récupération inbox ignorée: application ou webhook automatique désactivé")
+        if (!prefs.isAutoReplyAssistantActive()) {
+            Log.i(TAG, "Récupération inbox ignorée: application ou assistant automatique désactivé")
             return Result.success()
         }
 
@@ -171,7 +171,7 @@ class SmsInboxRecoveryWorker(
         }
 
         fun enqueueNow(context: Context) {
-            if (!Prefs(context.applicationContext).isAutoReplyWebhookActive()) return
+            if (!Prefs(context.applicationContext).isAutoReplyAssistantActive()) return
 
             val request = OneTimeWorkRequestBuilder<SmsInboxRecoveryWorker>()
                 .addTag(UNIQUE_NOW)
@@ -185,7 +185,7 @@ class SmsInboxRecoveryWorker(
         }
 
         fun schedulePeriodic(context: Context) {
-            if (!Prefs(context.applicationContext).isAutoReplyWebhookActive()) {
+            if (!Prefs(context.applicationContext).isAutoReplyAssistantActive()) {
                 cancelAll(context)
                 return
             }

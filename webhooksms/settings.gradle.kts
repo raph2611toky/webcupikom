@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SMSWebhook"
+rootProject.name = "TerraNovaSMS"
 include(":app")
