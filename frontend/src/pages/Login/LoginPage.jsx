@@ -254,13 +254,11 @@ export default function LoginPage() {
 
   const journey = successLoading
     ? { variant: "success", title: copy.successTitle, message: copy.successText }
-    : googleLoading
-      ? { variant: "google", title: copy.googleJourney, message: copy.googleJourneyText }
-      : mfaLoading
-        ? { variant: "verify", title: copy.mfaJourney, message: copy.mfaJourneyText }
-        : loading
-          ? { variant: "login", title: copy.loginJourney, message: copy.loginJourneyText }
-          : null;
+    : mfaLoading
+      ? { variant: "verify", title: copy.mfaJourney, message: copy.mfaJourneyText }
+      : loading
+        ? { variant: "login", title: copy.loginJourney, message: copy.loginJourneyText }
+        : null;
 
   return (
     <main className="auth-screen auth-screen--login" style={shellStyle}>
